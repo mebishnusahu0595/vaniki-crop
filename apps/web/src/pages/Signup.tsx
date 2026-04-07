@@ -1,0 +1,149 @@
+import React, { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import AuthShell from '../components/common/AuthShell';
+import { storefrontApi } from '../utils/api';
+import { useAuthStore } from '../store/useAuthStore';
+import { useServiceModeStore } from '../store/useServiceModeStore';
+import { useStoreStore } from '../store/useStoreStore';
+
+const Signup: React.FC = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const setMode = useServiceModeStore((state) => state.setMode);
+  const setAddress = useServiceModeStore((state) => state.setAddress);
+  const setStore = useStoreStore((state) => state.setStore);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    mobile: '',
+    password: '',
+    otp: '',
+    referralCode: searchParams.get('ref') || '',
+  });
+  const [otpSent, setOtpSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const sendOtp = async () => {
+    if (!formData.mobile) {
+      toast.error(t('authPages.enterMobileFirst'));
+      return;
+    }
+    try {
+      const response = await storefrontApi.sendOtp(formData.mobile);
+      toast.success(response.message);
+      setOtpSent(true);
+    } catch {
+      toast.error(t('authPages.otpSendFailed'));
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const result = await storefrontApi.signup({
+        ...formData,
+        referralCode: formData.referralCode || undefined,
+      });
+      setAuth(result.user, result.accessToken);
+      const session = await storefrontApi.me();
+      setAuth(session, result.accessToken);
+      setMode(session.serviceMode);
+      setAddress(session.savedAddress || null);
+      if (session.selectedStore && typeof session.selectedStore !== 'string') {
+        setStore(session.selectedStore);
+      }
+      toast.success(t('authPages.accountCreated'));
+      navigate('/account');
+    } catch {
+      toast.error(t('authPages.signupFailed'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <AuthShell
+      title={t('authPages.signupTitle')}
+      subtitle={t('authPages.signupSubtitle')}
+      backTo="/login"
+      footer={
+        <p className="text-sm font-medium text-primary-900/60">
+          {t('authPages.alreadyRegistered')}{' '}
+          <Link to="/login" className="font-black text-primary">
+            {t('authPages.loginHere')}
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          required
+          value={formData.name}
+          onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
+          placeholder={t('authPages.fullName')}
+          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+        />
+        <input
+          type="email"
+          value={formData.email}
+          onChange={(event) => setFormData((current) => ({ ...current, email: event.target.value }))}
+          placeholder={t('authPages.emailOptional')}
+          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+        />
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+          <input
+            required
+            value={formData.mobile}
+            onChange={(event) => setFormData((current) => ({ ...current, mobile: event.target.value }))}
+            placeholder={t('authPages.mobileNumber')}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+          />
+          <button
+            type="button"
+            onClick={sendOtp}
+            className="rounded-full border border-primary bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.2em] text-primary"
+          >
+            {otpSent ? t('authPages.resendOtp') : t('authPages.sendOtp')}
+          </button>
+        </div>
+        <input
+          required
+          type="password"
+          value={formData.password}
+          onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
+          placeholder={t('authPages.createPassword')}
+          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+        />
+        <input
+          value={formData.referralCode}
+          onChange={(event) => setFormData((current) => ({ ...current, referralCode: event.target.value.toUpperCase() }))}
+          placeholder={t('authPages.referralCodeOptional')}
+          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold uppercase tracking-[0.12em] text-primary-900"
+        />
+        {otpSent && (
+          <input
+            required
+            value={formData.otp}
+            onChange={(event) => setFormData((current) => ({ ...current, otp: event.target.value }))}
+            placeholder={t('authPages.enterOtp')}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+          />
+        )}
+        <button
+          disabled={isSubmitting || !otpSent}
+          className="w-full rounded-full bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-100"
+        >
+          {isSubmitting ? t('authPages.creatingAccount') : t('authPages.createAccountButton')}
+        </button>
+      </form>
+    </AuthShell>
+  );
+};
+
+export default Signup;

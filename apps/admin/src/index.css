@@ -1,0 +1,58 @@
+@import "tailwindcss";
+@import "react-quill-new/dist/quill.snow.css";
+
+@theme {
+  --color-primary-50: #f0faf5;
+  --color-primary-100: #dcf4e8;
+  --color-primary-200: #b9e9d1;
+  --color-primary-300: #84d4b0;
+  --color-primary-400: #52b788;
+  --color-primary-500: #2d6a4f;
+  --color-primary-600: #1b4d3a;
+  --color-primary-700: #143d2e;
+  --color-primary-800: #0d2f23;
+  --color-primary-900: #082018;
+
+  --color-primary: var(--color-primary-500);
+  --color-off-white: #f8faf9;
+  --color-white: #ffffff;
+  --font-sans: 'Inter', 'system-ui', sans-serif;
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-off-white);
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    @apply outline-none;
+  }
+}
+
+@layer components {
+  .ql-toolbar.ql-snow,
+  .ql-container.ql-snow {
+    @apply border-primary-100;
+  }
+
+  .ql-toolbar.ql-snow {
+    @apply rounded-t-2xl bg-primary-50;
+  }
+
+  .ql-container.ql-snow {
+    @apply rounded-b-2xl bg-white;
+    min-height: 220px;
+  }
+}

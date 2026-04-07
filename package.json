@@ -1,0 +1,24 @@
+{
+  "name": "vaniki-crop",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@vaniki/web",
+    "dev:admin": "turbo run dev --filter=@vaniki/admin",
+    "dev:super-admin": "turbo run dev --filter=@vaniki/super-admin",
+    "dev:api": "turbo run dev --filter=@vaniki/api",
+    "dev:mobile": "turbo run dev --filter=mobile",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.4",
+    "typescript": "~5.9.3"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
