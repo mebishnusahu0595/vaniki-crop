@@ -75,6 +75,7 @@ export async function getAdminProducts(req: Request, res: Response, next: NextFu
       req.query,
       req.userRole!,
       req.userStoreId,
+      req.userId,
     );
     res.status(200).json({
       success: true,
@@ -96,6 +97,7 @@ export async function getAdminProductById(req: Request, res: Response, next: Nex
       req.params.id as string,
       req.userRole!,
       req.userStoreId,
+      req.userId,
     );
     res.status(200).json({ success: true, data: product });
   } catch (error) {
@@ -115,6 +117,7 @@ export async function createProduct(req: Request, res: Response, next: NextFunct
       files,
       req.userRole!,
       req.userStoreId,
+      req.userId,
     );
     res.status(201).json({ success: true, data: product });
   } catch (error) {
@@ -135,6 +138,7 @@ export async function updateProduct(req: Request, res: Response, next: NextFunct
       files,
       req.userRole!,
       req.userStoreId,
+      req.userId,
     );
     res.status(200).json({ success: true, data: product });
   } catch (error) {
@@ -152,6 +156,7 @@ export async function deleteProduct(req: Request, res: Response, next: NextFunct
       req.params.id as string,
       req.userRole!,
       req.userStoreId,
+      req.userId,
     );
     res.status(200).json({
       success: true,

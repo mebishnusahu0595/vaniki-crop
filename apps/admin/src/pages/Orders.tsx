@@ -36,6 +36,7 @@ export default function OrdersPage() {
   });
 
   const detail = orderDetailQuery.data;
+  const isOrderModalOpen = Boolean(selectedOrderId);
 
   if (ordersQuery.isLoading) return <LoadingBlock label="Loading orders..." />;
 
@@ -81,20 +82,25 @@ export default function OrdersPage() {
         ))}
       </div>
 
-      {selectedOrderId && detail ? (
+      {isOrderModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6">
           <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[2rem] border border-primary-100 bg-white p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">Order Detail</p>
-                <h2 className="mt-2 text-2xl font-black text-slate-900">{detail.orderNumber}</h2>
+                <h2 className="mt-2 text-2xl font-black text-slate-900">{detail?.orderNumber || 'Loading order...'}</h2>
               </div>
               <button onClick={() => setSelectedOrderId(null)} className="rounded-2xl border border-primary-100 px-4 py-2 text-sm font-semibold text-slate-600">
                 Close
               </button>
             </div>
 
-            <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+            {orderDetailQuery.isLoading || !detail ? (
+              <div className="mt-6">
+                <LoadingBlock label="Loading order details..." />
+              </div>
+            ) : (
+              <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
               <div className="space-y-6">
                 <div className="rounded-[1.5rem] border border-primary-100 bg-primary-50/40 p-4">
                   <h3 className="text-lg font-black text-slate-900">Items</h3>
@@ -166,6 +172,7 @@ export default function OrdersPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       ) : null}

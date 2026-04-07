@@ -59,7 +59,7 @@ const productDefaultValues: ProductFormInput = {
   isActive: true,
   metaTitle: '',
   metaDescription: '',
-  variants: [{ quantity: '', unit: 'Liter', price: 0, mrp: 0, stock: 0 }],
+  variants: [{ quantity: '', unit: 'Liter', price: '', mrp: '', stock: '' }],
 };
 
 function getProductDefaultValues(product?: Product): ProductFormInput {
@@ -298,7 +298,7 @@ function ProductEditor({
             </div>
             <button
               type="button"
-              onClick={() => append({ quantity: '', unit: 'Liter', price: 0, mrp: 0, stock: 0 })}
+              onClick={() => append({ quantity: '', unit: 'Liter', price: '', mrp: '', stock: '' })}
               className="inline-flex items-center gap-2 rounded-2xl border border-primary-100 px-4 py-2 text-sm font-bold text-primary-700"
             >
               <PlusCircle size={16} />

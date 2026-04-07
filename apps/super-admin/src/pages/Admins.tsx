@@ -30,6 +30,7 @@ const adminDefaultValues: AdminFormInput = {
 export default function AdminsPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<AdminAccount | null>(null);
+  const [selectedAdmin, setSelectedAdmin] = useState<AdminAccount | null>(null);
   const [search, setSearch] = useState('');
 
   const adminsQuery = useQuery({
@@ -176,7 +177,11 @@ export default function AdminsPage() {
         </div>
 
         {adminsQuery.data?.data.map((admin) => (
-          <div key={admin.id} className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
+          <div
+            key={admin.id}
+            onClick={() => setSelectedAdmin(admin)}
+            className="cursor-pointer rounded-[1.5rem] border border-primary-100 bg-white p-4 transition hover:bg-primary-50/40"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-lg font-black text-slate-900">{admin.name}</p>
@@ -186,7 +191,10 @@ export default function AdminsPage() {
                 </p>
               </div>
               <button
-                onClick={() => setEditing(admin)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setEditing(admin);
+                }}
                 className="rounded-xl border border-primary-100 px-4 py-2 text-sm font-semibold text-primary-700"
               >
                 Edit
@@ -199,7 +207,10 @@ export default function AdminsPage() {
               </span>
               {admin.isActive ? (
                 <button
-                  onClick={() => deactivateMutation.mutate(admin.id)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    deactivateMutation.mutate(admin.id);
+                  }}
                   className="text-sm font-semibold text-rose-600"
                 >
                   Deactivate
@@ -209,6 +220,60 @@ export default function AdminsPage() {
           </div>
         ))}
       </div>
+
+      {selectedAdmin ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6">
+          <div className="w-full max-w-2xl rounded-[2rem] border border-primary-100 bg-white p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">Admin Detail</p>
+                <h2 className="mt-2 text-2xl font-black text-slate-900">{selectedAdmin.name}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedAdmin(null)}
+                className="rounded-2xl border border-primary-100 px-4 py-2 text-sm font-semibold text-slate-600"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 rounded-[1.5rem] border border-primary-100 bg-primary-50/40 p-4 text-sm text-slate-600">
+              <p><span className="font-black text-slate-900">Admin ID:</span> {selectedAdmin.id}</p>
+              <p><span className="font-black text-slate-900">Role:</span> {selectedAdmin.role}</p>
+              <p><span className="font-black text-slate-900">Status:</span> {selectedAdmin.isActive ? 'Active' : 'Inactive'}</p>
+              <p><span className="font-black text-slate-900">Mobile:</span> {selectedAdmin.mobile}</p>
+              <p><span className="font-black text-slate-900">Email:</span> {selectedAdmin.email || '-'}</p>
+              <p><span className="font-black text-slate-900">Assigned Store:</span> {selectedAdmin.assignedStore?.name || 'Unassigned'}</p>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(selectedAdmin);
+                  setSelectedAdmin(null);
+                }}
+                className="rounded-2xl border border-primary-100 px-4 py-2 text-sm font-semibold text-primary-700"
+              >
+                Edit This Admin
+              </button>
+              {selectedAdmin.isActive ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    deactivateMutation.mutate(selectedAdmin.id);
+                    setSelectedAdmin(null);
+                  }}
+                  className="rounded-2xl border border-rose-100 px-4 py-2 text-sm font-semibold text-rose-600"
+                >
+                  Deactivate
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

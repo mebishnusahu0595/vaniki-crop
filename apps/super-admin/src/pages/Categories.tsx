@@ -29,6 +29,7 @@ const categoryDefaultValues: CategoryFormInput = {
 
 export default function CategoriesPage() {
   const [editing, setEditing] = useState<Category | null>(null);
+  const [actioningCategoryId, setActioningCategoryId] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState('');
   const [imageUrlInput, setImageUrlInput] = useState('');
@@ -121,6 +122,26 @@ export default function CategoriesPage() {
       setImageUrlInput('');
       setImageUrlError('');
       clearFilePreview();
+    },
+  });
+
+  const toggleCategoryMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => adminApi.toggleCategoryActive(id, isActive),
+    onSuccess: (updatedCategory) => {
+      queryClient.setQueryData(['admin-categories-screen'], (current: { data: Category[]; pagination?: unknown } | undefined) => {
+        if (!current?.data) return current;
+        return {
+          ...current,
+          data: current.data.map((entry) => (entry.id === updatedCategory.id ? updatedCategory : entry)),
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-categories-screen'] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to update category status.');
+    },
+    onSettled: () => {
+      setActioningCategoryId(null);
     },
   });
 
@@ -224,13 +245,17 @@ export default function CategoriesPage() {
               </span>
               <button
                 onClick={async () => {
-                  if (!window.confirm(`Deactivate ${category.name}?`)) return;
-                  await adminApi.deleteCategory(category.id);
-                  queryClient.invalidateQueries({ queryKey: ['admin-categories-screen'] });
+                  const nextState = !category.isActive;
+                  const actionLabel = nextState ? 'activate' : 'deactivate';
+                  if (!window.confirm(`${actionLabel[0].toUpperCase()}${actionLabel.slice(1)} ${category.name}?`)) return;
+
+                  setActioningCategoryId(category.id);
+                  await toggleCategoryMutation.mutateAsync({ id: category.id, isActive: nextState });
                 }}
-                className="text-sm font-semibold text-rose-600"
+                disabled={actioningCategoryId === category.id}
+                className={`text-sm font-semibold ${category.isActive ? 'text-rose-600' : 'text-emerald-700'}`}
               >
-                Deactivate
+                {category.isActive ? 'Deactivate' : 'Activate'}
               </button>
             </div>
           </div>

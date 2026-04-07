@@ -125,6 +125,46 @@ export default function CategoriesPage() {
     },
   });
 
+  const toggleCategoryMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => adminApi.toggleCategoryActive(id, isActive),
+    onSuccess: (updatedCategory) => {
+      queryClient.setQueryData(['admin-categories-screen'], (current: { data: Category[]; pagination?: unknown } | undefined) => {
+        if (!current?.data) return current;
+        return {
+          ...current,
+          data: current.data.map((entry) => (entry.id === updatedCategory.id ? updatedCategory : entry)),
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-categories-screen'] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to update category status.');
+    },
+    onSettled: () => {
+      setActioningCategoryId(null);
+    },
+  });
+
+  const permanentDeleteMutation = useMutation({
+    mutationFn: (id: string) => adminApi.permanentlyDeleteCategory(id),
+    onSuccess: (_, deletedId) => {
+      queryClient.setQueryData(['admin-categories-screen'], (current: { data: Category[]; pagination?: unknown } | undefined) => {
+        if (!current?.data) return current;
+        return {
+          ...current,
+          data: current.data.filter((entry) => entry.id !== deletedId),
+        };
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-categories-screen'] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to delete category permanently.');
+    },
+    onSettled: () => {
+      setActioningCategoryId(null);
+    },
+  });
+
   if (categoriesQuery.isLoading) return <LoadingBlock label="Loading categories..." />;
 
   return (
@@ -231,21 +271,7 @@ export default function CategoriesPage() {
                     if (!window.confirm(`${actionLabel[0].toUpperCase()}${actionLabel.slice(1)} ${category.name}?`)) return;
 
                     setActioningCategoryId(category.id);
-                    try {
-                      const updatedCategory = await adminApi.toggleCategoryActive(category.id, nextState);
-                      queryClient.setQueryData(['admin-categories-screen'], (current: { data: Category[]; pagination?: unknown } | undefined) => {
-                        if (!current?.data) return current;
-                        return {
-                          ...current,
-                          data: current.data.map((entry) => (entry.id === updatedCategory.id ? updatedCategory : entry)),
-                        };
-                      });
-                      queryClient.invalidateQueries({ queryKey: ['admin-categories-screen'] });
-                    } catch (error) {
-                      window.alert(error instanceof Error ? error.message : `Unable to ${actionLabel} category.`);
-                    } finally {
-                      setActioningCategoryId(null);
-                    }
+                    await toggleCategoryMutation.mutateAsync({ id: category.id, isActive: nextState });
                   }}
                   disabled={actioningCategoryId === category.id}
                   className={`text-sm font-semibold ${category.isActive ? 'text-rose-600' : 'text-emerald-700'}`}
@@ -261,21 +287,7 @@ export default function CategoriesPage() {
 
                     if (!window.confirm(`Delete ${category.name} permanently? This cannot be undone.`)) return;
                     setActioningCategoryId(category.id);
-                    try {
-                      await adminApi.permanentlyDeleteCategory(category.id);
-                      queryClient.setQueryData(['admin-categories-screen'], (current: { data: Category[]; pagination?: unknown } | undefined) => {
-                        if (!current?.data) return current;
-                        return {
-                          ...current,
-                          data: current.data.filter((entry) => entry.id !== category.id),
-                        };
-                      });
-                      queryClient.invalidateQueries({ queryKey: ['admin-categories-screen'] });
-                    } catch (error) {
-                      window.alert(error instanceof Error ? error.message : 'Unable to delete category permanently.');
-                    } finally {
-                      setActioningCategoryId(null);
-                    }
+                    await permanentDeleteMutation.mutateAsync(category.id);
                   }}
                   disabled={actioningCategoryId === category.id}
                   className="text-sm font-semibold text-slate-700"

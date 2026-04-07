@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Product, type IProduct } from '../../models/Product.model.js';
 import { Category } from '../../models/Category.model.js';
 import { Review } from '../../models/Review.model.js';
+import { Store } from '../../models/Store.model.js';
 import { AppError } from '../../utils/AppError.js';
 import {
   uploadMultipleToCloudinary,
@@ -65,6 +66,15 @@ function buildSortOptions(sort?: string): Record<string, 1 | -1> {
     default:
       return { isFeatured: -1, createdAt: -1 };
   }
+}
+
+async function resolveStoreAdminScope(userRole: string, userStoreId?: string, userId?: string): Promise<string | undefined> {
+  if (userRole !== 'storeAdmin') return userStoreId;
+  if (userStoreId) return userStoreId;
+  if (!userId) return undefined;
+
+  const ownedStore = await Store.findOne({ adminId: userId }).select('_id').lean();
+  return ownedStore?._id?.toString();
 }
 
 // ─── Public Services ─────────────────────────────────────────────────────
@@ -211,14 +221,19 @@ export async function getAdminProducts(
   query: Record<string, any>,
   userRole: string,
   userStoreId?: string,
+  userId?: string,
 ): Promise<PaginatedResponse<IProduct>> {
   const { page, limit, skip } = parsePagination(query);
 
   const filter: any = {};
+  const resolvedStoreId = await resolveStoreAdminScope(userRole, userStoreId, userId);
 
   // Store admins only see their store's products
-  if (userRole === 'storeAdmin' && userStoreId) {
-    filter.storeId = userStoreId;
+  if (userRole === 'storeAdmin') {
+    if (!resolvedStoreId) {
+      return createPaginationResponse([], 0, page, limit);
+    }
+    filter.storeId = resolvedStoreId;
   }
 
   // Optional filters
@@ -248,7 +263,9 @@ export async function getAdminProductById(
   id: string,
   userRole: string,
   userStoreId?: string,
+  userId?: string,
 ): Promise<IProduct> {
+  const resolvedStoreId = await resolveStoreAdminScope(userRole, userStoreId, userId);
   const product = await Product.findById(id)
     .populate('category', 'name slug')
     .populate('storeId', 'name');
@@ -258,7 +275,7 @@ export async function getAdminProductById(
   }
 
   if (userRole === 'storeAdmin') {
-    const hasAccess = product.storeId.some((sid) => sid.toString() === userStoreId);
+    const hasAccess = resolvedStoreId ? product.storeId.some((sid) => sid.toString() === resolvedStoreId) : false;
     if (!hasAccess) {
       throw new AppError('You can only access products in your store', 403);
     }
@@ -280,6 +297,7 @@ export async function createProduct(
   files: Express.Multer.File[],
   userRole: string,
   userStoreId?: string,
+  userId?: string,
 ): Promise<IProduct> {
   const slug = await ensureUniqueSlug(slugify(input.name));
   const imageUrls = Array.isArray(input.imageUrls)
@@ -288,9 +306,10 @@ export async function createProduct(
 
   // Handle store assignment
   let storeIds: string[] = [];
-  if (userRole === 'storeAdmin' && userStoreId) {
+  const resolvedStoreId = await resolveStoreAdminScope(userRole, userStoreId, userId);
+  if (userRole === 'storeAdmin' && resolvedStoreId) {
     // Store admin: auto-assign to their store
-    storeIds = [userStoreId];
+    storeIds = [resolvedStoreId];
   } else if (input.storeId) {
     // Super admin can assign to specific stores
     storeIds = Array.isArray(input.storeId) ? input.storeId : [input.storeId];
@@ -356,7 +375,9 @@ export async function updateProduct(
   files: Express.Multer.File[],
   userRole: string,
   userStoreId?: string,
+  userId?: string,
 ): Promise<IProduct> {
+  const resolvedStoreId = await resolveStoreAdminScope(userRole, userStoreId, userId);
   const product = await Product.findById(id);
   if (!product) {
     throw new AppError('Product not found', 404);
@@ -368,7 +389,7 @@ export async function updateProduct(
   // Store admins can only edit their store's products
   if (userRole === 'storeAdmin') {
     const hasAccess = product.storeId.some(
-      (sid) => sid.toString() === userStoreId,
+      (sid) => sid.toString() === resolvedStoreId,
     );
     if (!hasAccess) {
       throw new AppError('You can only edit products in your store', 403);
@@ -474,7 +495,9 @@ export async function deleteProduct(
   id: string,
   userRole: string,
   userStoreId?: string,
+  userId?: string,
 ): Promise<IProduct> {
+  const resolvedStoreId = await resolveStoreAdminScope(userRole, userStoreId, userId);
   const product = await Product.findById(id);
   if (!product) {
     throw new AppError('Product not found', 404);
@@ -483,7 +506,7 @@ export async function deleteProduct(
   // Store admins can only delete their store's products
   if (userRole === 'storeAdmin') {
     const hasAccess = product.storeId.some(
-      (sid) => sid.toString() === userStoreId,
+      (sid) => sid.toString() === resolvedStoreId,
     );
     if (!hasAccess) {
       throw new AppError('You can only delete products in your store', 403);

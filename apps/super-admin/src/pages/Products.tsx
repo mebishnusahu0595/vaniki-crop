@@ -1,5 +1,6 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { adminApi } from '../utils/api';
 import { PageHeader } from '../components/PageHeader';
@@ -8,6 +9,7 @@ import { currencyFormatter } from '../utils/format';
 
 export default function ProductsPage() {
   const queryClient = useQueryClient();
+  const [actioningProductId, setActioningProductId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
@@ -18,6 +20,36 @@ export default function ProductsPage() {
   const categoriesQuery = useQuery({
     queryKey: ['admin-product-categories'],
     queryFn: () => adminApi.categories({ limit: 100 }),
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const formData = new FormData();
+      formData.append('isActive', String(isActive));
+      return adminApi.updateProduct(id, formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to update product status.');
+    },
+    onSettled: () => {
+      setActioningProductId(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to delete product.');
+    },
+    onSettled: () => {
+      setActioningProductId(null);
+    },
   });
 
   if (productsQuery.isLoading) return <LoadingBlock label="Loading products..." />;
@@ -42,8 +74,10 @@ export default function ProductsPage() {
         <input
           value={search}
           onChange={(event) => setSearchParams((current) => {
-            current.set('search', event.target.value);
-            return current;
+            const next = new URLSearchParams(current);
+            if (event.target.value) next.set('search', event.target.value);
+            else next.delete('search');
+            return next;
           })}
           placeholder="Search by product name or tags"
           className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none"
@@ -51,9 +85,10 @@ export default function ProductsPage() {
         <select
           value={category}
           onChange={(event) => setSearchParams((current) => {
-            if (event.target.value) current.set('category', event.target.value);
-            else current.delete('category');
-            return current;
+            const next = new URLSearchParams(current);
+            if (event.target.value) next.set('category', event.target.value);
+            else next.delete('category');
+            return next;
           })}
           className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none"
         >
@@ -93,11 +128,10 @@ export default function ProductsPage() {
                   <td className="px-5 py-4">
                     <button
                       onClick={async () => {
-                        const formData = new FormData();
-                        formData.append('isActive', String(!product.isActive));
-                        await adminApi.updateProduct(product.id, formData);
-                        queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+                        setActioningProductId(product.id);
+                        await toggleActiveMutation.mutateAsync({ id: product.id, isActive: !product.isActive });
                       }}
+                      disabled={actioningProductId === product.id}
                       className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.15em] ${
                         product.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                       }`}
@@ -113,9 +147,10 @@ export default function ProductsPage() {
                       <button
                         onClick={async () => {
                           if (!window.confirm(`Deactivate ${product.name}?`)) return;
-                          await adminApi.deleteProduct(product.id);
-                          queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+                          setActioningProductId(product.id);
+                          await deleteMutation.mutateAsync(product.id);
                         }}
+                        disabled={actioningProductId === product.id}
                         className="rounded-xl border border-rose-100 p-2 text-rose-600"
                       >
                         <Trash2 size={16} />
@@ -139,11 +174,10 @@ export default function ProductsPage() {
               </div>
               <button
                 onClick={async () => {
-                  const formData = new FormData();
-                  formData.append('isActive', String(!product.isActive));
-                  await adminApi.updateProduct(product.id, formData);
-                  queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+                  setActioningProductId(product.id);
+                  await toggleActiveMutation.mutateAsync({ id: product.id, isActive: !product.isActive });
                 }}
+                disabled={actioningProductId === product.id}
                 className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.15em] ${
                   product.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                 }`}
@@ -162,9 +196,10 @@ export default function ProductsPage() {
               <button
                 onClick={async () => {
                   if (!window.confirm(`Deactivate ${product.name}?`)) return;
-                  await adminApi.deleteProduct(product.id);
-                  queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+                  setActioningProductId(product.id);
+                  await deleteMutation.mutateAsync(product.id);
                 }}
+                disabled={actioningProductId === product.id}
                 className="rounded-xl border border-rose-100 px-4 py-2 text-sm font-semibold text-rose-600"
               >
                 Delete

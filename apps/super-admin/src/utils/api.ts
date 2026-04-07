@@ -198,6 +198,10 @@ export const adminApi = {
     const response = await api.put<ApiResponse<Category>>(`/admin/categories/${id}`, payload);
     return response.data.data;
   },
+  toggleCategoryActive: async (id: string, isActive: boolean) => {
+    const response = await api.patch<ApiResponse<Category>>(`/admin/categories/${id}/toggle-active`, { isActive });
+    return response.data.data;
+  },
   deleteCategory: async (id: string) => {
     const response = await api.delete<ApiResponse<Category>>(`/admin/categories/${id}`);
     return response.data.data;
