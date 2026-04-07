@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Vaniki Crop",
+    "slug": "vaniki-crop",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "vanikicrop",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Allow Vaniki Crop to unlock your secure session with biometrics."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#2D6A4F",
+          "defaultChannel": "orders"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Vaniki Crop to use biometrics for quick login."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vanikicrop.app"
+    },
+    "android": {
+      "package": "com.vanikicrop.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
