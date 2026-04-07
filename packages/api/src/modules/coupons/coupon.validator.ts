@@ -4,6 +4,29 @@ import { AppError } from '../../utils/AppError.js';
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format');
 
+function parseCouponExpiryDate(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(trimmed)
+    ? new Date(`${trimmed}T23:59:59.999Z`)
+    : new Date(trimmed);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+const couponExpiryDateSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine((value) => parseCouponExpiryDate(value) !== null, {
+    message: 'Invalid expiry date',
+  })
+  .transform((value) => parseCouponExpiryDate(value)!.toISOString())
+  .refine((value) => new Date(value).getTime() > Date.now(), {
+    message: 'Expiry date must be in the future',
+  });
+
 const createCouponSchema = z.object({
   body: z.object({
     code: z.string().trim().min(3).max(30).toUpperCase(),
@@ -12,9 +35,7 @@ const createCouponSchema = z.object({
     minOrderAmount: z.number().min(0).default(0),
     maxDiscount: z.number().min(0).optional(),
     usageLimit: z.number().int().min(1),
-    expiryDate: z.string().datetime().refine((date) => new Date(date) > new Date(), {
-      message: 'Expiry date must be in the future',
-    }),
+    expiryDate: couponExpiryDateSchema,
     applicableStores: z.array(objectIdSchema).optional().default([]),
   }).refine((data) => {
     if (data.type === 'percent' && data.value > 100) return false;
@@ -39,11 +60,18 @@ const validateCouponSchema = z.object({
 export function validate(schema: z.ZodObject<any>) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
-      schema.parse({
+      const parsed = schema.parse({
         body: req.body,
         query: req.query,
         params: req.params,
       });
+      req.body = parsed.body ?? req.body;
+      if (parsed.query && req.query && typeof req.query === 'object') {
+        Object.assign(req.query as Record<string, unknown>, parsed.query as Record<string, unknown>);
+      }
+      if (parsed.params && req.params && typeof req.params === 'object') {
+        Object.assign(req.params as Record<string, unknown>, parsed.params as Record<string, unknown>);
+      }
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -64,7 +64,7 @@ export async function updateStore(req: Request, res: Response, next: NextFunctio
 
 export async function getAdminOwnStore(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const store = await storeService.getAdminOwnStore(req.userStoreId!);
+    const store = await storeService.getAdminOwnStore(req.userStoreId, req.userId);
     res.status(200).json({ success: true, data: store });
   } catch (error) {
     next(error);
@@ -73,7 +73,7 @@ export async function getAdminOwnStore(req: Request, res: Response, next: NextFu
 
 export async function updateAdminOwnStore(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const store = await storeService.updateAdminOwnStore(req.userStoreId!, req.body);
+    const store = await storeService.updateAdminOwnStore(req.userStoreId, req.userId, req.body);
     res.status(200).json({ success: true, data: store });
   } catch (error) {
     next(error);

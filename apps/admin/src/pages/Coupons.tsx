@@ -37,6 +37,7 @@ const couponDefaultValues: CouponFormInput = {
 export default function CouponsPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Coupon | null>(null);
+  const [formError, setFormError] = useState('');
   const couponsQuery = useQuery({ queryKey: ['admin-coupons'], queryFn: adminApi.coupons });
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<
     CouponFormInput,
@@ -66,12 +67,32 @@ export default function CouponsPage() {
   }, [editing, reset]);
 
   const mutation = useMutation({
-    mutationFn: (values: CouponFormOutput) =>
-      editing ? adminApi.updateCoupon(editing.id, values) : adminApi.createCoupon(values),
+    mutationFn: (values: CouponFormOutput) => {
+      const normalizedExpiryDate = values.expiryDate.includes('T')
+        ? values.expiryDate
+        : `${values.expiryDate}T23:59:59.999Z`;
+
+      const payload: Record<string, unknown> = {
+        ...values,
+        code: values.code.trim().toUpperCase(),
+        expiryDate: normalizedExpiryDate,
+        maxDiscount: values.type === 'percent'
+          ? (values.maxDiscount && values.maxDiscount > 0 ? values.maxDiscount : undefined)
+          : undefined,
+      };
+
+      return editing ? adminApi.updateCoupon(editing.id, payload) : adminApi.createCoupon(payload);
+    },
+    onMutate: () => {
+      setFormError('');
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
       setEditing(null);
       reset(couponDefaultValues);
+    },
+    onError: (error) => {
+      setFormError(error instanceof Error ? error.message : 'Unable to save coupon right now.');
     },
   });
 
@@ -104,6 +125,7 @@ export default function CouponsPage() {
             </button>
             {editing ? <button type="button" onClick={() => { setEditing(null); reset(couponDefaultValues); }} className="rounded-2xl border border-primary-100 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-600">Cancel</button> : null}
           </div>
+          {formError ? <p className="text-sm text-rose-600">{formError}</p> : null}
         </form>
       </div>
 

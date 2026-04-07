@@ -155,8 +155,23 @@ app.use((_req: Request, res: Response) => {
 
 // ─── Global Error Handler ────────────────────────────────────────────────
 app.use((err: Error | AppError, _req: Request, res: Response, _next: NextFunction) => {
-  const statusCode = err instanceof AppError ? err.statusCode : 500;
-  const message = err.message || 'Internal Server Error';
+  const explicitStatusCode = (err as Error & { statusCode?: number }).statusCode;
+  const hasExplicitStatusCode = typeof explicitStatusCode === 'number';
+  const multerFileSizeError = (err as { name?: string; code?: string }).name === 'MulterError'
+    && (err as { code?: string }).code === 'LIMIT_FILE_SIZE';
+  const multerGenericError = (err as { name?: string }).name === 'MulterError';
+
+  const statusCode = err instanceof AppError
+    ? err.statusCode
+    : hasExplicitStatusCode
+      ? explicitStatusCode
+      : (multerFileSizeError || multerGenericError)
+        ? 400
+        : 500;
+
+  const message = multerFileSizeError
+    ? 'Image file is too large. Maximum size is 5MB.'
+    : err.message || 'Internal Server Error';
 
   console.error(`[ERROR] ${statusCode} - ${message}`, err.stack);
 

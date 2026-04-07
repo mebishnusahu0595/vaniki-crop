@@ -2,6 +2,14 @@ import { Store, type IStore } from '../../models/Store.model.js';
 import { User } from '../../models/User.model.js';
 import { AppError } from '../../utils/AppError.js';
 
+async function resolveStoreAdminScope(userStoreId?: string, userId?: string): Promise<string | undefined> {
+  if (userStoreId) return userStoreId;
+  if (!userId) return undefined;
+
+  const ownedStore = await Store.findOne({ adminId: userId }).select('_id');
+  return ownedStore?._id.toString();
+}
+
 /**
  * Public listing of all active stores for store selection.
  */
@@ -79,16 +87,26 @@ export async function selectStoreForUser(userId: string, storeId: string) {
   return { success: true, storeName: store.name };
 }
 
-export async function getAdminOwnStore(storeId: string) {
-  const store = await Store.findById(storeId).populate('adminId', 'name email mobile');
+export async function getAdminOwnStore(userStoreId?: string, userId?: string) {
+  const resolvedStoreId = await resolveStoreAdminScope(userStoreId, userId);
+  if (!resolvedStoreId) {
+    throw new AppError('No store assigned to this admin account', 400);
+  }
+
+  const store = await Store.findById(resolvedStoreId).populate('adminId', 'name email mobile');
   if (!store) {
     throw new AppError('Store not found', 404);
   }
   return store;
 }
 
-export async function updateAdminOwnStore(storeId: string, data: any) {
-  const store = await Store.findByIdAndUpdate(storeId, data, {
+export async function updateAdminOwnStore(userStoreId: string | undefined, userId: string | undefined, data: any) {
+  const resolvedStoreId = await resolveStoreAdminScope(userStoreId, userId);
+  if (!resolvedStoreId) {
+    throw new AppError('No store assigned to this admin account', 400);
+  }
+
+  const store = await Store.findByIdAndUpdate(resolvedStoreId, data, {
     new: true,
     runValidators: true,
   }).populate('adminId', 'name email mobile');

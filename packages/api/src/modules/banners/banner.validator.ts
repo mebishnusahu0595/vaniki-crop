@@ -4,6 +4,26 @@ import { AppError } from '../../utils/AppError.js';
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format');
 
+function parseOptionalDateInput(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(trimmed)
+    ? new Date(`${trimmed}T00:00:00.000Z`)
+    : new Date(trimmed);
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+const optionalDateSchema = z.preprocess((value) => {
+  if (value === '' || value === null || value === undefined) return undefined;
+  return value;
+}, z.string()
+  .trim()
+  .refine((value) => parseOptionalDateInput(value) !== null, { message: 'Invalid date' })
+  .transform((value) => parseOptionalDateInput(value)!.toISOString())
+  .optional());
+
 const linkedProductSchema = z.object({
   productId: objectIdSchema,
   position: z.number().int().min(0).optional().default(0),
@@ -23,8 +43,8 @@ const bannerSchema = z.object({
   linkedProducts: z.string().optional(), // Expected as JSON string from multipart/form-data
   storeId: optionalStoreIdSchema,
   sortOrder: z.preprocess((val) => Number(val), z.number().int().default(0)),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  startDate: optionalDateSchema,
+  endDate: optionalDateSchema,
   isActive: z.preprocess((val) => val === 'true', z.boolean().default(true)),
 });
 
@@ -56,11 +76,18 @@ export const reorderBannersSchema = z.object({
 export function validate(schema: z.ZodObject<any>) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
-      schema.parse({
+      const parsed = schema.parse({
         body: req.body,
         query: req.query,
         params: req.params,
       });
+      req.body = parsed.body ?? req.body;
+      if (parsed.query && req.query && typeof req.query === 'object') {
+        Object.assign(req.query as Record<string, unknown>, parsed.query as Record<string, unknown>);
+      }
+      if (parsed.params && req.params && typeof req.params === 'object') {
+        Object.assign(req.params as Record<string, unknown>, parsed.params as Record<string, unknown>);
+      }
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -200,46 +200,50 @@ function ProductEditor({
   return (
     <form
       onSubmit={handleSubmit(async (values: ProductFormOutput) => {
-        const payload = new FormData();
-        payload.append('name', values.name);
-        payload.append('shortDescription', values.shortDescription);
-        payload.append('description', values.description);
-        payload.append('category', values.category);
-        payload.append('tags', JSON.stringify(values.tags?.split(',').map((tag: string) => tag.trim()).filter(Boolean) || []));
-        payload.append('isFeatured', String(values.isFeatured));
-        payload.append('isActive', String(values.isActive));
-        payload.append('metaTitle', values.metaTitle || '');
-        payload.append('metaDescription', values.metaDescription || '');
-        payload.append(
-          'variants',
-          JSON.stringify(
-            values.variants.map((variant: ProductFormOutput['variants'][number], index: number) => ({
-              label: buildVariantLabel(variant.quantity, variant.unit),
-              price: variant.price,
-              mrp: variant.mrp,
-              stock: variant.stock,
-              sku: `${slugify(productName || 'product').toUpperCase()}-${String(index + 1).padStart(2, '0')}`,
-            })),
-          ),
-        );
+        try {
+          const payload = new FormData();
+          payload.append('name', values.name);
+          payload.append('shortDescription', values.shortDescription);
+          payload.append('description', values.description);
+          payload.append('category', values.category);
+          payload.append('tags', JSON.stringify(values.tags?.split(',').map((tag: string) => tag.trim()).filter(Boolean) || []));
+          payload.append('isFeatured', String(values.isFeatured));
+          payload.append('isActive', String(values.isActive));
+          payload.append('metaTitle', values.metaTitle || '');
+          payload.append('metaDescription', values.metaDescription || '');
+          payload.append(
+            'variants',
+            JSON.stringify(
+              values.variants.map((variant: ProductFormOutput['variants'][number], index: number) => ({
+                label: buildVariantLabel(variant.quantity, variant.unit),
+                price: variant.price,
+                mrp: variant.mrp,
+                stock: variant.stock,
+                sku: `${slugify(productName || 'product').toUpperCase()}-${String(index + 1).padStart(2, '0')}`,
+              })),
+            ),
+          );
 
-        if (isEdit) {
-          payload.append('existingImages', JSON.stringify(existingImages));
-          payload.append('removedImagePublicIds', JSON.stringify(removedImagePublicIds));
-          if (primaryImagePublicId) {
-            payload.append('primaryImagePublicId', primaryImagePublicId);
+          if (isEdit) {
+            payload.append('existingImages', JSON.stringify(existingImages));
+            payload.append('removedImagePublicIds', JSON.stringify(removedImagePublicIds));
+            if (primaryImagePublicId) {
+              payload.append('primaryImagePublicId', primaryImagePublicId);
+            }
           }
-        }
 
-        newUploads.forEach((upload) => payload.append('images', upload.file));
-        if (urlUploads.length) {
-          payload.append('imageUrls', JSON.stringify(urlUploads.map((upload) => upload.url)));
-        }
+          newUploads.forEach((upload) => payload.append('images', upload.file));
+          if (urlUploads.length) {
+            payload.append('imageUrls', JSON.stringify(urlUploads.map((upload) => upload.url)));
+          }
 
-        if (isEdit) {
-          await updateMutation.mutateAsync(payload);
-        } else {
-          await createMutation.mutateAsync(payload);
+          if (isEdit) {
+            await updateMutation.mutateAsync(payload);
+          } else {
+            await createMutation.mutateAsync(payload);
+          }
+        } catch (error) {
+          window.alert(error instanceof Error ? error.message : 'Unable to save product right now.');
         }
       })}
       className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]"

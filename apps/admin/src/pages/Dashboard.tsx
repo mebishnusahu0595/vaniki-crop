@@ -61,14 +61,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-        <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
+        <div className="min-w-0 rounded-[1.75rem] border border-primary-100 bg-white p-5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">Revenue Trend</p>
               <h2 className="mt-2 text-xl font-black text-slate-900">Daily revenue and order pattern</h2>
             </div>
           </div>
-          <div className="mt-6 h-[320px]">
+          <div className="mt-6 h-[320px] min-h-[320px] min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={revenueSeries}>
                 <CartesianGrid stroke="#eef4f0" strokeDasharray="3 3" />
@@ -81,10 +81,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
+        <div className="min-w-0 rounded-[1.75rem] border border-primary-100 bg-white p-5">
           <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">Orders Mix</p>
           <h2 className="mt-2 text-xl font-black text-slate-900">Order count by day</h2>
-          <div className="mt-6 h-[320px]">
+          <div className="mt-6 h-[320px] min-h-[320px] min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={revenueSeries}>
                 <CartesianGrid stroke="#eef4f0" strokeDasharray="3 3" />
