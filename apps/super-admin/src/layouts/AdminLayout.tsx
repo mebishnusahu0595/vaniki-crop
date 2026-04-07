@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { AxiosError } from 'axios';
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { Sidebar } from '../components/Sidebar';
@@ -8,7 +9,6 @@ import { useAdminAuthStore } from '../store/useAdminAuthStore';
 import { adminApi } from '../utils/api';
 
 export function AdminLayout() {
-  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const token = useAdminAuthStore((state) => state.token);
   const user = useAdminAuthStore((state) => state.user);
@@ -23,26 +23,37 @@ export function AdminLayout() {
     retry: 1,
   });
 
+  const normalizedUserRole = useMemo(() => user?.role?.toLowerCase() ?? null, [user?.role]);
+
   useEffect(() => {
     if (sessionQuery.data) {
-      if (sessionQuery.data.role !== 'superAdmin') {
+      if (sessionQuery.data?.role?.toLowerCase() !== 'superadmin') {
         clearSession();
-        navigate('/superadmin');
         return;
       }
       setUser(sessionQuery.data);
     }
-  }, [clearSession, navigate, sessionQuery.data, setUser]);
+  }, [clearSession, sessionQuery.data, setUser]);
 
   useEffect(() => {
     if (!sessionQuery.error) return;
-    clearSession();
-    navigate('/superadmin');
-  }, [clearSession, navigate, sessionQuery.error]);
+
+    const status = (sessionQuery.error as AxiosError | null)?.response?.status;
+    if (status === 401) {
+      clearSession();
+      return;
+    }
+
+    if (!user) {
+      clearSession();
+    }
+  }, [clearSession, sessionQuery.error, user]);
 
   if (!hydrated) return null;
   if (!token) return <Navigate to="/superadmin" replace />;
+  if (user && normalizedUserRole !== 'superadmin') return <Navigate to="/superadmin" replace />;
   if (sessionQuery.isLoading && !user) return <LoadingBlock label="Preparing super admin workspace..." />;
+  if (sessionQuery.isError && !user) return <Navigate to="/superadmin" replace />;
 
   return (
     <div className="min-h-screen bg-off-white text-slate-900 md:grid md:grid-cols-[280px_1fr]">

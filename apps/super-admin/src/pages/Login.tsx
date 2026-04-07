@@ -91,7 +91,7 @@ export default function LoginPage() {
             onSubmit={handleSubmit(async (values) => {
               try {
                 const loginData = await adminApi.login(values);
-                if (loginData.user.role !== 'superAdmin') {
+                if (loginData.user?.role?.toLowerCase() !== 'superadmin') {
                   setError('root', { message: 'This account does not have super-admin access.' });
                   return;
                 }

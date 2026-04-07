@@ -30,6 +30,97 @@ export interface ApiResponse<T> {
   summary?: PaymentSummary;
 }
 
+type UserRole = AuthUser['role'];
+
+interface LoginPayloadWithUser {
+  user?: Partial<AuthUser> | null;
+  accessToken?: string | null;
+}
+
+interface LoginPayloadWithRole {
+  role?: string | null;
+  accessToken?: string | null;
+  id?: string;
+  name?: string;
+  email?: string;
+  mobile?: string;
+}
+
+const ROLE_MAP: Record<string, UserRole> = {
+  customer: 'customer',
+  storeadmin: 'storeAdmin',
+  superadmin: 'superAdmin',
+};
+
+export function normalizeRole(role?: string | null): UserRole | null {
+  if (!role) return null;
+  const key = role.trim().toLowerCase();
+  return ROLE_MAP[key] ?? null;
+}
+
+function getDefaultUser(role: UserRole): AuthUser {
+  return {
+    id: '',
+    name: '',
+    mobile: '',
+    role,
+  };
+}
+
+function parseLoginResponse(payload: LoginPayloadWithUser | LoginPayloadWithRole) {
+  const accessToken = payload.accessToken ?? null;
+  if (!accessToken) {
+    throw new Error('Login response did not include access token.');
+  }
+
+  if ('user' in payload && payload.user) {
+    const normalizedRole = normalizeRole(payload.user.role);
+    if (!normalizedRole) {
+      throw new Error('Login response did not include a valid role.');
+    }
+
+    return {
+      accessToken,
+      user: {
+        ...getDefaultUser(normalizedRole),
+        ...payload.user,
+        role: normalizedRole,
+      } as AuthUser,
+    };
+  }
+
+  const rolePayload = payload as LoginPayloadWithRole;
+  const normalizedRole = normalizeRole(rolePayload.role);
+  if (!normalizedRole) {
+    throw new Error('Login response did not include a valid role.');
+  }
+
+  return {
+    accessToken,
+    user: {
+      ...getDefaultUser(normalizedRole),
+      id: rolePayload.id ?? '',
+      name: rolePayload.name ?? '',
+      email: rolePayload.email,
+      mobile: rolePayload.mobile ?? '',
+      role: normalizedRole,
+    } as AuthUser,
+  };
+}
+
+function parseMeResponse(payload: Partial<AuthUser> | null | undefined): AuthUser {
+  const normalizedRole = normalizeRole(payload?.role);
+  if (!normalizedRole) {
+    throw new Error('Session response did not include a valid role.');
+  }
+
+  return {
+    ...getDefaultUser(normalizedRole),
+    ...payload,
+    role: normalizedRole,
+  } as AuthUser;
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
@@ -38,19 +129,30 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = useAdminAuthStore.getState().token;
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      useAdminAuthStore.getState().clearSession();
+    }
+    return Promise.reject(error);
+  },
+);
+
 export const adminApi = {
   login: async (payload: { mobile: string; password: string }) => {
-    const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/login', payload);
-    return response.data.data;
+    const response = await api.post<ApiResponse<LoginPayloadWithUser | LoginPayloadWithRole>>('/auth/login', payload);
+    return parseLoginResponse(response.data?.data ?? {});
   },
   me: async () => {
-    const response = await api.get<ApiResponse<AuthUser>>('/auth/me');
-    return response.data.data;
+    const response = await api.get<ApiResponse<Partial<AuthUser>>>('/auth/me');
+    return parseMeResponse(response.data?.data);
   },
   logout: async () => {
     const response = await api.post<{ success: boolean; message: string }>('/auth/logout');

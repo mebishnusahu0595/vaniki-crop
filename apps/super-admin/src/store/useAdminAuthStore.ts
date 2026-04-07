@@ -25,6 +25,7 @@ export const useAdminAuthStore = create<AdminAuthState>()(
     }),
     {
       name: 'vaniki-super-admin-auth',
+      partialize: (state) => ({ token: state.token, user: state.user }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated(true);
       },
