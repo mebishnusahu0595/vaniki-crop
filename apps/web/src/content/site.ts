@@ -4,7 +4,6 @@ export const siteContent = {
     tagline: 'Smart crop protection for modern farms',
     supportPhone: '+91 94061 02621',
     supportEmail: 'support@vanikicrop.com',
-    whatsappLink: import.meta.env.VITE_WHATSAPP_LINK || 'https://wa.link/example',
   },
   notices: [
     'Free delivery on orders above Rs. 1,000',

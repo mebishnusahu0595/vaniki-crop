@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MessageCircle, Phone, Mail, MapPin } from 'lucide-react';
 import { siteContent } from '../../content/site';
 import { useTranslation } from 'react-i18next';
+import { openSupportWhatsApp } from '../../utils/whatsapp';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
@@ -37,9 +38,9 @@ const Footer: React.FC = () => {
               </div>
               <div className="flex items-center gap-3">
                 <MessageCircle size={16} className="text-primary-300" />
-                <a href={siteContent.brand.whatsappLink} target="_blank" rel="noreferrer" className="hover:text-white">
+                <button type="button" onClick={() => openSupportWhatsApp()} className="hover:text-white">
                   {t('footer.whatsappSupport')}
-                </a>
+                </button>
               </div>
             </div>
           </div>

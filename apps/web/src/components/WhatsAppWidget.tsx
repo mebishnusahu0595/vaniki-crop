@@ -1,30 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-
-const normalizeWhatsAppNumber = (value: string) => value.replace(/[^\d]/g, '');
-
-const buildWhatsAppUrl = (number: string, message: string) => {
-  const encodedMessage = encodeURIComponent(message);
-  if (!number) return `https://wa.me/?text=${encodedMessage}`;
-  return `https://wa.me/${number}?text=${encodedMessage}`;
-};
-
-const isMobileDevice = () => /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+import { openSupportWhatsApp } from '../utils/whatsapp';
 
 const WhatsAppWidget: React.FC = () => {
   const { t } = useTranslation();
-  const whatsappNumber = normalizeWhatsAppNumber(import.meta.env.VITE_WHATSAPP_NUMBER || '');
 
   const handleOpenWhatsApp = () => {
-    const url = buildWhatsAppUrl(whatsappNumber, t('whatsapp.defaultMessage'));
-
-    if (isMobileDevice()) {
-      window.location.href = url;
-      return;
-    }
-
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openSupportWhatsApp(t('whatsapp.defaultMessage'));
   };
 
   return (
