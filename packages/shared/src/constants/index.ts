@@ -42,8 +42,8 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   cancelled: 'Cancelled',
 };
 
-/** API base URL for development */
-export const API_BASE_URL = 'http://localhost:5000/api';
+/** API base URL path; frontend apps should resolve host via environment */
+export const API_BASE_URL = '/api';
 
 /** Pagination defaults */
 export const PAGINATION = {

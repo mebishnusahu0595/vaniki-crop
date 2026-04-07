@@ -46,7 +46,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
 
   const summaryText = selectedStore?.name || formatStoreAddress(address);
   const activeLanguage = i18n.resolvedLanguage?.startsWith('hi') ? 'hi' : 'en';
-  const languageToggleLabel = activeLanguage === 'hi' ? 'English' : 'हिंदी';
+  const languageToggleLabel = activeLanguage === 'hi' ? 'En' : 'हिंदी';
 
   const handleLanguageToggle = () => {
     void i18n.changeLanguage(activeLanguage === 'hi' ? 'en' : 'hi');

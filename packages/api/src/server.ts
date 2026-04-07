@@ -15,7 +15,7 @@ async function startServer(): Promise<void> {
   try {
     await connectDB();
     app.listen(PORT, () => {
-      console.log(`🚀 Vaniki Crop API running on http://localhost:${PORT}`);
+      console.log(`🚀 Vaniki Crop API running on port ${PORT}`);
       console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (error) {

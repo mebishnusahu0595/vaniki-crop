@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 import { useAdminAuthStore } from '../store/useAdminAuthStore';
 import type {
   AdminSearchResults,
@@ -16,8 +17,6 @@ import type {
   StoreSettings,
 } from '../types/admin';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -26,7 +25,7 @@ export interface ApiResponse<T> {
 }
 
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 

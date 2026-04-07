@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStoreStore } from '../store/useStoreStore';
 import type {
@@ -17,10 +18,8 @@ import type {
   Store,
 } from '../types/storefront';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
