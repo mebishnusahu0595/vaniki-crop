@@ -36,9 +36,18 @@ const couponDefaultValues: CouponFormInput = {
   applicableStores: [],
 };
 
+function toExpiryDateValue(value: string): string {
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return `${trimmed}T23:59:59.000Z`;
+  }
+  return new Date(trimmed).toISOString();
+}
+
 export default function CouponsPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Coupon | null>(null);
+  const [formError, setFormError] = useState('');
   const couponsQuery = useQuery({ queryKey: ['admin-coupons'], queryFn: adminApi.coupons });
   const storesQuery = useQuery({ queryKey: ['coupon-store-options'], queryFn: () => adminApi.stores({ limit: 200 }) });
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<
@@ -70,20 +79,26 @@ export default function CouponsPage() {
   }, [editing, reset]);
 
   const mutation = useMutation({
-    mutationFn: (values: CouponFormOutput) =>
-      editing
-        ? adminApi.updateCoupon(editing.id, {
-            ...values,
-            expiryDate: new Date(values.expiryDate).toISOString(),
-          })
-        : adminApi.createCoupon({
-            ...values,
-            expiryDate: new Date(values.expiryDate).toISOString(),
-          }),
+    mutationFn: (values: CouponFormOutput) => {
+      setFormError('');
+      const payload = {
+        ...values,
+        code: values.code.trim().toUpperCase(),
+        expiryDate: toExpiryDateValue(values.expiryDate),
+        applicableStores: values.applicableStores ?? [],
+        maxDiscount: values.type === 'percent' ? values.maxDiscount : undefined,
+      };
+
+      return editing ? adminApi.updateCoupon(editing.id, payload) : adminApi.createCoupon(payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
       setEditing(null);
+      setFormError('');
       reset(couponDefaultValues);
+    },
+    onError: (error) => {
+      setFormError(error instanceof Error ? error.message : 'Unable to save coupon.');
     },
   });
 
@@ -93,7 +108,13 @@ export default function CouponsPage() {
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
         <PageHeader title="Global Coupons" subtitle="Create coupons for all stores or target specific stores." />
-        <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="mt-6 space-y-4">
+        <form
+          onSubmit={handleSubmit((values) => {
+            setFormError('');
+            mutation.mutate(values);
+          })}
+          className="mt-6 space-y-4"
+        >
           <input {...register('code')} placeholder="Code" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
           <div className="grid gap-3 md:grid-cols-2">
             <select {...register('type')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
@@ -127,11 +148,28 @@ export default function CouponsPage() {
             <input type="checkbox" {...register('isActive')} className="h-4 w-4 accent-primary-600" />
           </label>
           <div className="flex gap-3">
-            <button type="submit" disabled={isSubmitting} className="rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white">
+            <button
+              type="submit"
+              disabled={isSubmitting || mutation.isPending}
+              className="rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
               {editing ? 'Update Coupon' : 'Create Coupon'}
             </button>
-            {editing ? <button type="button" onClick={() => { setEditing(null); reset(couponDefaultValues); }} className="rounded-2xl border border-primary-100 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-600">Cancel</button> : null}
+            {editing ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(null);
+                  setFormError('');
+                  reset(couponDefaultValues);
+                }}
+                className="rounded-2xl border border-primary-100 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-600"
+              >
+                Cancel
+              </button>
+            ) : null}
           </div>
+          {formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}
         </form>
       </div>
 
@@ -159,8 +197,12 @@ export default function CouponsPage() {
               <button
                 onClick={async () => {
                   if (!window.confirm(`Deactivate ${coupon.code}?`)) return;
-                  await adminApi.deleteCoupon(coupon.id);
-                  queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+                  try {
+                    await adminApi.deleteCoupon(coupon.id);
+                    queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+                  } catch (error) {
+                    window.alert(error instanceof Error ? error.message : 'Unable to deactivate coupon.');
+                  }
                 }}
                 className="text-sm font-semibold text-rose-600"
               >

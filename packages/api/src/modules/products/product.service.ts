@@ -310,6 +310,8 @@ export async function createProduct(
   if (userRole === 'storeAdmin' && resolvedStoreId) {
     // Store admin: auto-assign to their store
     storeIds = [resolvedStoreId];
+  } else if (userRole === 'storeAdmin') {
+    throw new AppError('No store is assigned to this admin account. Please contact super admin.', 400);
   } else if (input.storeId) {
     // Super admin can assign to specific stores
     storeIds = Array.isArray(input.storeId) ? input.storeId : [input.storeId];

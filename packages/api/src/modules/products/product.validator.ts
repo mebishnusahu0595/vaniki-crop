@@ -2,6 +2,14 @@ import { z } from 'zod';
 import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../../utils/AppError.js';
 
+function parseJsonField<T>(raw: string, fieldName: string): T {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw new AppError(`Invalid JSON format for ${fieldName}`, 400);
+  }
+}
+
 // ─── Reusable Fields ─────────────────────────────────────────────────────
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format');
@@ -65,7 +73,7 @@ export const createProductSchema = z.object({
     category: objectIdSchema,
     storeId: z.union([objectIdSchema, z.array(objectIdSchema)]).optional(),
     variants: z.union([
-      z.string().transform((val) => JSON.parse(val)),
+      z.string().transform((val) => parseJsonField(val, 'variants')),
       z.array(variantSchema),
     ]).pipe(z.array(variantSchema).min(1, 'At least one variant is required')),
     tags: z.union([
@@ -93,7 +101,7 @@ export const updateProductSchema = z.object({
     category: objectIdSchema.optional(),
     storeId: z.union([objectIdSchema, z.array(objectIdSchema)]).optional(),
     variants: z.union([
-      z.string().transform((val) => JSON.parse(val)),
+      z.string().transform((val) => parseJsonField(val, 'variants')),
       z.array(variantSchema),
     ]).pipe(z.array(variantSchema).min(1)).optional(),
     tags: z.union([
@@ -106,11 +114,11 @@ export const updateProductSchema = z.object({
     isActive: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
     isFeatured: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
     existingImages: z.union([
-      z.string().transform((val) => JSON.parse(val)),
+      z.string().transform((val) => parseJsonField(val, 'existingImages')),
       z.array(existingImageSchema),
     ]).pipe(z.array(existingImageSchema)).optional(),
     removedImagePublicIds: z.union([
-      z.string().transform((val) => JSON.parse(val)),
+      z.string().transform((val) => parseJsonField(val, 'removedImagePublicIds')),
       z.array(z.string()),
     ]).pipe(z.array(z.string())).optional(),
     primaryImagePublicId: z.string().trim().optional(),

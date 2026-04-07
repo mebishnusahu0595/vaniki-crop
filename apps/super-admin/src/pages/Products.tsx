@@ -129,7 +129,11 @@ export default function ProductsPage() {
                     <button
                       onClick={async () => {
                         setActioningProductId(product.id);
-                        await toggleActiveMutation.mutateAsync({ id: product.id, isActive: !product.isActive });
+                        try {
+                          await toggleActiveMutation.mutateAsync({ id: product.id, isActive: !product.isActive });
+                        } catch {
+                          // Error is already surfaced by mutation onError.
+                        }
                       }}
                       disabled={actioningProductId === product.id}
                       className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.15em] ${
@@ -148,7 +152,11 @@ export default function ProductsPage() {
                         onClick={async () => {
                           if (!window.confirm(`Deactivate ${product.name}?`)) return;
                           setActioningProductId(product.id);
-                          await deleteMutation.mutateAsync(product.id);
+                          try {
+                            await deleteMutation.mutateAsync(product.id);
+                          } catch {
+                            // Error is already surfaced by mutation onError.
+                          }
                         }}
                         disabled={actioningProductId === product.id}
                         className="rounded-xl border border-rose-100 p-2 text-rose-600"
@@ -175,7 +183,11 @@ export default function ProductsPage() {
               <button
                 onClick={async () => {
                   setActioningProductId(product.id);
-                  await toggleActiveMutation.mutateAsync({ id: product.id, isActive: !product.isActive });
+                  try {
+                    await toggleActiveMutation.mutateAsync({ id: product.id, isActive: !product.isActive });
+                  } catch {
+                    // Error is already surfaced by mutation onError.
+                  }
                 }}
                 disabled={actioningProductId === product.id}
                 className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.15em] ${
@@ -197,7 +209,11 @@ export default function ProductsPage() {
                 onClick={async () => {
                   if (!window.confirm(`Deactivate ${product.name}?`)) return;
                   setActioningProductId(product.id);
-                  await deleteMutation.mutateAsync(product.id);
+                  try {
+                    await deleteMutation.mutateAsync(product.id);
+                  } catch {
+                    // Error is already surfaced by mutation onError.
+                  }
                 }}
                 disabled={actioningProductId === product.id}
                 className="rounded-xl border border-rose-100 px-4 py-2 text-sm font-semibold text-rose-600"

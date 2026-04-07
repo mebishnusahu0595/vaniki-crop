@@ -40,8 +40,19 @@ const bannerDefaultValues: BannerFormInput = {
   linkedProducts: '',
 };
 
+function normalizeDateForApi(value?: string): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return `${trimmed}T00:00:00.000Z`;
+  }
+  return new Date(trimmed).toISOString();
+}
+
 export default function BannersPage() {
   const [editing, setEditing] = useState<Banner | null>(null);
+  const [formError, setFormError] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState('');
   const [imageUrlInput, setImageUrlInput] = useState('');
@@ -136,6 +147,9 @@ export default function BannersPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
     },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to reorder banners.');
+    },
   });
 
   const resolveStoreName = (storeId: Banner['storeId']) => {
@@ -162,6 +176,13 @@ export default function BannersPage() {
 
   const mutation = useMutation({
     mutationFn: async (values: BannerFormOutput) => {
+      setFormError('');
+      const hasExistingImage = Boolean(editing?.image?.url);
+      const hasIncomingImage = Boolean(imageFile || imageUrlInput.trim());
+      if (!hasExistingImage && !hasIncomingImage) {
+        throw new Error('Banner image is required. Upload a file or provide a valid image URL.');
+      }
+
       const payload = new FormData();
       payload.append('title', values.title);
       if (values.subtitle) payload.append('subtitle', values.subtitle);
@@ -175,8 +196,10 @@ export default function BannersPage() {
       if (imageUrlInput.trim()) payload.append('imageUrl', imageUrlInput.trim());
       payload.append('sortOrder', String(values.sortOrder));
       payload.append('isActive', String(values.isActive));
-      if (values.startDate) payload.append('startDate', new Date(values.startDate).toISOString());
-      if (values.endDate) payload.append('endDate', new Date(values.endDate).toISOString());
+      const normalizedStartDate = normalizeDateForApi(values.startDate);
+      const normalizedEndDate = normalizeDateForApi(values.endDate);
+      if (normalizedStartDate) payload.append('startDate', normalizedStartDate);
+      if (normalizedEndDate) payload.append('endDate', normalizedEndDate);
       if (values.linkedProducts) {
         payload.append(
           'linkedProducts',
@@ -200,7 +223,11 @@ export default function BannersPage() {
       setEditing(null);
       setImageUrlInput('');
       setImageUrlError('');
+      setFormError('');
       clearFilePreview();
+    },
+    onError: (error) => {
+      setFormError(error instanceof Error ? error.message : 'Unable to save banner.');
     },
   });
 
@@ -210,7 +237,13 @@ export default function BannersPage() {
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
         <PageHeader title="Global Banners" subtitle="Create store-specific or global banners with live preview and ordering control." />
-        <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="mt-6 space-y-4">
+        <form
+          onSubmit={handleSubmit((values) => {
+            setFormError('');
+            mutation.mutate(values);
+          })}
+          className="mt-6 space-y-4"
+        >
           <input {...register('title')} placeholder="Banner title" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
           <textarea {...register('subtitle')} placeholder="Subtitle" className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
           <div className="grid gap-3 md:grid-cols-2">
@@ -291,11 +324,31 @@ export default function BannersPage() {
             <input type="checkbox" {...register('isActive')} className="h-4 w-4 accent-primary-600" />
           </label>
           <div className="flex gap-3">
-            <button type="submit" disabled={isSubmitting} className="rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white">
+            <button
+              type="submit"
+              disabled={isSubmitting || mutation.isPending}
+              className="rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
               {editing ? 'Update Banner' : 'Create Banner'}
             </button>
-            {editing ? <button type="button" onClick={() => { setEditing(null); reset(bannerDefaultValues); setImageUrlInput(''); setImageUrlError(''); clearFilePreview(); }} className="rounded-2xl border border-primary-100 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-600">Cancel</button> : null}
+            {editing ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(null);
+                  setFormError('');
+                  reset(bannerDefaultValues);
+                  setImageUrlInput('');
+                  setImageUrlError('');
+                  clearFilePreview();
+                }}
+                className="rounded-2xl border border-primary-100 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-600"
+              >
+                Cancel
+              </button>
+            ) : null}
           </div>
+          {formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}
         </form>
 
         <div className="mt-6 rounded-[1.5rem] border border-primary-100 bg-primary-50/40 p-4">
@@ -351,9 +404,13 @@ export default function BannersPage() {
                 <button
                   onClick={async () => {
                     if (!window.confirm(`Delete ${banner.title}?`)) return;
-                    await adminApi.deleteBanner(banner.id);
-                    queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
-                    setReorderedBanners(null);
+                    try {
+                      await adminApi.deleteBanner(banner.id);
+                      queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+                      setReorderedBanners(null);
+                    } catch (error) {
+                      window.alert(error instanceof Error ? error.message : 'Unable to delete banner.');
+                    }
                   }}
                   className="text-sm font-semibold text-rose-600"
                 >

@@ -105,6 +105,7 @@ function ProductEditor({
   const [urlUploads, setUrlUploads] = useState<UrlUpload[]>([]);
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [imageUrlError, setImageUrlError] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [primaryImagePublicId, setPrimaryImagePublicId] = useState<string>(
     product?.images.find((image) => image.isPrimary)?.publicId || product?.images[0]?.publicId || '',
   );
@@ -200,6 +201,7 @@ function ProductEditor({
   return (
     <form
       onSubmit={handleSubmit(async (values: ProductFormOutput) => {
+        setSubmitError('');
         const payload = new FormData();
         payload.append('name', values.name);
         payload.append('shortDescription', values.shortDescription);
@@ -236,10 +238,14 @@ function ProductEditor({
           payload.append('imageUrls', JSON.stringify(urlUploads.map((upload) => upload.url)));
         }
 
-        if (isEdit) {
-          await updateMutation.mutateAsync(payload);
-        } else {
-          await createMutation.mutateAsync(payload);
+        try {
+          if (isEdit) {
+            await updateMutation.mutateAsync(payload);
+          } else {
+            await createMutation.mutateAsync(payload);
+          }
+        } catch (error) {
+          setSubmitError(error instanceof Error ? error.message : 'Unable to save product.');
         }
       })}
       className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]"
@@ -526,11 +532,12 @@ function ProductEditor({
 
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-[1.25rem] bg-primary-500 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white"
+          disabled={isSubmitting || createMutation.isPending || updateMutation.isPending}
+          className="w-full rounded-[1.25rem] bg-primary-500 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? 'Saving...' : isEdit ? 'Update Product' : 'Create Product'}
         </button>
+        {submitError ? <p className="text-sm font-semibold text-rose-600">{submitError}</p> : null}
       </div>
     </form>
   );

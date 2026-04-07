@@ -30,6 +30,7 @@ const categoryDefaultValues: CategoryFormInput = {
 export default function CategoriesPage() {
   const [editing, setEditing] = useState<Category | null>(null);
   const [actioningCategoryId, setActioningCategoryId] = useState<string | null>(null);
+  const [formError, setFormError] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState('');
   const [imageUrlInput, setImageUrlInput] = useState('');
@@ -106,6 +107,7 @@ export default function CategoriesPage() {
 
   const mutation = useMutation({
     mutationFn: async (values: CategoryFormValues) => {
+      setFormError('');
       const payload = new FormData();
       payload.append('name', values.name);
       if (values.description) payload.append('description', values.description);
@@ -119,9 +121,13 @@ export default function CategoriesPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-categories-screen'] });
       reset(categoryDefaultValues);
       setEditing(null);
+      setFormError('');
       setImageUrlInput('');
       setImageUrlError('');
       clearFilePreview();
+    },
+    onError: (error) => {
+      setFormError(error instanceof Error ? error.message : 'Unable to save category.');
     },
   });
 
@@ -151,7 +157,13 @@ export default function CategoriesPage() {
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
       <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
         <PageHeader title="Categories" subtitle="Create and manage category visibility for the storefront." />
-        <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="mt-6 space-y-4">
+        <form
+          onSubmit={handleSubmit((values) => {
+            setFormError('');
+            mutation.mutate(values);
+          })}
+          className="mt-6 space-y-4"
+        >
           <input {...register('name')} placeholder="Category name" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
           <textarea {...register('description')} placeholder="Short description" className="min-h-[100px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
           <div
@@ -212,15 +224,31 @@ export default function CategoriesPage() {
             <input type="checkbox" {...register('isActive')} className="h-4 w-4 accent-primary-600" />
           </label>
           <div className="flex gap-3">
-            <button type="submit" disabled={isSubmitting} className="rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white">
+            <button
+              type="submit"
+              disabled={isSubmitting || mutation.isPending}
+              className="rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
               {editing ? 'Update Category' : 'Create Category'}
             </button>
             {editing ? (
-              <button type="button" onClick={() => { setEditing(null); reset(categoryDefaultValues); setImageUrlInput(''); setImageUrlError(''); clearFilePreview(); }} className="rounded-2xl border border-primary-100 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-600">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(null);
+                  setFormError('');
+                  reset(categoryDefaultValues);
+                  setImageUrlInput('');
+                  setImageUrlError('');
+                  clearFilePreview();
+                }}
+                className="rounded-2xl border border-primary-100 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-600"
+              >
                 Cancel
               </button>
             ) : null}
           </div>
+          {formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}
         </form>
       </div>
 
@@ -250,7 +278,11 @@ export default function CategoriesPage() {
                   if (!window.confirm(`${actionLabel[0].toUpperCase()}${actionLabel.slice(1)} ${category.name}?`)) return;
 
                   setActioningCategoryId(category.id);
-                  await toggleCategoryMutation.mutateAsync({ id: category.id, isActive: nextState });
+                  try {
+                    await toggleCategoryMutation.mutateAsync({ id: category.id, isActive: nextState });
+                  } catch {
+                    // Error is already surfaced by mutation onError.
+                  }
                 }}
                 disabled={actioningCategoryId === category.id}
                 className={`text-sm font-semibold ${category.isActive ? 'text-rose-600' : 'text-emerald-700'}`}

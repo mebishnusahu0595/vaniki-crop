@@ -155,22 +155,56 @@ app.use((_req: Request, res: Response) => {
 
 // ─── Global Error Handler ────────────────────────────────────────────────
 app.use((err: Error | AppError, _req: Request, res: Response, _next: NextFunction) => {
+  const errorWithMeta = err as Error & {
+    statusCode?: number;
+    name?: string;
+    code?: number;
+    keyValue?: Record<string, unknown>;
+    path?: string;
+    value?: unknown;
+    errors?: Record<string, { message?: string }>;
+  };
   const explicitStatusCode = (err as Error & { statusCode?: number }).statusCode;
   const hasExplicitStatusCode = typeof explicitStatusCode === 'number';
   const multerFileSizeError = (err as { name?: string; code?: string }).name === 'MulterError'
     && (err as { code?: string }).code === 'LIMIT_FILE_SIZE';
   const multerGenericError = (err as { name?: string }).name === 'MulterError';
+  const isMongooseValidationError = errorWithMeta.name === 'ValidationError';
+  const isMongooseCastError = errorWithMeta.name === 'CastError';
+  const isDuplicateKeyError = errorWithMeta.name === 'MongoServerError' && errorWithMeta.code === 11000;
 
   const statusCode = err instanceof AppError
     ? err.statusCode
     : hasExplicitStatusCode
       ? explicitStatusCode
+      : isDuplicateKeyError
+        ? 409
+        : (isMongooseValidationError || isMongooseCastError)
+          ? 400
       : (multerFileSizeError || multerGenericError)
         ? 400
         : 500;
 
+  const validationMessage = isMongooseValidationError && errorWithMeta.errors
+    ? Object.values(errorWithMeta.errors)
+      .map((entry) => entry?.message)
+      .filter((message): message is string => Boolean(message))
+      .join(', ')
+    : '';
+  const duplicateKeyField = isDuplicateKeyError && errorWithMeta.keyValue
+    ? Object.keys(errorWithMeta.keyValue)[0]
+    : '';
+
   const message = multerFileSizeError
     ? 'Image file is too large. Maximum size is 5MB.'
+    : isDuplicateKeyError
+      ? duplicateKeyField
+        ? `${duplicateKeyField} already exists`
+        : 'Duplicate value already exists'
+    : isMongooseValidationError
+      ? validationMessage || 'Validation failed'
+    : isMongooseCastError
+      ? `Invalid value for ${errorWithMeta.path || 'field'}`
     : err.message || 'Internal Server Error';
 
   console.error(`[ERROR] ${statusCode} - ${message}`, err.stack);

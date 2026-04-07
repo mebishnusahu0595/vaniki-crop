@@ -29,6 +29,28 @@ const api = axios.create({
   withCredentials: true,
 });
 
+function extractApiErrorMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const responseData = error.response?.data as {
+      error?: unknown;
+      message?: unknown;
+    } | undefined;
+
+    const responseError = typeof responseData?.error === 'string' ? responseData.error : '';
+    const responseMessage = typeof responseData?.message === 'string' ? responseData.message : '';
+
+    if (responseError) return responseError;
+    if (responseMessage) return responseMessage;
+    if (typeof error.message === 'string' && error.message.trim()) return error.message;
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return 'Request failed. Please check input and try again.';
+}
+
 api.interceptors.request.use((config) => {
   const token = useAdminAuthStore.getState().token;
   if (token) {
@@ -36,6 +58,23 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      useAdminAuthStore.getState().clearSession();
+    }
+
+    const normalizedError = new Error(extractApiErrorMessage(error));
+    if (axios.isAxiosError(error)) {
+      (normalizedError as Error & { status?: number; details?: unknown }).status = error.response?.status;
+      (normalizedError as Error & { status?: number; details?: unknown }).details = error.response?.data;
+    }
+
+    return Promise.reject(normalizedError);
+  },
+);
 
 export const adminApi = {
   login: async (payload: { mobile: string; password: string }) => {

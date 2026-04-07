@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { LoadingBlock } from '../components/LoadingBlock';
@@ -44,6 +44,8 @@ export default function StoresPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<StoreSummary | null>(null);
   const [search, setSearch] = useState('');
+  const [formError, setFormError] = useState('');
+  const [actioningStoreId, setActioningStoreId] = useState<string | null>(null);
 
   const storesQuery = useQuery({
     queryKey: ['super-admin-stores', search],
@@ -71,6 +73,8 @@ export default function StoresPage() {
       return;
     }
 
+    setFormError('');
+
     reset({
       name: editing.name,
       phone: editing.phone,
@@ -86,8 +90,19 @@ export default function StoresPage() {
     });
   }, [editing, reset]);
 
+  const availableAdmins = useMemo(() => {
+    const rows = adminsQuery.data?.data || [];
+    if (editing) {
+      return rows.filter(
+        (admin) => !admin.assignedStore || admin.assignedStore.id === editing.id || admin.id === editing.admin?.id,
+      );
+    }
+    return rows.filter((admin) => !admin.assignedStore || !admin.assignedStore.isActive);
+  }, [adminsQuery.data?.data, editing]);
+
   const upsertMutation = useMutation({
     mutationFn: async (values: StoreFormOutput) => {
+      setFormError('');
       const payload = {
         name: values.name,
         phone: values.phone,
@@ -116,7 +131,11 @@ export default function StoresPage() {
       queryClient.invalidateQueries({ queryKey: ['super-admin-stores'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-admin-options'] });
       setEditing(null);
+      setFormError('');
       reset(storeDefaultValues);
+    },
+    onError: (error) => {
+      setFormError(error instanceof Error ? error.message : 'Unable to save store.');
     },
   });
 
@@ -125,6 +144,12 @@ export default function StoresPage() {
       adminApi.toggleStoreActive(id, isActive),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['super-admin-stores'] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to update store status.');
+    },
+    onSettled: () => {
+      setActioningStoreId(null);
     },
   });
 
@@ -138,7 +163,13 @@ export default function StoresPage() {
           subtitle="Create, edit, deactivate, and reassign admin ownership across stores."
         />
 
-        <form onSubmit={handleSubmit((values) => upsertMutation.mutate(values))} className="mt-6 space-y-4">
+        <form
+          onSubmit={handleSubmit((values) => {
+            setFormError('');
+            upsertMutation.mutate(values);
+          })}
+          className="mt-6 space-y-4"
+        >
           <input {...register('name')} placeholder="Store name" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
           <div className="grid gap-3 md:grid-cols-2">
             <input {...register('phone')} placeholder="Phone" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
@@ -146,7 +177,7 @@ export default function StoresPage() {
           </div>
           <select {...register('adminId')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
             <option value="">Assign admin</option>
-            {adminsQuery.data?.data.map((admin) => (
+            {availableAdmins.map((admin) => (
               <option key={admin.id} value={admin.id}>
                 {admin.name} ({admin.mobile})
               </option>
@@ -164,7 +195,11 @@ export default function StoresPage() {
           </div>
 
           <div className="flex gap-3">
-            <button type="submit" disabled={isSubmitting} className="rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white">
+            <button
+              type="submit"
+              disabled={isSubmitting || upsertMutation.isPending}
+              className="rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
               {editing ? 'Update Store' : 'Add Store'}
             </button>
             {editing ? (
@@ -172,6 +207,7 @@ export default function StoresPage() {
                 type="button"
                 onClick={() => {
                   setEditing(null);
+                  setFormError('');
                   reset(storeDefaultValues);
                 }}
                 className="rounded-2xl border border-primary-100 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-600"
@@ -180,6 +216,7 @@ export default function StoresPage() {
               </button>
             ) : null}
           </div>
+          {formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}
         </form>
       </div>
 
@@ -229,12 +266,14 @@ export default function StoresPage() {
               <div className="rounded-2xl border border-primary-100 bg-primary-50/60 px-3 py-3">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Status</p>
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    setActioningStoreId(store.id);
                     toggleActiveMutation.mutate({
                       id: store.id,
                       isActive: !store.isActive,
-                    })
-                  }
+                    });
+                  }}
+                  disabled={actioningStoreId === store.id}
                   className={`mt-1 rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.14em] ${
                     store.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
                   }`}
