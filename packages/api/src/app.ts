@@ -39,32 +39,17 @@ import './workers/email.worker.js';
 import { AppError } from './utils/AppError.js';
 
 const app: express.Application = express();
-const defaultDevOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175',
-];
-const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-const allowedOrigins = configuredOrigins.length
-  ? configuredOrigins
-  : process.env.NODE_ENV === 'production'
-    ? []
-    : defaultDevOrigins;
 
 // ─── Security Middleware ─────────────────────────────────────────────────
 app.use(helmet());
 app.use(
   cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-      callback(new AppError('Origin not allowed by CORS', 403));
-    },
+    origin: [
+      'https://vanikicrop.com',
+      'https://www.vanikicrop.com',
+      'https://admin.vanikicrop.com',
+      'https://superadmin.vanikicrop.com',
+    ],
     credentials: true,
   }),
 );
