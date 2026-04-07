@@ -39,7 +39,7 @@ const resources = {
         searchPlaceholder: 'Search pesticides, nutrients, and crop care',
         login: 'Login',
         account: 'Account',
-        brandTagline: 'Crop Protection Commerce',
+        brandTagline: 'Your pesticides shop',
       },
       common: {
         free: 'Free',
@@ -527,7 +527,7 @@ const resources = {
         searchPlaceholder: 'कीटनाशक, पोषक तत्व और फसल देखभाल खोजें',
         login: 'लॉगिन',
         account: 'अकाउंट',
-        brandTagline: 'क्रॉप प्रोटेक्शन कॉमर्स',
+        brandTagline: 'Your pesticides shop',
       },
       common: {
         free: 'फ्री',

@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapPin, Truck, Store, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Truck, Store, ChevronRight, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useServiceModeStore } from '../../store/useServiceModeStore';
 import { useStoreStore } from '../../store/useStoreStore';
@@ -16,6 +16,7 @@ const ServiceModeBar: React.FC<ServiceModeBarProps> = ({ onOpenStoreSelector, fl
   const { t } = useTranslation();
   const { mode, address } = useServiceModeStore();
   const { selectedStore } = useStoreStore();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const summaryText =
     mode === 'delivery' ? formatStoreAddress(address) : selectedStore?.name || t('serviceModeBar.selectPickupStore');
@@ -67,46 +68,63 @@ const ServiceModeBar: React.FC<ServiceModeBarProps> = ({ onOpenStoreSelector, fl
 
   return (
     <div className="border-b border-primary-100 bg-white lg:hidden">
-      <div className="container mx-auto px-4 py-2">
-        <div className="rounded-[1.4rem] border border-primary-100 bg-primary-900 p-2 text-white shadow-lg shadow-primary-900/10">
-          <div className="grid grid-cols-2 gap-1.5">
-            {([
-              { key: 'delivery', label: t('serviceModeBar.delivery'), icon: Truck },
-              { key: 'pickup', label: t('serviceModeBar.pickup'), icon: Store },
-            ] as const).map((item) => (
-              <button
-                key={item.key}
-                onClick={() => onOpenStoreSelector(item.key)}
-                className={cn(
-                  'flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-black transition',
-                  mode === item.key ? 'bg-white text-primary-900' : 'bg-white/10 text-white/65',
-                )}
-              >
-                <item.icon size={14} />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </div>
-
+      <div className="container mx-auto px-4 py-1.5">
+        <div className="rounded-[1.2rem] border border-primary-100 bg-primary-900 p-1.5 text-white shadow-lg shadow-primary-900/10">
           <button
-            onClick={() => onOpenStoreSelector(mode)}
-            className="mt-2 flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-left"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left"
           >
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
               {mode === 'delivery' ? (
                 <Truck size={14} className="shrink-0 text-primary-300" />
               ) : (
                 <MapPin size={14} className="shrink-0 text-primary-300" />
               )}
               <div className="min-w-0">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/60">
+                <p className="text-[8px] font-black uppercase tracking-[0.18em] text-white/60">
                   {mode === 'delivery' ? t('header.deliveringTo') : t('header.pickupFrom')}
                 </p>
-                <p className="truncate text-[13px] font-semibold text-white">{summaryText}</p>
+                <p className="truncate text-[12px] font-semibold text-white">{summaryText}</p>
               </div>
             </div>
-            <ChevronRight size={16} className="shrink-0 text-white/50" />
+            <ChevronDown size={15} className={cn('shrink-0 text-white/60 transition-transform', isExpanded && 'rotate-180')} />
           </button>
+
+          {isExpanded && (
+            <div className="mt-2 space-y-2">
+              <div className="grid grid-cols-2 gap-1.5">
+                {([
+                  { key: 'delivery', label: t('serviceModeBar.delivery'), icon: Truck },
+                  { key: 'pickup', label: t('serviceModeBar.pickup'), icon: Store },
+                ] as const).map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => onOpenStoreSelector(item.key)}
+                    className={cn(
+                      'flex items-center justify-center gap-1.5 rounded-full px-2.5 py-2 text-[11px] font-black transition',
+                      mode === item.key ? 'bg-white text-primary-900' : 'bg-white/10 text-white/65',
+                    )}
+                  >
+                    <item.icon size={13} />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => onOpenStoreSelector(mode)}
+                className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left"
+              >
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/60">
+                    {mode === 'delivery' ? t('serviceModeBar.enterDeliveryAddress') : t('serviceModeBar.selectNearbyStore')}
+                  </p>
+                  <p className="truncate text-[12px] font-semibold text-white">{summaryText}</p>
+                </div>
+                <ChevronRight size={15} className="shrink-0 text-white/55" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

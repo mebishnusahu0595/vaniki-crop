@@ -1,8 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, User, MapPin, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useCategories, useProductSearch } from '../../hooks/useProducts';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useStoreStore } from '../../store/useStoreStore';
@@ -41,16 +43,170 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
   const { selectedStore } = useStoreStore();
   const { mode, address } = useServiceModeStore();
   const cartButtonRef = useRef<HTMLButtonElement | null>(null);
+  const desktopSearchRef = useRef<HTMLDivElement | null>(null);
+  const mobileSearchRef = useRef<HTMLDivElement | null>(null);
+  const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
   const [isCartBouncing, setIsCartBouncing] = useState(false);
   const [flyingCartItem, setFlyingCartItem] = useState<FlyingCartItem | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const debouncedSearch = useDebouncedValue(searchTerm.trim(), 280);
+  const { data: categories = [] } = useCategories();
+  const { data: searchData, isFetching: isSearchLoading } = useProductSearch(debouncedSearch, selectedStore?.id);
+
+  const categorySuggestions = useMemo(() => {
+    if (!debouncedSearch) return [];
+    const term = debouncedSearch.toLowerCase();
+    return categories
+      .filter((category) => category.name.toLowerCase().includes(term) || category.slug.toLowerCase().includes(term))
+      .slice(0, 3);
+  }, [categories, debouncedSearch]);
+
+  const productSuggestions = useMemo(() => searchData?.data.slice(0, 5) || [], [searchData?.data]);
+  const hasSearchSuggestions = categorySuggestions.length > 0 || productSuggestions.length > 0;
+  const shouldShowSearchDropdown = isSearchFocused && debouncedSearch.length > 0;
 
   const summaryText = selectedStore?.name || formatStoreAddress(address);
   const activeLanguage = i18n.resolvedLanguage?.startsWith('hi') ? 'hi' : 'en';
   const languageToggleLabel = activeLanguage === 'hi' ? 'En' : 'हिंदी';
 
+  const buildProductsUrl = (query?: string, category?: string) => {
+    const params = new URLSearchParams();
+    const trimmedQuery = query?.trim();
+    if (trimmedQuery) params.set('search', trimmedQuery);
+    if (category) params.set('category', category);
+
+    const suffix = params.toString();
+    return suffix ? `/products?${suffix}` : '/products';
+  };
+
+  const submitSearch = () => {
+    navigate(buildProductsUrl(searchTerm));
+    setIsSearchFocused(false);
+  };
+
+  const focusMobileSearchInput = () => {
+    setIsSearchFocused(true);
+    mobileSearchInputRef.current?.focus();
+  };
+
+  const renderSearchDropdown = () => {
+    if (!shouldShowSearchDropdown) return null;
+
+    return (
+      <div className="surface-card absolute left-0 right-0 top-[calc(100%+10px)] z-40 max-h-[430px] overflow-y-auto p-2">
+        {isSearchLoading && (
+          <p className="px-3 py-3 text-xs font-bold uppercase tracking-[0.18em] text-primary-500">{t('common.loading')}</p>
+        )}
+
+        {!isSearchLoading && !hasSearchSuggestions && (
+          <p className="px-3 py-4 text-sm font-semibold text-primary-900/55">{t('productsPage.noMatchesTitle')}</p>
+        )}
+
+        {!isSearchLoading && categorySuggestions.length > 0 && (
+          <div className="pb-2">
+            <p className="px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">{t('nav.categories')}</p>
+            {categorySuggestions.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => {
+                  navigate(buildProductsUrl(searchTerm, category.slug));
+                  setIsSearchFocused(false);
+                }}
+                className="flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-primary-50"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  {category.image?.url ? (
+                    <img src={category.image.url} alt={category.name} className="h-11 w-11 rounded-xl object-cover" />
+                  ) : (
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-100 text-primary-700">
+                      <Search size={16} />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-primary-900">{category.name}</p>
+                    <p className="mt-1 truncate text-xs font-semibold text-primary-900/50">/{category.slug}</p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-primary-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary-700">
+                  {t('productsPage.category')}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!isSearchLoading && productSuggestions.length > 0 && (
+          <div className="pb-2">
+            <p className="px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">{t('nav.shop')}</p>
+            {productSuggestions.map((product) => {
+              const primaryImage = product.images.find((image) => image.isPrimary)?.url || product.images[0]?.url;
+
+              return (
+                <button
+                  key={product.id}
+                  onClick={() => {
+                    navigate(`/product/${product.slug}`);
+                    setIsSearchFocused(false);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition hover:bg-primary-50"
+                >
+                  {primaryImage ? (
+                    <img src={primaryImage} alt={product.name} className="h-11 w-11 rounded-xl object-cover" />
+                  ) : (
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-100 text-primary-700">
+                      <Search size={16} />
+                    </div>
+                  )}
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-primary-900">{product.name}</p>
+                    <p className="mt-1 truncate text-xs font-semibold uppercase tracking-[0.14em] text-primary-500">
+                      {product.category?.name || t('productsPage.searchProduct')}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <button
+          onClick={submitSearch}
+          className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-black text-primary-900 transition hover:border-primary-200"
+        >
+          <Search size={14} />
+          <span>
+            {t('nav.shop')} "{debouncedSearch}"
+          </span>
+        </button>
+      </div>
+    );
+  };
+
   const handleLanguageToggle = () => {
     void i18n.changeLanguage(activeLanguage === 'hi' ? 'en' : 'hi');
   };
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (desktopSearchRef.current?.contains(target) || mobileSearchRef.current?.contains(target)) {
+        return;
+      }
+      setIsSearchFocused(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, []);
 
   useEffect(() => {
     return onCartFlyAnimation(({ startRect, imageUrl }) => {
@@ -87,14 +243,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
 
   return (
     <header className="border-b border-primary-100 bg-white/95 backdrop-blur-xl">
-      <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-4">
-        <Link to="/" className="group flex items-center space-x-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-900 text-lg font-black text-white shadow-lg shadow-primary-900/20 transition-transform group-hover:-rotate-6">
-            V
-          </div>
+      <div className="container mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <Link to="/" className="group flex min-w-0 items-center">
           <div className="flex flex-col">
-            <span className="font-heading text-2xl leading-none text-primary-900">Vaniki Crop</span>
-            <span className="mt-1 text-[10px] font-black uppercase tracking-[0.24em] text-primary-500">
+            <span className="font-heading text-[1.95rem] leading-[0.9] tracking-tight text-primary-900 sm:text-[2.1rem]">
+              Vaniki Crop
+            </span>
+            <span className="mt-0.5 hidden text-[11px] font-semibold tracking-[0.08em] text-primary-500 lg:block">
               {t('header.brandTagline')}
             </span>
           </div>
@@ -132,29 +287,57 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
             <ChevronDown size={16} className="shrink-0 text-primary-900/40" />
           </button>
 
-          <button
-            onClick={() => navigate('/products')}
-            className="flex flex-1 items-center gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-left transition hover:border-primary-200 hover:bg-white"
-          >
-            <Search size={18} className="text-primary-900/40" />
-            <span className="text-sm font-semibold text-primary-900/50">
-              {t('header.searchPlaceholder')}
-            </span>
-          </button>
+          <div className="relative flex-1" ref={desktopSearchRef}>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                submitSearch();
+              }}
+              className="flex items-center gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 transition focus-within:border-primary-200 focus-within:bg-white"
+            >
+              <Search size={18} className="text-primary-900/40" />
+              <input
+                value={searchTerm}
+                onFocus={() => setIsSearchFocused(true)}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setIsSearchFocused(true);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setIsSearchFocused(false);
+                }}
+                placeholder={t('header.searchPlaceholder')}
+                className="w-full bg-transparent text-sm font-semibold text-primary-900 placeholder:text-primary-900/45 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="rounded-xl bg-primary-900 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white transition hover:bg-primary"
+              >
+                {t('nav.shop')}
+              </button>
+            </form>
+            {renderSearchDropdown()}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={handleLanguageToggle}
-            className="h-11 rounded-2xl border border-primary-100 px-3 text-xs font-black uppercase tracking-[0.18em] text-primary-900 transition hover:border-primary-200 hover:bg-primary-50"
+            className="h-10 rounded-2xl border border-primary-100 px-3 text-xs font-black uppercase tracking-[0.18em] text-primary-900 transition hover:border-primary-200 hover:bg-primary-50"
           >
             {languageToggleLabel}
           </button>
           <button
-            onClick={() => navigate('/products')}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-50 text-primary-900 transition hover:bg-primary-100 lg:hidden"
+            onClick={() => {
+              if (searchTerm.trim()) {
+                submitSearch();
+                return;
+              }
+              focusMobileSearchInput();
+            }}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-50 text-primary-900 transition hover:bg-primary-100 lg:hidden"
           >
-            <Search size={20} />
+            <Search size={18} />
           </button>
           <motion.button
             onClick={onOpenCart}
@@ -165,9 +348,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
                 : { scale: 1, rotate: 0 }
             }
             transition={{ duration: 0.45, ease: 'easeOut' }}
-            className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-900 text-white shadow-lg shadow-primary-900/20 transition hover:-translate-y-0.5"
+            className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-900 text-white shadow-lg shadow-primary-900/20 transition hover:-translate-y-0.5"
           >
-            <ShoppingCart size={20} />
+            <ShoppingCart size={18} />
             <AnimatePresence initial={false} mode="popLayout">
               {totalItems > 0 && (
                 <motion.span
@@ -185,11 +368,41 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
           </motion.button>
           <button
             onClick={() => navigate(isAuthenticated ? '/account' : '/login')}
-            className="flex h-11 items-center gap-2 rounded-2xl border border-primary-100 px-4 text-sm font-bold text-primary-900 transition hover:border-primary-200 hover:bg-primary-50"
+            className="flex h-10 items-center gap-2 rounded-2xl border border-primary-100 px-3.5 text-sm font-bold text-primary-900 transition hover:border-primary-200 hover:bg-primary-50"
           >
             <User size={18} className="text-primary" />
             <span className="hidden sm:inline">{isAuthenticated ? t('header.account') : t('header.login')}</span>
           </button>
+        </div>
+
+        <div className="relative w-full lg:hidden" ref={mobileSearchRef}>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitSearch();
+            }}
+            className="flex items-center gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 transition focus-within:border-primary-200 focus-within:bg-white"
+          >
+            <Search size={18} className="text-primary-900/40" />
+            <input
+              ref={mobileSearchInputRef}
+              value={searchTerm}
+              onFocus={() => setIsSearchFocused(true)}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setIsSearchFocused(true);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setIsSearchFocused(false);
+              }}
+              placeholder={t('header.searchPlaceholder')}
+              className="w-full bg-transparent text-sm font-semibold text-primary-900 placeholder:text-primary-900/45 focus:outline-none"
+            />
+            <button type="submit" className="text-primary-900" aria-label={t('nav.shop')}>
+              <Search size={18} />
+            </button>
+          </form>
+          {renderSearchDropdown()}
         </div>
       </div>
 
