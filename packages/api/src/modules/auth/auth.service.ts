@@ -5,6 +5,7 @@ import { User, type IUser } from '../../models/User.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Store } from '../../models/Store.model.js';
 import { AppError } from '../../utils/AppError.js';
+import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 import type {
   ChangePasswordInput,
   DealerSignupInput,
@@ -235,7 +236,7 @@ export async function signup(
 /**
  * Registers a dealer (store admin) account and keeps it pending until super admin approval.
  */
-export async function dealerSignup(input: DealerSignupInput): Promise<IUser> {
+export async function dealerSignup(input: DealerSignupInput, file?: Express.Multer.File): Promise<IUser> {
   const {
     name,
     mobile,
@@ -263,6 +264,12 @@ export async function dealerSignup(input: DealerSignupInput): Promise<IUser> {
     }
   }
 
+  if (!file) {
+    throw new AppError('Dealer profile image is required', 400);
+  }
+
+  const uploadedProfileImage = await uploadToCloudinary(file.buffer, 'vaniki/users/profile');
+
   const user = await User.create({
     name,
     email: normalizedEmail,
@@ -271,6 +278,10 @@ export async function dealerSignup(input: DealerSignupInput): Promise<IUser> {
     role: 'storeAdmin',
     approvalStatus: 'pending',
     isActive: true,
+    profileImage: {
+      url: uploadedProfileImage.url,
+      publicId: uploadedProfileImage.publicId,
+    },
     dealerProfile: {
       storeName,
       storeLocation,
@@ -626,6 +637,40 @@ export async function updateMe(userId: string, input: UpdateMeInput): Promise<IU
     select: 'name slug shortDescription images variants category averageRating reviewCount',
     populate: { path: 'category', select: 'name slug' },
   });
+  return user;
+}
+
+/**
+ * Updates the authenticated user's profile image.
+ */
+export async function updateProfileImage(userId: string, file?: Express.Multer.File): Promise<IUser> {
+  if (!file) {
+    throw new AppError('Profile image file is required', 400);
+  }
+
+  const user = await User.findById(userId)
+    .populate('selectedStore', 'name address')
+    .populate({
+      path: 'wishlist',
+      select: 'name slug shortDescription images variants category averageRating reviewCount',
+      populate: { path: 'category', select: 'name slug' },
+    });
+
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  if (user.profileImage?.publicId) {
+    await deleteFromCloudinary(user.profileImage.publicId);
+  }
+
+  const uploadedProfileImage = await uploadToCloudinary(file.buffer, 'vaniki/users/profile');
+  user.profileImage = {
+    url: uploadedProfileImage.url,
+    publicId: uploadedProfileImage.publicId,
+  };
+
+  await user.save();
   return user;
 }
 

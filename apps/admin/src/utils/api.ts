@@ -79,18 +79,7 @@ api.interceptors.response.use(
 );
 
 export const adminApi = {
-  dealerSignup: async (payload: {
-    name: string;
-    mobile: string;
-    email?: string;
-    storeName: string;
-    storeLocation: string;
-    longitude: number;
-    latitude: number;
-    gstNumber: string;
-    sgstNumber: string;
-    password: string;
-  }) => {
+  dealerSignup: async (payload: FormData) => {
     const response = await api.post<{ success: boolean; message: string }>('/auth/dealer-signup', payload);
     return response.data;
   },
@@ -100,6 +89,16 @@ export const adminApi = {
   },
   me: async () => {
     const response = await api.get<ApiResponse<AuthUser>>('/auth/me');
+    return response.data.data;
+  },
+  updateMe: async (payload: { name?: string; email?: string; mobile?: string }) => {
+    const response = await api.patch<ApiResponse<AuthUser>>('/auth/me', payload);
+    return response.data.data;
+  },
+  updateProfileImage: async (file: File) => {
+    const payload = new FormData();
+    payload.append('profileImage', file);
+    const response = await api.patch<ApiResponse<AuthUser>>('/auth/me/profile-image', payload);
     return response.data.data;
   },
   logout: async () => {

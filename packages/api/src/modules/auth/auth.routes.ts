@@ -2,6 +2,7 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import * as authController from './auth.controller.js';
 import { requireAuth } from './auth.middleware.js';
+import { upload } from '../../middleware/upload.js';
 import {
   validate,
   sendOtpSchema,
@@ -63,7 +64,7 @@ router.post('/send-otp', otpRateLimiter, validate(sendOtpSchema), authController
 router.post('/signup', validate(signupSchema), authController.signup);
 
 /** POST /api/auth/dealer-signup — Dealer self registration (pending approval) */
-router.post('/dealer-signup', validate(dealerSignupSchema), authController.dealerSignup);
+router.post('/dealer-signup', upload.single('profileImage'), validate(dealerSignupSchema), authController.dealerSignup);
 
 /** POST /api/auth/login — Login with mobile + password */
 router.post('/login', loginRateLimiter, validate(loginSchema), authController.login);
@@ -90,6 +91,9 @@ router.get('/me', requireAuth, authController.getMe);
 
 /** PATCH /api/auth/me — Update current user profile */
 router.patch('/me', requireAuth, validate(updateMeSchema), authController.updateMe);
+
+/** PATCH /api/auth/me/profile-image — Update current user's profile image */
+router.patch('/me/profile-image', requireAuth, upload.single('profileImage'), authController.updateProfileImage);
 
 /** PATCH /api/auth/service-mode — Update delivery/pickup preference */
 router.patch('/service-mode', requireAuth, validate(serviceModeSchema), authController.updateServiceMode);

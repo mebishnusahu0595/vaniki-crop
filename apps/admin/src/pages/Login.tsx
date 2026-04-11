@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Eye, EyeOff, Leaf, LocateFixed, ShieldCheck } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
@@ -50,6 +50,25 @@ export default function LoginPage() {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupMessage, setSignupMessage] = useState('');
+  const [signupImageFile, setSignupImageFile] = useState<File | null>(null);
+  const [signupImagePreview, setSignupImagePreview] = useState('');
+
+  useEffect(() => {
+    return () => {
+      if (signupImagePreview) {
+        URL.revokeObjectURL(signupImagePreview);
+      }
+    };
+  }, [signupImagePreview]);
+
+  const handleSignupImageSelection = (file: File | null) => {
+    if (signupImagePreview) {
+      URL.revokeObjectURL(signupImagePreview);
+    }
+
+    setSignupImageFile(file);
+    setSignupImagePreview(file ? URL.createObjectURL(file) : '');
+  };
 
   const {
     register: registerSignup,
@@ -169,7 +188,25 @@ export default function LoginPage() {
               onSubmit={handleSignupSubmit(async (values) => {
                 try {
                   setSignupMessage('');
-                  await adminApi.dealerSignup(values);
+                  if (!signupImageFile) {
+                    setSignupError('root', { message: 'Dealer profile photo is required.' });
+                    return;
+                  }
+
+                  const payload = new FormData();
+                  payload.append('name', values.name);
+                  payload.append('mobile', values.mobile);
+                  if (values.email.trim()) payload.append('email', values.email.trim());
+                  payload.append('storeName', values.storeName);
+                  payload.append('storeLocation', values.storeLocation);
+                  payload.append('longitude', String(values.longitude));
+                  payload.append('latitude', String(values.latitude));
+                  payload.append('gstNumber', values.gstNumber);
+                  payload.append('sgstNumber', values.sgstNumber);
+                  payload.append('password', values.password);
+                  payload.append('profileImage', signupImageFile);
+
+                  await adminApi.dealerSignup(payload);
                   setSignupMessage('Signup submitted. Super admin approval ke baad login available hoga.');
                 } catch (error) {
                   setSignupError('root', {
@@ -291,6 +328,19 @@ export default function LoginPage() {
                   />
                   {signupErrors.sgstNumber ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.sgstNumber.message}</p> : null}
                 </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Dealer Photo</label>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) => handleSignupImageSelection(event.target.files?.[0] || null)}
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm"
+                />
+                {signupImagePreview ? (
+                  <img src={signupImagePreview} alt="Dealer preview" className="mt-3 h-24 w-24 rounded-2xl object-cover" />
+                ) : null}
               </div>
 
               <div>

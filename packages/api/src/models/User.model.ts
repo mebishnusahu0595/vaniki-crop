@@ -28,6 +28,12 @@ export interface IDealerProfile {
   sgstNumber: string;
 }
 
+/** User profile image stored in Cloudinary */
+export interface IUserProfileImage {
+  url: string;
+  publicId: string;
+}
+
 /** Service mode enum */
 export type ServiceMode = 'delivery' | 'pickup';
 
@@ -37,6 +43,7 @@ export interface IUser extends Document {
   email: string;
   mobile: string;
   password: string;
+  profileImage?: IUserProfileImage;
   role: UserRole;
   approvalStatus: DealerApprovalStatus;
   dealerProfile?: IDealerProfile;
@@ -87,6 +94,14 @@ const dealerProfileSchema = new Schema<IDealerProfile>(
   { _id: false },
 );
 
+const userProfileImageSchema = new Schema<IUserProfileImage>(
+  {
+    url: { type: String, required: true, trim: true },
+    publicId: { type: String, required: true, trim: true },
+  },
+  { _id: false },
+);
+
 const userSchema = new Schema<IUser>(
   {
     name: {
@@ -114,6 +129,7 @@ const userSchema = new Schema<IUser>(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
+    profileImage: userProfileImageSchema,
     role: {
       type: String,
       enum: {
