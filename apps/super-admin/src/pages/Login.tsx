@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Eye, EyeOff, Leaf, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Home, Leaf, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -28,16 +28,10 @@ export default function LoginPage() {
     defaultValues: { mobile: '', password: '' },
   });
 
-  const handleBack = () => {
-    if (typeof window !== 'undefined' && window.history.length > 1) {
-      navigate(-1);
-      return;
+  const handleHome = () => {
+    if (typeof window !== 'undefined') {
+      window.location.href = 'https://vanikicrop.com';
     }
-    if (typeof document !== 'undefined' && document.referrer) {
-      window.location.href = document.referrer;
-      return;
-    }
-    navigate('/', { replace: true });
   };
 
   return (
@@ -75,11 +69,11 @@ export default function LoginPage() {
         <div className="p-6 sm:p-10">
           <button
             type="button"
-            onClick={handleBack}
+            onClick={handleHome}
             className="inline-flex items-center gap-2 rounded-full border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.15em] text-primary-900 transition hover:bg-primary-100"
           >
-            <ArrowLeft size={14} />
-            Back
+            <Home size={14} />
+            Home
           </button>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-primary-500">Secure Login</p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">Sign in to super-admin dashboard</h2>
