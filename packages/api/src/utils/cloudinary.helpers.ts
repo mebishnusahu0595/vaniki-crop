@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { dirname, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cloudinary } from '../config/cloudinary.js';
 import { AppError } from './AppError.js';
 
 export interface CloudinaryUploadResult {
@@ -13,15 +12,9 @@ export interface CloudinaryUploadResult {
 const LOCAL_PUBLIC_ID_PREFIX = 'local:';
 const currentFilePath = fileURLToPath(import.meta.url);
 const currentDirectory = dirname(currentFilePath);
-const localUploadDirectory = resolve(currentDirectory, '../../../../uploads');
-
-function isCloudinaryConfigured(): boolean {
-  return Boolean(
-    process.env.CLOUDINARY_CLOUD_NAME
-    && process.env.CLOUDINARY_API_KEY
-    && process.env.CLOUDINARY_API_SECRET,
-  );
-}
+const localUploadDirectory = process.env.UPLOADS_DIR?.trim()
+  ? resolve(process.env.UPLOADS_DIR.trim())
+  : resolve(currentDirectory, '../../../../uploads');
 
 function normalizeExtension(extension: string): string {
   const normalized = extension.toLowerCase();
@@ -50,6 +43,48 @@ function extensionFromImageUrl(imageUrl: string): string {
   }
 }
 
+function extensionFromBuffer(buffer: Buffer): string {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return '.jpg';
+  }
+
+  if (
+    buffer.length >= 8
+    && buffer[0] === 0x89
+    && buffer[1] === 0x50
+    && buffer[2] === 0x4e
+    && buffer[3] === 0x47
+  ) {
+    return '.png';
+  }
+
+  if (
+    buffer.length >= 12
+    && buffer[0] === 0x52
+    && buffer[1] === 0x49
+    && buffer[2] === 0x46
+    && buffer[3] === 0x46
+    && buffer[8] === 0x57
+    && buffer[9] === 0x45
+    && buffer[10] === 0x42
+    && buffer[11] === 0x50
+  ) {
+    return '.webp';
+  }
+
+  return '.webp';
+}
+
+function normalizeFolder(folder: string): string {
+  return folder
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/\.\./g, '')
+    .replace(/[^a-zA-Z0-9/_-]/g, '')
+    .replace(/^\/+/, '')
+    .replace(/\/+$/, '');
+}
+
 function buildPublicImageBaseUrl(): string {
   const explicit = process.env.BACKEND_URL
     || process.env.API_PUBLIC_URL
@@ -72,31 +107,52 @@ function localPathFromPublicId(publicId: string): string | null {
     return null;
   }
 
-  const filename = publicId.slice(LOCAL_PUBLIC_ID_PREFIX.length);
-  if (!filename) {
+  const relativePath = publicId.slice(LOCAL_PUBLIC_ID_PREFIX.length).replace(/^\/+/, '');
+  if (!relativePath) {
     return null;
   }
 
-  return resolve(localUploadDirectory, filename);
-}
-
-async function saveBufferToLocalUploads(buffer: Buffer, extension = '.webp'): Promise<CloudinaryUploadResult> {
-  await fs.mkdir(localUploadDirectory, { recursive: true });
-  const filename = `${Date.now()}-${randomUUID()}${normalizeExtension(extension)}`;
-  const targetPath = resolve(localUploadDirectory, filename);
-  await fs.writeFile(targetPath, buffer);
-
-  return {
-    url: `${buildPublicImageBaseUrl()}/uploads/${filename}`,
-    publicId: `${LOCAL_PUBLIC_ID_PREFIX}${filename}`,
-  };
-}
-
-function assertCloudinaryConfigured(): void {
-  if (!isCloudinaryConfigured()) {
-    throw new AppError('Image service is not configured on server. Please contact support.', 503);
+  const absolutePath = resolve(localUploadDirectory, relativePath);
+  if (!absolutePath.startsWith(localUploadDirectory)) {
+    return null;
   }
 
+  return absolutePath;
+}
+
+async function saveBufferToLocalUploads(
+  buffer: Buffer,
+  folder: string,
+  extension?: string,
+): Promise<CloudinaryUploadResult> {
+  const safeFolder = normalizeFolder(folder);
+  const targetDirectory = safeFolder
+    ? resolve(localUploadDirectory, safeFolder)
+    : localUploadDirectory;
+
+  if (!targetDirectory.startsWith(localUploadDirectory)) {
+    throw new AppError('Invalid upload folder path', 400);
+  }
+
+  await fs.mkdir(targetDirectory, { recursive: true });
+
+  const nextExtension = normalizeExtension(extension || extensionFromBuffer(buffer));
+  const filename = `${Date.now()}-${randomUUID()}${nextExtension}`;
+  const targetPath = resolve(targetDirectory, filename);
+
+  try {
+    await fs.writeFile(targetPath, buffer);
+  } catch {
+    throw new AppError('Unable to save image on server storage. Check uploads directory permissions.', 500);
+  }
+
+  const relativePath = safeFolder ? `${safeFolder}/${filename}` : filename;
+  const encodedRelativePath = relativePath.split('/').map((entry) => encodeURIComponent(entry)).join('/');
+
+  return {
+    url: `${buildPublicImageBaseUrl()}/uploads/${encodedRelativePath}`,
+    publicId: `${LOCAL_PUBLIC_ID_PREFIX}${relativePath}`,
+  };
 }
 
 /**
@@ -110,34 +166,7 @@ export async function uploadToCloudinary(
   buffer: Buffer,
   folder: string,
 ): Promise<CloudinaryUploadResult> {
-  if (!isCloudinaryConfigured()) {
-    return saveBufferToLocalUploads(buffer, '.webp');
-  }
-
-  return new Promise((resolve, reject) => {
-    try {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          format: 'webp',
-          transformation: [{ quality: 'auto', fetch_format: 'auto' }],
-          resource_type: 'image',
-        },
-        (error: any, result: any) => {
-          if (error || !result) {
-            return reject(new AppError('Image upload failed', 500));
-          }
-          resolve({
-            url: result.secure_url,
-            publicId: result.public_id,
-          });
-        },
-      );
-      uploadStream.end(buffer);
-    } catch {
-      reject(new AppError('Image service is not configured on server. Please contact support.', 503));
-    }
-  });
+  return saveBufferToLocalUploads(buffer, folder);
 }
 
 /**
@@ -150,39 +179,22 @@ export async function uploadImageUrlToCloudinary(
   imageUrl: string,
   folder: string,
 ): Promise<CloudinaryUploadResult> {
-  if (!isCloudinaryConfigured()) {
-    try {
-      const response = await fetch(imageUrl);
-      if (!response.ok) {
-        throw new AppError('Image URL upload failed', 400);
-      }
-
-      const buffer = Buffer.from(await response.arrayBuffer());
-      const extension = extensionFromContentType(response.headers.get('content-type'))
-        || extensionFromImageUrl(imageUrl);
-
-      return saveBufferToLocalUploads(buffer, extension);
-    } catch (error) {
-      if (error instanceof AppError) {
-        throw error;
-      }
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
       throw new AppError('Image URL upload failed', 400);
     }
-  }
 
-  try {
-    const result = await cloudinary.uploader.upload(imageUrl, {
-      folder,
-      format: 'webp',
-      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
-      resource_type: 'image',
-    });
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const extension = extensionFromContentType(response.headers.get('content-type'))
+      || extensionFromImageUrl(imageUrl)
+      || extensionFromBuffer(buffer);
 
-    return {
-      url: result.secure_url,
-      publicId: result.public_id,
-    };
-  } catch {
+    return saveBufferToLocalUploads(buffer, folder, extension);
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
     throw new AppError('Image URL upload failed', 400);
   }
 }
@@ -194,20 +206,11 @@ export async function uploadImageUrlToCloudinary(
  */
 export async function deleteFromCloudinary(publicId: string): Promise<void> {
   const localPath = localPathFromPublicId(publicId);
-  if (localPath) {
-    await fs.unlink(localPath).catch(() => undefined);
+  if (!localPath) {
     return;
   }
 
-  if (!isCloudinaryConfigured()) {
-    return;
-  }
-
-  try {
-    await cloudinary.uploader.destroy(publicId);
-  } catch (error) {
-    console.error(`Failed to delete Cloudinary image ${publicId}:`, error);
-  }
+  await fs.unlink(localPath).catch(() => undefined);
 }
 
 /**
@@ -240,53 +243,11 @@ export async function uploadMultipleToCloudinary(
 export async function uploadBannerToCloudinary(
   buffer: Buffer,
 ): Promise<CloudinaryUploadResult & { mobileUrl: string }> {
-  if (!isCloudinaryConfigured()) {
-    const localUpload = await saveBufferToLocalUploads(buffer, '.webp');
-    return {
-      ...localUpload,
-      mobileUrl: localUpload.url,
-    };
-  }
-
-  return new Promise((resolve, reject) => {
-    try {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'vaniki/banners',
-          format: 'webp',
-          resource_type: 'image',
-          transformation: [
-            { width: 1920, height: 600, crop: 'fill', gravity: 'center', quality: 'auto', fetch_format: 'auto' }
-          ]
-        },
-        (error: any, result: any) => {
-          if (error || !result) {
-            return reject(new AppError('Banner upload failed', 500));
-          }
-
-          // Generate mobile version URL using the same publicId
-          const mobileUrl = cloudinary.url(result.public_id, {
-            width: 768,
-            height: 400,
-            crop: 'fill',
-            gravity: 'center',
-            quality: 'auto',
-            fetch_format: 'auto',
-            secure: true
-          });
-
-          resolve({
-            url: result.secure_url, // This is the 1920x600 version
-            mobileUrl,
-            publicId: result.public_id,
-          });
-        },
-      );
-      uploadStream.end(buffer);
-    } catch {
-      reject(new AppError('Image service is not configured on server. Please contact support.', 503));
-    }
-  });
+  const localUpload = await saveBufferToLocalUploads(buffer, 'vaniki/banners');
+  return {
+    ...localUpload,
+    mobileUrl: localUpload.url,
+  };
 }
 
 /**
@@ -297,40 +258,9 @@ export async function uploadBannerToCloudinary(
 export async function uploadBannerUrlToCloudinary(
   imageUrl: string,
 ): Promise<CloudinaryUploadResult & { mobileUrl: string }> {
-  if (!isCloudinaryConfigured()) {
-    const localUpload = await uploadImageUrlToCloudinary(imageUrl, 'vaniki/banners');
-    return {
-      ...localUpload,
-      mobileUrl: localUpload.url,
-    };
-  }
-
-  try {
-    const result = await cloudinary.uploader.upload(imageUrl, {
-      folder: 'vaniki/banners',
-      format: 'webp',
-      resource_type: 'image',
-      transformation: [
-        { width: 1920, height: 600, crop: 'fill', gravity: 'center', quality: 'auto', fetch_format: 'auto' },
-      ],
-    });
-
-    const mobileUrl = cloudinary.url(result.public_id, {
-      width: 768,
-      height: 400,
-      crop: 'fill',
-      gravity: 'center',
-      quality: 'auto',
-      fetch_format: 'auto',
-      secure: true,
-    });
-
-    return {
-      url: result.secure_url,
-      mobileUrl,
-      publicId: result.public_id,
-    };
-  } catch {
-    throw new AppError('Banner image URL upload failed', 400);
-  }
+  const localUpload = await uploadImageUrlToCloudinary(imageUrl, 'vaniki/banners');
+  return {
+    ...localUpload,
+    mobileUrl: localUpload.url,
+  };
 }
