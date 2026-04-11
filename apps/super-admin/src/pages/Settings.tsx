@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { PageHeader } from '../components/PageHeader';
@@ -36,18 +36,10 @@ const settingsDefaultValues: SettingsFormInput = {
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
-  const [selectedStoreId, setSelectedStoreId] = useState('');
-  const [secretDraft, setSecretDraft] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
 
   const settingsQuery = useQuery({ queryKey: ['super-admin-site-settings'], queryFn: adminApi.siteSettings });
-  const storesQuery = useQuery({ queryKey: ['settings-store-options'], queryFn: () => adminApi.stores({ limit: 200 }) });
-  const secretsQuery = useQuery({
-    queryKey: ['store-secrets', selectedStoreId],
-    queryFn: () => adminApi.storeSecrets(selectedStoreId),
-    enabled: Boolean(selectedStoreId),
-  });
 
   const { register, handleSubmit, reset, watch, formState: { isSubmitting, errors, isDirty } } = useForm<
     SettingsFormInput,
@@ -92,37 +84,11 @@ export default function SettingsPage() {
   const maintenanceModeEnabled = watch('maintenanceMode');
   const guestCheckoutEnabled = watch('allowGuestCheckout');
 
-  const updateSecretsMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedStoreId) return;
-
-      const payload = Object.fromEntries(
-        Object.entries(secretDraft)
-          .map(([key, value]) => [key, value.trim()])
-          .filter(([, value]) => Boolean(value)),
-      );
-
-      if (Object.keys(payload).length === 0) return;
-      await adminApi.updateStoreSecrets(selectedStoreId, payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['store-secrets', selectedStoreId] });
-      setSecretDraft({});
-    },
-  });
-
-  const selectedStoreName = useMemo(() => {
-    if (!selectedStoreId) return '';
-    return storesQuery.data?.data.find((store) => store.id === selectedStoreId)?.name || '';
-  }, [selectedStoreId, storesQuery.data?.data]);
-
-  const secretFields = ['razorpayKeyId', 'razorpayKeySecret', 'smsAuthKey', 'smtpPassword'];
-
   if (settingsQuery.isLoading || !settingsQuery.data) return <LoadingBlock label="Loading site settings..." />;
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Site Settings" subtitle="Configure platform-level settings and securely manage per-store integration secrets." />
+      <PageHeader title="Site Settings" subtitle="Configure platform-level settings for platform name, support details, and feature toggles." />
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
         <p className="mb-4 text-xs font-semibold text-slate-500">
           Har field ke upar label diya gaya hai. Toggle changes apply karne ke liye Save Settings zaroor click karein.
@@ -188,64 +154,6 @@ export default function SettingsPage() {
         </button>
       </form>
 
-      <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-primary-500">Store Secrets</p>
-        <p className="mt-2 text-sm text-slate-500">
-          Secrets are AES-256 encrypted in the database and only masked values are ever shown here.
-        </p>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-[240px_1fr]">
-          <select
-            value={selectedStoreId}
-            onChange={(event) => {
-              setSelectedStoreId(event.target.value);
-              setSecretDraft({});
-            }}
-            className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-          >
-            <option value="">Select store</option>
-            {storesQuery.data?.data.map((store) => (
-              <option key={store.id} value={store.id}>{store.name}</option>
-            ))}
-          </select>
-          <div className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-slate-600">
-            {selectedStoreName ? `Managing secrets for ${selectedStoreName}` : 'Choose a store to view and update masked secrets'}
-          </div>
-        </div>
-
-        {selectedStoreId ? (
-          <div className="mt-6 space-y-4">
-            {secretFields.map((key) => (
-              <div key={key} className="grid gap-3 rounded-2xl border border-primary-100 bg-primary-50/50 p-4 md:grid-cols-[180px_220px_1fr] md:items-center">
-                <p className="text-sm font-black text-slate-900">{key}</p>
-                <p className="rounded-xl border border-primary-100 bg-white px-3 py-2 text-xs font-semibold text-slate-500">
-                  {secretsQuery.data?.secrets?.[key] || 'Not set'}
-                </p>
-                <input
-                  value={secretDraft[key] || ''}
-                  onChange={(event) =>
-                    setSecretDraft((current) => ({
-                      ...current,
-                      [key]: event.target.value,
-                    }))
-                  }
-                  type="password"
-                  placeholder={`Enter new ${key}`}
-                  className="rounded-2xl border border-primary-100 bg-white px-4 py-3"
-                />
-              </div>
-            ))}
-
-            <button
-              onClick={() => updateSecretsMutation.mutate()}
-              disabled={updateSecretsMutation.isPending}
-              className="rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white"
-            >
-              {updateSecretsMutation.isPending ? 'Updating...' : 'Update Secrets'}
-            </button>
-          </div>
-        ) : null}
-      </div>
     </div>
   );
 }
