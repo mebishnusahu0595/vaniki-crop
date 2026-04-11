@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { LocateFixed } from 'lucide-react';
 import { z } from 'zod';
@@ -59,24 +59,117 @@ function getApiOrigin(): string {
   }
 }
 
-function toDisplayImageUrl(rawUrl?: string | null): string {
-  if (!rawUrl) return '';
-  const normalized = rawUrl.trim();
-  if (!normalized) return '';
+function encodePathSegments(pathname: string): string {
+  return pathname
+    .split('/')
+    .map((segment) => {
+      if (!segment) return segment;
+      try {
+        return encodeURIComponent(decodeURIComponent(segment));
+      } catch {
+        return encodeURIComponent(segment);
+      }
+    })
+    .join('/');
+}
+
+function createImageCandidates(rawUrl?: string | null): string[] {
+  if (!rawUrl) return [];
+  const raw = rawUrl.trim();
+  if (!raw) return [];
 
   const apiOrigin = getApiOrigin();
+  const browserOrigin = typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : '';
+  const candidates: string[] = [];
 
-  try {
-    const parsed = new URL(normalized);
-    if ((parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') && apiOrigin) {
-      return `${apiOrigin}${parsed.pathname}${parsed.search}`;
+  const addCandidate = (value?: string) => {
+    if (!value) return;
+    const cleaned = value.trim();
+    if (!cleaned || candidates.includes(cleaned)) return;
+    candidates.push(cleaned);
+  };
+
+  const addByPath = (pathWithQueryHash: string) => {
+    addCandidate(pathWithQueryHash);
+    if (apiOrigin) addCandidate(`${apiOrigin}${pathWithQueryHash}`);
+    if (browserOrigin) addCandidate(`${browserOrigin}${pathWithQueryHash}`);
+  };
+
+  const normalizedRaw = raw.replace(/\\/g, '/');
+
+  if (/^https?:\/\//i.test(normalizedRaw)) {
+    try {
+      const parsed = new URL(normalizedRaw);
+      parsed.pathname = encodePathSegments(parsed.pathname.replace(/\/{2,}/g, '/'));
+      addCandidate(parsed.toString());
+
+      const pathWithQueryHash = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+
+      if ((parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') && apiOrigin) {
+        addCandidate(`${apiOrigin}${pathWithQueryHash}`);
+      }
+
+      if (pathWithQueryHash.startsWith('/uploads/')) {
+        addByPath(pathWithQueryHash);
+        addByPath(`/api${pathWithQueryHash}`);
+      }
+
+      if (pathWithQueryHash.startsWith('/api/uploads/')) {
+        addByPath(pathWithQueryHash);
+        addByPath(pathWithQueryHash.replace(/^\/api/, ''));
+      }
+    } catch {
+      addCandidate(normalizedRaw);
     }
-    return normalized;
-  } catch {
-    if (!apiOrigin) return normalized;
-    if (normalized.startsWith('/')) return `${apiOrigin}${normalized}`;
-    return `${apiOrigin}/${normalized}`;
+
+    return candidates;
   }
+
+  const withSlash = normalizedRaw.startsWith('/') ? normalizedRaw : `/${normalizedRaw}`;
+  const hashIndex = withSlash.indexOf('#');
+  const hash = hashIndex >= 0 ? withSlash.slice(hashIndex) : '';
+  const withoutHash = hashIndex >= 0 ? withSlash.slice(0, hashIndex) : withSlash;
+  const queryIndex = withoutHash.indexOf('?');
+  const query = queryIndex >= 0 ? withoutHash.slice(queryIndex) : '';
+  const pathname = queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash;
+  const normalizedPath = encodePathSegments(pathname.replace(/\\/g, '/').replace(/\/{2,}/g, '/'));
+  const pathWithQueryHash = `${normalizedPath}${query}${hash}`;
+
+  addByPath(pathWithQueryHash);
+
+  if (pathWithQueryHash.startsWith('/uploads/')) {
+    addByPath(`/api${pathWithQueryHash}`);
+  }
+
+  if (pathWithQueryHash.startsWith('/api/uploads/')) {
+    addByPath(pathWithQueryHash.replace(/^\/api/, ''));
+  }
+
+  return candidates;
+}
+
+function FallbackImage({ rawUrl, alt, className }: { rawUrl?: string | null; alt: string; className: string }) {
+  const candidates = useMemo(() => createImageCandidates(rawUrl), [rawUrl]);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [rawUrl]);
+
+  if (!candidates.length) {
+    return null;
+  }
+
+  return (
+    <img
+      src={candidates[Math.min(index, candidates.length - 1)]}
+      alt={alt}
+      className={className}
+      onError={() => {
+        setIndex((previous) => (previous + 1 < candidates.length ? previous + 1 : previous));
+      }}
+    />
+  );
 }
 
 function buildDirectionsUrl(latitude?: number, longitude?: number): string {
@@ -95,6 +188,7 @@ export default function AdminsPage() {
   const [formSuccess, setFormSuccess] = useState('');
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [selectedImagePreview, setSelectedImagePreview] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [search, setSearch] = useState('');
   const [approvalStatus, setApprovalStatus] = useState('');
   const debouncedSearch = useDebouncedValue(search, 350);
@@ -144,6 +238,7 @@ export default function AdminsPage() {
       reset(adminDefaultValues);
       setFormError('');
       setFormSuccess('');
+      setShowPassword(false);
       handleImageSelection(null);
       return;
     }
@@ -164,6 +259,7 @@ export default function AdminsPage() {
 
     setFormError('');
     setFormSuccess('');
+    setShowPassword(false);
     handleImageSelection(null);
   }, [editing, reset]);
 
@@ -222,6 +318,7 @@ export default function AdminsPage() {
       reset(adminDefaultValues);
       setFormError('');
       setFormSuccess(editing ? 'Admin updated successfully.' : 'Admin created successfully.');
+      setShowPassword(false);
       handleImageSelection(null);
     },
     onError: (error) => {
@@ -451,19 +548,28 @@ export default function AdminsPage() {
             {selectedImagePreview ? (
               <img src={selectedImagePreview} alt="Dealer preview" className="mt-3 h-20 w-20 rounded-2xl object-cover" />
             ) : editing?.profileImage?.url ? (
-              <img src={toDisplayImageUrl(editing.profileImage.url)} alt={editing.name} className="mt-3 h-20 w-20 rounded-2xl object-cover" />
+              <FallbackImage rawUrl={editing.profileImage.url} alt={editing.name} className="mt-3 h-20 w-20 rounded-2xl object-cover" />
             ) : null}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Password</label>
-              <input
-                type="password"
-                {...register('password')}
-                placeholder={editing ? 'Set new password (optional)' : 'Create password'}
-                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.password ? 'border-rose-300' : 'border-primary-100'}`}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('password')}
+                  placeholder={editing ? 'Set new password (optional)' : 'Create password'}
+                  className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 pr-20 ${errors.password ? 'border-rose-300' : 'border-primary-100'}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((previous) => !previous)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded-lg px-2 py-1 text-xs font-black uppercase tracking-[0.12em] text-primary-700"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
               {errors.password ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.password.message}</p> : null}
               {!editing && isSubmitted && !getValues('password') ? (
                 <p className="mt-1 text-xs font-semibold text-rose-600">Password is required for new admin accounts.</p>
@@ -511,6 +617,7 @@ export default function AdminsPage() {
                 onClick={() => {
                   setEditing(null);
                   reset(adminDefaultValues);
+                  setShowPassword(false);
                   handleImageSelection(null);
                   setFormError('');
                 }}
@@ -668,8 +775,8 @@ export default function AdminsPage() {
 
             <div className="mt-6 grid gap-3 rounded-[1.5rem] border border-primary-100 bg-primary-50/40 p-4 text-sm text-slate-600">
               {selectedAdmin.profileImage?.url ? (
-                <img
-                  src={toDisplayImageUrl(selectedAdmin.profileImage.url)}
+                <FallbackImage
+                  rawUrl={selectedAdmin.profileImage.url}
                   alt={selectedAdmin.name}
                   className="h-20 w-20 rounded-2xl object-cover"
                 />
