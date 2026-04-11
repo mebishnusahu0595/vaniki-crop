@@ -63,7 +63,7 @@ export default function BannersPage() {
   const bannersQuery = useQuery({ queryKey: ['admin-banners'], queryFn: adminApi.banners });
   const storesQuery = useQuery({ queryKey: ['banner-store-options'], queryFn: () => adminApi.stores({ limit: 200 }) });
   const productsQuery = useQuery({ queryKey: ['admin-banner-products'], queryFn: () => adminApi.products({ limit: 50, isActive: true }) });
-  const { register, handleSubmit, reset, setValue, formState: { isSubmitting } } = useForm<
+  const { register, handleSubmit, reset, setValue, watch, formState: { isSubmitting } } = useForm<
     BannerFormInput,
     undefined,
     BannerFormOutput
@@ -139,6 +139,11 @@ export default function BannersPage() {
 
   const visibleBanners = reorderedBanners ?? bannersQuery.data ?? [];
   const previewUrl = filePreviewUrl || imageUrlInput.trim() || editing?.image.url || '';
+  const linkedProductsValue = watch('linkedProducts') || '';
+  const selectedLinkedProductIds = linkedProductsValue
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
 
   const reorderMutation = useMutation({
     mutationFn: async (items: Banner[]) => {
@@ -350,9 +355,10 @@ export default function BannersPage() {
           </div>
 
           <label className="block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Linked Products</label>
-          <p className="-mt-2 text-xs font-semibold text-slate-500">Products select karne se banner par clickable product highlights set hote hain.</p>
+          <p className="-mt-2 text-xs font-semibold text-slate-500">Products select karne se banner par clickable product highlights set hote hain. Multi-select ke liye Ctrl/Cmd use karein.</p>
           <select
             multiple
+            value={selectedLinkedProductIds}
             onChange={(event) => {
               const selected = Array.from(event.target.selectedOptions).map((option) => option.value).join(',');
               setValue('linkedProducts', selected, { shouldDirty: true, shouldValidate: true });
@@ -363,6 +369,7 @@ export default function BannersPage() {
               <option key={product.id} value={product.id}>{product.name}</option>
             ))}
           </select>
+          <p className="-mt-2 text-xs font-semibold text-slate-500">Selected: {selectedLinkedProductIds.length}</p>
           <label className="flex items-center justify-between rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
             <span className="text-sm font-semibold text-slate-700">Active banner</span>
             <input type="checkbox" {...register('isActive')} className="h-4 w-4 accent-primary-600" />

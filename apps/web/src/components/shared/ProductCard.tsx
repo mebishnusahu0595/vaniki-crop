@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Plus, Scale, Sparkles } from 'lucide-react';
+import { Heart, Minus, Plus, Scale, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -53,7 +53,10 @@ const scheduleProductCardBatch = () => {
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const cartItems = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
+  const updateQty = useCartStore((state) => state.updateQty);
+  const removeItem = useCartStore((state) => state.removeItem);
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const updateUser = useAuthStore((state) => state.updateUser);
@@ -78,6 +81,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const image = product.images[0]?.url;
   const discountPercent = getDiscountPercent(variant?.mrp || 0, variant?.price || 0);
   const { mrpText, priceText } = formatPrice(variant?.mrp || 0, variant?.price || 0);
+  const cartItem = variant
+    ? cartItems.find((item) => item.productId === product.id && item.variantId === variant.id)
+    : undefined;
+  const inCartQty = cartItem?.qty || 0;
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -251,14 +258,51 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             )}
           </div>
 
-          <button
-            onClick={handleAddToCart}
-            disabled={variant.stock <= 0}
-            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary-900 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/30"
-          >
-            <Plus size={16} />
-            <span>{variant.stock > 0 ? t('productCard.addToCart') : t('productCard.outOfStock')}</span>
-          </button>
+          {inCartQty > 0 ? (
+            <div className="mt-5 flex h-12 items-center justify-between rounded-2xl border border-primary-200 bg-primary-50 px-2">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (inCartQty <= 1) {
+                    removeItem(product.id, variant.id);
+                    return;
+                  }
+                  updateQty(product.id, variant.id, inCartQty - 1);
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary-200 bg-white text-primary-900 transition hover:bg-primary-100"
+                aria-label="Decrease quantity"
+              >
+                <Minus size={14} />
+              </button>
+              <div className="text-center">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary-500">Qty</p>
+                <p className="text-base font-black text-primary-900">{inCartQty}</p>
+              </div>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  if (variant.stock > 0 && inCartQty >= variant.stock) return;
+                  updateQty(product.id, variant.id, inCartQty + 1);
+                }}
+                disabled={variant.stock > 0 && inCartQty >= variant.stock}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary-200 bg-white text-primary-900 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-45"
+                aria-label="Increase quantity"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              disabled={variant.stock <= 0}
+              className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary-900 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/30"
+            >
+              <Plus size={16} />
+              <span>{variant.stock > 0 ? t('productCard.addToCart') : t('productCard.outOfStock')}</span>
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

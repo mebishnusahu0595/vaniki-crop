@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Plus, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Minus, Plus, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +28,10 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
   const [current, setCurrent] = useState(0);
   const [activeProductIndex, setActiveProductIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const cartItems = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
+  const updateQty = useCartStore((state) => state.updateQty);
+  const removeItem = useCartStore((state) => state.removeItem);
   const textScopeRef = useRef<HTMLDivElement | null>(null);
 
   const safeBanners = useMemo(
@@ -125,6 +128,10 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
   const { mrpText, priceText } = currentVariant
     ? formatPrice(currentVariant.mrp || 0, currentVariant.price || 0)
     : { mrpText: '', priceText: '' };
+  const featuredCartItem = currentProduct && currentVariant
+    ? cartItems.find((item) => item.productId === currentProduct.id && item.variantId === currentVariant.id)
+    : undefined;
+  const featuredQty = featuredCartItem?.qty || 0;
 
   useEffect(() => {
     setActiveProductIndex(0);
@@ -320,14 +327,50 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
                       </div>
 
                       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
-                        <button
-                          onClick={handleAddFeaturedProductToCart}
-                          disabled={currentVariant.stock <= 0}
-                          className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-primary-900 px-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/35"
-                        >
-                          <Plus size={15} />
-                          <span>{currentVariant.stock > 0 ? t('home.addToCart') : t('home.outOfStock')}</span>
-                        </button>
+                        {featuredQty > 0 ? (
+                          <div className="flex h-11 items-center justify-between rounded-2xl border border-primary-200 bg-primary-50 px-2">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                if (!currentProduct || !currentVariant) return;
+                                if (featuredQty <= 1) {
+                                  removeItem(currentProduct.id, currentVariant.id);
+                                  return;
+                                }
+                                updateQty(currentProduct.id, currentVariant.id, featuredQty - 1);
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-xl border border-primary-200 bg-white text-primary-900 transition hover:bg-primary-100"
+                              aria-label="Decrease quantity"
+                            >
+                              <Minus size={14} />
+                            </button>
+                            <span className="text-sm font-black text-primary-900">{featuredQty}</span>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                if (!currentProduct || !currentVariant) return;
+                                if (currentVariant.stock > 0 && featuredQty >= currentVariant.stock) return;
+                                updateQty(currentProduct.id, currentVariant.id, featuredQty + 1);
+                              }}
+                              disabled={currentVariant.stock > 0 && featuredQty >= currentVariant.stock}
+                              className="flex h-8 w-8 items-center justify-center rounded-xl border border-primary-200 bg-white text-primary-900 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-45"
+                              aria-label="Increase quantity"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={handleAddFeaturedProductToCart}
+                            disabled={currentVariant.stock <= 0}
+                            className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-primary-900 px-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/35"
+                          >
+                            <Plus size={15} />
+                            <span>{currentVariant.stock > 0 ? t('home.addToCart') : t('home.outOfStock')}</span>
+                          </button>
+                        )}
                         <Link
                           to={`/product/${currentProduct.slug}`}
                           className="inline-flex h-11 items-center justify-center rounded-2xl border border-primary-100 px-4 text-xs font-black uppercase tracking-[0.16em] text-primary-900 transition hover:bg-primary-50"

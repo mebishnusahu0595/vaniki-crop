@@ -11,6 +11,10 @@ interface TestimonialsProps {
 const Testimonials: React.FC<TestimonialsProps> = ({ testimonials }) => {
   const { t } = useTranslation();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 768px)').matches;
+  });
 
   const fallbackTestimonials: Testimonial[] = [
     {
@@ -39,15 +43,28 @@ const Testimonials: React.FC<TestimonialsProps> = ({ testimonials }) => {
   const items = testimonials.length ? testimonials : fallbackTestimonials;
 
   useEffect(() => {
-    const isMobile = window.matchMedia('(max-width: 767px)').matches;
-    if (!isMobile || items.length <= 1) return undefined;
+    if (typeof window === 'undefined') return undefined;
+
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    const updateViewportMode = () => setIsDesktop(mediaQuery.matches);
+    updateViewportMode();
+
+    mediaQuery.addEventListener('change', updateViewportMode);
+
+    return () => {
+      mediaQuery.removeEventListener('change', updateViewportMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isDesktop || items.length <= 1) return undefined;
 
     const timer = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % items.length);
     }, 3000);
 
     return () => window.clearInterval(timer);
-  }, [items.length]);
+  }, [isDesktop, items.length]);
 
   return (
     <section className="bg-white py-14 sm:py-18">
@@ -65,7 +82,7 @@ const Testimonials: React.FC<TestimonialsProps> = ({ testimonials }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.4 }}
               animate={{
-                opacity: index === activeIndex || window.matchMedia('(min-width: 768px)').matches ? 1 : 0.4,
+                opacity: index === activeIndex || isDesktop ? 1 : 0.4,
               }}
               className={`surface-card p-6 ${index !== activeIndex ? 'md:opacity-100' : ''}`}
             >
@@ -74,12 +91,27 @@ const Testimonials: React.FC<TestimonialsProps> = ({ testimonials }) => {
                 "{testimonial.message}"
               </p>
               <div className="mt-6 border-t border-primary-100 pt-4">
-                <p className="text-sm font-black text-primary-900">{testimonial.name}</p>
-                {testimonial.designation && (
-                  <p className="mt-1 text-[11px] font-black uppercase tracking-[0.2em] text-primary-500">
-                    {testimonial.designation}
-                  </p>
-                )}
+                <div className="flex items-center gap-3">
+                  {testimonial.avatar?.url ? (
+                    <img
+                      src={testimonial.avatar.url}
+                      alt={testimonial.name}
+                      className="h-10 w-10 rounded-full border border-primary-100 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-[11px] font-black uppercase text-primary-700">
+                      {testimonial.name.slice(0, 2)}
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-black text-primary-900">{testimonial.name}</p>
+                    {testimonial.designation && (
+                      <p className="mt-1 text-[11px] font-black uppercase tracking-[0.2em] text-primary-500">
+                        {testimonial.designation}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </motion.article>
           ))}

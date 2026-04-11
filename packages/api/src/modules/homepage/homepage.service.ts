@@ -92,11 +92,17 @@ export async function getHomepageData(storeId?: string) {
     .limit(12)
     .populate('category', 'name slug');
 
-  // 5. Testimonials (Global + Store specific)
-  const testimonials = await Testimonial.find({
-    isActive: true,
-    $or: [{ storeId: null }, ...(sId ? [{ storeId: sId }] : [])]
-  }).sort({ sortOrder: 1, createdAt: -1 });
+  // 5. Testimonials
+  // When a store is selected, include global + that store testimonials.
+  // Without a selected store, show active testimonials across the platform.
+  const testimonialFilter: Record<string, any> = { isActive: true };
+  if (sId) {
+    testimonialFilter.$or = [{ storeId: null }, { storeId: sId }];
+  }
+
+  const testimonials = await Testimonial.find(testimonialFilter)
+    .sort({ sortOrder: 1, createdAt: -1 })
+    .limit(6);
 
   const result = {
     banners,

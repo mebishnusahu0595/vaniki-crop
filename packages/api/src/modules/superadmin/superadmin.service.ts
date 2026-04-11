@@ -1169,6 +1169,7 @@ export async function updateTestimonial(
   if (!testimonial) {
     throw new AppError('Testimonial not found', 404);
   }
+  const previousStoreId = testimonial.storeId?.toString();
   const avatarUrl = typeof input.avatarUrl === 'string' ? input.avatarUrl.trim() : '';
 
   if (file || avatarUrl) {
@@ -1193,7 +1194,11 @@ export async function updateTestimonial(
   }
 
   await testimonial.save();
-  await invalidateHomepageCache(testimonial.storeId?.toString());
+  const nextStoreId = testimonial.storeId?.toString();
+  const storeIdsToInvalidate = [previousStoreId, nextStoreId].filter(
+    (id, index, arr): id is string => Boolean(id) && arr.indexOf(id) === index,
+  );
+  await invalidateHomepageCache(storeIdsToInvalidate);
 
   await testimonial.populate('storeId', 'name');
   return testimonial;
@@ -1219,6 +1224,13 @@ export async function reorderTestimonials(input: Array<{ id: string; sortOrder: 
     return { success: true };
   }
 
+  const affectedTestimonials = await Testimonial.find({
+    _id: { $in: input.map((item) => item.id) },
+  }).select('storeId');
+  const affectedStoreIds = affectedTestimonials
+    .map((testimonial) => testimonial.storeId?.toString())
+    .filter((id): id is string => Boolean(id));
+
   await Testimonial.bulkWrite(
     input.map((item) => ({
       updateOne: {
@@ -1228,7 +1240,7 @@ export async function reorderTestimonials(input: Array<{ id: string; sortOrder: 
     })),
   );
 
-  await invalidateHomepageCache();
+  await invalidateHomepageCache(affectedStoreIds);
   return { success: true };
 }
 
