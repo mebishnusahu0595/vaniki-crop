@@ -5,7 +5,9 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
+import { dirname, resolve } from 'node:path';
 import { Readable } from 'node:stream';
+import { fileURLToPath } from 'node:url';
 import { SitemapStream, streamToPromise } from 'sitemap';
 
 // ─── Module Routes ───────────────────────────────────────────────────────
@@ -39,6 +41,9 @@ import './workers/email.worker.js';
 import { AppError } from './utils/AppError.js';
 
 const app: express.Application = express();
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDirectory = dirname(currentFilePath);
+const uploadsDirectory = resolve(currentDirectory, '../../../uploads');
 
 // ─── Security Middleware ─────────────────────────────────────────────────
 app.use(helmet());
@@ -70,6 +75,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
+app.use('/uploads', express.static(uploadsDirectory));
 
 // ─── Health Check ────────────────────────────────────────────────────────
 app.get('/api/health', (_req: Request, res: Response) => {
