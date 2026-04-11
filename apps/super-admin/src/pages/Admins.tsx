@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { LocateFixed } from 'lucide-react';
 import { z } from 'zod';
+import { API_BASE_URL } from '../config/api';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { PageHeader } from '../components/PageHeader';
 import type { AdminAccount } from '../types/admin';
@@ -45,6 +47,46 @@ const adminDefaultValues: AdminFormInput = {
   approvalStatus: 'approved',
 };
 
+function getApiOrigin(): string {
+  if (!API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://')) {
+    return '';
+  }
+
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return '';
+  }
+}
+
+function toDisplayImageUrl(rawUrl?: string | null): string {
+  if (!rawUrl) return '';
+  const normalized = rawUrl.trim();
+  if (!normalized) return '';
+
+  const apiOrigin = getApiOrigin();
+
+  try {
+    const parsed = new URL(normalized);
+    if ((parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') && apiOrigin) {
+      return `${apiOrigin}${parsed.pathname}${parsed.search}`;
+    }
+    return normalized;
+  } catch {
+    if (!apiOrigin) return normalized;
+    if (normalized.startsWith('/')) return `${apiOrigin}${normalized}`;
+    return `${apiOrigin}/${normalized}`;
+  }
+}
+
+function buildDirectionsUrl(latitude?: number, longitude?: number): string {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return '';
+  }
+
+  return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+}
+
 export default function AdminsPage() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<AdminAccount | null>(null);
@@ -55,15 +97,17 @@ export default function AdminsPage() {
   const [selectedImagePreview, setSelectedImagePreview] = useState('');
   const [search, setSearch] = useState('');
   const [approvalStatus, setApprovalStatus] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 350);
 
   const adminsQuery = useQuery({
-    queryKey: ['super-admin-admins', search, approvalStatus],
+    queryKey: ['super-admin-admins', debouncedSearch, approvalStatus],
     queryFn: () =>
       adminApi.admins({
-        search,
+        search: debouncedSearch,
         approvalStatus: approvalStatus || undefined,
         limit: 100,
       }),
+    placeholderData: (previousData) => previousData,
   });
 
   const {
@@ -231,7 +275,7 @@ export default function AdminsPage() {
 
   const visibleAdmins = (adminsQuery.data?.data || []).filter((admin) => admin.approvalStatus !== 'rejected');
 
-  if (adminsQuery.isLoading) return <LoadingBlock label="Loading admins..." />;
+  if (adminsQuery.isLoading && !adminsQuery.data) return <LoadingBlock label="Loading admins..." />;
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -395,7 +439,7 @@ export default function AdminsPage() {
             {selectedImagePreview ? (
               <img src={selectedImagePreview} alt="Dealer preview" className="mt-3 h-20 w-20 rounded-2xl object-cover" />
             ) : editing?.profileImage?.url ? (
-              <img src={editing.profileImage.url} alt={editing.name} className="mt-3 h-20 w-20 rounded-2xl object-cover" />
+              <img src={toDisplayImageUrl(editing.profileImage.url)} alt={editing.name} className="mt-3 h-20 w-20 rounded-2xl object-cover" />
             ) : null}
           </div>
 
@@ -477,6 +521,10 @@ export default function AdminsPage() {
             </select>
           </div>
         </div>
+
+        {adminsQuery.isFetching ? (
+          <p className="px-1 text-xs font-semibold text-slate-500">Updating list...</p>
+        ) : null}
 
         {visibleAdmins.map((admin) => (
           <div
@@ -598,7 +646,7 @@ export default function AdminsPage() {
             <div className="mt-6 grid gap-3 rounded-[1.5rem] border border-primary-100 bg-primary-50/40 p-4 text-sm text-slate-600">
               {selectedAdmin.profileImage?.url ? (
                 <img
-                  src={selectedAdmin.profileImage.url}
+                  src={toDisplayImageUrl(selectedAdmin.profileImage.url)}
                   alt={selectedAdmin.name}
                   className="h-20 w-20 rounded-2xl object-cover"
                 />
@@ -619,6 +667,24 @@ export default function AdminsPage() {
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
+              {buildDirectionsUrl(selectedAdmin.latitude, selectedAdmin.longitude) ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const directionsUrl = buildDirectionsUrl(selectedAdmin.latitude, selectedAdmin.longitude);
+                    if (!directionsUrl) {
+                      setFormError('Store location coordinates are not available for directions.');
+                      return;
+                    }
+
+                    window.open(directionsUrl, '_blank', 'noopener,noreferrer');
+                  }}
+                  className="cursor-pointer rounded-2xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-700"
+                >
+                  Locate Store
+                </button>
+              ) : null}
+
               {selectedAdmin.approvalStatus !== 'approved' ? (
                 <button
                   type="button"
