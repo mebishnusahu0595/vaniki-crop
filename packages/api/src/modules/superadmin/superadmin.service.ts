@@ -522,10 +522,7 @@ async function getAssignedStore(adminId: mongoose.Types.ObjectId) {
 
 export async function listAdmins(query: Record<string, any>) {
   const { page, limit, skip } = parsePagination(query);
-  const filter: Record<string, any> = {
-    role: 'storeAdmin',
-    approvalStatus: { $ne: 'rejected' },
-  };
+  const filter: Record<string, any> = { role: 'storeAdmin' };
 
   if (query.isActive === 'true' || query.isActive === 'false') {
     filter.isActive = query.isActive === 'true';
@@ -543,7 +540,7 @@ export async function listAdmins(query: Record<string, any>) {
     ];
   }
 
-  if (query.approvalStatus && ['pending', 'approved'].includes(String(query.approvalStatus))) {
+  if (query.approvalStatus && ['pending', 'approved', 'rejected'].includes(String(query.approvalStatus))) {
     filter.approvalStatus = String(query.approvalStatus);
   }
 

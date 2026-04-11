@@ -273,7 +273,7 @@ export default function AdminsPage() {
     },
   });
 
-  const visibleAdmins = (adminsQuery.data?.data || []).filter((admin) => admin.approvalStatus !== 'rejected');
+  const visibleAdmins = adminsQuery.data?.data || [];
 
   if (adminsQuery.isLoading && !adminsQuery.data) return <LoadingBlock label="Loading admins..." />;
 
@@ -518,6 +518,7 @@ export default function AdminsPage() {
               <option value="">All approvals</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
             </select>
           </div>
         </div>
