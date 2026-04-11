@@ -322,6 +322,16 @@ export async function listStores(query: Record<string, any>) {
   const { page, limit, skip } = parsePagination(query);
   const filter: Record<string, any> = {};
 
+  const rejectedAdminRows = await User.find({
+    role: 'storeAdmin',
+    approvalStatus: 'rejected',
+  }).select('_id');
+  const rejectedAdminIds = rejectedAdminRows.map((row) => row._id as mongoose.Types.ObjectId);
+
+  if (rejectedAdminIds.length) {
+    filter.adminId = { $nin: rejectedAdminIds };
+  }
+
   if (query.isActive === 'true' || query.isActive === 'false') {
     filter.isActive = query.isActive === 'true';
   }
@@ -512,7 +522,10 @@ async function getAssignedStore(adminId: mongoose.Types.ObjectId) {
 
 export async function listAdmins(query: Record<string, any>) {
   const { page, limit, skip } = parsePagination(query);
-  const filter: Record<string, any> = { role: 'storeAdmin' };
+  const filter: Record<string, any> = {
+    role: 'storeAdmin',
+    approvalStatus: { $ne: 'rejected' },
+  };
 
   if (query.isActive === 'true' || query.isActive === 'false') {
     filter.isActive = query.isActive === 'true';
@@ -530,7 +543,7 @@ export async function listAdmins(query: Record<string, any>) {
     ];
   }
 
-  if (query.approvalStatus && ['pending', 'approved', 'rejected'].includes(String(query.approvalStatus))) {
+  if (query.approvalStatus && ['pending', 'approved'].includes(String(query.approvalStatus))) {
     filter.approvalStatus = String(query.approvalStatus);
   }
 

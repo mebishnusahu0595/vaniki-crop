@@ -229,6 +229,8 @@ export default function AdminsPage() {
     },
   });
 
+  const visibleAdmins = (adminsQuery.data?.data || []).filter((admin) => admin.approvalStatus !== 'rejected');
+
   if (adminsQuery.isLoading) return <LoadingBlock label="Loading admins..." />;
 
   return (
@@ -472,12 +474,11 @@ export default function AdminsPage() {
               <option value="">All approvals</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
             </select>
           </div>
         </div>
 
-        {adminsQuery.data?.data.map((admin) => (
+        {visibleAdmins.map((admin) => (
           <div
             key={admin.id}
             onClick={() => setSelectedAdmin(admin)}
@@ -570,7 +571,7 @@ export default function AdminsPage() {
           </div>
         ))}
 
-        {adminsQuery.data?.data.length === 0 ? (
+        {visibleAdmins.length === 0 ? (
           <div className="rounded-[1.5rem] border border-primary-100 bg-white p-6 text-sm font-semibold text-slate-500">
             No admins found for selected filter.
           </div>

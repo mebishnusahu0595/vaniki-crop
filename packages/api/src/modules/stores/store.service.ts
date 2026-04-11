@@ -14,7 +14,19 @@ async function resolveStoreAdminScope(userStoreId?: string, userId?: string): Pr
  * Public listing of all active stores for store selection.
  */
 export async function listActiveStores() {
-  return Store.find({ isActive: true }).select('name address phone location openHours');
+  const rejectedAdminRows = await User.find({
+    role: 'storeAdmin',
+    approvalStatus: 'rejected',
+  }).select('_id');
+
+  const rejectedAdminIds = rejectedAdminRows.map((row) => row._id);
+
+  const filter: Record<string, unknown> = { isActive: true };
+  if (rejectedAdminIds.length) {
+    filter.adminId = { $nin: rejectedAdminIds };
+  }
+
+  return Store.find(filter).select('name address phone location openHours');
 }
 
 /**
