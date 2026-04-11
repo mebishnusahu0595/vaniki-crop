@@ -116,7 +116,7 @@ export default function AdminsPage() {
     reset,
     setValue,
     getValues,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isSubmitted, errors },
   } = useForm<AdminFormInput, undefined, AdminFormOutput>({
     resolver: zodResolver(adminSchema),
     defaultValues: adminDefaultValues,
@@ -291,8 +291,9 @@ export default function AdminsPage() {
             <input
               {...register('name')}
               placeholder="Dealer name"
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+              className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.name ? 'border-rose-300' : 'border-primary-100'}`}
             />
+            {errors.name ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.name.message}</p> : null}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
@@ -306,8 +307,9 @@ export default function AdminsPage() {
                   event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
                 }}
                 placeholder="9876543210"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.mobile ? 'border-rose-300' : 'border-primary-100'}`}
               />
+              {errors.mobile ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.mobile.message}</p> : null}
             </div>
 
             <div>
@@ -315,8 +317,9 @@ export default function AdminsPage() {
               <input
                 {...register('email')}
                 placeholder="dealer@example.com"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.email ? 'border-rose-300' : 'border-primary-100'}`}
               />
+              {errors.email ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.email.message}</p> : null}
             </div>
           </div>
 
@@ -326,8 +329,9 @@ export default function AdminsPage() {
               <input
                 {...register('storeName')}
                 placeholder="My Agro Store"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.storeName ? 'border-rose-300' : 'border-primary-100'}`}
               />
+              {errors.storeName ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.storeName.message}</p> : null}
             </div>
 
             <div>
@@ -335,8 +339,9 @@ export default function AdminsPage() {
               <input
                 {...register('storeLocation')}
                 placeholder="Area / Landmark / Address"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.storeLocation ? 'border-rose-300' : 'border-primary-100'}`}
               />
+              {errors.storeLocation ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.storeLocation.message}</p> : null}
             </div>
           </div>
 
@@ -348,8 +353,9 @@ export default function AdminsPage() {
                 step="0.000001"
                 {...register('longitude')}
                 placeholder="77.4065"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.longitude ? 'border-rose-300' : 'border-primary-100'}`}
               />
+              {errors.longitude ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.longitude.message}</p> : null}
             </div>
 
             <div>
@@ -359,8 +365,9 @@ export default function AdminsPage() {
                 step="0.000001"
                 {...register('latitude')}
                 placeholder="23.2505"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.latitude ? 'border-rose-300' : 'border-primary-100'}`}
               />
+              {errors.latitude ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.latitude.message}</p> : null}
             </div>
           </div>
 
@@ -409,8 +416,9 @@ export default function AdminsPage() {
                   event.currentTarget.value = event.currentTarget.value.toUpperCase();
                 }}
                 placeholder="27ABCDE1234F1Z4"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 uppercase"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 uppercase ${errors.gstNumber ? 'border-rose-300' : 'border-primary-100'}`}
               />
+              {errors.gstNumber ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.gstNumber.message}</p> : null}
             </div>
 
             <div>
@@ -423,8 +431,9 @@ export default function AdminsPage() {
                   event.currentTarget.value = event.currentTarget.value.toUpperCase();
                 }}
                 placeholder="27ABCDE1234F1Z3"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 uppercase"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 uppercase ${errors.sgstNumber ? 'border-rose-300' : 'border-primary-100'}`}
               />
+              {errors.sgstNumber ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.sgstNumber.message}</p> : null}
             </div>
           </div>
 
@@ -436,6 +445,9 @@ export default function AdminsPage() {
               onChange={(event) => handleImageSelection(event.target.files?.[0] || null)}
               className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm"
             />
+            {!editing && isSubmitted && !selectedImageFile ? (
+              <p className="mt-1 text-xs font-semibold text-rose-600">Dealer photo is required for new admin accounts.</p>
+            ) : null}
             {selectedImagePreview ? (
               <img src={selectedImagePreview} alt="Dealer preview" className="mt-3 h-20 w-20 rounded-2xl object-cover" />
             ) : editing?.profileImage?.url ? (
@@ -450,8 +462,12 @@ export default function AdminsPage() {
                 type="password"
                 {...register('password')}
                 placeholder={editing ? 'Set new password (optional)' : 'Create password'}
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.password ? 'border-rose-300' : 'border-primary-100'}`}
               />
+              {errors.password ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.password.message}</p> : null}
+              {!editing && isSubmitted && !getValues('password') ? (
+                <p className="mt-1 text-xs font-semibold text-rose-600">Password is required for new admin accounts.</p>
+              ) : null}
             </div>
 
             <div>
@@ -469,6 +485,12 @@ export default function AdminsPage() {
 
           {formError ? (
             <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">{formError}</p>
+          ) : null}
+
+          {Object.keys(errors).length > 0 ? (
+            <p className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+              Please fix highlighted fields before submitting.
+            </p>
           ) : null}
 
           {formSuccess ? (
