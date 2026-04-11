@@ -91,6 +91,15 @@ export async function deactivateAdmin(req: Request, res: Response, next: NextFun
   }
 }
 
+export async function approveAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.approveAdmin(req.params.id as string, req.body.approvalStatus);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listCustomers(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await superAdminService.listCustomers(req.query);
@@ -136,6 +145,24 @@ export async function listPayments(req: Request, res: Response, next: NextFuncti
       pagination: result.pagination,
       summary: result.summary,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listProductRequests(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await superAdminService.listProductRequests(req.query);
+    res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateProductRequestStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.updateProductRequestStatus(req.params.id as string, req.body);
+    res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }

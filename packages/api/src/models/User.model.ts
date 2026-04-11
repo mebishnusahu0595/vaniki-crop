@@ -15,6 +15,19 @@ export interface ISavedAddress {
 /** User role enum */
 export type UserRole = 'customer' | 'storeAdmin' | 'superAdmin';
 
+/** Dealer approval status enum */
+export type DealerApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+/** Dealer profile captured during registration */
+export interface IDealerProfile {
+  storeName: string;
+  storeLocation: string;
+  latitude: number;
+  longitude: number;
+  gstNumber: string;
+  sgstNumber: string;
+}
+
 /** Service mode enum */
 export type ServiceMode = 'delivery' | 'pickup';
 
@@ -25,6 +38,8 @@ export interface IUser extends Document {
   mobile: string;
   password: string;
   role: UserRole;
+  approvalStatus: DealerApprovalStatus;
+  dealerProfile?: IDealerProfile;
   selectedStore?: mongoose.Types.ObjectId;
   serviceMode: ServiceMode;
   savedAddress?: ISavedAddress;
@@ -56,6 +71,18 @@ const savedAddressSchema = new Schema<ISavedAddress>(
     state: { type: String, trim: true },
     pincode: { type: String, trim: true },
     landmark: { type: String, trim: true },
+  },
+  { _id: false },
+);
+
+const dealerProfileSchema = new Schema<IDealerProfile>(
+  {
+    storeName: { type: String, trim: true },
+    storeLocation: { type: String, trim: true },
+    latitude: { type: Number },
+    longitude: { type: Number },
+    gstNumber: { type: String, trim: true, uppercase: true },
+    sgstNumber: { type: String, trim: true, uppercase: true },
   },
   { _id: false },
 );
@@ -95,6 +122,15 @@ const userSchema = new Schema<IUser>(
       },
       default: 'customer',
     },
+    approvalStatus: {
+      type: String,
+      enum: {
+        values: ['pending', 'approved', 'rejected'],
+        message: '{VALUE} is not a valid approval status',
+      },
+      default: 'approved',
+    },
+    dealerProfile: dealerProfileSchema,
     selectedStore: {
       type: Schema.Types.ObjectId,
       ref: 'Store',

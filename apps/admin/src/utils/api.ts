@@ -9,6 +9,8 @@ import type {
   Coupon,
   Customer,
   DashboardAnalytics,
+  DealerInventoryProduct,
+  DealerProductRequest,
   Order,
   PaginationMeta,
   Payment,
@@ -77,6 +79,21 @@ api.interceptors.response.use(
 );
 
 export const adminApi = {
+  dealerSignup: async (payload: {
+    name: string;
+    mobile: string;
+    email?: string;
+    storeName: string;
+    storeLocation: string;
+    longitude: number;
+    latitude: number;
+    gstNumber: string;
+    sgstNumber: string;
+    password: string;
+  }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/dealer-signup', payload);
+    return response.data;
+  },
   login: async (payload: { mobile: string; password: string }) => {
     const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/login', payload);
     return response.data.data;
@@ -215,6 +232,28 @@ export const adminApi = {
   },
   updateStoreSettings: async (payload: Record<string, unknown>) => {
     const response = await api.patch<ApiResponse<StoreSettings>>('/stores/admin/me', payload);
+    return response.data.data;
+  },
+  inventoryProducts: async () => {
+    const response = await api.get<ApiResponse<DealerInventoryProduct[]>>('/admin/inventory');
+    return response.data.data;
+  },
+  updateInventory: async (entries: Array<{ productId: string; variantId: string; quantity: number }>) => {
+    const response = await api.patch<ApiResponse<DealerInventoryProduct[]>>('/admin/inventory', { entries });
+    return response.data.data;
+  },
+  productRequests: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<DealerProductRequest[]>>('/admin/product-requests', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
+  createProductRequest: async (payload: {
+    productId?: string;
+    productName?: string;
+    requestedQuantity: number;
+    requestedPack?: string;
+    notes?: string;
+  }) => {
+    const response = await api.post<ApiResponse<DealerProductRequest>>('/admin/product-requests', payload);
     return response.data.data;
   },
 };

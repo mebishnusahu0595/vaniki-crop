@@ -3,6 +3,7 @@ import {
   Banknote,
   Boxes,
   Box,
+  ClipboardList,
   GalleryVerticalEnd,
   Home,
   MessageSquare,
@@ -13,7 +14,9 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink } from 'react-router-dom';
+import { adminApi } from '../utils/api';
 import { cn } from '../utils/cn';
 
 interface SidebarNavItem {
@@ -26,6 +29,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/dashboard', label: 'Global Analytics', icon: Home },
   { to: '/stores', label: 'All Stores', icon: Boxes },
   { to: '/admins', label: 'All Admins', icon: Users },
+  { to: '/product-requests', label: 'Product Requests', icon: ClipboardList },
   { to: '/products', label: 'Products', icon: Box },
   { to: '/categories', label: 'Categories', icon: Tags },
   { to: '/orders', label: 'All Orders', icon: ShoppingCart },
@@ -45,6 +49,15 @@ export function Sidebar({
   open: boolean;
   onClose: () => void;
 }) {
+  const pendingDealersQuery = useQuery({
+    queryKey: ['super-admin-pending-dealer-count'],
+    queryFn: () => adminApi.admins({ approvalStatus: 'pending', page: 1, limit: 1 }),
+    staleTime: 20_000,
+    refetchInterval: 30_000,
+  });
+
+  const pendingDealersCount = pendingDealersQuery.data?.pagination?.total ?? 0;
+
   return (
     <>
       <div
@@ -77,6 +90,8 @@ export function Sidebar({
 
         <nav className="mt-8 space-y-1">
           {navItems.map((item) => {
+            const shouldShowPendingDealerBadge = item.to === '/admins' && pendingDealersCount > 0;
+
             return (
               <NavLink
                 key={item.to}
@@ -91,10 +106,24 @@ export function Sidebar({
                   )
                 }
               >
-                <span className="flex items-center gap-3">
-                  <item.icon size={18} />
-                  {item.label}
-                </span>
+                {({ isActive }) => (
+                  <>
+                    <span className="flex items-center gap-3">
+                      <item.icon size={18} />
+                      {item.label}
+                    </span>
+                    {shouldShowPendingDealerBadge ? (
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em]',
+                          isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700',
+                        )}
+                      >
+                        {pendingDealersCount > 99 ? '99+' : pendingDealersCount}
+                      </span>
+                    ) : null}
+                  </>
+                )}
               </NavLink>
             );
           })}

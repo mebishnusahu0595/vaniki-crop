@@ -6,6 +6,7 @@ import {
   validate,
   sendOtpSchema,
   signupSchema,
+  dealerSignupSchema,
   loginSchema,
   loginOtpSchema,
   forgotPasswordSchema,
@@ -60,6 +61,9 @@ router.post('/send-otp', otpRateLimiter, validate(sendOtpSchema), authController
 
 /** POST /api/auth/signup — Register with OTP verification */
 router.post('/signup', validate(signupSchema), authController.signup);
+
+/** POST /api/auth/dealer-signup — Dealer self registration (pending approval) */
+router.post('/dealer-signup', validate(dealerSignupSchema), authController.dealerSignup);
 
 /** POST /api/auth/login — Login with mobile + password */
 router.post('/login', loginRateLimiter, validate(loginSchema), authController.login);

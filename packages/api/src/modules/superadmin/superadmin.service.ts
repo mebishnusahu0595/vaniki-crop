@@ -8,6 +8,7 @@ import { Store } from '../../models/Store.model.js';
 import { User } from '../../models/User.model.js';
 import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
+import { ProductRequest } from '../../models/ProductRequest.model.js';
 import { Testimonial } from '../../models/Testimonial.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { StoreSecret } from '../../models/StoreSecret.model.js';
@@ -495,6 +496,10 @@ export async function listAdmins(query: Record<string, any>) {
     filter.$or = [{ name: searchRegex }, { mobile: searchRegex }, { email: searchRegex }];
   }
 
+  if (query.approvalStatus && ['pending', 'approved', 'rejected'].includes(String(query.approvalStatus))) {
+    filter.approvalStatus = String(query.approvalStatus);
+  }
+
   const [admins, total] = await Promise.all([
     User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
     User.countDocuments(filter),
@@ -521,6 +526,7 @@ export async function listAdmins(query: Record<string, any>) {
       ...admin.toJSON(),
       assignedStore,
       status: admin.isActive ? 'active' : 'inactive',
+      approvalStatus: admin.approvalStatus || 'approved',
     };
   });
 
@@ -547,6 +553,7 @@ export async function createAdmin(input: Record<string, any>) {
     password: input.password,
     role: 'storeAdmin',
     isActive: true,
+    approvalStatus: 'approved',
   });
 
   if (input.storeId) {
@@ -570,6 +577,7 @@ export async function createAdmin(input: Record<string, any>) {
         }
       : null,
     status: admin.isActive ? 'active' : 'inactive',
+    approvalStatus: admin.approvalStatus || 'approved',
   };
 }
 
@@ -607,6 +615,10 @@ export async function updateAdmin(adminId: string, input: Record<string, any>) {
   if (input.password) {
     admin.password = input.password;
   }
+  if (input.approvalStatus && ['pending', 'approved', 'rejected'].includes(String(input.approvalStatus))) {
+    admin.approvalStatus = String(input.approvalStatus) as 'pending' | 'approved' | 'rejected';
+    admin.isActive = admin.approvalStatus === 'approved';
+  }
 
   await admin.save();
 
@@ -631,6 +643,7 @@ export async function updateAdmin(adminId: string, input: Record<string, any>) {
         }
       : null,
     status: admin.isActive ? 'active' : 'inactive',
+    approvalStatus: admin.approvalStatus || 'approved',
   };
 }
 
@@ -648,6 +661,37 @@ export async function deactivateAdmin(adminId: string) {
   return {
     ...admin.toJSON(),
     status: 'inactive',
+    approvalStatus: admin.approvalStatus || 'approved',
+  };
+}
+
+export async function approveAdmin(adminId: string, approvalStatus: 'approved' | 'rejected') {
+  const admin = await User.findById(adminId);
+  if (!admin || admin.role !== 'storeAdmin') {
+    throw new AppError('Store admin not found', 404);
+  }
+
+  admin.approvalStatus = approvalStatus;
+  admin.isActive = approvalStatus === 'approved';
+  await admin.save();
+
+  const assignedStore = await Store.findOne({ adminId: admin._id }).select('name isActive');
+  if (assignedStore) {
+    assignedStore.isActive = approvalStatus === 'approved';
+    await assignedStore.save();
+  }
+
+  return {
+    ...admin.toJSON(),
+    assignedStore: assignedStore
+      ? {
+          id: assignedStore._id.toString(),
+          name: assignedStore.name,
+          isActive: assignedStore.isActive,
+        }
+      : null,
+    status: admin.isActive ? 'active' : 'inactive',
+    approvalStatus: admin.approvalStatus,
   };
 }
 
@@ -856,6 +900,59 @@ export async function listPayments(query: Record<string, any>) {
       totalRefunded: Math.round((summaryMap.get('refunded') || 0) * 100) / 100,
     },
   };
+}
+
+export async function listProductRequests(query: Record<string, any>) {
+  const { page, limit, skip } = parsePagination(query);
+  const filter: Record<string, any> = {};
+
+  if (query.status && ['pending', 'contacted', 'fulfilled', 'rejected'].includes(String(query.status))) {
+    filter.status = String(query.status);
+  }
+
+  if (query.storeId && mongoose.Types.ObjectId.isValid(String(query.storeId))) {
+    filter.storeId = query.storeId;
+  }
+
+  if (typeof query.search === 'string' && query.search.trim()) {
+    const searchRegex = new RegExp(query.search.trim(), 'i');
+    filter.$or = [{ productName: searchRegex }, { notes: searchRegex }, { requestedPack: searchRegex }];
+  }
+
+  const [rows, total] = await Promise.all([
+    ProductRequest.find(filter)
+      .populate('storeId', 'name phone')
+      .populate('adminId', 'name mobile email')
+      .populate('productId', 'name slug')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    ProductRequest.countDocuments(filter),
+  ]);
+
+  return createPaginationResponse(rows, total, page, limit);
+}
+
+export async function updateProductRequestStatus(productRequestId: string, input: Record<string, any>) {
+  const request = await ProductRequest.findById(productRequestId)
+    .populate('storeId', 'name phone')
+    .populate('adminId', 'name mobile email')
+    .populate('productId', 'name slug');
+
+  if (!request) {
+    throw new AppError('Product request not found', 404);
+  }
+
+  if (input.status && ['pending', 'contacted', 'fulfilled', 'rejected'].includes(String(input.status))) {
+    request.status = String(input.status) as 'pending' | 'contacted' | 'fulfilled' | 'rejected';
+  }
+
+  if (typeof input.superAdminNote === 'string') {
+    request.superAdminNote = input.superAdminNote.trim() || undefined;
+  }
+
+  await request.save();
+  return request;
 }
 
 export async function listTestimonials(query: Record<string, any>) {

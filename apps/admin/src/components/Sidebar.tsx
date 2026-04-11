@@ -1,51 +1,28 @@
 import {
-  BadgePercent,
-  Banknote,
   Boxes,
-  Box,
-  GalleryVerticalEnd,
-  Home,
-  MessageSquare,
   PackageSearch,
-  Settings,
   ShoppingCart,
-  Tags,
-  Users,
   X,
 } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import { cn } from '../utils/cn';
 
-type SidebarBadgeKey = 'pendingOrders' | 'pendingReviews';
-
 interface SidebarNavItem {
   to: string;
   label: string;
-  icon: typeof Home;
-  badgeKey?: SidebarBadgeKey;
+  icon: typeof ShoppingCart;
 }
 
 const navItems: SidebarNavItem[] = [
-  { to: '/', label: 'Dashboard', icon: Home },
-  { to: '/products', label: 'Products', icon: Box },
-  { to: '/categories', label: 'Categories', icon: Tags },
-  { to: '/orders', label: 'Orders', icon: ShoppingCart, badgeKey: 'pendingOrders' },
-  { to: '/customers', label: 'Customers', icon: Users },
-  { to: '/coupons', label: 'Coupons', icon: BadgePercent },
-  { to: '/reviews', label: 'Reviews', icon: MessageSquare, badgeKey: 'pendingReviews' },
-  { to: '/banners', label: 'Banners', icon: GalleryVerticalEnd },
-  { to: '/payments', label: 'Payments', icon: Banknote },
-  { to: '/settings', label: 'Store Settings', icon: Settings },
+  { to: '/orders', label: 'Orders', icon: ShoppingCart },
 ];
 
 export function Sidebar({
   open,
   onClose,
-  badges,
 }: {
   open: boolean;
   onClose: () => void;
-  badges?: { pendingOrders?: number; pendingReviews?: number };
 }) {
   return (
     <>
@@ -63,7 +40,7 @@ export function Sidebar({
         )}
       >
         <div className="flex items-center justify-between px-2">
-          <Link to="/" className="flex items-center gap-3">
+          <Link to="/orders" className="flex items-center gap-3">
             <div className="rounded-2xl bg-primary-500 p-2.5 text-white">
               <Boxes size={18} />
             </div>
@@ -79,13 +56,6 @@ export function Sidebar({
 
         <nav className="mt-8 space-y-1">
           {navItems.map((item) => {
-            const badge =
-              item.badgeKey === 'pendingOrders'
-                ? badges?.pendingOrders
-                : item.badgeKey === 'pendingReviews'
-                  ? badges?.pendingReviews
-                  : undefined;
-
             return (
               <NavLink
                 key={item.to}
@@ -104,11 +74,6 @@ export function Sidebar({
                   <item.icon size={18} />
                   {item.label}
                 </span>
-                {badge ? (
-                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-black tracking-wide md:bg-primary-100 md:text-primary-700">
-                    {badge}
-                  </span>
-                ) : null}
               </NavLink>
             );
           })}
@@ -122,7 +87,7 @@ export function Sidebar({
             <div>
               <p className="text-sm font-black text-slate-900">Store-first operations</p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Approve reviews, manage inventory, and track orders for your assigned store only.
+                Track order lifecycle and fulfilment updates for your assigned store.
               </p>
             </div>
           </div>

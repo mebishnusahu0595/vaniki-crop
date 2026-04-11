@@ -22,12 +22,6 @@ export function AdminLayout() {
     retry: 1,
   });
 
-  const analyticsQuery = useQuery({
-    queryKey: ['admin-shell-analytics'],
-    queryFn: () => adminApi.analytics('7d'),
-    enabled: Boolean(token) && sessionQuery.isSuccess && sessionQuery.data?.role === 'storeAdmin',
-  });
-
   useEffect(() => {
     if (sessionQuery.data) {
       if (sessionQuery.data.role !== 'storeAdmin') {
@@ -51,14 +45,7 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-off-white text-slate-900 md:grid md:grid-cols-[280px_1fr]">
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        badges={{
-          pendingOrders: analyticsQuery.data?.stats.pendingOrders,
-          pendingReviews: analyticsQuery.data?.pendingReviews,
-        }}
-      />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="min-w-0">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="px-4 py-6 lg:px-8">

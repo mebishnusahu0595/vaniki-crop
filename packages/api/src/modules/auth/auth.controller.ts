@@ -58,6 +58,26 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
 }
 
 /**
+ * POST /api/auth/dealer-signup
+ * Registers a dealer account and marks it pending for super-admin approval.
+ */
+export async function dealerSignup(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await authService.dealerSignup(req.body);
+
+    res.status(201).json({
+      success: true,
+      message: 'Registration submitted. Please wait for super admin approval before login.',
+      data: {
+        user: user.toJSON(),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * POST /api/auth/login
  * Authenticates user with mobile + password.
  * Returns access token in body + refresh token in httpOnly cookie.

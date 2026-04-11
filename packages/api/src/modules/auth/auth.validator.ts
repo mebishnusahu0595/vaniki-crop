@@ -55,6 +55,28 @@ export const signupSchema = z.object({
 });
 
 /**
+ * Zod schema for POST /api/auth/dealer-signup
+ */
+export const dealerSignupSchema = z.object({
+  body: z.object({
+    name: z
+      .string()
+      .trim()
+      .min(2, 'Name must be at least 2 characters')
+      .max(100, 'Name cannot exceed 100 characters'),
+    mobile: mobileSchema,
+    email: z.string().trim().email('Please provide a valid email address').optional().or(z.literal('')),
+    storeName: z.string().trim().min(2, 'Store name must be at least 2 characters').max(150),
+    storeLocation: z.string().trim().min(3, 'Store location is required').max(250),
+    longitude: z.number().min(-180, 'Longitude must be between -180 and 180').max(180, 'Longitude must be between -180 and 180'),
+    latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90'),
+    gstNumber: z.string().trim().min(5, 'GST number is required').max(30),
+    sgstNumber: z.string().trim().min(5, 'SGST number is required').max(30),
+    password: passwordSchema,
+  }),
+});
+
+/**
  * Zod schema for POST /api/auth/login
  */
 export const loginSchema = z.object({
@@ -171,6 +193,7 @@ export const toggleWishlistSchema = z.object({
 
 export type SendOtpInput = z.infer<typeof sendOtpSchema>['body'];
 export type SignupInput = z.infer<typeof signupSchema>['body'];
+export type DealerSignupInput = z.infer<typeof dealerSignupSchema>['body'];
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type LoginOtpInput = z.infer<typeof loginOtpSchema>['body'];
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>['body'];

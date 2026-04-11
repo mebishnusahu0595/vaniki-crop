@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
+import { AppError } from '../../utils/AppError.js';
+import { DealerInventory } from '../../models/DealerInventory.model.js';
 import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
+import { ProductRequest } from '../../models/ProductRequest.model.js';
 import { User } from '../../models/User.model.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
 
@@ -121,4 +124,160 @@ export async function listStoreCustomers(storeId: string, query: Record<string, 
   ]);
 
   return createPaginationResponse(rows, totalRows[0]?.count || 0, page, limit);
+}
+
+export async function listDealerInventory(storeId: string) {
+  const products = await Product.find({ isActive: true })
+    .select('name slug images category variants isActive')
+    .populate('category', 'name')
+    .sort({ updatedAt: -1 });
+
+  const productIds = products.map((product) => product._id as mongoose.Types.ObjectId);
+  const inventoryRows = productIds.length
+    ? await DealerInventory.find({ storeId, productId: { $in: productIds } }).select('productId variantId quantity')
+    : [];
+
+  const quantityByVariant = new Map<string, number>();
+  for (const row of inventoryRows) {
+    quantityByVariant.set(`${row.productId.toString()}:${row.variantId.toString()}`, row.quantity);
+  }
+
+  return products.map((product) => ({
+    id: (product._id as mongoose.Types.ObjectId).toString(),
+    name: product.name,
+    slug: product.slug,
+    image: product.images?.[0]?.url,
+    category: product.category,
+    variants: product.variants.map((variant: any) => {
+      const variantId = variant._id.toString();
+      const key = `${(product._id as mongoose.Types.ObjectId).toString()}:${variantId}`;
+      return {
+        id: variantId,
+        label: variant.label,
+        price: variant.price,
+        mrp: variant.mrp,
+        quantity: quantityByVariant.get(key) ?? 0,
+      };
+    }),
+  }));
+}
+
+export async function upsertDealerInventory(
+  storeId: string,
+  adminId: string,
+  entries: Array<{ productId: string; variantId: string; quantity: number }>,
+) {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    throw new AppError('At least one inventory row is required', 400);
+  }
+
+  const productIds = Array.from(new Set(entries.map((entry) => entry.productId)));
+  const products = await Product.find({ _id: { $in: productIds } }).select('variants');
+  const productById = new Map<string, any>(
+    products.map((product) => [(product._id as mongoose.Types.ObjectId).toString(), product]),
+  );
+
+  for (const entry of entries) {
+    const product = productById.get(entry.productId);
+    if (!product) {
+      throw new AppError('Invalid product in inventory payload', 400);
+    }
+
+    const hasVariant = product.variants.some((variant: any) => variant._id.toString() === entry.variantId);
+    if (!hasVariant) {
+      throw new AppError('Invalid product variant in inventory payload', 400);
+    }
+
+    const safeQuantity = Number.isFinite(Number(entry.quantity)) ? Math.max(0, Number(entry.quantity)) : 0;
+
+    await DealerInventory.findOneAndUpdate(
+      {
+        storeId,
+        productId: entry.productId,
+        variantId: entry.variantId,
+      },
+      {
+        quantity: safeQuantity,
+        updatedBy: adminId,
+      },
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+      },
+    );
+  }
+
+  return listDealerInventory(storeId);
+}
+
+export async function createDealerProductRequest(
+  storeId: string,
+  adminId: string,
+  input: Record<string, any>,
+) {
+  const requestedQuantity = Number(input.requestedQuantity || input.quantity || 0);
+  if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
+    throw new AppError('Requested quantity must be greater than 0', 400);
+  }
+
+  const requestedPack = typeof input.requestedPack === 'string'
+    ? input.requestedPack.trim()
+    : typeof input.packSize === 'string'
+      ? input.packSize.trim()
+      : undefined;
+
+  const notes = typeof input.notes === 'string' ? input.notes.trim() : undefined;
+
+  let productId: mongoose.Types.ObjectId | undefined;
+  let productName = typeof input.productName === 'string' ? input.productName.trim() : '';
+
+  if (typeof input.productId === 'string' && mongoose.Types.ObjectId.isValid(input.productId)) {
+    const product = await Product.findById(input.productId).select('name');
+    if (!product) {
+      throw new AppError('Selected product not found', 404);
+    }
+    productId = product._id as mongoose.Types.ObjectId;
+    if (!productName) {
+      productName = product.name;
+    }
+  }
+
+  if (!productName) {
+    throw new AppError('Product name is required for request', 400);
+  }
+
+  const request = await ProductRequest.create({
+    storeId,
+    adminId,
+    productId,
+    productName,
+    requestedQuantity,
+    requestedPack,
+    notes,
+    status: 'pending',
+  });
+
+  await request.populate('productId', 'name slug');
+  return request;
+}
+
+export async function listDealerProductRequests(storeId: string, query: Record<string, any>) {
+  const { page, limit, skip } = parsePagination(query);
+  const filter: Record<string, any> = { storeId };
+
+  if (query.status && ['pending', 'contacted', 'fulfilled', 'rejected'].includes(String(query.status))) {
+    filter.status = String(query.status);
+  }
+
+  const [rows, total] = await Promise.all([
+    ProductRequest.find(filter)
+      .populate('productId', 'name slug')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    ProductRequest.countDocuments(filter),
+  ]);
+
+  return createPaginationResponse(rows, total, page, limit);
 }

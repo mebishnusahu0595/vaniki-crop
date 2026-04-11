@@ -32,10 +32,16 @@ export default function AdminsPage() {
   const [editing, setEditing] = useState<AdminAccount | null>(null);
   const [selectedAdmin, setSelectedAdmin] = useState<AdminAccount | null>(null);
   const [search, setSearch] = useState('');
+  const [approvalStatus, setApprovalStatus] = useState('');
 
   const adminsQuery = useQuery({
-    queryKey: ['super-admin-admins', search],
-    queryFn: () => adminApi.admins({ search, limit: 100 }),
+    queryKey: ['super-admin-admins', search, approvalStatus],
+    queryFn: () =>
+      adminApi.admins({
+        search,
+        approvalStatus: approvalStatus || undefined,
+        limit: 100,
+      }),
   });
 
   const storesQuery = useQuery({
@@ -117,6 +123,15 @@ export default function AdminsPage() {
     },
   });
 
+  const approveMutation = useMutation({
+    mutationFn: ({ id, nextStatus }: { id: string; nextStatus: 'approved' | 'rejected' }) =>
+      adminApi.approveAdmin(id, nextStatus),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin-admins'] });
+      queryClient.invalidateQueries({ queryKey: ['super-admin-store-list'] });
+    },
+  });
+
   if (adminsQuery.isLoading) return <LoadingBlock label="Loading admins..." />;
 
   return (
@@ -168,12 +183,24 @@ export default function AdminsPage() {
 
       <div className="space-y-4">
         <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search admins by name, mobile, email"
-            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-          />
+          <div className="grid gap-3 md:grid-cols-2">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search admins by name, mobile, email"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+            />
+            <select
+              value={approvalStatus}
+              onChange={(event) => setApprovalStatus(event.target.value)}
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+            >
+              <option value="">All approvals</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
         </div>
 
         {adminsQuery.data?.data.map((admin) => (
@@ -202,20 +229,57 @@ export default function AdminsPage() {
             </div>
 
             <div className="mt-4 flex items-center justify-between">
-              <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.14em] ${admin.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                {admin.isActive ? 'Active' : 'Inactive'}
-              </span>
-              {admin.isActive ? (
-                <button
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    deactivateMutation.mutate(admin.id);
-                  }}
-                  className="text-sm font-semibold text-rose-600"
-                >
-                  Deactivate
-                </button>
-              ) : null}
+              <div className="flex items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.14em] ${admin.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                  {admin.isActive ? 'Active' : 'Inactive'}
+                </span>
+                <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.14em] ${
+                  admin.approvalStatus === 'approved'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : admin.approvalStatus === 'rejected'
+                    ? 'bg-rose-100 text-rose-700'
+                    : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {admin.approvalStatus}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {admin.approvalStatus === 'pending' ? (
+                  <>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        approveMutation.mutate({ id: admin.id, nextStatus: 'approved' });
+                      }}
+                      className="text-sm font-semibold text-emerald-600"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        approveMutation.mutate({ id: admin.id, nextStatus: 'rejected' });
+                      }}
+                      className="text-sm font-semibold text-rose-600"
+                    >
+                      Reject
+                    </button>
+                  </>
+                ) : null}
+
+                {admin.isActive ? (
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deactivateMutation.mutate(admin.id);
+                    }}
+                    className="text-sm font-semibold text-rose-600"
+                  >
+                    Deactivate
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
         ))}
@@ -242,12 +306,38 @@ export default function AdminsPage() {
               <p><span className="font-black text-slate-900">Admin ID:</span> {selectedAdmin.id}</p>
               <p><span className="font-black text-slate-900">Role:</span> {selectedAdmin.role}</p>
               <p><span className="font-black text-slate-900">Status:</span> {selectedAdmin.isActive ? 'Active' : 'Inactive'}</p>
+              <p><span className="font-black text-slate-900">Approval:</span> {selectedAdmin.approvalStatus}</p>
               <p><span className="font-black text-slate-900">Mobile:</span> {selectedAdmin.mobile}</p>
               <p><span className="font-black text-slate-900">Email:</span> {selectedAdmin.email || '-'}</p>
               <p><span className="font-black text-slate-900">Assigned Store:</span> {selectedAdmin.assignedStore?.name || 'Unassigned'}</p>
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
+              {selectedAdmin.approvalStatus === 'pending' ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      approveMutation.mutate({ id: selectedAdmin.id, nextStatus: 'approved' });
+                      setSelectedAdmin(null);
+                    }}
+                    className="rounded-2xl border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700"
+                  >
+                    Approve Dealer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      approveMutation.mutate({ id: selectedAdmin.id, nextStatus: 'rejected' });
+                      setSelectedAdmin(null);
+                    }}
+                    className="rounded-2xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700"
+                  >
+                    Reject Dealer
+                  </button>
+                </>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => {

@@ -59,6 +59,34 @@ export interface AuthUser {
   email?: string;
   mobile: string;
   role: 'customer' | 'storeAdmin' | 'superAdmin';
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+}
+
+export interface DealerInventoryVariant {
+  id: string;
+  label: string;
+  price: number;
+  mrp: number;
+  quantity: number;
+}
+
+export interface DealerInventoryProduct {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string;
+  variants: DealerInventoryVariant[];
+}
+
+export interface DealerProductRequest {
+  id: string;
+  productName: string;
+  requestedQuantity: number;
+  requestedPack?: string;
+  notes?: string;
+  status: 'pending' | 'contacted' | 'fulfilled' | 'rejected';
+  superAdminNote?: string;
+  createdAt: string;
 }
 
 export interface OrderItem {

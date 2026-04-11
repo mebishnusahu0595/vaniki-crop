@@ -7,6 +7,7 @@ import { Store } from '../../models/Store.model.js';
 import { AppError } from '../../utils/AppError.js';
 import type {
   ChangePasswordInput,
+  DealerSignupInput,
   SendOtpInput,
   SignupInput,
   LoginInput,
@@ -232,6 +233,78 @@ export async function signup(
 }
 
 /**
+ * Registers a dealer (store admin) account and keeps it pending until super admin approval.
+ */
+export async function dealerSignup(input: DealerSignupInput): Promise<IUser> {
+  const {
+    name,
+    mobile,
+    email,
+    password,
+    storeName,
+    storeLocation,
+    longitude,
+    latitude,
+    gstNumber,
+    sgstNumber,
+  } = input;
+
+  const normalizedEmail = email?.trim().toLowerCase() || undefined;
+
+  const existingMobile = await User.findOne({ mobile });
+  if (existingMobile) {
+    throw new AppError('A user with this mobile already exists', 409);
+  }
+
+  if (normalizedEmail) {
+    const existingEmail = await User.findOne({ email: normalizedEmail });
+    if (existingEmail) {
+      throw new AppError('A user with this email already exists', 409);
+    }
+  }
+
+  const user = await User.create({
+    name,
+    email: normalizedEmail,
+    mobile,
+    password,
+    role: 'storeAdmin',
+    approvalStatus: 'pending',
+    isActive: true,
+    dealerProfile: {
+      storeName,
+      storeLocation,
+      latitude,
+      longitude,
+      gstNumber: gstNumber.trim().toUpperCase(),
+      sgstNumber: sgstNumber.trim().toUpperCase(),
+    },
+  });
+
+  // Create an inactive draft store so approval can activate it directly.
+  await Store.create({
+    name: storeName,
+    phone: mobile,
+    email: normalizedEmail,
+    adminId: user._id,
+    isActive: false,
+    address: {
+      street: storeLocation,
+      city: 'Pending',
+      state: 'Pending',
+      pincode: '000000',
+    },
+    location: {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+    },
+    deliveryRadius: 10,
+  });
+
+  return user;
+}
+
+/**
  * Authenticates a user with mobile and password.
  * @param input - { mobile, password }
  * @returns Authenticated user and token pair
@@ -248,6 +321,13 @@ export async function login(
 
   if (!user.isActive) {
     throw new AppError('Your account has been deactivated. Contact support.', 403);
+  }
+
+  if (user.role === 'storeAdmin' && user.approvalStatus !== 'approved') {
+    if (user.approvalStatus === 'rejected') {
+      throw new AppError('Your dealer account has been rejected. Please contact support.', 403);
+    }
+    throw new AppError('Your dealer account is pending super admin approval.', 403);
   }
 
   const isMatch = await user.comparePassword(password);
@@ -276,6 +356,13 @@ export async function loginWithOtp(
 
   if (!user.isActive) {
     throw new AppError('Your account has been deactivated. Contact support.', 403);
+  }
+
+  if (user.role === 'storeAdmin' && user.approvalStatus !== 'approved') {
+    if (user.approvalStatus === 'rejected') {
+      throw new AppError('Your dealer account has been rejected. Please contact support.', 403);
+    }
+    throw new AppError('Your dealer account is pending super admin approval.', 403);
   }
 
   if (!user.otp || !user.otpExpiry) {

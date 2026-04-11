@@ -15,6 +15,7 @@ import SettingsPage from './pages/Settings';
 import StoresPage from './pages/Stores';
 import AdminsPage from './pages/Admins';
 import TestimonialsPage from './pages/Testimonials';
+import ProductRequestsPage from './pages/ProductRequests';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/stores" element={<StoresPage />} />
           <Route path="/admins" element={<AdminsPage />} />
+          <Route path="/product-requests" element={<ProductRequestsPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/new" element={<ProductFormPage />} />
           <Route path="/products/:id/edit" element={<ProductFormPage />} />

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import { DealerInventory } from '../../models/DealerInventory.model.js';
 import { Order, type IOrder } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Store } from '../../models/Store.model.js';
@@ -38,7 +39,15 @@ async function calculateCart(items: any[], storeId: string) {
       throw new AppError(`Variant not found for product "${product.name}"`, 400);
     }
 
-    if (variant.stock < item.qty) {
+    const inventoryRow = await DealerInventory.findOne({
+      storeId,
+      productId: product._id,
+      variantId: item.variantId,
+    }).select('quantity');
+
+    const availableStock = inventoryRow ? inventoryRow.quantity : variant.stock;
+
+    if (availableStock < item.qty) {
       throw new AppError(`Not enough stock for "${product.name} - ${variant.label}"`, 400);
     }
 
@@ -179,14 +188,34 @@ export async function placeCodOrder(userId: string, input: any) {
   }
 
   for (const item of items) {
+    const inventoryRow = await DealerInventory.findOne({
+      storeId,
+      productId: item.productId,
+      variantId: item.variantId,
+    });
+
+    if (inventoryRow) {
+      inventoryRow.quantity = Math.max(0, inventoryRow.quantity - item.qty);
+      await inventoryRow.save();
+    } else {
+      await Product.updateOne(
+        { _id: item.productId, 'variants._id': item.variantId },
+        {
+          $inc: {
+            'variants.$.stock': -item.qty,
+            totalSold: item.qty,
+          },
+        }
+      );
+    }
+
     await Product.updateOne(
-      { _id: item.productId, 'variants._id': item.variantId },
+      { _id: item.productId },
       {
         $inc: {
-          'variants.$.stock': -item.qty,
           totalSold: item.qty,
         },
-      }
+      },
     );
   }
 
@@ -281,14 +310,33 @@ export async function confirmOrder(userId: string, input: any) {
 
   // 4. Decrement Stock
   for (const item of items) {
+    const inventoryRow = await DealerInventory.findOne({
+      storeId,
+      productId: item.productId,
+      variantId: item.variantId,
+    });
+
+    if (inventoryRow) {
+      inventoryRow.quantity = Math.max(0, inventoryRow.quantity - item.qty);
+      await inventoryRow.save();
+    } else {
+      await Product.updateOne(
+        { _id: item.productId, 'variants._id': item.variantId },
+        {
+          $inc: {
+            'variants.$.stock': -item.qty,
+          },
+        }
+      );
+    }
+
     await Product.updateOne(
-      { _id: item.productId, 'variants._id': item.variantId },
-      { 
-        $inc: { 
-          'variants.$.stock': -item.qty,
-          totalSold: item.qty 
-        } 
-      }
+      { _id: item.productId },
+      {
+        $inc: {
+          totalSold: item.qty,
+        },
+      },
     );
   }
 

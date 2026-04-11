@@ -8,5 +8,9 @@ router.use(requireAuth, requireStoreAdmin);
 
 router.get('/search', adminController.searchAdmin);
 router.get('/customers', adminController.listCustomers);
+router.get('/inventory', adminController.listInventory);
+router.patch('/inventory', adminController.updateInventory);
+router.get('/product-requests', adminController.listProductRequests);
+router.post('/product-requests', adminController.createProductRequest);
 
 export default router;

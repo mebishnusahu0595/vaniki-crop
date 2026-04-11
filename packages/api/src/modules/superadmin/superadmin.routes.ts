@@ -4,6 +4,7 @@ import { requireAuth, requireSuperAdmin } from '../auth/auth.middleware.js';
 import * as superAdminController from './superadmin.controller.js';
 import {
   analyticsQuerySchema,
+  approveAdminSchema,
   createAdminSchema,
   createStoreSchema,
   createTestimonialSchema,
@@ -11,6 +12,7 @@ import {
   orderQuerySchema,
   orderStatusUpdateSchema,
   paymentQuerySchema,
+  productRequestQuerySchema,
   reassignStoreAdminSchema,
   reorderTestimonialsSchema,
   toggleStoreSchema,
@@ -19,6 +21,7 @@ import {
   updateSiteSettingsSchema,
   updateStoreSchema,
   updateStoreSecretsSchema,
+  updateProductRequestStatusSchema,
   updateTestimonialSchema,
   validate,
 } from './superadmin.validator.js';
@@ -41,6 +44,7 @@ router.get('/admins', superAdminController.listAdmins);
 router.post('/admins', validate(createAdminSchema), superAdminController.createAdmin);
 router.patch('/admins/:id', validate(updateAdminSchema), superAdminController.updateAdmin);
 router.patch('/admins/:id/deactivate', superAdminController.deactivateAdmin);
+router.patch('/admins/:id/approval', validate(approveAdminSchema), superAdminController.approveAdmin);
 
 router.get('/customers', validate(customerQuerySchema), superAdminController.listCustomers);
 
@@ -49,6 +53,12 @@ router.get('/orders/:id', superAdminController.getOrderDetail);
 router.patch('/orders/:id/status', validate(orderStatusUpdateSchema), superAdminController.updateOrderStatus);
 
 router.get('/payments', validate(paymentQuerySchema), superAdminController.listPayments);
+router.get('/product-requests', validate(productRequestQuerySchema), superAdminController.listProductRequests);
+router.patch(
+  '/product-requests/:id',
+  validate(updateProductRequestStatusSchema),
+  superAdminController.updateProductRequestStatus,
+);
 
 router.get('/testimonials', superAdminController.listTestimonials);
 router.post(

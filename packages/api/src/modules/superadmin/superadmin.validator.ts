@@ -96,11 +96,19 @@ export const updateAdminSchema = z.object({
       mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Invalid mobile number').optional(),
       password: z.string().min(6).max(128).optional(),
       isActive: boolish.optional(),
+      approvalStatus: z.enum(['pending', 'approved', 'rejected']).optional(),
       storeId: objectIdSchema.optional().nullable(),
     })
     .refine((value) => Object.keys(value).length > 0, {
       message: 'At least one field is required',
     }),
+});
+
+export const approveAdminSchema = z.object({
+  params: z.object({ id: objectIdSchema }),
+  body: z.object({
+    approvalStatus: z.enum(['approved', 'rejected']),
+  }),
 });
 
 export const customerQuerySchema = z.object({
@@ -146,6 +154,24 @@ export const paymentQuerySchema = z.object({
     endDate: z.preprocess(emptyToUndefined, z.string().optional()),
     page: z.preprocess(emptyToUndefined, z.string().optional()),
     limit: z.preprocess(emptyToUndefined, z.string().optional()),
+  }),
+});
+
+export const productRequestQuerySchema = z.object({
+  query: z.object({
+    search: z.preprocess(emptyToUndefined, z.string().optional()),
+    storeId: z.preprocess(emptyToUndefined, objectIdSchema.optional()),
+    status: z.preprocess(emptyToUndefined, z.enum(['pending', 'contacted', 'fulfilled', 'rejected']).optional()),
+    page: z.preprocess(emptyToUndefined, z.string().optional()),
+    limit: z.preprocess(emptyToUndefined, z.string().optional()),
+  }),
+});
+
+export const updateProductRequestStatusSchema = z.object({
+  params: z.object({ id: objectIdSchema }),
+  body: z.object({
+    status: z.enum(['pending', 'contacted', 'fulfilled', 'rejected']).optional(),
+    superAdminNote: z.string().trim().max(400).optional(),
   }),
 });
 

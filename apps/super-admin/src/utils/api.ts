@@ -15,6 +15,7 @@ import type {
   Payment,
   PaymentSummary,
   Product,
+  ProductRequest,
   Review,
   SiteSettings,
   StoreSecretsResponse,
@@ -343,8 +344,25 @@ export const adminApi = {
     const response = await api.patch<ApiResponse<AdminAccount>>(`/superadmin/admins/${id}`, payload);
     return response.data.data;
   },
+  approveAdmin: async (id: string, approvalStatus: 'approved' | 'rejected') => {
+    const response = await api.patch<ApiResponse<AdminAccount>>(`/superadmin/admins/${id}/approval`, {
+      approvalStatus,
+    });
+    return response.data.data;
+  },
   deactivateAdmin: async (id: string) => {
     const response = await api.patch<ApiResponse<AdminAccount>>(`/superadmin/admins/${id}/deactivate`);
+    return response.data.data;
+  },
+  productRequests: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<ProductRequest[]>>('/superadmin/product-requests', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
+  updateProductRequest: async (
+    id: string,
+    payload: { status: 'approved' | 'rejected' | 'fulfilled'; superAdminNote?: string },
+  ) => {
+    const response = await api.patch<ApiResponse<ProductRequest>>(`/superadmin/product-requests/${id}`, payload);
     return response.data.data;
   },
   testimonials: async (params?: Record<string, unknown>) => {

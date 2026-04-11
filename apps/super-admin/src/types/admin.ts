@@ -59,6 +59,7 @@ export interface AuthUser {
   email?: string;
   mobile: string;
   role: 'customer' | 'storeAdmin' | 'superAdmin';
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface OrderItem {
@@ -281,11 +282,32 @@ export interface AdminAccount {
   role: 'storeAdmin';
   isActive: boolean;
   status: 'active' | 'inactive';
+  approvalStatus: 'pending' | 'approved' | 'rejected';
   assignedStore?: {
     id: string;
     name: string;
     isActive: boolean;
   } | null;
+}
+
+export interface ProductRequest {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected' | 'fulfilled';
+  productName: string;
+  requestedQuantity: number;
+  requestedPack?: string;
+  notes?: string;
+  superAdminNote?: string;
+  createdAt: string;
+  store: {
+    id: string;
+    name: string;
+  };
+  requestedBy: {
+    id: string;
+    name: string;
+    mobile?: string;
+  };
 }
 
 export interface Testimonial {
