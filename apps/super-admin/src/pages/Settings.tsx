@@ -13,7 +13,6 @@ const settingsSchema = z.object({
   supportPhone: z.string().trim().regex(/^\+?[0-9]{10,15}$/, 'Enter valid support phone (10 to 15 digits)').or(z.literal('')),
   homepageHeadline: z.string().max(220, 'Homepage headline can be up to 220 characters').optional(),
   defaultDeliveryRadius: z.coerce.number().min(0, 'Delivery radius cannot be negative'),
-  maintenanceMode: z.boolean().default(false),
   allowGuestCheckout: z.boolean().default(false),
   metaTitle: z.string().max(160, 'Meta title can be up to 160 characters').optional(),
   metaDescription: z.string().max(300, 'Meta description can be up to 300 characters').optional(),
@@ -28,7 +27,6 @@ const settingsDefaultValues: SettingsFormInput = {
   supportPhone: '',
   homepageHeadline: '',
   defaultDeliveryRadius: 10,
-  maintenanceMode: false,
   allowGuestCheckout: false,
   metaTitle: '',
   metaDescription: '',
@@ -41,7 +39,7 @@ export default function SettingsPage() {
 
   const settingsQuery = useQuery({ queryKey: ['super-admin-site-settings'], queryFn: adminApi.siteSettings });
 
-  const { register, handleSubmit, reset, watch, formState: { isSubmitting, errors, isDirty } } = useForm<
+  const { register, handleSubmit, reset, formState: { isSubmitting, errors, isDirty } } = useForm<
     SettingsFormInput,
     undefined,
     SettingsFormOutput
@@ -59,7 +57,6 @@ export default function SettingsPage() {
       supportPhone: settingsQuery.data.supportPhone || '',
       homepageHeadline: settingsQuery.data.homepageHeadline || '',
       defaultDeliveryRadius: settingsQuery.data.defaultDeliveryRadius,
-      maintenanceMode: settingsQuery.data.maintenanceMode,
       allowGuestCheckout: settingsQuery.data.allowGuestCheckout,
       metaTitle: settingsQuery.data.metaTitle || '',
       metaDescription: settingsQuery.data.metaDescription || '',
@@ -81,8 +78,6 @@ export default function SettingsPage() {
     },
   });
 
-  const maintenanceModeEnabled = watch('maintenanceMode');
-
   if (settingsQuery.isLoading || !settingsQuery.data) return <LoadingBlock label="Loading site settings..." />;
 
   return (
@@ -90,7 +85,7 @@ export default function SettingsPage() {
       <PageHeader title="Site Settings" subtitle="Configure platform-level settings for platform name, support details, and feature toggles." />
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
         <p className="mb-4 text-xs font-semibold text-slate-500">
-          Har field ke upar label diya gaya hai. Toggle changes apply karne ke liye Save Settings zaroor click karein.
+          Har field ke upar label diya gaya hai. Changes apply karne ke liye Save Settings zaroor click karein.
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
@@ -135,10 +130,6 @@ export default function SettingsPage() {
             {errors.metaDescription ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.metaDescription.message}</p> : null}
           </div>
 
-          <label className="flex items-center justify-between rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-            <span className="text-sm font-semibold text-slate-700">Maintenance mode ({maintenanceModeEnabled ? 'ON' : 'OFF'})</span>
-            <input type="checkbox" {...register('maintenanceMode')} className="h-4 w-4 accent-primary-600" />
-          </label>
         </div>
 
         {saveError ? <p className="mt-4 text-sm font-semibold text-rose-600">{saveError}</p> : null}
