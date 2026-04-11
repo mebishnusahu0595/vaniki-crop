@@ -3,7 +3,7 @@ import { ArrowLeft, Eye, EyeOff, Leaf, LocateFixed, ShieldCheck } from 'lucide-r
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { adminApi } from '../utils/api';
 import { useAdminAuthStore } from '../store/useAdminAuthStore';
 
@@ -45,8 +45,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const setSession = useAdminAuthStore((state) => state.setSession);
-  const [mode, setMode] = useState<'signup' | 'login'>('signup');
+  const requestedMode = searchParams.get('mode') === 'login' ? 'login' : 'signup';
+  const [mode, setMode] = useState<'signup' | 'login'>(requestedMode);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupMessage, setSignupMessage] = useState('');
@@ -69,6 +71,10 @@ export default function LoginPage() {
     setSignupImageFile(file);
     setSignupImagePreview(file ? URL.createObjectURL(file) : '');
   };
+
+  useEffect(() => {
+    setMode(requestedMode);
+  }, [requestedMode]);
 
   const {
     register: registerSignup,

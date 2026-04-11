@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
 import { currencyFormatter, formatAddress, formatDateTime } from '../utils/format';
 
 export default function OrdersPage() {
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [nextStatus, setNextStatus] = useState('confirmed');
   const [note, setNote] = useState('');
+  const [inventorySearch, setInventorySearch] = useState(searchParams.get('inventory') || '');
 
   const [selectedProductId, setSelectedProductId] = useState('');
   const [requestedProductName, setRequestedProductName] = useState('');
@@ -43,6 +46,24 @@ export default function OrdersPage() {
     queryKey: ['admin-product-requests'],
     queryFn: () => adminApi.productRequests({ limit: 30 }),
   });
+
+  useEffect(() => {
+    const nextInventoryQuery = searchParams.get('inventory') || '';
+    if (nextInventoryQuery !== inventorySearch) {
+      setInventorySearch(nextInventoryQuery);
+    }
+  }, [inventorySearch, searchParams]);
+
+  const filteredInventory = useMemo(() => {
+    const rows = inventoryQuery.data || [];
+    const searchValue = inventorySearch.trim().toLowerCase();
+    if (!searchValue) return rows;
+
+    return rows.filter((product) => {
+      return product.name.toLowerCase().includes(searchValue)
+        || product.slug.toLowerCase().includes(searchValue);
+    });
+  }, [inventoryQuery.data, inventorySearch]);
 
   useEffect(() => {
     if (!inventoryQuery.data) return;
@@ -146,8 +167,15 @@ export default function OrdersPage() {
           </button>
         </div>
 
+        <input
+          value={inventorySearch}
+          onChange={(event) => setInventorySearch(event.target.value)}
+          placeholder="Search inventory products"
+          className="mt-4 w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+        />
+
         <div className="mt-4 space-y-4">
-          {inventoryQuery.data?.map((product) => (
+          {filteredInventory.map((product) => (
             <div key={product.id} className="rounded-2xl border border-primary-100 bg-primary-50/40 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -209,6 +237,11 @@ export default function OrdersPage() {
               </div>
             </div>
           ))}
+          {filteredInventory.length === 0 ? (
+            <p className="rounded-xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-slate-600">
+              No inventory product matched this search.
+            </p>
+          ) : null}
         </div>
       </section>
 

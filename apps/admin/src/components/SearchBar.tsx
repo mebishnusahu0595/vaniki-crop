@@ -45,7 +45,7 @@ export function SearchBar() {
             setQuery(event.target.value);
             setOpen(true);
           }}
-          placeholder="Search orders, products, customers"
+          placeholder="Search orders, inventory products, customers"
           className="w-full bg-transparent text-sm font-medium text-slate-800 outline-none"
         />
       </div>
@@ -84,13 +84,13 @@ export function SearchBar() {
 
               {results?.products.length ? (
                 <div>
-                  <p className="px-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">Products</p>
+                  <p className="px-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">Inventory Products</p>
                   <div className="mt-2 space-y-1">
                     {results.products.map((product) => (
                       <button
                         key={product.id}
                         onClick={() => {
-                          navigate(`/products/${product.id}/edit`);
+                          navigate(`/orders?inventory=${encodeURIComponent(product.name)}`);
                           setOpen(false);
                         }}
                         className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left hover:bg-primary-50"
@@ -111,7 +111,7 @@ export function SearchBar() {
                       <button
                         key={customer.id}
                         onClick={() => {
-                          navigate(`/customers?search=${customer.mobile}`);
+                          navigate(`/orders?customer=${encodeURIComponent(customer.mobile)}`);
                           setOpen(false);
                         }}
                         className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left hover:bg-primary-50"
@@ -125,7 +125,7 @@ export function SearchBar() {
               ) : null}
             </div>
           ) : (
-            <p className="px-2 py-3 text-sm font-medium text-slate-500">No matching orders, products, or customers.</p>
+            <p className="px-2 py-3 text-sm font-medium text-slate-500">No matching orders, inventory products, or customers.</p>
           )}
         </div>
       ) : null}

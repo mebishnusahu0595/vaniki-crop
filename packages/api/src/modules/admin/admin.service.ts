@@ -9,7 +9,8 @@ import { createPaginationResponse, parsePagination } from '../../utils/paginatio
 
 export async function searchAdminStoreData(storeId: string, query: string) {
   const searchTerm = query.trim();
-  const productIds = await Product.find({ storeId }).select('_id');
+  const inventoryProductIds = await DealerInventory.find({ storeId })
+    .distinct('productId');
 
   const [orders, products, customers] = await Promise.all([
     Order.find({
@@ -20,7 +21,7 @@ export async function searchAdminStoreData(storeId: string, query: string) {
       .limit(5)
       .select('orderNumber status totalAmount createdAt'),
     Product.find({
-      storeId,
+      _id: { $in: inventoryProductIds },
       name: { $regex: searchTerm, $options: 'i' },
     })
       .sort({ updatedAt: -1 })
@@ -59,7 +60,7 @@ export async function searchAdminStoreData(storeId: string, query: string) {
     ]),
   ]);
 
-  return { orders, products, customers, productIds };
+  return { orders, products, customers };
 }
 
 export async function listStoreCustomers(storeId: string, query: Record<string, any>) {
