@@ -1,11 +1,8 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Flame } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
 import HeroBanner from '../components/HeroBanner';
 import CategoryStrip from '../components/Home/CategoryStrip';
 import BestSellers from '../components/Home/BestSellers';
@@ -13,53 +10,11 @@ import Testimonials from '../components/Home/Testimonials';
 import ProductCard from '../components/shared/ProductCard';
 import { useHomepage } from '../hooks/useHomepage';
 import { useStoreStore } from '../store/useStoreStore';
-import { animateNumber } from '../utils/animateNumber';
-
-const storefrontStats = [
-  { labelKey: 'home.trustedGrowers', value: 12000, suffix: '+' },
-  { labelKey: 'home.pinCodesServed', value: 850, suffix: '+' },
-  { labelKey: 'home.ordersDelivered', value: 48000, suffix: '+' },
-  { labelKey: 'home.storesConnected', value: 64, suffix: '+' },
-];
-
-gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const Home: React.FC = () => {
   const { t } = useTranslation();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const { data, isLoading } = useHomepage(selectedStore?.id);
-  const statsSectionRef = useRef<HTMLElement | null>(null);
-
-  useGSAP(
-    () => {
-      if (!statsSectionRef.current) return;
-
-      const counters = gsap.utils.toArray<HTMLElement>('[data-counter-end]');
-      if (!counters.length) return;
-
-      const trigger = ScrollTrigger.create({
-        trigger: statsSectionRef.current,
-        start: 'top 80%',
-        once: true,
-        onEnter: () => {
-          counters.forEach((counter) => {
-            const endValue = Number(counter.dataset.counterEnd || '0');
-            const suffix = counter.dataset.counterSuffix || '';
-            animateNumber(counter, endValue, 2, suffix);
-          });
-        },
-      });
-
-      return () => {
-        trigger.kill();
-      };
-    },
-    {
-      scope: statsSectionRef,
-      dependencies: [storefrontStats.length],
-      revertOnUpdate: true,
-    },
-  );
 
   if (isLoading) {
     return (
@@ -97,28 +52,6 @@ const Home: React.FC = () => {
       </Helmet>
       <HeroBanner banners={data?.banners || []} />
       <CategoryStrip categories={data?.featuredCategories || []} />
-
-      <section ref={statsSectionRef} className="dashboard-stats bg-primary-50/40 py-10 sm:py-12">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {storefrontStats.map((item) => (
-              <article
-                key={item.labelKey}
-                className="rounded-[1.5rem] border border-primary-100 bg-white px-5 py-6 shadow-[0_14px_35px_rgba(8,32,24,0.08)]"
-              >
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">{t(item.labelKey)}</p>
-                <p
-                  data-counter-end={item.value}
-                  data-counter-suffix={item.suffix}
-                  className="mt-3 text-4xl font-black leading-none text-primary-900"
-                >
-                  0
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
 
       <section className="bg-white py-14 sm:py-18">
         <div className="container mx-auto px-4 sm:px-6">
