@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { PageHeader } from '../components/PageHeader';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import type { StoreSummary } from '../types/admin';
 import { adminApi } from '../utils/api';
 import { currencyFormatter } from '../utils/format';
@@ -46,10 +47,12 @@ export default function StoresPage() {
   const [search, setSearch] = useState('');
   const [formError, setFormError] = useState('');
   const [actioningStoreId, setActioningStoreId] = useState<string | null>(null);
+  const debouncedSearch = useDebouncedValue(search, 350);
 
   const storesQuery = useQuery({
-    queryKey: ['super-admin-stores', search],
-    queryFn: () => adminApi.stores({ search, limit: 100 }),
+    queryKey: ['super-admin-stores', debouncedSearch],
+    queryFn: () => adminApi.stores({ search: debouncedSearch, limit: 100 }),
+    placeholderData: (previousData) => previousData,
   });
 
   const adminsQuery = useQuery({
@@ -153,7 +156,7 @@ export default function StoresPage() {
     },
   });
 
-  if (storesQuery.isLoading) return <LoadingBlock label="Loading stores..." />;
+  if (storesQuery.isLoading && !storesQuery.data) return <LoadingBlock label="Loading stores..." />;
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.98fr_1.02fr]">
@@ -228,6 +231,7 @@ export default function StoresPage() {
             placeholder="Search stores by name, city, phone"
             className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
           />
+          {storesQuery.isFetching ? <p className="mt-2 text-xs font-semibold text-slate-500">Updating list...</p> : null}
         </div>
 
         {storesQuery.data?.data.map((store) => (
