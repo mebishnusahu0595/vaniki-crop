@@ -82,7 +82,6 @@ export default function SettingsPage() {
   });
 
   const maintenanceModeEnabled = watch('maintenanceMode');
-  const guestCheckoutEnabled = watch('allowGuestCheckout');
 
   if (settingsQuery.isLoading || !settingsQuery.data) return <LoadingBlock label="Loading site settings..." />;
 
@@ -139,10 +138,6 @@ export default function SettingsPage() {
           <label className="flex items-center justify-between rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
             <span className="text-sm font-semibold text-slate-700">Maintenance mode ({maintenanceModeEnabled ? 'ON' : 'OFF'})</span>
             <input type="checkbox" {...register('maintenanceMode')} className="h-4 w-4 accent-primary-600" />
-          </label>
-          <label className="flex items-center justify-between rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-            <span className="text-sm font-semibold text-slate-700">Allow guest checkout ({guestCheckoutEnabled ? 'ON' : 'OFF'})</span>
-            <input type="checkbox" {...register('allowGuestCheckout')} className="h-4 w-4 accent-primary-600" />
           </label>
         </div>
 
