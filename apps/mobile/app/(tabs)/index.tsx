@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
 import { HeroCarousel } from '../../src/components/HeroCarousel';
 import { CategoryCard } from '../../src/components/CategoryCard';
@@ -15,6 +16,7 @@ import { useStoreStore } from '../../src/store/useStoreStore';
 const bestSellerTabs = ['Insecticides', 'Herbicides', 'Fungicides'] as const;
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const [activeTab, setActiveTab] = useState<(typeof bestSellerTabs)[number]>('Insecticides');
   const homepageQuery = useQuery({
@@ -34,8 +36,7 @@ export default function HomeScreen() {
     <Screen>
       <View className="gap-7">
         <View className="pt-1">
-          <Text className="text-[11px] font-black uppercase tracking-[2px] text-primary-400">Vaniki Crop</Text>
-          <Text className="mt-2 text-3xl font-black text-primary-900">Crop care made local, fast, and reliable.</Text>
+          <Text className="text-3xl font-black text-primary-900">{t('mobile.home.title')}</Text>
         </View>
 
         {homepageQuery.isLoading ? (
@@ -48,10 +49,12 @@ export default function HomeScreen() {
 
         <View>
           <SectionHeader
-            title="Categories"
+            title={t('mobile.home.categories')}
             action={
               <Pressable onPress={() => router.push('/(tabs)/categories')}>
-                <Text className="text-xs font-black uppercase tracking-[2px] text-primary-500">View All</Text>
+                <Text className="text-xs font-black uppercase tracking-[2px] text-primary-500">
+                  {t('mobile.home.viewAll')}
+                </Text>
               </Pressable>
             }
           />
@@ -69,7 +72,7 @@ export default function HomeScreen() {
         </View>
 
         <View>
-          <SectionHeader title="Best Deals" />
+          <SectionHeader title={t('mobile.home.bestDeals')} />
           <FlashList
             data={homepageQuery.data?.saleProducts || []}
             numColumns={2}
@@ -83,7 +86,7 @@ export default function HomeScreen() {
         </View>
 
         <View>
-          <SectionHeader title="Best Sellers" />
+          <SectionHeader title={t('mobile.home.bestSellers')} />
           <View className="mb-4 flex-row rounded-full bg-primary-50 p-1">
             {bestSellerTabs.map((tab) => (
               <Pressable
@@ -114,7 +117,7 @@ export default function HomeScreen() {
         </View>
 
         <View className="pb-4">
-          <SectionHeader title="What Farmers Say" />
+          <SectionHeader title={t('mobile.home.whatFarmersSay')} />
           <FlashList
             horizontal
             showsHorizontalScrollIndicator={false}

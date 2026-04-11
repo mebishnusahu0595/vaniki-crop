@@ -43,7 +43,7 @@ export const signupSchema = z.object({
     email: z.string().trim().email('Please provide a valid email address').optional().or(z.literal('')),
     mobile: mobileSchema,
     password: passwordSchema,
-    otp: otpSchema,
+    otp: otpSchema.optional(),
     referralCode: z
       .string()
       .trim()

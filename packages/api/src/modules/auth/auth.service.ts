@@ -160,29 +160,36 @@ export async function signup(
     throw new AppError('An account with this mobile number already exists', 409);
   }
 
-  // Verify OTP — check both existing user record and temp store
-  let isOtpValid = false;
+  const normalizedOtp = otp?.trim();
 
-  if (existingUser?.otp && existingUser?.otpExpiry) {
-    if (existingUser.otpExpiry < new Date()) {
-      throw new AppError('OTP has expired. Please request a new one.', 400);
-    }
-    isOtpValid = await bcrypt.compare(otp, existingUser.otp);
-  } else {
-    // Check temp store for new signups
-    const tempOtp = otpStore[mobile];
-    if (tempOtp) {
-      if (tempOtp.otpExpiry < new Date()) {
-        delete otpStore[mobile];
+  // Verify OTP only when OTP is provided by the client.
+  if (normalizedOtp) {
+    let isOtpValid = false;
+
+    if (existingUser?.otp && existingUser?.otpExpiry) {
+      if (existingUser.otpExpiry < new Date()) {
         throw new AppError('OTP has expired. Please request a new one.', 400);
       }
-      isOtpValid = await bcrypt.compare(otp, tempOtp.hashedOtp);
-      if (isOtpValid) delete otpStore[mobile];
+      isOtpValid = await bcrypt.compare(normalizedOtp, existingUser.otp);
+    } else {
+      // Check temp store for new signups
+      const tempOtp = otpStore[mobile];
+      if (tempOtp) {
+        if (tempOtp.otpExpiry < new Date()) {
+          delete otpStore[mobile];
+          throw new AppError('OTP has expired. Please request a new one.', 400);
+        }
+        isOtpValid = await bcrypt.compare(normalizedOtp, tempOtp.hashedOtp);
+        if (isOtpValid) delete otpStore[mobile];
+      }
     }
-  }
 
-  if (!isOtpValid) {
-    throw new AppError('Invalid OTP', 400);
+    if (!isOtpValid) {
+      throw new AppError('Invalid OTP', 400);
+    }
+  } else if (otpStore[mobile]) {
+    // OTP is optional now, so stale temp OTP cache should not block signup.
+    delete otpStore[mobile];
   }
 
   let referredById: IUser['_id'] | undefined;

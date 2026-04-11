@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
+import { Feather } from '@expo/vector-icons';
 import type { Category } from '../types/storefront';
 
 interface CategoryCardProps {
@@ -15,7 +16,7 @@ export const CategoryCard = memo(function CategoryCard({ category, onPress }: Ca
         {category.image?.url ? (
           <Image source={{ uri: category.image.url }} style={{ width: 80, height: 80 }} contentFit="cover" />
         ) : (
-          <Text className="text-3xl">🌿</Text>
+          <Feather name="package" size={28} color="#2D6A4F" />
         )}
       </View>
       <Text className="mt-3 w-20 text-center text-xs font-bold text-primary-900">{category.name}</Text>

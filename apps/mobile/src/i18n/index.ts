@@ -10,11 +10,34 @@ const resources = {
   en: {
     translation: {
       mobile: {
+        topNotice: {
+          freeDelivery: 'Free delivery on orders above Rs. 1,000',
+          call: 'Call',
+        },
         tabs: {
           home: 'Home',
           categories: 'Categories',
           cart: 'Cart',
           account: 'Account',
+        },
+        header: {
+          searchPlaceholder: 'Search pesticides, nutrients, and crop care',
+        },
+        actions: {
+          addToCart: 'Add to Cart',
+          outOfStock: 'Out of Stock',
+        },
+        home: {
+          title: 'Crop care made local, fast, and reliable.',
+          categories: 'Categories',
+          viewAll: 'View All',
+          bestDeals: 'Best Deals',
+          bestSellers: 'Best Sellers',
+          whatFarmersSay: 'What Farmers Say',
+        },
+        whatsapp: {
+          defaultMessage: 'Hello Vaniki Crop, I need help',
+          openChat: 'Open WhatsApp chat',
         },
         serviceMode: {
           delivery: 'Delivery',
@@ -29,11 +52,34 @@ const resources = {
   hi: {
     translation: {
       mobile: {
+        topNotice: {
+          freeDelivery: 'Rs. 1,000 से ऊपर ऑर्डर पर फ्री डिलीवरी',
+          call: 'कॉल',
+        },
         tabs: {
           home: 'होम',
           categories: 'कैटेगरी',
           cart: 'कार्ट',
           account: 'अकाउंट',
+        },
+        header: {
+          searchPlaceholder: 'कीटनाशक, पोषक तत्व और फसल देखभाल खोजें',
+        },
+        actions: {
+          addToCart: 'कार्ट में जोड़ें',
+          outOfStock: 'स्टॉक खत्म',
+        },
+        home: {
+          title: 'फसल देखभाल अब स्थानीय, तेज और भरोसेमंद।',
+          categories: 'कैटेगरी',
+          viewAll: 'सब देखें',
+          bestDeals: 'बेहतरीन डील्स',
+          bestSellers: 'सबसे ज्यादा बिकने वाले',
+          whatFarmersSay: 'किसान क्या कहते हैं',
+        },
+        whatsapp: {
+          defaultMessage: 'नमस्ते Vaniki Crop, मुझे सहायता चाहिए',
+          openChat: 'व्हाट्सऐप चैट खोलें',
         },
         serviceMode: {
           delivery: 'डिलीवरी',

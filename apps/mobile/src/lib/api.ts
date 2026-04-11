@@ -225,7 +225,7 @@ export const storefrontApi = {
       body: JSON.stringify({ mobile }),
     });
   },
-  signup: async (payload: { name: string; email?: string; mobile: string; password: string; otp: string }) => {
+  signup: async (payload: { name: string; email?: string; mobile: string; password: string; otp?: string }) => {
     const response = await request<{ user: AuthUser; accessToken: string }>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify(payload),

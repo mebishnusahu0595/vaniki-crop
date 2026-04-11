@@ -1,5 +1,6 @@
 import { memo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
@@ -28,8 +29,8 @@ export const ServiceModeBar = memo(function ServiceModeBar() {
     <View className="gap-2 rounded-[28px] border border-primary-100 bg-white px-4 py-4">
       <View className="flex-row rounded-full bg-primary-50 p-1">
         {([
-          { key: 'delivery', label: t('mobile.serviceMode.delivery'), icon: '🚚' },
-          { key: 'pickup', label: t('mobile.serviceMode.pickup'), icon: '🏪' },
+          { key: 'delivery', label: t('mobile.serviceMode.delivery'), icon: 'truck' },
+          { key: 'pickup', label: t('mobile.serviceMode.pickup'), icon: 'shopping-bag' },
         ] as const).map((item) => (
           <Pressable
             key={item.key}
@@ -38,13 +39,20 @@ export const ServiceModeBar = memo(function ServiceModeBar() {
               mode === item.key ? 'bg-white' : ''
             }`}
           >
-            <Text
-              className={`text-center text-xs font-black uppercase tracking-[2px] ${
-                mode === item.key ? 'text-primary-900' : 'text-primary-900/45'
-              }`}
-            >
-              {item.icon} {item.label}
-            </Text>
+            <View className="flex-row items-center justify-center gap-1.5">
+              <Feather
+                name={item.icon}
+                size={13}
+                color={mode === item.key ? '#082018' : '#6D8A7D'}
+              />
+              <Text
+                className={`text-center text-xs font-black uppercase tracking-[2px] ${
+                  mode === item.key ? 'text-primary-900' : 'text-primary-900/45'
+                }`}
+              >
+                {item.label}
+              </Text>
+            </View>
           </Pressable>
         ))}
       </View>

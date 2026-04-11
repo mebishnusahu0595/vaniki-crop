@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
@@ -15,6 +16,8 @@ import { stripHtml } from '../../src/utils/html';
 export default function ProductDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const addItem = useCartStore((state) => state.addItem);
+  const increaseQty = useCartStore((state) => state.increaseQty);
+  const decreaseQty = useCartStore((state) => state.decreaseQty);
   const user = useAuthStore((state) => state.user);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
@@ -28,6 +31,9 @@ export default function ProductDetailScreen() {
   const product = productQuery.data;
   const selectedVariant =
     product?.variants.find((variant) => variant.id === selectedVariantId) || product?.variants[0];
+  const quantityInCart = useCartStore(
+    (state) => state.items.find((item) => item.variantId === selectedVariant?.id)?.qty || 0,
+  );
   const relatedQuery = useQuery({
     queryKey: ['mobile-related-products', product?.category?.slug],
     queryFn: () =>
@@ -42,6 +48,10 @@ export default function ProductDetailScreen() {
     () => (relatedQuery.data?.data || []).filter((item) => item.slug !== product?.slug),
     [product?.slug, relatedQuery.data?.data],
   );
+
+  const maxStock = Math.max(selectedVariant?.stock || 0, 0);
+  const canIncrease = maxStock > quantityInCart;
+  const isOutOfStock = maxStock === 0;
 
   if (!product || !selectedVariant) {
     return (
@@ -107,9 +117,39 @@ export default function ProductDetailScreen() {
         ))}
       </View>
 
-      <Pressable onPress={() => addItem(product, selectedVariant)} className="mt-6 rounded-full bg-primary-500 px-5 py-4">
-        <Text className="text-center text-sm font-black uppercase tracking-[2px] text-white">Add to Cart</Text>
-      </Pressable>
+      {quantityInCart > 0 ? (
+        <View className="mt-6 flex-row items-center justify-between rounded-full bg-primary-50 px-3 py-2">
+          <Pressable onPress={() => decreaseQty(selectedVariant.id)} className="h-10 w-10 items-center justify-center rounded-full bg-white">
+            <Feather name="minus" size={16} color="#082018" />
+          </Pressable>
+          <Text className="text-sm font-black text-primary-900">{quantityInCart}</Text>
+          <Pressable
+            onPress={() => {
+              if (canIncrease) {
+                increaseQty(selectedVariant.id);
+              }
+            }}
+            disabled={!canIncrease}
+            className={`h-10 w-10 items-center justify-center rounded-full ${canIncrease ? 'bg-primary-500' : 'bg-primary-100'}`}
+          >
+            <Feather name="plus" size={16} color={canIncrease ? '#FFFFFF' : '#6D8A7D'} />
+          </Pressable>
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => {
+            if (!isOutOfStock) {
+              addItem(product, selectedVariant);
+            }
+          }}
+          disabled={isOutOfStock}
+          className={`mt-6 rounded-full px-5 py-4 ${isOutOfStock ? 'bg-primary-100' : 'bg-primary-500'}`}
+        >
+          <Text className={`text-center text-sm font-black uppercase tracking-[2px] ${isOutOfStock ? 'text-primary-900/45' : 'text-white'}`}>
+            {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+          </Text>
+        </Pressable>
+      )}
 
       <View className="mt-7 rounded-[28px] bg-white p-5">
         <Text className="text-lg font-black text-primary-900">Description</Text>

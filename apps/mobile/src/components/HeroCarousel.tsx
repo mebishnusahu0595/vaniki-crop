@@ -3,6 +3,7 @@ import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import type { HomepageBanner } from '../types/storefront';
 
 interface HeroCarouselProps {
@@ -13,6 +14,7 @@ const fallbackImage =
   'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80';
 
 export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarouselProps) {
+  const { t } = useTranslation();
   const listRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const { width } = useWindowDimensions();
@@ -24,9 +26,9 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
         : [
             {
               id: 'fallback-banner',
-              title: 'Advance Crop Protection',
-              subtitle: 'Premium pesticides and fungicides for healthier yields.',
-              ctaText: 'Shop Now',
+              title: t('mobile.home.bestDeals'),
+              subtitle: t('mobile.home.title'),
+              ctaText: t('mobile.home.viewAll'),
               ctaLink: '/products',
               image: { url: fallbackImage },
               linkedProducts: [],
@@ -57,7 +59,7 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
             <View className="absolute inset-0 bg-primary-900/45 px-5 py-5">
               <View className="mt-auto rounded-[28px] bg-primary-500/80 p-5">
                 <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-100">
-                  Trusted by farmers
+                  {t('mobile.home.whatFarmersSay')}
                 </Text>
                 <Text className="mt-3 text-3xl font-black leading-9 text-white">{item.title}</Text>
                 <Text className="mt-2 text-sm leading-6 text-white/80">{item.subtitle}</Text>
@@ -66,7 +68,7 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
                   className="mt-5 self-start rounded-full bg-white px-5 py-3"
                 >
                   <Text className="text-xs font-black uppercase tracking-[2px] text-primary-900">
-                    {item.ctaText || 'Shop Now'}
+                    {item.ctaText || t('mobile.home.viewAll')}
                   </Text>
                 </Pressable>
               </View>

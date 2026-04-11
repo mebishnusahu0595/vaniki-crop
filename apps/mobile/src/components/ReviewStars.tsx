@@ -1,5 +1,6 @@
 import { memo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface ReviewStarsProps {
   rating: number;
@@ -11,7 +12,11 @@ export const ReviewStars = memo(function ReviewStars({ rating, onChange }: Revie
     <View className="flex-row gap-1">
       {[1, 2, 3, 4, 5].map((value) => (
         <Pressable key={value} onPress={() => onChange?.(value)}>
-          <Text className="text-lg">{value <= rating ? '⭐' : '☆'}</Text>
+          <Ionicons
+            name={value <= rating ? 'star' : 'star-outline'}
+            size={18}
+            color={value <= rating ? '#F59E0B' : '#B7C6BF'}
+          />
         </Pressable>
       ))}
     </View>

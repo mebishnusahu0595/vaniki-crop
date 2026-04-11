@@ -8,7 +8,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { storefrontApi } from '../lib/api';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
@@ -25,6 +27,7 @@ const emptyAddress: Address = {
 };
 
 export function StoreSelectorSheet() {
+  const { t } = useTranslation();
   const isOpen = useServiceModeStore((state) => state.selectorOpen);
   const mode = useServiceModeStore((state) => state.mode);
   const address = useServiceModeStore((state) => state.address);
@@ -130,13 +133,20 @@ export function StoreSelectorSheet() {
                 onPress={() => setDraftMode(item)}
                 className={`flex-1 rounded-full px-3 py-3 ${draftMode === item ? 'bg-white' : ''}`}
               >
-                <Text
-                  className={`text-center text-xs font-black uppercase tracking-[2px] ${
-                    draftMode === item ? 'text-primary-900' : 'text-primary-900/45'
-                  }`}
-                >
-                  {item === 'delivery' ? '🚚 Delivery' : '🏪 Pickup'}
-                </Text>
+                <View className="flex-row items-center justify-center gap-1.5">
+                  <Feather
+                    name={item === 'delivery' ? 'truck' : 'shopping-bag'}
+                    size={13}
+                    color={draftMode === item ? '#082018' : '#6D8A7D'}
+                  />
+                  <Text
+                    className={`text-center text-xs font-black uppercase tracking-[2px] ${
+                      draftMode === item ? 'text-primary-900' : 'text-primary-900/45'
+                    }`}
+                  >
+                    {item === 'delivery' ? t('mobile.serviceMode.delivery') : t('mobile.serviceMode.pickup')}
+                  </Text>
+                </View>
               </Pressable>
             ))}
           </View>

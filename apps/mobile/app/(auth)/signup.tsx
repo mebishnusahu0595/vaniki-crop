@@ -3,8 +3,11 @@ import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '../../src/components/Screen';
 import { storefrontApi } from '../../src/lib/api';
+import { useAuthStore } from '../../src/store/useAuthStore';
 
 export default function SignupScreen() {
+  const setSession = useAuthStore((state) => state.setSession);
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -38,19 +41,29 @@ export default function SignupScreen() {
         </View>
         <Pressable
           onPress={async () => {
+            setLoading(true);
             try {
-              await storefrontApi.sendOtp(form.mobile);
-              router.push({
-                pathname: '/(auth)/otp-verify',
-                params: { flow: 'signup', ...form },
+              const response = await storefrontApi.signup({
+                name: form.name,
+                email: form.email,
+                mobile: form.mobile,
+                password: form.password,
               });
+
+              setSession({ user: response.user, token: response.accessToken });
+              router.replace('/(tabs)');
             } catch (caughtError) {
-              Alert.alert('OTP failed', caughtError instanceof Error ? caughtError.message : 'Try again.');
+              Alert.alert('Signup failed', caughtError instanceof Error ? caughtError.message : 'Try again.');
+            } finally {
+              setLoading(false);
             }
           }}
+          disabled={loading}
           className="mt-6 rounded-full bg-primary-500 px-5 py-4"
         >
-          <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">Continue with OTP</Text>
+          <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
+            {loading ? 'Creating account...' : 'Create Account'}
+          </Text>
         </Pressable>
       </View>
     </Screen>

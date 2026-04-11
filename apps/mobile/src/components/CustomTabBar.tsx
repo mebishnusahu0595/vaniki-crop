@@ -1,12 +1,13 @@
 import { Pressable, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useCartStore } from '../store/useCartStore';
 import { shadow } from '../constants/theme';
 
-const icons = {
-  index: '🏠',
-  categories: '▦',
-  cart: '🛒',
-  account: '👤',
+const icons: Record<string, keyof typeof Feather.glyphMap> = {
+  index: 'home',
+  categories: 'grid',
+  cart: 'shopping-cart',
+  account: 'user',
 } as const;
 
 interface TabRoute {
@@ -54,9 +55,11 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
               className="flex-1 items-center gap-1 rounded-[20px] py-3"
             >
               <View>
-                <Text className={`text-lg ${isFocused ? 'text-primary-500' : 'text-primary-900/45'}`}>
-                  {icons[route.name as keyof typeof icons]}
-                </Text>
+                <Feather
+                  name={icons[route.name] || 'circle'}
+                  size={18}
+                  color={isFocused ? '#2D6A4F' : '#6D8A7D'}
+                />
                 {route.name === 'cart' && itemCount ? (
                   <View className="absolute -right-3 -top-2 min-w-[18px] rounded-full bg-rose-500 px-1.5 py-0.5">
                     <Text className="text-center text-[10px] font-black text-white">{itemCount}</Text>

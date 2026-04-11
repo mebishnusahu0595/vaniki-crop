@@ -1,7 +1,9 @@
 import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../store/useCartStore';
 import type { Product } from '../types/storefront';
 import { currencyFormatter, getDefaultVariant, getDiscountPercent, getPrimaryImage } from '../utils/format';
@@ -11,11 +13,21 @@ interface ProductCardProps {
 }
 
 export const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
+  const { t } = useTranslation();
   const addItem = useCartStore((state) => state.addItem);
+  const increaseQty = useCartStore((state) => state.increaseQty);
+  const decreaseQty = useCartStore((state) => state.decreaseQty);
   const variant = getDefaultVariant(product);
+  const quantityInCart = useCartStore(
+    (state) => state.items.find((item) => item.variantId === variant?.id)?.qty || 0,
+  );
   const discount = getDiscountPercent(variant?.price, variant?.mrp);
 
   if (!variant) return null;
+
+  const maxStock = Math.max(variant.stock || 0, 0);
+  const isOutOfStock = maxStock === 0;
+  const canIncrease = maxStock > quantityInCart;
 
   return (
     <Pressable
@@ -45,12 +57,48 @@ export const ProductCard = memo(function ProductCard({ product }: ProductCardPro
             </Text>
           ) : null}
         </View>
-        <Pressable
-          onPress={() => addItem(product, variant)}
-          className="mt-4 rounded-full bg-primary-500 px-4 py-3"
-        >
-          <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">Add to Cart</Text>
-        </Pressable>
+
+        {quantityInCart > 0 ? (
+          <View className="mt-4 flex-row items-center justify-between rounded-full bg-primary-50 px-2 py-1.5">
+            <Pressable
+              onPress={(event) => {
+                event.stopPropagation();
+                decreaseQty(variant.id);
+              }}
+              className="h-9 w-9 items-center justify-center rounded-full bg-white"
+            >
+              <Feather name="minus" size={16} color="#082018" />
+            </Pressable>
+            <Text className="text-sm font-black text-primary-900">{quantityInCart}</Text>
+            <Pressable
+              onPress={(event) => {
+                event.stopPropagation();
+                if (canIncrease) {
+                  increaseQty(variant.id);
+                }
+              }}
+              disabled={!canIncrease}
+              className={`h-9 w-9 items-center justify-center rounded-full ${canIncrease ? 'bg-primary-500' : 'bg-primary-100'}`}
+            >
+              <Feather name="plus" size={16} color={canIncrease ? '#FFFFFF' : '#6D8A7D'} />
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              if (!isOutOfStock) {
+                addItem(product, variant);
+              }
+            }}
+            disabled={isOutOfStock}
+            className={`mt-4 rounded-full px-4 py-3 ${isOutOfStock ? 'bg-primary-100' : 'bg-primary-500'}`}
+          >
+            <Text className={`text-center text-xs font-black uppercase tracking-[2px] ${isOutOfStock ? 'text-primary-900/45' : 'text-white'}`}>
+              {isOutOfStock ? t('mobile.actions.outOfStock') : t('mobile.actions.addToCart')}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </Pressable>
   );
