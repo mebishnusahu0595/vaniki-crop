@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../../utils/AppError.js';
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format');
+const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
 const optionalObjectIdFromEmpty = z.preprocess(
   (value) => (value === '' ? null : value),
@@ -81,6 +82,15 @@ const createAdminBodySchema = z.object({
   mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Invalid mobile number'),
   password: z.string().min(6).max(128),
   storeId: objectIdSchema.optional(),
+  storeName: z.string().trim().min(2).max(150),
+  storeLocation: z.string().trim().min(3).max(250),
+  longitude: numberFromInput(z.number().min(-180).max(180)),
+  latitude: numberFromInput(z.number().min(-90).max(90)),
+  gstNumber: z.string().trim().toUpperCase().regex(GSTIN_PATTERN, 'Invalid GST number'),
+  sgstNumber: z.string().trim().toUpperCase().regex(GSTIN_PATTERN, 'Invalid SGST number'),
+}).refine((value) => value.gstNumber.slice(0, 2) === value.sgstNumber.slice(0, 2), {
+  message: 'SGST state code must match GST state code',
+  path: ['sgstNumber'],
 });
 
 export const createAdminSchema = z.object({
@@ -98,7 +108,23 @@ export const updateAdminSchema = z.object({
       isActive: boolish.optional(),
       approvalStatus: z.enum(['pending', 'approved', 'rejected']).optional(),
       storeId: objectIdSchema.optional().nullable(),
+      storeName: z.string().trim().min(2).max(150).optional(),
+      storeLocation: z.string().trim().min(3).max(250).optional(),
+      longitude: numberFromInput(z.number().min(-180).max(180)).optional(),
+      latitude: numberFromInput(z.number().min(-90).max(90)).optional(),
+      gstNumber: z.string().trim().toUpperCase().regex(GSTIN_PATTERN, 'Invalid GST number').optional(),
+      sgstNumber: z.string().trim().toUpperCase().regex(GSTIN_PATTERN, 'Invalid SGST number').optional(),
     })
+    .refine(
+      (value) => {
+        if (!value.gstNumber || !value.sgstNumber) return true;
+        return value.gstNumber.slice(0, 2) === value.sgstNumber.slice(0, 2);
+      },
+      {
+        message: 'SGST state code must match GST state code',
+        path: ['sgstNumber'],
+      },
+    )
     .refine((value) => Object.keys(value).length > 0, {
       message: 'At least one field is required',
     }),

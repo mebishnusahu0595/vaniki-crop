@@ -41,10 +41,11 @@ router.get('/stores/:id/secrets', superAdminController.getStoreSecrets);
 router.patch('/stores/:id/secrets', validate(updateStoreSecretsSchema), superAdminController.updateStoreSecrets);
 
 router.get('/admins', superAdminController.listAdmins);
-router.post('/admins', validate(createAdminSchema), superAdminController.createAdmin);
-router.patch('/admins/:id', validate(updateAdminSchema), superAdminController.updateAdmin);
+router.post('/admins', upload.single('profileImage'), validate(createAdminSchema), superAdminController.createAdmin);
+router.patch('/admins/:id', upload.single('profileImage'), validate(updateAdminSchema), superAdminController.updateAdmin);
 router.patch('/admins/:id/deactivate', superAdminController.deactivateAdmin);
 router.patch('/admins/:id/approval', validate(approveAdminSchema), superAdminController.approveAdmin);
+router.delete('/admins/:id', superAdminController.deleteAdmin);
 
 router.get('/customers', validate(customerQuerySchema), superAdminController.listCustomers);
 

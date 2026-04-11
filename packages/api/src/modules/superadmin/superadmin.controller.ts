@@ -66,7 +66,7 @@ export async function listAdmins(req: Request, res: Response, next: NextFunction
 
 export async function createAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await superAdminService.createAdmin(req.body);
+    const data = await superAdminService.createAdmin(req.body, req.file);
     res.status(201).json({ success: true, data });
   } catch (error) {
     next(error);
@@ -75,7 +75,7 @@ export async function createAdmin(req: Request, res: Response, next: NextFunctio
 
 export async function updateAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await superAdminService.updateAdmin(req.params.id as string, req.body);
+    const data = await superAdminService.updateAdmin(req.params.id as string, req.body, req.file);
     res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
@@ -95,6 +95,15 @@ export async function approveAdmin(req: Request, res: Response, next: NextFuncti
   try {
     const data = await superAdminService.approveAdmin(req.params.id as string, req.body.approvalStatus);
     res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await superAdminService.deleteAdmin(req.params.id as string);
+    res.status(200).json({ success: true, message: 'Admin deleted successfully' });
   } catch (error) {
     next(error);
   }

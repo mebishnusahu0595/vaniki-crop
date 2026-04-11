@@ -483,6 +483,33 @@ export async function reassignStoreAdmin(storeId: string, adminId: string) {
   return store;
 }
 
+function toAdminAccountResponse(admin: any, assignedStore: any) {
+  const dealerProfile = admin.dealerProfile || {};
+
+  return {
+    ...admin.toJSON(),
+    assignedStore: assignedStore
+      ? {
+          id: assignedStore._id?.toString() || assignedStore.id,
+          name: assignedStore.name,
+          isActive: assignedStore.isActive,
+        }
+      : null,
+    status: admin.isActive ? 'active' : 'inactive',
+    approvalStatus: admin.approvalStatus || 'approved',
+    storeName: dealerProfile.storeName || '',
+    storeLocation: dealerProfile.storeLocation || '',
+    longitude: typeof dealerProfile.longitude === 'number' ? dealerProfile.longitude : undefined,
+    latitude: typeof dealerProfile.latitude === 'number' ? dealerProfile.latitude : undefined,
+    gstNumber: dealerProfile.gstNumber || '',
+    sgstNumber: dealerProfile.sgstNumber || '',
+  };
+}
+
+async function getAssignedStore(adminId: mongoose.Types.ObjectId) {
+  return Store.findOne({ adminId }).sort({ createdAt: -1 }).select('name isActive');
+}
+
 export async function listAdmins(query: Record<string, any>) {
   const { page, limit, skip } = parsePagination(query);
   const filter: Record<string, any> = { role: 'storeAdmin' };
@@ -493,7 +520,14 @@ export async function listAdmins(query: Record<string, any>) {
 
   if (typeof query.search === 'string' && query.search.trim()) {
     const searchRegex = new RegExp(query.search.trim(), 'i');
-    filter.$or = [{ name: searchRegex }, { mobile: searchRegex }, { email: searchRegex }];
+    filter.$or = [
+      { name: searchRegex },
+      { mobile: searchRegex },
+      { email: searchRegex },
+      { 'dealerProfile.storeName': searchRegex },
+      { 'dealerProfile.gstNumber': searchRegex },
+      { 'dealerProfile.sgstNumber': searchRegex },
+    ];
   }
 
   if (query.approvalStatus && ['pending', 'approved', 'rejected'].includes(String(query.approvalStatus))) {
@@ -512,76 +546,97 @@ export async function listAdmins(query: Record<string, any>) {
 
   const storeByAdminId = new Map<string, any>();
   for (const store of assignedStores) {
-    storeByAdminId.set(store.adminId.toString(), {
-      id: store._id.toString(),
-      name: store.name,
-      isActive: store.isActive,
-    });
+    storeByAdminId.set(store.adminId.toString(), store);
   }
 
   const rows = admins.map((admin) => {
     const assignedStore = storeByAdminId.get((admin._id as mongoose.Types.ObjectId).toString()) || null;
-
-    return {
-      ...admin.toJSON(),
-      assignedStore,
-      status: admin.isActive ? 'active' : 'inactive',
-      approvalStatus: admin.approvalStatus || 'approved',
-    };
+    return toAdminAccountResponse(admin, assignedStore);
   });
 
   return createPaginationResponse(rows, total, page, limit);
 }
 
-export async function createAdmin(input: Record<string, any>) {
+export async function createAdmin(input: Record<string, any>, file?: Express.Multer.File) {
   const existingMobile = await User.findOne({ mobile: input.mobile });
   if (existingMobile) {
     throw new AppError('A user with this mobile already exists', 409);
   }
 
-  if (input.email) {
-    const existingEmail = await User.findOne({ email: input.email.trim().toLowerCase() });
+  const normalizedEmail = input.email ? String(input.email).trim().toLowerCase() : undefined;
+  if (normalizedEmail) {
+    const existingEmail = await User.findOne({ email: normalizedEmail });
     if (existingEmail) {
       throw new AppError('A user with this email already exists', 409);
     }
   }
 
+  if (!file) {
+    throw new AppError('Dealer profile image is required', 400);
+  }
+
+  const uploadedProfileImage = await uploadToCloudinary(file.buffer, 'vaniki/users/profile');
+
   const admin = await User.create({
     name: input.name,
-    email: input.email || undefined,
+    email: normalizedEmail,
     mobile: input.mobile,
     password: input.password,
     role: 'storeAdmin',
     isActive: true,
     approvalStatus: 'approved',
+    profileImage: {
+      url: uploadedProfileImage.url,
+      publicId: uploadedProfileImage.publicId,
+    },
+    dealerProfile: {
+      storeName: input.storeName,
+      storeLocation: input.storeLocation,
+      longitude: Number(input.longitude),
+      latitude: Number(input.latitude),
+      gstNumber: String(input.gstNumber).trim().toUpperCase(),
+      sgstNumber: String(input.sgstNumber).trim().toUpperCase(),
+    },
   });
 
+  let assignedStore: any = null;
   if (input.storeId) {
     const targetStore = await Store.findById(input.storeId);
     if (!targetStore) {
       throw new AppError('Assigned store not found', 404);
     }
     targetStore.adminId = admin._id as mongoose.Types.ObjectId;
+    targetStore.phone = admin.mobile;
+    if (normalizedEmail) {
+      targetStore.email = normalizedEmail;
+    }
     await targetStore.save();
+    assignedStore = targetStore;
+  } else {
+    assignedStore = await Store.create({
+      name: input.storeName,
+      phone: admin.mobile,
+      email: normalizedEmail,
+      adminId: admin._id,
+      isActive: true,
+      address: {
+        street: input.storeLocation,
+        city: 'Pending',
+        state: 'Pending',
+        pincode: '000000',
+      },
+      location: {
+        type: 'Point',
+        coordinates: [Number(input.longitude), Number(input.latitude)],
+      },
+      deliveryRadius: 10,
+    });
   }
 
-  const assignedStore = await Store.findOne({ adminId: admin._id }).select('name isActive');
-
-  return {
-    ...admin.toJSON(),
-    assignedStore: assignedStore
-      ? {
-          id: assignedStore._id.toString(),
-          name: assignedStore.name,
-          isActive: assignedStore.isActive,
-        }
-      : null,
-    status: admin.isActive ? 'active' : 'inactive',
-    approvalStatus: admin.approvalStatus || 'approved',
-  };
+  return toAdminAccountResponse(admin, assignedStore);
 }
 
-export async function updateAdmin(adminId: string, input: Record<string, any>) {
+export async function updateAdmin(adminId: string, input: Record<string, any>, file?: Express.Multer.File) {
   const admin = await User.findById(adminId).select('+password');
   if (!admin || admin.role !== 'storeAdmin') {
     throw new AppError('Store admin not found', 404);
@@ -609,15 +664,63 @@ export async function updateAdmin(adminId: string, input: Record<string, any>) {
   if (input.name !== undefined) {
     admin.name = input.name;
   }
+
   if (input.isActive !== undefined) {
     admin.isActive = input.isActive;
   }
+
   if (input.password) {
     admin.password = input.password;
   }
+
   if (input.approvalStatus && ['pending', 'approved', 'rejected'].includes(String(input.approvalStatus))) {
     admin.approvalStatus = String(input.approvalStatus) as 'pending' | 'approved' | 'rejected';
     admin.isActive = admin.approvalStatus === 'approved';
+  }
+
+  const existingDealerProfile = (admin.dealerProfile || {}) as Record<string, any>;
+  const nextDealerProfile = { ...existingDealerProfile };
+  let hasDealerProfileChanges = false;
+
+  if (input.storeName !== undefined) {
+    nextDealerProfile.storeName = input.storeName;
+    hasDealerProfileChanges = true;
+  }
+  if (input.storeLocation !== undefined) {
+    nextDealerProfile.storeLocation = input.storeLocation;
+    hasDealerProfileChanges = true;
+  }
+  if (input.longitude !== undefined) {
+    nextDealerProfile.longitude = Number(input.longitude);
+    hasDealerProfileChanges = true;
+  }
+  if (input.latitude !== undefined) {
+    nextDealerProfile.latitude = Number(input.latitude);
+    hasDealerProfileChanges = true;
+  }
+  if (input.gstNumber !== undefined) {
+    nextDealerProfile.gstNumber = String(input.gstNumber).trim().toUpperCase();
+    hasDealerProfileChanges = true;
+  }
+  if (input.sgstNumber !== undefined) {
+    nextDealerProfile.sgstNumber = String(input.sgstNumber).trim().toUpperCase();
+    hasDealerProfileChanges = true;
+  }
+
+  if (hasDealerProfileChanges) {
+    admin.dealerProfile = nextDealerProfile as any;
+  }
+
+  if (file) {
+    if (admin.profileImage?.publicId) {
+      await deleteFromCloudinary(admin.profileImage.publicId);
+    }
+
+    const uploadedProfileImage = await uploadToCloudinary(file.buffer, 'vaniki/users/profile');
+    admin.profileImage = {
+      url: uploadedProfileImage.url,
+      publicId: uploadedProfileImage.publicId,
+    };
   }
 
   await admin.save();
@@ -628,23 +731,46 @@ export async function updateAdmin(adminId: string, input: Record<string, any>) {
       throw new AppError('Assigned store not found', 404);
     }
     targetStore.adminId = admin._id as mongoose.Types.ObjectId;
+
+    if (input.storeLocation !== undefined) {
+      targetStore.address = {
+        ...targetStore.address,
+        street: input.storeLocation,
+      };
+    }
+
+    if (input.longitude !== undefined || input.latitude !== undefined) {
+      const [currentLongitude, currentLatitude] = targetStore.location.coordinates;
+      targetStore.location = {
+        type: 'Point',
+        coordinates: [
+          input.longitude !== undefined ? Number(input.longitude) : currentLongitude,
+          input.latitude !== undefined ? Number(input.latitude) : currentLatitude,
+        ],
+      };
+    }
+
+    if (input.storeName !== undefined) {
+      targetStore.name = input.storeName;
+    }
+
+    if (input.mobile !== undefined) {
+      targetStore.phone = input.mobile;
+    }
+
+    if (input.email !== undefined) {
+      targetStore.email = input.email || undefined;
+    }
+
     await targetStore.save();
   }
 
-  const assignedStore = await Store.findOne({ adminId: admin._id }).select('name isActive');
+  if (input.approvalStatus !== undefined || input.isActive !== undefined) {
+    await Store.updateMany({ adminId: admin._id }, { isActive: admin.isActive });
+  }
 
-  return {
-    ...admin.toJSON(),
-    assignedStore: assignedStore
-      ? {
-          id: assignedStore._id.toString(),
-          name: assignedStore.name,
-          isActive: assignedStore.isActive,
-        }
-      : null,
-    status: admin.isActive ? 'active' : 'inactive',
-    approvalStatus: admin.approvalStatus || 'approved',
-  };
+  const assignedStore = await getAssignedStore(admin._id as mongoose.Types.ObjectId);
+  return toAdminAccountResponse(admin, assignedStore);
 }
 
 export async function deactivateAdmin(adminId: string) {
@@ -658,11 +784,10 @@ export async function deactivateAdmin(adminId: string) {
     throw new AppError('Store admin not found', 404);
   }
 
-  return {
-    ...admin.toJSON(),
-    status: 'inactive',
-    approvalStatus: admin.approvalStatus || 'approved',
-  };
+  await Store.updateMany({ adminId: admin._id }, { isActive: false });
+
+  const assignedStore = await getAssignedStore(admin._id as mongoose.Types.ObjectId);
+  return toAdminAccountResponse(admin, assignedStore);
 }
 
 export async function approveAdmin(adminId: string, approvalStatus: 'approved' | 'rejected') {
@@ -675,24 +800,39 @@ export async function approveAdmin(adminId: string, approvalStatus: 'approved' |
   admin.isActive = approvalStatus === 'approved';
   await admin.save();
 
-  const assignedStore = await Store.findOne({ adminId: admin._id }).select('name isActive');
-  if (assignedStore) {
-    assignedStore.isActive = approvalStatus === 'approved';
-    await assignedStore.save();
+  await Store.updateMany({ adminId: admin._id }, { isActive: admin.isActive });
+
+  const assignedStore = await getAssignedStore(admin._id as mongoose.Types.ObjectId);
+  return toAdminAccountResponse(admin, assignedStore);
+}
+
+export async function deleteAdmin(adminId: string) {
+  const admin = await User.findById(adminId);
+  if (!admin || admin.role !== 'storeAdmin') {
+    throw new AppError('Store admin not found', 404);
   }
 
-  return {
-    ...admin.toJSON(),
-    assignedStore: assignedStore
-      ? {
-          id: assignedStore._id.toString(),
-          name: assignedStore.name,
-          isActive: assignedStore.isActive,
-        }
-      : null,
-    status: admin.isActive ? 'active' : 'inactive',
-    approvalStatus: admin.approvalStatus,
-  };
+  const stores = await Store.find({ adminId: admin._id }).select('_id');
+  const storeIds = stores.map((store) => store._id as mongoose.Types.ObjectId);
+
+  if (storeIds.length) {
+    const [orderCount, productCount, requestCount] = await Promise.all([
+      Order.countDocuments({ storeId: { $in: storeIds } }),
+      Product.countDocuments({ storeId: { $in: storeIds } }),
+      ProductRequest.countDocuments({ $or: [{ adminId: admin._id }, { storeId: { $in: storeIds } }] }),
+    ]);
+
+    if (orderCount > 0 || productCount > 0 || requestCount > 0) {
+      throw new AppError('Cannot delete admin linked to existing store activity. Deactivate or reassign first.', 400);
+    }
+  }
+
+  if (admin.profileImage?.publicId) {
+    await deleteFromCloudinary(admin.profileImage.publicId);
+  }
+
+  await Store.deleteMany({ adminId: admin._id });
+  await User.deleteOne({ _id: admin._id });
 }
 
 export async function listCustomers(query: Record<string, any>) {

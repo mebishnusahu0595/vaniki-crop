@@ -279,10 +279,20 @@ export interface AdminAccount {
   name: string;
   email?: string;
   mobile: string;
+  profileImage?: {
+    url: string;
+    publicId: string;
+  } | null;
   role: 'storeAdmin';
   isActive: boolean;
   status: 'active' | 'inactive';
   approvalStatus: 'pending' | 'approved' | 'rejected';
+  storeName?: string;
+  storeLocation?: string;
+  longitude?: number;
+  latitude?: number;
+  gstNumber?: string;
+  sgstNumber?: string;
   assignedStore?: {
     id: string;
     name: string;

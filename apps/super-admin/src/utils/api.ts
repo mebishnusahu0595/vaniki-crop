@@ -336,11 +336,11 @@ export const adminApi = {
     const response = await api.get<ApiResponse<AdminAccount[]>>('/superadmin/admins', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
   },
-  createAdmin: async (payload: Record<string, unknown>) => {
+  createAdmin: async (payload: FormData | Record<string, unknown>) => {
     const response = await api.post<ApiResponse<AdminAccount>>('/superadmin/admins', payload);
     return response.data.data;
   },
-  updateAdmin: async (id: string, payload: Record<string, unknown>) => {
+  updateAdmin: async (id: string, payload: FormData | Record<string, unknown>) => {
     const response = await api.patch<ApiResponse<AdminAccount>>(`/superadmin/admins/${id}`, payload);
     return response.data.data;
   },
@@ -353,6 +353,10 @@ export const adminApi = {
   deactivateAdmin: async (id: string) => {
     const response = await api.patch<ApiResponse<AdminAccount>>(`/superadmin/admins/${id}/deactivate`);
     return response.data.data;
+  },
+  deleteAdmin: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/superadmin/admins/${id}`);
+    return response.data;
   },
   productRequests: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<ProductRequest[]>>('/superadmin/product-requests', { params });

@@ -213,7 +213,7 @@ export default function LoginPage() {
                   payload.append('profileImage', signupImageFile);
 
                   await adminApi.dealerSignup(payload);
-                  setSignupMessage('Signup submitted. Super admin approval ke baad login available hoga.');
+                  setSignupMessage('Signup submitted. Super admin will approve.');
                 } catch (error) {
                   setSignupError('root', {
                     message: error instanceof Error ? error.message : 'Unable to submit dealer signup.',
@@ -230,7 +230,16 @@ export default function LoginPage() {
                 </div>
                 <div>
                   <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Mobile Number</label>
-                  <input {...registerSignup('mobile')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" placeholder="9876543210" />
+                  <input
+                    {...registerSignup('mobile')}
+                    inputMode="numeric"
+                    maxLength={10}
+                    onInput={(event) => {
+                      event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
+                    }}
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                    placeholder="9876543210"
+                  />
                   {signupErrors.mobile ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.mobile.message}</p> : null}
                 </div>
               </div>
@@ -412,6 +421,11 @@ export default function LoginPage() {
                 <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Mobile Number</label>
                 <input
                   {...registerLogin('mobile')}
+                  inputMode="numeric"
+                  maxLength={10}
+                  onInput={(event) => {
+                    event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
+                  }}
                   placeholder="9876543210"
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300"
                 />
