@@ -116,7 +116,7 @@ export default function CouponsPage() {
           className="mt-6 space-y-4"
         >
           <p className="text-xs font-semibold text-slate-500">
-            Coupon create karne ke liye neeche sab details bharein. Har field ka label diya gaya hai for clarity.
+           
           </p>
 
           <div>

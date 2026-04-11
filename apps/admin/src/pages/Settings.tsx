@@ -267,7 +267,6 @@ export default function SettingsPage() {
       <PageHeader title="Store Settings" subtitle="Update your store profile, hours, address, and delivery radius." />
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
         <p className="mb-4 text-xs font-semibold text-slate-500">
-          Har field ke upar label diya gaya hai. Aap address se ya current location detect karke longitude/latitude auto-fill kar sakte hain.
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">

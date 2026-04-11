@@ -85,7 +85,7 @@ export default function SettingsPage() {
       <PageHeader title="Site Settings" subtitle="Configure platform-level settings for platform name, support details, and feature toggles." />
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))} className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
         <p className="mb-4 text-xs font-semibold text-slate-500">
-          Har field ke upar label diya gaya hai. Changes apply karne ke liye Save Settings zaroor click karein.
+         
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           <div>

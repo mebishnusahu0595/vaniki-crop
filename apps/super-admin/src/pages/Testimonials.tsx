@@ -192,7 +192,7 @@ export default function TestimonialsPage() {
 
         <form onSubmit={handleSubmit((values) => upsertMutation.mutate(values))} className="mt-6 space-y-4">
           <p className="text-xs font-semibold text-slate-500">
-            Testimonial add/edit karte time har field ke liye label diya gaya hai, taaki prefilled data me bhi confusion na ho.
+            
           </p>
 
           <div>

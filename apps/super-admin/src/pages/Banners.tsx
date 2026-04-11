@@ -245,7 +245,7 @@ export default function BannersPage() {
           className="mt-6 space-y-4"
         >
           <p className="text-xs font-semibold text-slate-500">
-            Banner banane ke liye neeche details fill karein. Labels ke through har field ka use clear diya gaya hai.
+           
           </p>
 
           <div>
