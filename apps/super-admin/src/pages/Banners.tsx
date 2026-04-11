@@ -244,27 +244,68 @@ export default function BannersPage() {
           })}
           className="mt-6 space-y-4"
         >
-          <input {...register('title')} placeholder="Banner title" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-          <textarea {...register('subtitle')} placeholder="Subtitle" className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-          <div className="grid gap-3 md:grid-cols-2">
-            <input {...register('ctaText')} placeholder="CTA text" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('ctaLink')} placeholder="/products" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <select {...register('storeId')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-              <option value="">Global (all stores)</option>
-              {storesQuery.data?.data.map((store) => (
-                <option key={store.id} value={store.id}>{store.name}</option>
-              ))}
-            </select>
-            <input type="number" {...register('sortOrder', { valueAsNumber: true })} placeholder="Sort order" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => setSelectedImageFile(event.target.files?.[0] || null)}
-              className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-            />
-            <input type="date" {...register('startDate')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input type="date" {...register('endDate')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          <p className="text-xs font-semibold text-slate-500">
+            Banner banane ke liye neeche details fill karein. Labels ke through har field ka use clear diya gaya hai.
+          </p>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Banner Title</label>
+            <input {...register('title')} placeholder="Banner title" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
           </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Subtitle</label>
+            <textarea {...register('subtitle')} placeholder="Subtitle" className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">CTA Text</label>
+              <input {...register('ctaText')} placeholder="CTA text" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">CTA Link</label>
+              <input {...register('ctaLink')} placeholder="/products" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Target Store</label>
+              <select {...register('storeId')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
+                <option value="">Global (all stores)</option>
+                {storesQuery.data?.data.map((store) => (
+                  <option key={store.id} value={store.id}>{store.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Sort Order</label>
+              <input type="number" {...register('sortOrder', { valueAsNumber: true })} placeholder="Sort order" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Banner Image File</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => setSelectedImageFile(event.target.files?.[0] || null)}
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Start Date</label>
+              <input type="date" {...register('startDate')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">End Date</label>
+              <input type="date" {...register('endDate')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+          </div>
+
+          <label className="block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Upload Banner Image</label>
           <div
             {...dropzone.getRootProps()}
             className="cursor-pointer rounded-[1.25rem] border border-dashed border-primary-200 bg-primary-50 px-4 py-8 text-center"
@@ -273,6 +314,7 @@ export default function BannersPage() {
             <ImagePlus size={22} className="mx-auto text-primary-500" />
             <p className="mt-2 text-sm font-semibold text-slate-700">Drag banner image here or click to upload</p>
           </div>
+
           <div className="rounded-2xl border border-primary-100 bg-primary-50/50 p-3">
             <label className="mb-2 block text-xs font-black uppercase tracking-[0.14em] text-slate-500">Banner image URL</label>
             <div className="flex gap-2">
@@ -306,7 +348,9 @@ export default function BannersPage() {
             </div>
             {imageUrlError ? <p className="mt-2 text-xs text-rose-600">{imageUrlError}</p> : null}
           </div>
+
           <label className="block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Linked Products</label>
+          <p className="-mt-2 text-xs font-semibold text-slate-500">Products select karne se banner par clickable product highlights set hote hain.</p>
           <select
             multiple
             onChange={(event) => {

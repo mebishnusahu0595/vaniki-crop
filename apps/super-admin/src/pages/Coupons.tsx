@@ -115,17 +115,48 @@ export default function CouponsPage() {
           })}
           className="mt-6 space-y-4"
         >
-          <input {...register('code')} placeholder="Code" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          <p className="text-xs font-semibold text-slate-500">
+            Coupon create karne ke liye neeche sab details bharein. Har field ka label diya gaya hai for clarity.
+          </p>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Coupon Code</label>
+            <input {...register('code')} placeholder="Code" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          </div>
+
           <div className="grid gap-3 md:grid-cols-2">
-            <select {...register('type')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-              <option value="percent">Percent</option>
-              <option value="flat">Flat</option>
-            </select>
-            <input type="number" {...register('value', { valueAsNumber: true })} placeholder="Value" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input type="number" {...register('minOrderAmount', { valueAsNumber: true })} placeholder="Min Order" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input type="number" {...register('maxDiscount', { valueAsNumber: true })} placeholder="Max Discount" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input type="number" {...register('usageLimit', { valueAsNumber: true })} placeholder="Usage Limit" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input type="date" {...register('expiryDate')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Discount Type</label>
+              <select {...register('type')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
+                <option value="percent">Percent</option>
+                <option value="flat">Flat</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Discount Value</label>
+              <input type="number" {...register('value', { valueAsNumber: true })} placeholder="Value" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Minimum Order Amount</label>
+              <input type="number" {...register('minOrderAmount', { valueAsNumber: true })} placeholder="Min Order" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Max Discount (percent type)</label>
+              <input type="number" {...register('maxDiscount', { valueAsNumber: true })} placeholder="Max Discount" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Usage Limit</label>
+              <input type="number" {...register('usageLimit', { valueAsNumber: true })} placeholder="Usage Limit" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Expiry Date</label>
+              <input type="date" {...register('expiryDate')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
           </div>
           <div>
             <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">

@@ -191,26 +191,53 @@ export default function TestimonialsPage() {
         <PageHeader title="Testimonials" subtitle="Add, edit, hide, and reorder customer testimonials." />
 
         <form onSubmit={handleSubmit((values) => upsertMutation.mutate(values))} className="mt-6 space-y-4">
-          <input {...register('name')} placeholder="Customer name" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-          <input {...register('designation')} placeholder="Designation" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-          <textarea {...register('message')} placeholder="Testimonial message" className="min-h-[120px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          <p className="text-xs font-semibold text-slate-500">
+            Testimonial add/edit karte time har field ke liye label diya gaya hai, taaki prefilled data me bhi confusion na ho.
+          </p>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <input type="number" min={1} max={5} {...register('rating', { valueAsNumber: true })} placeholder="Rating (1-5)" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <select {...register('storeId')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-              <option value="">Global testimonial (all stores)</option>
-              {storesQuery.data?.data.map((store) => (
-                <option key={store.id} value={store.id}>{store.name}</option>
-              ))}
-            </select>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => setSelectedAvatarFile(event.target.files?.[0] || null)}
-              className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 md:col-span-2"
-            />
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Customer Name</label>
+            <input {...register('name')} placeholder="Customer name" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
           </div>
 
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Designation</label>
+            <input {...register('designation')} placeholder="Designation" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Testimonial Message</label>
+            <textarea {...register('message')} placeholder="Testimonial message" className="min-h-[120px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Rating (1 to 5)</label>
+              <input type="number" min={1} max={5} {...register('rating', { valueAsNumber: true })} placeholder="Rating (1-5)" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Target Store</label>
+              <select {...register('storeId')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
+                <option value="">Global testimonial (all stores)</option>
+                {storesQuery.data?.data.map((store) => (
+                  <option key={store.id} value={store.id}>{store.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Avatar Image File</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => setSelectedAvatarFile(event.target.files?.[0] || null)}
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+              />
+            </div>
+          </div>
+
+          <label className="block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Upload Avatar Image</label>
           <div
             {...dropzone.getRootProps()}
             className="cursor-pointer rounded-[1.25rem] border border-dashed border-primary-200 bg-primary-50 px-4 py-8 text-center"
