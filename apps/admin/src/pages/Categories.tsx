@@ -9,6 +9,7 @@ import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
 import type { Category } from '../types/admin';
+import { resolveMediaUrl } from '../utils/media';
 
 const categorySchema = z.object({
   name: z.string().min(2),
@@ -102,7 +103,9 @@ export default function CategoriesPage() {
     },
   });
 
-  const previewUrl = filePreviewUrl || imageUrlInput.trim() || editing?.image?.url || '';
+  const previewUrl = filePreviewUrl
+    || resolveMediaUrl(imageUrlInput.trim() || editing?.image?.url, editing?.image?.publicId)
+    || '';
 
   const mutation = useMutation({
     mutationFn: async (values: CategoryFormValues) => {

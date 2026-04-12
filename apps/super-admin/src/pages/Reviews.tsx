@@ -8,6 +8,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import type { Review } from '../types/admin';
 import { adminApi } from '../utils/api';
 import { formatDateTime } from '../utils/format';
+import { resolveMediaUrl } from '../utils/media';
 
 const EMPTY_SUMMARY = {
   total: 0,
@@ -255,7 +256,10 @@ export default function ReviewsPage() {
             {reviews.map((review) => {
               const statusValue = getReviewStatus(review);
               const ratingStars = `${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}`;
-              const productImage = review.productId?.images?.[0]?.url;
+              const productImage = resolveMediaUrl(
+                review.productId?.images?.[0]?.url,
+                review.productId?.images?.[0]?.publicId,
+              );
               const isActioning = actioningReviewId === review.id;
 
               return (

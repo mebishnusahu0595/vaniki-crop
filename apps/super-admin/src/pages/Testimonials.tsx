@@ -9,6 +9,7 @@ import { LoadingBlock } from '../components/LoadingBlock';
 import { PageHeader } from '../components/PageHeader';
 import type { Testimonial } from '../types/admin';
 import { adminApi } from '../utils/api';
+import { resolveMediaUrl } from '../utils/media';
 
 const testimonialSchema = z.object({
   name: z.string().min(2),
@@ -123,7 +124,9 @@ export default function TestimonialsPage() {
     },
   });
 
-  const previewAvatarUrl = avatarPreviewUrl || avatarUrlInput.trim() || editing?.avatar?.url || '';
+  const previewAvatarUrl = avatarPreviewUrl
+    || resolveMediaUrl(avatarUrlInput.trim() || editing?.avatar?.url, editing?.avatar?.publicId)
+    || '';
 
   const upsertMutation = useMutation({
     mutationFn: async (values: TestimonialFormOutput) => {
@@ -324,7 +327,11 @@ export default function TestimonialsPage() {
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 {testimonial.avatar?.url ? (
-                  <img src={testimonial.avatar.url} alt={testimonial.name} className="h-12 w-12 rounded-full object-cover" />
+                  <img
+                    src={resolveMediaUrl(testimonial.avatar.url, testimonial.avatar.publicId)}
+                    alt={testimonial.name}
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 text-xs font-black text-primary-700">
                     {testimonial.name.slice(0, 2).toUpperCase()}

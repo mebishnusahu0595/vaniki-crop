@@ -10,6 +10,7 @@ import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
 import type { Banner } from '../types/admin';
 import { formatDate } from '../utils/format';
+import { resolveMediaUrl } from '../utils/media';
 
 const bannerSchema = z.object({
   title: z.string().min(2),
@@ -138,7 +139,9 @@ export default function BannersPage() {
   });
 
   const visibleBanners = reorderedBanners ?? bannersQuery.data ?? [];
-  const previewUrl = filePreviewUrl || imageUrlInput.trim() || editing?.image.url || '';
+  const previewUrl = filePreviewUrl
+    || resolveMediaUrl(imageUrlInput.trim() || editing?.image.url, editing?.image.publicId)
+    || '';
   const linkedProductsValue = watch('linkedProducts') || '';
   const selectedLinkedProductIds = linkedProductsValue
     .split(',')

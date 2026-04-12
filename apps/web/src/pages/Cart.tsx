@@ -7,6 +7,7 @@ import { useCartStore } from '../store/useCartStore';
 import { useStoreStore } from '../store/useStoreStore';
 import { currencyFormatter } from '../utils/format';
 import { storefrontApi } from '../utils/api';
+import { resolveMediaUrl } from '../utils/media';
 import OptimizedImage from '../components/common/OptimizedImage';
 
 const Cart: React.FC = () => {
@@ -83,7 +84,7 @@ const Cart: React.FC = () => {
               >
                 {item.image ? (
                   <OptimizedImage
-                    src={item.image}
+                    src={resolveMediaUrl(item.image)}
                     alt={item.productName}
                     widthHint={160}
                     heightHint={160}

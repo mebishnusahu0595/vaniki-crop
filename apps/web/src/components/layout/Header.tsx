@@ -462,7 +462,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
             className="overflow-hidden rounded-xl border border-white/90 bg-primary-50/95 shadow-[0_16px_40px_rgba(8,32,24,0.2)]"
           >
             {flyingCartItem.imageUrl ? (
-              <img src={flyingCartItem.imageUrl} alt="" className="h-full w-full object-cover" />
+              <img src={resolveMediaUrl(flyingCartItem.imageUrl)} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-primary">
                 <ShoppingCart size={16} />

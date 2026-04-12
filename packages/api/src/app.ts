@@ -47,6 +47,8 @@ const currentFilePath = fileURLToPath(import.meta.url);
 const currentDirectory = dirname(currentFilePath);
 const uploadsDirectory = resolve(currentDirectory, '../../../uploads');
 
+app.set('trust proxy', 1);
+
 // ─── Security Middleware ─────────────────────────────────────────────────
 app.use(helmet());
 app.use(
@@ -63,11 +65,20 @@ app.use(
 app.use(compression());
 
 // ─── Rate Limiting ───────────────────────────────────────────────────────
+const rateLimitWindowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
+const rateLimitMax = Number(process.env.RATE_LIMIT_MAX || (process.env.NODE_ENV === 'production' ? 1200 : 3000));
+
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  windowMs: rateLimitWindowMs,
+  max: rateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => (
+    req.method === 'OPTIONS'
+    || req.path === '/api/health'
+    || req.path === '/api/media'
+    || req.path.startsWith('/uploads/')
+  ),
   message: { success: false, error: 'Too many requests, please try again later.' },
 });
 app.use(globalLimiter);

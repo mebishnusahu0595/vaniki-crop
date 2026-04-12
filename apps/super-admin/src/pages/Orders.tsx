@@ -5,6 +5,7 @@ import { LoadingBlock } from '../components/LoadingBlock';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { adminApi } from '../utils/api';
 import { currencyFormatter, formatAddress, formatDateTime } from '../utils/format';
+import { resolveMediaUrl } from '../utils/media';
 
 function exportOrdersCsv(rows: Array<Record<string, unknown>>) {
   if (!rows.length) return;
@@ -250,7 +251,7 @@ export default function OrdersPage() {
                         <div className="flex min-w-0 items-start gap-3">
                           {item.image ? (
                             <img
-                              src={item.image}
+                              src={resolveMediaUrl(item.image)}
                               alt={item.productName}
                               loading="lazy"
                               className="h-12 w-12 rounded-xl border border-primary-100 bg-primary-50 object-cover"

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../../store/useCartStore';
 import { currencyFormatter } from '../../utils/format';
+import { resolveMediaUrl } from '../../utils/media';
 import OptimizedImage from '../common/OptimizedImage';
 
 interface CartDrawerProps {
@@ -63,7 +64,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                     <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-primary-50">
                       {item.image ? (
                         <OptimizedImage
-                          src={item.image}
+                          src={resolveMediaUrl(item.image)}
                           alt={item.productName}
                           widthHint={120}
                           heightHint={120}

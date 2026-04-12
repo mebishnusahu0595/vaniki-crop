@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Leaf } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCategories } from '../hooks/useProducts';
+import { resolveMediaUrl } from '../utils/media';
 
 const Categories: React.FC = () => {
   const { t } = useTranslation();
@@ -28,7 +29,11 @@ const Categories: React.FC = () => {
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-50 text-primary">
                   {category.image?.url ? (
-                    <img src={category.image.url} alt={category.name} className="h-10 w-10 rounded-full object-cover" />
+                    <img
+                      src={resolveMediaUrl(category.image.url, category.image.publicId)}
+                      alt={category.name}
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
                   ) : (
                     <Leaf size={24} />
                   )}

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { Testimonial } from '../../types/storefront';
 import ReviewStars from '../ui/ReviewStars';
+import { resolveMediaUrl } from '../../utils/media';
 
 interface TestimonialsProps {
   testimonials: Testimonial[];
@@ -94,7 +95,7 @@ const Testimonials: React.FC<TestimonialsProps> = ({ testimonials }) => {
                 <div className="flex items-center gap-3">
                   {testimonial.avatar?.url ? (
                     <img
-                      src={testimonial.avatar.url}
+                      src={resolveMediaUrl(testimonial.avatar.url, testimonial.avatar.publicId)}
                       alt={testimonial.name}
                       className="h-10 w-10 rounded-full border border-primary-100 object-cover"
                     />

@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, Leaf } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Category } from '../../types/storefront';
+import { resolveMediaUrl } from '../../utils/media';
 
 interface CategoryStripProps {
   categories: Category[];
@@ -65,7 +66,11 @@ const CategoryStrip: React.FC<CategoryStripProps> = ({ categories }) => {
             >
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,_rgba(82,183,136,0.25),_rgba(45,106,79,0.1))] ring-1 ring-primary-100 transition duration-300 group-hover:-translate-y-1 group-hover:shadow-lg">
                 {category.image?.url ? (
-                  <img src={category.image.url} alt={category.name} className="h-10 w-10 rounded-full object-cover" />
+                  <img
+                    src={resolveMediaUrl(category.image.url, category.image.publicId)}
+                    alt={category.name}
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
                 ) : (
                   <Leaf size={24} className="text-primary" />
                 )}

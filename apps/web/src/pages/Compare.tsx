@@ -4,6 +4,7 @@ import { Scale, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCompareStore } from '../store/useCompareStore';
 import { formatPrice } from '../utils/format';
+import { resolveMediaUrl } from '../utils/media';
 import OptimizedImage from '../components/common/OptimizedImage';
 
 const Compare: React.FC = () => {
@@ -67,7 +68,7 @@ const Compare: React.FC = () => {
                       <div className="relative mb-3 aspect-[4/3] overflow-hidden rounded-2xl bg-primary-50">
                         {product.images[0]?.url ? (
                           <OptimizedImage
-                            src={product.images[0].url}
+                            src={resolveMediaUrl(product.images[0].url, product.images[0].publicId)}
                             alt={product.name}
                             widthHint={480}
                             heightHint={360}

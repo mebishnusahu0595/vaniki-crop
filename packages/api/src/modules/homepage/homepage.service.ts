@@ -29,7 +29,19 @@ export async function getHomepageData(storeId?: string) {
     ],
   })
     .sort({ sortOrder: 1, createdAt: -1 })
-    .populate('linkedProducts.productId', 'name slug variants images');
+    .populate({
+      path: 'linkedProducts.productId',
+      select: 'name slug variants images isActive',
+      match: { isActive: true },
+    });
+
+  const sanitizedBanners = banners.map((banner: any) => {
+    const normalizedBanner = banner.toJSON();
+    return {
+      ...normalizedBanner,
+      linkedProducts: (normalizedBanner.linkedProducts || []).filter((entry: any) => Boolean(entry?.productId)),
+    };
+  });
 
   // 2. Featured Categories (Top 8 circular)
   const featuredCategories = await Category.find({ isActive: true })
@@ -105,7 +117,7 @@ export async function getHomepageData(storeId?: string) {
     .limit(6);
 
   const result = {
-    banners,
+    banners: sanitizedBanners,
     featuredCategories,
     saleProducts,
     bestSellers,
