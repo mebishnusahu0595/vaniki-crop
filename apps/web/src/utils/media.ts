@@ -40,6 +40,50 @@ function normalizeRelativePath(value: string): string {
   return withLeadingSlash;
 }
 
+function getLocalPublicIdFromUrl(rawUrl?: string): string {
+  if (!rawUrl) return '';
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  const pathCandidate = (() => {
+    if (/^https?:\/\//i.test(trimmed)) {
+      try {
+        return new URL(trimmed).pathname;
+      } catch {
+        return '';
+      }
+    }
+
+    return trimmed.split(/[?#]/, 1)[0] || '';
+  })();
+
+  if (!pathCandidate) return '';
+
+  const normalizedPath = normalizeRelativePath(pathCandidate);
+  if (!normalizedPath.startsWith('/uploads/')) {
+    return '';
+  }
+
+  const relativePath = normalizedPath.replace(/^\/uploads\//, '');
+  if (!relativePath) return '';
+
+  const decodedRelativePath = relativePath
+    .split('/')
+    .map((segment) => {
+      if (!segment) return segment;
+
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    })
+    .join('/');
+
+  return `${LOCAL_PUBLIC_ID_PREFIX}${decodedRelativePath}`;
+}
+
 function buildMediaProxyUrl(publicId?: string): string {
   if (!publicId?.startsWith(LOCAL_PUBLIC_ID_PREFIX)) {
     return '';
@@ -49,7 +93,8 @@ function buildMediaProxyUrl(publicId?: string): string {
 }
 
 export function resolveMediaUrl(rawUrl?: string, publicId?: string): string {
-  const proxyUrl = buildMediaProxyUrl(publicId);
+  const normalizedPublicId = publicId || getLocalPublicIdFromUrl(rawUrl);
+  const proxyUrl = buildMediaProxyUrl(normalizedPublicId);
   if (proxyUrl) return proxyUrl;
 
   if (!rawUrl) return '';

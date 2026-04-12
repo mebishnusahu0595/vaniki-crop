@@ -124,6 +124,55 @@ function getLocalMediaProxyUrl(publicId?: string): string {
   return `${API_BASE_URL}/media?publicId=${encodeURIComponent(publicId)}`;
 }
 
+function getLocalPublicIdFromUrl(rawUrl?: string): string {
+  if (!rawUrl) return '';
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  const pathCandidate = (() => {
+    if (/^https?:\/\//i.test(trimmed)) {
+      try {
+        return new URL(trimmed).pathname;
+      } catch {
+        return '';
+      }
+    }
+
+    return trimmed.split(/[?#]/, 1)[0] || '';
+  })();
+
+  if (!pathCandidate) return '';
+
+  const cleaned = pathCandidate.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+  const withLeadingSlash = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+  const normalizedPath = withLeadingSlash.startsWith('/api/uploads/')
+    ? withLeadingSlash.replace(/^\/api/, '')
+    : withLeadingSlash;
+
+  if (!normalizedPath.startsWith('/uploads/')) {
+    return '';
+  }
+
+  const relativePath = normalizedPath.replace(/^\/uploads\//, '');
+  if (!relativePath) return '';
+
+  const decodedRelativePath = relativePath
+    .split('/')
+    .map((segment) => {
+      if (!segment) return segment;
+
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    })
+    .join('/');
+
+  return `local:${decodedRelativePath}`;
+}
+
 function encodePathname(pathname: string): string {
   return pathname
     .split('/')
@@ -140,7 +189,8 @@ function encodePathname(pathname: string): string {
 }
 
 function resolveMediaUrl(rawUrl?: string, publicId?: string): string {
-  const mediaProxyUrl = getLocalMediaProxyUrl(publicId);
+  const normalizedPublicId = publicId || getLocalPublicIdFromUrl(rawUrl);
+  const mediaProxyUrl = getLocalMediaProxyUrl(normalizedPublicId);
   if (mediaProxyUrl) return mediaProxyUrl;
 
   if (!rawUrl) return '';

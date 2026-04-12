@@ -44,9 +44,9 @@ export function AdminLayout() {
   if (sessionQuery.isLoading) return <LoadingBlock label="Preparing admin workspace..." />;
 
   return (
-    <div className="min-h-screen bg-off-white text-slate-900 md:grid md:h-screen md:grid-cols-[280px_1fr] md:overflow-hidden">
+    <div className="min-h-screen bg-off-white text-slate-900 md:h-[100dvh] md:overflow-hidden">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="min-w-0 md:h-screen md:overflow-y-auto">
+      <div className="min-w-0 md:ml-[280px] md:h-[100dvh] md:overflow-y-auto">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         <main className="px-4 py-6 lg:px-8">
           <Outlet />

@@ -1,4 +1,4 @@
-import { LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu, UserRoundCog } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SearchBar } from './SearchBar';
 import { useAdminAuthStore } from '../store/useAdminAuthStore';
@@ -17,10 +17,23 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         </button>
         <SearchBar />
         <div className="ml-auto flex items-center gap-3">
-          <div className="hidden rounded-2xl border border-primary-100 bg-white px-4 py-3 sm:block">
+          <button
+            type="button"
+            onClick={() => navigate('/settings')}
+            className="hidden rounded-2xl border border-primary-100 bg-white px-4 py-3 text-left transition hover:border-primary-200 hover:bg-primary-50 sm:block"
+          >
             <p className="text-xs font-black uppercase tracking-[0.16em] text-primary-500">Signed in</p>
             <p className="text-sm font-semibold text-slate-800">{user?.name || 'Store Admin'}</p>
-          </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/settings')}
+            className="rounded-2xl border border-primary-100 bg-white p-3 text-slate-600 transition hover:border-primary-200 hover:bg-primary-50 hover:text-slate-900"
+            aria-label="Open profile settings"
+            title="Profile settings"
+          >
+            <UserRoundCog size={18} />
+          </button>
           <button
             onClick={async () => {
               await adminApi.logout().catch(() => undefined);
