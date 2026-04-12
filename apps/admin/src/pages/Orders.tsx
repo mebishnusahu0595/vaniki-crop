@@ -178,12 +178,21 @@ export default function OrdersPage() {
           </button>
         </div>
 
-        <input
-          value={inventorySearch}
-          onChange={(event) => setInventorySearch(event.target.value)}
-          placeholder="Search inventory products"
-          className="mt-4 w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-        />
+        <div className="mt-4">
+          <label
+            htmlFor="inventory-search"
+            className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+          >
+            Search Inventory
+          </label>
+          <input
+            id="inventory-search"
+            value={inventorySearch}
+            onChange={(event) => setInventorySearch(event.target.value)}
+            placeholder="Search inventory products"
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+          />
+        </div>
 
         <div className="mt-4 space-y-4">
           {filteredInventory.map((product) => (
@@ -262,56 +271,101 @@ export default function OrdersPage() {
           <h3 className="mt-1 text-xl font-black text-slate-900">Ask Super Admin for New Stock</h3>
 
           <div className="mt-4 space-y-3">
-            <select
-              value={selectedProductId}
-              onChange={(event) => {
-                const nextId = event.target.value;
-                setSelectedProductId(nextId);
-                const selectedProduct = inventoryQuery.data?.find((product) => product.id === nextId);
-                if (selectedProduct) {
-                  setRequestedProductName(selectedProduct.name);
-                }
-              }}
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-            >
-              <option value="">Select existing product (optional)</option>
-              {inventoryQuery.data?.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
-            </select>
+            <div>
+              <label
+                htmlFor="request-existing-product"
+                className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+              >
+                Existing Product (Optional)
+              </label>
+              <select
+                id="request-existing-product"
+                value={selectedProductId}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  setSelectedProductId(nextId);
+                  const selectedProduct = inventoryQuery.data?.find((product) => product.id === nextId);
+                  if (selectedProduct) {
+                    setRequestedProductName(selectedProduct.name);
+                  }
+                }}
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+              >
+                <option value="">Select existing product (optional)</option>
+                {inventoryQuery.data?.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <input
-              value={requestedProductName}
-              onChange={(event) => setRequestedProductName(event.target.value)}
-              placeholder="Product name"
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-            />
-
-            <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label
+                htmlFor="request-product-name"
+                className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+              >
+                Product Name
+              </label>
               <input
-                type="number"
-                min={1}
-                value={requestedQuantity}
-                onChange={(event) => setRequestedQuantity(Math.max(1, Number(event.target.value) || 1))}
-                placeholder="Quantity"
-                className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-              />
-              <input
-                value={requestedPack}
-                onChange={(event) => setRequestedPack(event.target.value)}
-                placeholder="Pack size (Liter/Gram)"
-                className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                id="request-product-name"
+                value={requestedProductName}
+                onChange={(event) => setRequestedProductName(event.target.value)}
+                placeholder="Product name"
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
               />
             </div>
 
-            <textarea
-              value={requestNotes}
-              onChange={(event) => setRequestNotes(event.target.value)}
-              placeholder="Extra details"
-              className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-            />
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="request-quantity"
+                  className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                >
+                  Quantity
+                </label>
+                <input
+                  id="request-quantity"
+                  type="number"
+                  min={1}
+                  value={requestedQuantity}
+                  onChange={(event) => setRequestedQuantity(Math.max(1, Number(event.target.value) || 1))}
+                  placeholder="Quantity"
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="request-pack"
+                  className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                >
+                  Pack Size
+                </label>
+                <input
+                  id="request-pack"
+                  value={requestedPack}
+                  onChange={(event) => setRequestedPack(event.target.value)}
+                  placeholder="Pack size (Liter/Gram)"
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="request-notes"
+                className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+              >
+                Extra Details
+              </label>
+              <textarea
+                id="request-notes"
+                value={requestNotes}
+                onChange={(event) => setRequestNotes(event.target.value)}
+                placeholder="Extra details"
+                className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+              />
+            </div>
 
             <button
               type="button"
@@ -351,48 +405,78 @@ export default function OrdersPage() {
       </section>
 
       <div className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-white p-4 lg:grid-cols-5">
-        <input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Order number"
-          className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-        />
-        <select
-          value={status}
-          onChange={(event) => setStatus(event.target.value)}
-          className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-        >
-          <option value="">All statuses</option>
-          {['placed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-        <select
-          value={paymentMethod}
-          onChange={(event) => setPaymentMethod(event.target.value)}
-          className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-        >
-          <option value="">All payment methods</option>
-          {['razorpay', 'cod'].map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={startDate}
-          onChange={(event) => setStartDate(event.target.value)}
-          className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-        />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(event) => setEndDate(event.target.value)}
-          className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-        />
+        <div>
+          <label htmlFor="order-search" className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Search Order
+          </label>
+          <input
+            id="order-search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Order number"
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+          />
+        </div>
+        <div>
+          <label htmlFor="order-status" className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Order Status
+          </label>
+          <select
+            id="order-status"
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+          >
+            <option value="">All statuses</option>
+            {['placed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="payment-method" className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Payment Method
+          </label>
+          <select
+            id="payment-method"
+            value={paymentMethod}
+            onChange={(event) => setPaymentMethod(event.target.value)}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+          >
+            <option value="">All payment methods</option>
+            {['razorpay', 'cod'].map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="start-date" className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            Start Date
+          </label>
+          <input
+            id="start-date"
+            type="date"
+            value={startDate}
+            onChange={(event) => setStartDate(event.target.value)}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+          />
+        </div>
+        <div>
+          <label htmlFor="end-date" className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+            End Date
+          </label>
+          <input
+            id="end-date"
+            type="date"
+            value={endDate}
+            onChange={(event) => setEndDate(event.target.value)}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+          />
+        </div>
       </div>
 
       {ordersQuery.isFetching ? (
@@ -542,7 +626,15 @@ export default function OrdersPage() {
                   <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
                     <h3 className="text-lg font-black text-slate-900">Status Update</h3>
                     <div className="mt-4 space-y-3">
+                      <div>
+                        <label
+                          htmlFor="update-status"
+                          className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                        >
+                          Next Status
+                        </label>
                       <select
+                        id="update-status"
                         value={nextStatus}
                         onChange={(event) => setNextStatus(event.target.value)}
                         className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
@@ -553,12 +645,22 @@ export default function OrdersPage() {
                           </option>
                         ))}
                       </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="status-note"
+                          className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                        >
+                          Note
+                        </label>
                       <textarea
+                        id="status-note"
                         value={note}
                         onChange={(event) => setNote(event.target.value)}
                         placeholder="Optional note"
                         className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
                       />
+                      </div>
                       <button
                         onClick={() => updateStatusMutation.mutate()}
                         className="w-full rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white"
