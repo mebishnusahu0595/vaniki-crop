@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+import { API_BASE_URL } from '../config/api';
 import { PageHeader } from '../components/PageHeader';
 import { useAdminAuthStore } from '../store/useAdminAuthStore';
 import { adminApi } from '../utils/api';
@@ -40,6 +41,135 @@ const passwordSchema = z
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
+function getApiPathPrefix(): string {
+  if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
+    try {
+      const path = new URL(API_BASE_URL).pathname.replace(/\/+$/, '');
+      return path || '/api';
+    } catch {
+      return '/api';
+    }
+  }
+
+  const trimmed = API_BASE_URL.trim();
+  if (!trimmed) return '/api';
+
+  if (trimmed.startsWith('/')) {
+    return trimmed.replace(/\/+$/, '') || '/api';
+  }
+
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
+}
+
+function encodePathname(pathname: string): string {
+  return pathname
+    .split('/')
+    .map((segment) => {
+      if (!segment) return segment;
+
+      try {
+        return encodeURIComponent(decodeURIComponent(segment));
+      } catch {
+        return encodeURIComponent(segment);
+      }
+    })
+    .join('/');
+}
+
+function normalizeRelativePath(value: string): string {
+  const cleaned = value.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+  const withLeadingSlash = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+
+  if (withLeadingSlash.startsWith('/api/uploads/')) {
+    return withLeadingSlash.replace(/^\/api/, '');
+  }
+
+  return withLeadingSlash;
+}
+
+function getLocalPublicIdFromRawUrl(rawUrl?: string): string {
+  if (!rawUrl) return '';
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      const queryPublicId = parsed.searchParams.get('publicId') || parsed.searchParams.get('public_id');
+      if (queryPublicId?.startsWith('local:')) {
+        return queryPublicId;
+      }
+
+      const normalizedPath = normalizeRelativePath(parsed.pathname);
+      if (!normalizedPath.startsWith('/uploads/')) return '';
+
+      const relativePath = normalizedPath.replace(/^\/uploads\//, '');
+      return relativePath ? `local:${relativePath}` : '';
+    } catch {
+      return '';
+    }
+  }
+
+  const queryMatch = trimmed.match(/[?&](publicId|public_id)=([^&#]+)/i);
+  if (queryMatch?.[2]) {
+    try {
+      const decoded = decodeURIComponent(queryMatch[2]);
+      if (decoded.startsWith('local:')) {
+        return decoded;
+      }
+    } catch {
+      // Ignore malformed query encoding and continue path parsing.
+    }
+  }
+
+  const pathOnly = normalizeRelativePath(trimmed.split(/[?#]/, 1)[0] || '');
+  if (!pathOnly.startsWith('/uploads/')) return '';
+
+  const relativePath = pathOnly.replace(/^\/uploads\//, '');
+  return relativePath ? `local:${relativePath}` : '';
+}
+
+function createProfileImageCandidates(rawUrl?: string, publicId?: string): string[] {
+  const candidates: string[] = [];
+
+  const addCandidate = (value?: string) => {
+    if (!value) return;
+    const cleaned = value.trim();
+    if (!cleaned || candidates.includes(cleaned)) return;
+    candidates.push(cleaned);
+  };
+
+  const normalizedPublicId = publicId?.startsWith('local:') ? publicId : getLocalPublicIdFromRawUrl(rawUrl);
+  if (normalizedPublicId) {
+    addCandidate(`${getApiPathPrefix()}/media?publicId=${encodeURIComponent(normalizedPublicId)}`);
+  }
+
+  if (!rawUrl) return candidates;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return candidates;
+
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+    addCandidate(trimmed);
+    return candidates;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      parsed.pathname = encodePathname(parsed.pathname.replace(/\\/g, '/').replace(/\/{2,}/g, '/'));
+      addCandidate(parsed.toString());
+    } catch {
+      addCandidate(trimmed);
+    }
+
+    return candidates;
+  }
+
+  addCandidate(normalizeRelativePath(trimmed));
+  return candidates;
+}
+
 export default function ProfileSettingsPage() {
   const navigate = useNavigate();
   const user = useAdminAuthStore((state) => state.user);
@@ -50,6 +180,12 @@ export default function ProfileSettingsPage() {
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
+  const [profileImageIndex, setProfileImageIndex] = useState(0);
+
+  const profileImageCandidates = useMemo(
+    () => createProfileImageCandidates(user?.profileImage?.url, user?.profileImage?.publicId),
+    [user?.profileImage?.url, user?.profileImage?.publicId],
+  );
 
   const {
     register,
@@ -106,6 +242,10 @@ export default function ProfileSettingsPage() {
     user?.savedAddress?.pincode,
     user?.savedAddress?.landmark,
   ]);
+
+  useEffect(() => {
+    setProfileImageIndex(0);
+  }, [profileImageCandidates]);
 
   const updateProfileMutation = useMutation({
     mutationFn: (payload: ProfileFormValues) => {
@@ -186,8 +326,15 @@ export default function ProfileSettingsPage() {
       <section className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
         <div className="flex flex-col gap-5 md:flex-row md:items-center">
           <div className="h-24 w-24 overflow-hidden rounded-3xl border border-primary-100 bg-primary-50">
-            {user?.profileImage?.url ? (
-              <img src={user.profileImage.url} alt="Profile" className="h-full w-full object-cover" />
+            {profileImageCandidates.length ? (
+              <img
+                src={profileImageCandidates[Math.min(profileImageIndex, profileImageCandidates.length - 1)]}
+                alt="Profile"
+                className="h-full w-full object-cover"
+                onError={() => {
+                  setProfileImageIndex((current) => (current + 1 < profileImageCandidates.length ? current + 1 : current));
+                }}
+              />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-3xl font-black text-primary-600">
                 {initial}

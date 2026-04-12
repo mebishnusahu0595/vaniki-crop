@@ -116,12 +116,32 @@ function getApiOrigin(): string {
   }
 }
 
+function getApiPathPrefix(): string {
+  if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
+    try {
+      const path = new URL(API_BASE_URL).pathname.replace(/\/+$/, '');
+      return path || '/api';
+    } catch {
+      return '/api';
+    }
+  }
+
+  const trimmed = API_BASE_URL.trim();
+  if (!trimmed) return '/api';
+
+  if (trimmed.startsWith('/')) {
+    return trimmed.replace(/\/+$/, '') || '/api';
+  }
+
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
+}
+
 function getLocalMediaProxyUrl(publicId?: string): string {
   if (!publicId?.startsWith('local:')) {
     return '';
   }
 
-  return `${API_BASE_URL}/media?publicId=${encodeURIComponent(publicId)}`;
+  return `${getApiPathPrefix()}/media?publicId=${encodeURIComponent(publicId)}`;
 }
 
 function getLocalPublicIdFromUrl(rawUrl?: string): string {
@@ -133,9 +153,27 @@ function getLocalPublicIdFromUrl(rawUrl?: string): string {
   const pathCandidate = (() => {
     if (/^https?:\/\//i.test(trimmed)) {
       try {
-        return new URL(trimmed).pathname;
+        const parsed = new URL(trimmed);
+        const queryPublicId = parsed.searchParams.get('publicId') || parsed.searchParams.get('public_id');
+        if (queryPublicId?.startsWith('local:')) {
+          return queryPublicId;
+        }
+
+        return parsed.pathname;
       } catch {
         return '';
+      }
+    }
+
+    const queryMatch = trimmed.match(/[?&](publicId|public_id)=([^&#]+)/i);
+    if (queryMatch?.[2]) {
+      try {
+        const decoded = decodeURIComponent(queryMatch[2]);
+        if (decoded.startsWith('local:')) {
+          return decoded;
+        }
+      } catch {
+        // Ignore malformed query encoding and continue path parsing.
       }
     }
 
@@ -143,6 +181,7 @@ function getLocalPublicIdFromUrl(rawUrl?: string): string {
   })();
 
   if (!pathCandidate) return '';
+  if (pathCandidate.startsWith('local:')) return pathCandidate;
 
   const cleaned = pathCandidate.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
   const withLeadingSlash = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
