@@ -12,6 +12,7 @@ import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
 
 export default function CheckoutScreen() {
   const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
   const { items, couponCode, couponDiscount, clearCart } = useCartStore();
   const { mode, address, openSelector } = useServiceModeStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
@@ -136,6 +137,12 @@ export default function CheckoutScreen() {
       <Pressable
         disabled={paying}
         onPress={async () => {
+          if (!token) {
+            Alert.alert('Login required', 'Please login again to place your order.');
+            router.replace('/(auth)/login');
+            return;
+          }
+
           if (!selectedStore) {
             Alert.alert('Select a store', 'Please choose a store before checkout.');
             return;
@@ -193,6 +200,15 @@ export default function CheckoutScreen() {
             clearCart();
             router.replace({ pathname: '/order-success/[id]', params: { id: confirmed.orderId } });
           } catch (caughtError) {
+            if (
+              caughtError instanceof Error &&
+              /(access denied|no token|unauthorized|jwt|token)/i.test(caughtError.message)
+            ) {
+              Alert.alert('Session expired', 'Please login again to continue checkout.');
+              router.replace('/(auth)/login');
+              return;
+            }
+
             Alert.alert(
               'Checkout failed',
               caughtError instanceof Error ? caughtError.message : 'Unable to complete payment.',
@@ -201,7 +217,7 @@ export default function CheckoutScreen() {
             setPaying(false);
           }
         }}
-        className="mt-6 rounded-full bg-primary-500 px-5 py-4"
+        className="mb-4 mt-6 rounded-full bg-primary-500 px-5 py-4"
       >
         <Text className="text-center text-sm font-black uppercase tracking-[2px] text-white">
           {paying

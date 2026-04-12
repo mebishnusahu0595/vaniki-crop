@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import AuthShell from '../components/common/AuthShell';
@@ -24,6 +25,7 @@ const Signup: React.FC = () => {
     password: '',
     referralCode: searchParams.get('ref') || '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -87,14 +89,24 @@ const Signup: React.FC = () => {
           placeholder={t('authPages.mobileNumber')}
           className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
         />
-        <input
-          required
-          type="password"
-          value={formData.password}
-          onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
-          placeholder={t('authPages.createPassword')}
-          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-        />
+        <div className="relative">
+          <input
+            required
+            type={showPassword ? 'text' : 'password'}
+            value={formData.password}
+            onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
+            placeholder={t('authPages.createPassword')}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 pr-11 font-semibold text-primary-900"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((current) => !current)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
+            aria-label={showPassword ? t('authPages.hidePassword') : t('authPages.showPassword')}
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
         <input
           value={formData.referralCode}
           onChange={(event) => setFormData((current) => ({ ...current, referralCode: event.target.value.toUpperCase() }))}

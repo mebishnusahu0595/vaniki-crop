@@ -20,7 +20,7 @@ export function Screen({
   scroll = true,
 }: ScreenProps) {
   const content = (
-    <View className="flex-1 bg-offwhite px-4 pb-6">
+    <View className={`flex-1 bg-offwhite px-4 ${withWhatsAppFab ? 'pb-24' : 'pb-6'}`}>
       {withHeader ? (
         <View className="pb-4 pt-3">
           <AppHeader />
