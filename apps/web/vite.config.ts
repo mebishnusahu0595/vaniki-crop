@@ -18,6 +18,12 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       includeAssets: ['favicon.svg', 'icons.svg'],
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        navigateFallbackDenylist: [/^\/assets\//, /^\/api\//],
+      },
       manifest: {
         name: 'Vaniki Crop',
         short_name: 'Vaniki',
@@ -59,6 +65,7 @@ export default defineConfig({
     },
   },
   build: {
+    emptyOutDir: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
