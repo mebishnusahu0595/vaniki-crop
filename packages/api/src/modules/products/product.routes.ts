@@ -54,7 +54,14 @@ adminRouter.put(
   productController.updateProduct,
 );
 
-/** DELETE /api/admin/products/:id — Soft delete */
+/** PATCH /api/admin/products/:id/deactivate — Soft deactivate */
+adminRouter.patch(
+  '/:id/deactivate',
+  validate(productIdSchema),
+  productController.deactivateProduct,
+);
+
+/** DELETE /api/admin/products/:id — Permanent delete */
 adminRouter.delete(
   '/:id',
   validate(productIdSchema),

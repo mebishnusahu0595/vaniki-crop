@@ -1,4 +1,4 @@
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Ban, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -33,6 +33,19 @@ export default function ProductsPage() {
     },
     onError: (error) => {
       window.alert(error instanceof Error ? error.message : 'Unable to update product status.');
+    },
+    onSettled: () => {
+      setActioningProductId(null);
+    },
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deactivateProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to deactivate product.');
     },
     onSettled: () => {
       setActioningProductId(null);
@@ -153,6 +166,22 @@ export default function ProductsPage() {
                           if (!window.confirm(`Deactivate ${product.name}?`)) return;
                           setActioningProductId(product.id);
                           try {
+                            await deactivateMutation.mutateAsync(product.id);
+                          } catch {
+                            // Error is already surfaced by mutation onError.
+                          }
+                        }}
+                        disabled={actioningProductId === product.id || !product.isActive}
+                        className="rounded-xl border border-amber-100 p-2 text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="Deactivate"
+                      >
+                        <Ban size={16} />
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Delete ${product.name} permanently? This cannot be undone.`)) return;
+                          setActioningProductId(product.id);
+                          try {
                             await deleteMutation.mutateAsync(product.id);
                           } catch {
                             // Error is already surfaced by mutation onError.
@@ -208,6 +237,21 @@ export default function ProductsPage() {
               <button
                 onClick={async () => {
                   if (!window.confirm(`Deactivate ${product.name}?`)) return;
+                  setActioningProductId(product.id);
+                  try {
+                    await deactivateMutation.mutateAsync(product.id);
+                  } catch {
+                    // Error is already surfaced by mutation onError.
+                  }
+                }}
+                disabled={actioningProductId === product.id || !product.isActive}
+                className="rounded-xl border border-amber-100 px-4 py-2 text-sm font-semibold text-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Deactivate
+              </button>
+              <button
+                onClick={async () => {
+                  if (!window.confirm(`Delete ${product.name} permanently? This cannot be undone.`)) return;
                   setActioningProductId(product.id);
                   try {
                     await deleteMutation.mutateAsync(product.id);

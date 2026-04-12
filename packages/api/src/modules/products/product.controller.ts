@@ -147,8 +147,30 @@ export async function updateProduct(req: Request, res: Response, next: NextFunct
 }
 
 /**
- * DELETE /api/admin/products/:id
+ * PATCH /api/admin/products/:id/deactivate
  * Soft delete (isActive: false).
+ */
+export async function deactivateProduct(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const product = await productService.deactivateProduct(
+      req.params.id as string,
+      req.userRole!,
+      req.userStoreId,
+      req.userId,
+    );
+    res.status(200).json({
+      success: true,
+      message: 'Product deactivated successfully',
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * DELETE /api/admin/products/:id
+ * Permanent delete.
  */
 export async function deleteProduct(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -160,7 +182,7 @@ export async function deleteProduct(req: Request, res: Response, next: NextFunct
     );
     res.status(200).json({
       success: true,
-      message: 'Product deactivated successfully',
+      message: 'Product deleted successfully',
       data: product,
     });
   } catch (error) {

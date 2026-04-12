@@ -3,6 +3,8 @@ import { Product, type IProduct } from '../../models/Product.model.js';
 import { Category } from '../../models/Category.model.js';
 import { Review } from '../../models/Review.model.js';
 import { Store } from '../../models/Store.model.js';
+import { DealerInventory } from '../../models/DealerInventory.model.js';
+import { ProductRequest } from '../../models/ProductRequest.model.js';
 import { AppError } from '../../utils/AppError.js';
 import {
   uploadMultipleToCloudinary,
@@ -500,13 +502,13 @@ export async function updateProduct(
 }
 
 /**
- * Soft-deletes a product.
+ * Deactivates a product (soft delete).
  *
  * @param id - Product ObjectId
  * @param userRole - Current user's role
  * @param userStoreId - Current user's store ID
  */
-export async function deleteProduct(
+export async function deactivateProduct(
   id: string,
   userRole: string,
   userStoreId?: string,
@@ -524,12 +526,54 @@ export async function deleteProduct(
       (sid) => sid.toString() === resolvedStoreId,
     );
     if (!hasAccess) {
-      throw new AppError('You can only delete products in your store', 403);
+      throw new AppError('You can only deactivate products in your store', 403);
     }
+  }
+
+  if (!product.isActive) {
+    return product;
   }
 
   product.isActive = false;
   await product.save();
   await invalidateHomepageCache(product.storeId.map(id => id.toString()));
+  return product;
+}
+
+/**
+ * Permanently deletes a product and related records.
+ *
+ * @param id - Product ObjectId
+ * @param userRole - Current user's role
+ */
+export async function deleteProduct(
+  id: string,
+  userRole: string,
+  _userStoreId?: string,
+  _userId?: string,
+): Promise<IProduct> {
+  if (userRole !== 'superAdmin') {
+    throw new AppError('Only super admin can permanently delete products', 403);
+  }
+
+  const product = await Product.findById(id);
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  const storeIds = product.storeId.map((storeId) => storeId.toString());
+
+  await Promise.allSettled(
+    product.images.map((image) => deleteFromCloudinary(image.publicId)),
+  );
+
+  await Promise.all([
+    DealerInventory.deleteMany({ productId: product._id }),
+    ProductRequest.deleteMany({ productId: product._id }),
+    Review.deleteMany({ productId: product._id }),
+    Product.deleteOne({ _id: product._id }),
+  ]);
+
+  await invalidateHomepageCache(storeIds);
   return product;
 }

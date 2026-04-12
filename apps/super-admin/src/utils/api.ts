@@ -277,6 +277,10 @@ export const adminApi = {
     const response = await api.put<ApiResponse<Product>>(`/admin/products/${id}`, payload);
     return response.data.data;
   },
+  deactivateProduct: async (id: string) => {
+    const response = await api.patch<ApiResponse<Product>>(`/admin/products/${id}/deactivate`);
+    return response.data.data;
+  },
   deleteProduct: async (id: string) => {
     const response = await api.delete<ApiResponse<Product>>(`/admin/products/${id}`);
     return response.data.data;
