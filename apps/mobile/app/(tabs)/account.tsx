@@ -3,12 +3,14 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '../../src/components/Screen';
+import { ProductCard } from '../../src/components/ProductCard';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { storefrontApi } from '../../src/lib/api';
 import { currencyFormatter, formatStoreAddress } from '../../src/utils/format';
+import type { Product } from '../../src/types/storefront';
 
-const tabs = ['orders', 'profile', 'password'] as const;
+const tabs = ['orders', 'wishlist', 'profile', 'password'] as const;
 
 export default function AccountScreen() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('orders');
@@ -26,6 +28,9 @@ export default function AccountScreen() {
     landmark: user?.savedAddress?.landmark || '',
   });
   const [password, setPassword] = useState({ currentPassword: '', newPassword: '' });
+  const wishlistProducts = (user?.wishlist || []).filter(
+    (entry): entry is Product => typeof entry !== 'string',
+  );
 
   const ordersQuery = useQuery({
     queryKey: ['mobile-orders'],
@@ -105,6 +110,31 @@ export default function AccountScreen() {
               </View>
             </View>
           ) : null}
+        </View>
+      ) : null}
+
+      {activeTab === 'wishlist' ? (
+        <View className="mt-5">
+          {wishlistProducts.length ? (
+            <View className="gap-3">
+              {wishlistProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </View>
+          ) : (
+            <View className="rounded-[28px] bg-white p-6">
+              <Text className="text-lg font-black text-primary-900">No saved products yet.</Text>
+              <Text className="mt-2 text-sm leading-6 text-primary-900/65">
+                Tap the heart icon on any product to build your wishlist.
+              </Text>
+              <Pressable
+                onPress={() => router.push('/products')}
+                className="mt-5 rounded-full bg-primary-500 px-5 py-4"
+              >
+                <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">Browse Products</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
       ) : null}
 

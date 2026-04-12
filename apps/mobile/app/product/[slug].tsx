@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { Screen } from '../../src/components/Screen';
@@ -10,6 +10,7 @@ import { ReviewStars } from '../../src/components/ReviewStars';
 import { storefrontApi } from '../../src/lib/api';
 import { useCartStore } from '../../src/store/useCartStore';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useCompareStore } from '../../src/store/useCompareStore';
 import { currencyFormatter, getDiscountPercent, getPrimaryImage } from '../../src/utils/format';
 import { stripHtml } from '../../src/utils/html';
 
@@ -19,6 +20,9 @@ export default function ProductDetailScreen() {
   const increaseQty = useCartStore((state) => state.increaseQty);
   const decreaseQty = useCartStore((state) => state.decreaseQty);
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  const comparedProducts = useCompareStore((state) => state.products);
+  const toggleCompareProduct = useCompareStore((state) => state.toggleProduct);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
@@ -52,6 +56,9 @@ export default function ProductDetailScreen() {
   const maxStock = Math.max(selectedVariant?.stock || 0, 0);
   const canIncrease = maxStock > quantityInCart;
   const isOutOfStock = maxStock === 0;
+  const wishlistIds = (user?.wishlist || []).map((entry) => (typeof entry === 'string' ? entry : entry.id));
+  const isWishlisted = wishlistIds.includes(product?.id || '');
+  const isCompared = comparedProducts.some((entry) => entry.id === product?.id);
 
   if (!product || !selectedVariant) {
     return (
@@ -60,6 +67,28 @@ export default function ProductDetailScreen() {
       </Screen>
     );
   }
+
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      Alert.alert('Login required', 'Please login to save wishlist products.');
+      router.push('/(auth)/login');
+      return;
+    }
+
+    try {
+      const updatedUser = await storefrontApi.toggleWishlist(product.id);
+      setUser(updatedUser);
+    } catch (caughtError) {
+      Alert.alert('Wishlist update failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
+    }
+  };
+
+  const handleToggleCompare = () => {
+    const result = toggleCompareProduct(product);
+    if (result.message.includes('up to 3')) {
+      Alert.alert('Compare limit', result.message);
+    }
+  };
 
   return (
     <Screen>
@@ -87,6 +116,37 @@ export default function ProductDetailScreen() {
       </Text>
       <Text className="mt-2 text-3xl font-black text-primary-900">{product.name}</Text>
       <Text className="mt-3 text-sm leading-6 text-primary-900/70">{product.shortDescription}</Text>
+
+      <View className="mt-4 flex-row gap-2">
+        <Pressable
+          onPress={() => void handleToggleWishlist()}
+          className={`flex-1 rounded-full border px-4 py-3 ${
+            isWishlisted ? 'border-rose-200 bg-rose-50' : 'border-primary-200 bg-white'
+          }`}
+        >
+          <Text
+            className={`text-center text-[10px] font-black uppercase tracking-[1.4px] ${
+              isWishlisted ? 'text-rose-600' : 'text-primary-900'
+            }`}
+          >
+            {isWishlisted ? 'Wishlisted' : 'Add to Wishlist'}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={handleToggleCompare}
+          className={`flex-1 rounded-full border px-4 py-3 ${
+            isCompared ? 'border-primary-500 bg-primary-500' : 'border-primary-200 bg-white'
+          }`}
+        >
+          <Text
+            className={`text-center text-[10px] font-black uppercase tracking-[1.4px] ${
+              isCompared ? 'text-white' : 'text-primary-900'
+            }`}
+          >
+            {isCompared ? 'Compared' : 'Add to Compare'}
+          </Text>
+        </Pressable>
+      </View>
 
       <View className="mt-5 flex-row items-center gap-3">
         <Text className="text-2xl font-black text-primary-900">{currencyFormatter.format(selectedVariant.price)}</Text>

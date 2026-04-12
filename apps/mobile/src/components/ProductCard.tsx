@@ -1,10 +1,13 @@
 import { memo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../store/useCartStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useCompareStore } from '../store/useCompareStore';
+import { storefrontApi } from '../lib/api';
 import type { Product } from '../types/storefront';
 import { currencyFormatter, getDefaultVariant, getDiscountPercent, getPrimaryImage } from '../utils/format';
 
@@ -18,17 +21,46 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
   const addItem = useCartStore((state) => state.addItem);
   const increaseQty = useCartStore((state) => state.increaseQty);
   const decreaseQty = useCartStore((state) => state.decreaseQty);
+  const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
+  const comparedProducts = useCompareStore((state) => state.products);
+  const toggleCompareProduct = useCompareStore((state) => state.toggleProduct);
   const variant = getDefaultVariant(product);
   const quantityInCart = useCartStore(
     (state) => state.items.find((item) => item.variantId === variant?.id)?.qty || 0,
   );
   const discount = getDiscountPercent(variant?.price, variant?.mrp);
+  const wishlistIds = (user?.wishlist || []).map((entry) => (typeof entry === 'string' ? entry : entry.id));
+  const isWishlisted = wishlistIds.includes(product.id);
+  const isCompared = comparedProducts.some((entry) => entry.id === product.id);
 
   if (!variant) return null;
 
   const maxStock = Math.max(variant.stock || 0, 0);
   const isOutOfStock = maxStock === 0;
   const canIncrease = maxStock > quantityInCart;
+
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      Alert.alert('Login required', 'Please login to save wishlist products.');
+      router.push('/(auth)/login');
+      return;
+    }
+
+    try {
+      const updatedUser = await storefrontApi.toggleWishlist(product.id);
+      setUser(updatedUser);
+    } catch (caughtError) {
+      Alert.alert('Wishlist update failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
+    }
+  };
+
+  const handleToggleCompare = () => {
+    const result = toggleCompareProduct(product);
+    if (result.message.includes('up to 3')) {
+      Alert.alert('Compare limit', result.message);
+    }
+  };
 
   return (
     <Pressable
@@ -45,6 +77,30 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
           style={{ width: '100%', height: compact ? 118 : 150 }}
           contentFit="cover"
         />
+        <View className="absolute right-3 top-3 z-20 flex-row gap-2">
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              void handleToggleWishlist();
+            }}
+            className={`h-8 w-8 items-center justify-center rounded-full border ${
+              isWishlisted ? 'border-rose-200 bg-rose-50' : 'border-white/85 bg-white/90'
+            }`}
+          >
+            <Feather name="heart" size={14} color={isWishlisted ? '#E11D48' : '#082018'} />
+          </Pressable>
+          <Pressable
+            onPress={(event) => {
+              event.stopPropagation();
+              handleToggleCompare();
+            }}
+            className={`h-8 w-8 items-center justify-center rounded-full border ${
+              isCompared ? 'border-primary-500 bg-primary-500' : 'border-white/85 bg-white/90'
+            }`}
+          >
+            <Feather name="sliders" size={14} color={isCompared ? '#FFFFFF' : '#082018'} />
+          </Pressable>
+        </View>
         {discount ? (
           <View className="absolute left-3 top-3 rounded-full bg-rose-500 px-2.5 py-1">
             <Text className="text-[10px] font-black uppercase tracking-[1px] text-white">{discount}% Off</Text>

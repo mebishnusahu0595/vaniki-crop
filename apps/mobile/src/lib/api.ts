@@ -43,6 +43,11 @@ type ProductLike = Product & {
   reviews?: ReviewLike[];
 };
 
+type AuthUserLike = AuthUser & {
+  _id?: string;
+  wishlist?: Array<string | ProductLike>;
+};
+
 const normalizeVariant = (variant: VariantLike, index: number): Product['variants'][number] => ({
   ...variant,
   id: variant.id || variant._id || variant.sku || `${variant.label || 'variant'}-${index}`,
@@ -68,6 +73,14 @@ const normalizeProduct = <T extends ProductLike | null | undefined>(product: T):
 };
 
 const normalizeProducts = (products: ProductLike[] = []) => products.map((product) => normalizeProduct(product)!);
+
+const normalizeAuthUser = (user: AuthUserLike): AuthUser => ({
+  ...user,
+  id: user.id || user._id || '',
+  wishlist: (user.wishlist || []).map((entry) =>
+    typeof entry === 'string' ? entry : normalizeProduct(entry as ProductLike)!,
+  ),
+});
 
 const normalizeHomepageData = (homepage: HomepageData): HomepageData => ({
   ...homepage,
@@ -210,14 +223,20 @@ export const storefrontApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
-    return response.data;
+    return {
+      ...response.data,
+      user: normalizeAuthUser(response.data.user as AuthUserLike),
+    };
   },
   loginWithOtp: async (payload: { mobile: string; otp: string }) => {
     const response = await request<{ user: AuthUser; accessToken: string }>('/auth/login-otp', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
-    return response.data;
+    return {
+      ...response.data,
+      user: normalizeAuthUser(response.data.user as AuthUserLike),
+    };
   },
   sendOtp: async (mobile: string) => {
     return request<{ success: boolean; message: string }>('/auth/send-otp', {
@@ -230,7 +249,10 @@ export const storefrontApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
-    return response.data;
+    return {
+      ...response.data,
+      user: normalizeAuthUser(response.data.user as AuthUserLike),
+    };
   },
   forgotPassword: async (mobile: string) => {
     return request<{ success: boolean; message: string }>('/auth/forgot-password', {
@@ -246,14 +268,14 @@ export const storefrontApi = {
   },
   me: async () => {
     const response = await request<AuthUser>('/auth/me');
-    return response.data;
+    return normalizeAuthUser(response.data as AuthUserLike);
   },
   updateMe: async (payload: Partial<AuthUser> & { savedAddress?: AuthUser['savedAddress'] }) => {
     const response = await request<AuthUser>('/auth/me', {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });
-    return response.data;
+    return normalizeAuthUser(response.data as AuthUserLike);
   },
   changePassword: async (payload: { currentPassword: string; newPassword: string }) => {
     return request<{ success: boolean; message: string }>('/auth/change-password', {
@@ -266,21 +288,28 @@ export const storefrontApi = {
       method: 'PATCH',
       body: JSON.stringify({ serviceMode }),
     });
-    return response.data;
+    return normalizeAuthUser(response.data as AuthUserLike);
+  },
+  toggleWishlist: async (productId: string) => {
+    const response = await request<AuthUser>('/auth/wishlist/toggle', {
+      method: 'PATCH',
+      body: JSON.stringify({ productId }),
+    });
+    return normalizeAuthUser(response.data as AuthUserLike);
   },
   updateSelectedStore: async (storeId: string) => {
     const response = await request<AuthUser>('/auth/selected-store', {
       method: 'PATCH',
       body: JSON.stringify({ storeId }),
     });
-    return response.data;
+    return normalizeAuthUser(response.data as AuthUserLike);
   },
   updatePushToken: async (pushToken: string) => {
     const response = await request<AuthUser>('/auth/push-token', {
       method: 'PATCH',
       body: JSON.stringify({ pushToken }),
     });
-    return response.data;
+    return normalizeAuthUser(response.data as AuthUserLike);
   },
   selectStore: async (storeId: string) => {
     return request<{ success: boolean; message: string }>('/stores/select', {

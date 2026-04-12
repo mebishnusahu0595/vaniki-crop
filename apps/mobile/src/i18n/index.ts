@@ -17,6 +17,7 @@ const resources = {
         tabs: {
           home: 'Home',
           categories: 'Categories',
+          compare: 'Compare',
           cart: 'Cart',
           account: 'Account',
         },
@@ -26,6 +27,10 @@ const resources = {
         actions: {
           addToCart: 'Add to Cart',
           outOfStock: 'Out of Stock',
+          addToWishlist: 'Add to Wishlist',
+          removeFromWishlist: 'Remove from Wishlist',
+          addToCompare: 'Add to Compare',
+          removeFromCompare: 'Remove from Compare',
         },
         home: {
           title: 'Crop care made local, fast, and reliable.',
@@ -59,6 +64,7 @@ const resources = {
         tabs: {
           home: 'होम',
           categories: 'कैटेगरी',
+          compare: 'तुलना',
           cart: 'कार्ट',
           account: 'अकाउंट',
         },
@@ -68,6 +74,10 @@ const resources = {
         actions: {
           addToCart: 'कार्ट में जोड़ें',
           outOfStock: 'स्टॉक खत्म',
+          addToWishlist: 'विशलिस्ट में जोड़ें',
+          removeFromWishlist: 'विशलिस्ट से हटाएं',
+          addToCompare: 'तुलना में जोड़ें',
+          removeFromCompare: 'तुलना से हटाएं',
         },
         home: {
           title: 'फसल देखभाल अब स्थानीय, तेज और भरोसेमंद।',

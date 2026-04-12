@@ -7,6 +7,7 @@ import { shadow } from '../constants/theme';
 const icons: Record<string, keyof typeof Feather.glyphMap> = {
   index: 'home',
   categories: 'grid',
+  compare: 'sliders',
   cart: 'shopping-cart',
   account: 'user',
 } as const;

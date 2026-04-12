@@ -9,6 +9,7 @@ export default function TabsLayout() {
     <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <CustomTabBar {...props} />}>
       <Tabs.Screen name="index" options={{ title: t('mobile.tabs.home') }} />
       <Tabs.Screen name="categories" options={{ title: t('mobile.tabs.categories') }} />
+      <Tabs.Screen name="compare" options={{ title: t('mobile.tabs.compare') }} />
       <Tabs.Screen name="cart" options={{ title: t('mobile.tabs.cart') }} />
       <Tabs.Screen name="account" options={{ title: t('mobile.tabs.account') }} />
     </Tabs>

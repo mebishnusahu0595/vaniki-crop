@@ -168,6 +168,10 @@ export interface AuthUser {
   selectedStore?: Store | string | null;
   serviceMode: ServiceMode;
   savedAddress?: Address;
+  wishlist?: Array<string | Product>;
+  referralCode?: string;
+  referredBy?: string | null;
+  referralCount?: number;
 }
 
 export interface CouponValidation {
