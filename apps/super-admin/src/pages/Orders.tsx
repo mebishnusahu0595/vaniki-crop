@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { adminApi } from '../utils/api';
 import { currencyFormatter, formatAddress, formatDateTime } from '../utils/format';
 
@@ -13,6 +14,7 @@ function exportOrdersCsv(rows: Array<Record<string, unknown>>) {
     'Store',
     'Customer',
     'Status',
+    'Fulfillment',
     'Payment Status',
     'Payment Method',
     'Amount',
@@ -24,6 +26,7 @@ function exportOrdersCsv(rows: Array<Record<string, unknown>>) {
     row.store,
     row.customer,
     row.status,
+    row.serviceMode,
     row.paymentStatus,
     row.paymentMethod,
     row.amount,
@@ -55,6 +58,7 @@ export default function OrdersPage() {
   const [status, setStatus] = useState('');
   const [paymentStatus, setPaymentStatus] = useState('');
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 350);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -67,17 +71,18 @@ export default function OrdersPage() {
   });
 
   const ordersQuery = useQuery({
-    queryKey: ['super-admin-orders', storeId, status, paymentStatus, search, startDate, endDate],
+    queryKey: ['super-admin-orders', storeId, status, paymentStatus, debouncedSearch, startDate, endDate],
     queryFn: () =>
       adminApi.orders({
         storeId,
         status,
         paymentStatus,
-        search,
+        search: debouncedSearch,
         startDate,
         endDate,
         limit: 100,
       }),
+    placeholderData: (previousData) => previousData,
   });
 
   const orderDetailQuery = useQuery({
@@ -98,7 +103,7 @@ export default function OrdersPage() {
   const detail = orderDetailQuery.data;
   const isOrderModalOpen = Boolean(selectedOrderId);
 
-  if (ordersQuery.isLoading) return <LoadingBlock label="Loading orders..." />;
+  if (ordersQuery.isLoading && !ordersQuery.data) return <LoadingBlock label="Loading orders..." />;
 
   const exportRows =
     ordersQuery.data?.data.map((order) => ({
@@ -106,6 +111,7 @@ export default function OrdersPage() {
       store: order.storeId?.name || 'Unknown Store',
       customer: order.userId?.name || 'Customer',
       status: order.status,
+      serviceMode: order.serviceMode === 'pickup' ? 'Pickup' : 'Delivery',
       paymentStatus: order.paymentStatus,
       paymentMethod: order.paymentMethod,
       amount: order.totalAmount,
@@ -151,6 +157,10 @@ export default function OrdersPage() {
         <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
       </div>
 
+      {ordersQuery.isFetching ? (
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Refreshing orders...</p>
+      ) : null}
+
       <div className="hidden overflow-hidden rounded-[1.75rem] border border-primary-100 bg-white lg:block">
         <table className="min-w-full">
           <thead className="bg-primary-50/70 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-500">
@@ -159,6 +169,7 @@ export default function OrdersPage() {
               <th className="px-4 py-3">Store</th>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Fulfillment</th>
               <th className="px-4 py-3">Payment</th>
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Date</th>
@@ -178,6 +189,7 @@ export default function OrdersPage() {
                 <td className="px-4 py-3 text-sm text-slate-600">{order.storeId?.name || 'Unknown Store'}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{order.userId?.name || 'Customer'}</td>
                 <td className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-primary-700">{order.status}</td>
+                <td className="px-4 py-3 text-sm font-semibold text-slate-600">{order.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{order.paymentStatus}</td>
                 <td className="px-4 py-3 text-sm font-black text-slate-900">{currencyFormatter.format(order.totalAmount)}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{formatDateTime(order.createdAt)}</td>
@@ -199,7 +211,9 @@ export default function OrdersPage() {
           >
             <p className="text-lg font-black text-slate-900">{order.orderNumber}</p>
             <p className="mt-1 text-sm text-slate-500">{order.storeId?.name || 'Unknown Store'}</p>
-            <p className="mt-1 text-sm text-slate-500">{order.userId?.name || 'Customer'}</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {order.userId?.name || 'Customer'} · {order.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}
+            </p>
             <div className="mt-3 flex items-center justify-between">
               <span className="text-xs font-black uppercase tracking-[0.14em] text-primary-700">{order.status}</span>
               <span className="text-sm font-black text-slate-900">{currencyFormatter.format(order.totalAmount)}</span>
@@ -233,9 +247,23 @@ export default function OrdersPage() {
                   <div className="mt-4 space-y-3">
                     {detail.items.map((item, index) => (
                       <div key={`${item.productId}-${index}`} className="flex items-start justify-between gap-4 rounded-2xl border border-primary-100 bg-white p-4">
-                        <div>
-                          <p className="font-black text-slate-900">{item.productName}</p>
-                          <p className="mt-1 text-sm text-slate-500">{item.variantLabel} · {item.qty} qty</p>
+                        <div className="flex min-w-0 items-start gap-3">
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.productName}
+                              loading="lazy"
+                              className="h-12 w-12 rounded-xl border border-primary-100 bg-primary-50 object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-primary-200 bg-primary-50 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+                              N/A
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="font-black text-slate-900">{item.productName}</p>
+                            <p className="mt-1 text-sm text-slate-500">{item.variantLabel} · {item.qty} qty</p>
+                          </div>
                         </div>
                         <p className="font-black text-primary-700">{currencyFormatter.format(item.price * item.qty)}</p>
                       </div>
@@ -251,6 +279,7 @@ export default function OrdersPage() {
                     <p><span className="font-black text-slate-900">Mobile:</span> {detail.userId?.mobile || detail.shippingAddress?.mobile || '-'}</p>
                     <p><span className="font-black text-slate-900">Email:</span> {detail.userId?.email || '-'}</p>
                     <p><span className="font-black text-slate-900">Address:</span> {formatAddress(detail.shippingAddress || detail.userId?.savedAddress)}</p>
+                    <p><span className="font-black text-slate-900">Service Mode:</span> {detail.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}</p>
                     <p><span className="font-black text-slate-900">Razorpay Payment ID:</span> {detail.razorpayPaymentId || '-'}</p>
                   </div>
                 </div>

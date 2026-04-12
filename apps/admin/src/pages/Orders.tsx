@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { adminApi } from '../utils/api';
 import { currencyFormatter, formatAddress, formatDateTime } from '../utils/format';
 
@@ -12,6 +13,7 @@ export default function OrdersPage() {
   const [status, setStatus] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [search, setSearch] = useState(searchParams.get('search') || '');
+  const debouncedSearch = useDebouncedValue(search, 350);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -27,8 +29,17 @@ export default function OrdersPage() {
   const [inventoryDraft, setInventoryDraft] = useState<Record<string, number>>({});
 
   const ordersQuery = useQuery({
-    queryKey: ['admin-orders', status, paymentMethod, search, startDate, endDate],
-    queryFn: () => adminApi.orders({ status, paymentMethod, search, startDate, endDate, limit: 100 }),
+    queryKey: ['admin-orders', status, paymentMethod, debouncedSearch, startDate, endDate],
+    queryFn: () =>
+      adminApi.orders({
+        status,
+        paymentMethod,
+        search: debouncedSearch,
+        startDate,
+        endDate,
+        limit: 100,
+      }),
+    placeholderData: (previousData) => previousData,
   });
 
   const orderDetailQuery = useQuery({
@@ -140,7 +151,7 @@ export default function OrdersPage() {
   const detail = orderDetailQuery.data;
   const isOrderModalOpen = Boolean(selectedOrderId);
 
-  if (ordersQuery.isLoading || inventoryQuery.isLoading || requestQuery.isLoading) {
+  if ((ordersQuery.isLoading && !ordersQuery.data) || inventoryQuery.isLoading || requestQuery.isLoading) {
     return <LoadingBlock label="Loading dealer workspace..." />;
   }
 
@@ -384,6 +395,10 @@ export default function OrdersPage() {
         />
       </div>
 
+      {ordersQuery.isFetching ? (
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Refreshing orders...</p>
+      ) : null}
+
       <div className="grid gap-4">
         {ordersQuery.data?.data.map((order) => (
           <button
@@ -398,11 +413,15 @@ export default function OrdersPage() {
               <div>
                 <p className="text-lg font-black text-slate-900">{order.orderNumber}</p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {order.userId?.name || 'Customer'} · {formatDateTime(order.createdAt)}
+                  {order.userId?.name || 'Customer'} · {formatDateTime(order.createdAt)} ·{' '}
+                  {order.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}
                 </p>
               </div>
               <div className="grid gap-2 text-left md:text-right">
                 <span className="text-sm font-black uppercase tracking-[0.15em] text-primary-700">{order.status}</span>
+                <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-600">
+                  {order.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}
+                </span>
                 <span className="text-sm font-semibold text-slate-500">{order.paymentStatus}</span>
                 <span className="text-lg font-black text-slate-900">{currencyFormatter.format(order.totalAmount)}</span>
               </div>
@@ -442,11 +461,25 @@ export default function OrdersPage() {
                           key={`${item.productId}-${index}`}
                           className="flex items-start justify-between gap-4 rounded-2xl border border-primary-100 bg-white p-4"
                         >
-                          <div>
-                            <p className="font-black text-slate-900">{item.productName}</p>
-                            <p className="mt-1 text-sm text-slate-500">
-                              {item.variantLabel} · {item.qty} qty
-                            </p>
+                          <div className="flex min-w-0 items-start gap-3">
+                            {item.image ? (
+                              <img
+                                src={item.image}
+                                alt={item.productName}
+                                loading="lazy"
+                                className="h-12 w-12 rounded-xl border border-primary-100 bg-primary-50 object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-primary-200 bg-primary-50 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+                                N/A
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-black text-slate-900">{item.productName}</p>
+                              <p className="mt-1 text-sm text-slate-500">
+                                {item.variantLabel} · {item.qty} qty
+                              </p>
+                            </div>
                           </div>
                           <p className="font-black text-primary-700">{currencyFormatter.format(item.price * item.qty)}</p>
                         </div>
@@ -470,6 +503,10 @@ export default function OrdersPage() {
                       <p>
                         <span className="font-black text-slate-900">Address:</span>{' '}
                         {formatAddress(detail.shippingAddress || detail.userId?.savedAddress)}
+                      </p>
+                      <p>
+                        <span className="font-black text-slate-900">Service Mode:</span>{' '}
+                        {detail.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}
                       </p>
                       <p>
                         <span className="font-black text-slate-900">Razorpay Payment ID:</span>{' '}

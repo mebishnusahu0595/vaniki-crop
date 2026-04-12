@@ -113,6 +113,7 @@ export interface Order {
   id: string;
   orderNumber: string;
   createdAt: string;
+  serviceMode?: 'delivery' | 'pickup';
   status: OrderStatusHistoryEntry['status'];
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
   paymentMethod: 'razorpay' | 'cod';
