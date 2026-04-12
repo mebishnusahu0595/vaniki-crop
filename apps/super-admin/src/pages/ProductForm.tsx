@@ -116,22 +116,63 @@ function getApiOrigin(): string {
   }
 }
 
+function encodePathname(pathname: string): string {
+  return pathname
+    .split('/')
+    .map((segment) => {
+      if (!segment) return segment;
+
+      try {
+        return encodeURIComponent(decodeURIComponent(segment));
+      } catch {
+        return encodeURIComponent(segment);
+      }
+    })
+    .join('/');
+}
+
 function resolveMediaUrl(rawUrl?: string): string {
   if (!rawUrl) return '';
   const trimmed = rawUrl.trim();
   if (!trimmed) return '';
-  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
     return trimmed;
   }
 
   const apiOrigin = getApiOrigin();
-  if (!apiOrigin) return trimmed;
+  const browserOrigin = typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : '';
 
-  if (trimmed.startsWith('/')) {
-    return `${apiOrigin}${trimmed}`;
+  const resolveRelativePath = (value: string): string => {
+    const cleaned = value.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+    const withLeadingSlash = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+    const normalizedPath = withLeadingSlash.startsWith('/api/uploads/')
+      ? withLeadingSlash.replace(/^\/api/, '')
+      : withLeadingSlash;
+
+    if (apiOrigin) return `${apiOrigin}${normalizedPath}`;
+    if (browserOrigin) return `${browserOrigin}${normalizedPath}`;
+    return normalizedPath;
+  };
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      parsed.pathname = encodePathname(parsed.pathname.replace(/\\/g, '/').replace(/\/{2,}/g, '/'));
+
+      const isLocalHost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+      if (isLocalHost && (apiOrigin || browserOrigin)) {
+        const pathWithSuffix = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        return resolveRelativePath(pathWithSuffix);
+      }
+
+      return parsed.toString();
+    } catch {
+      return trimmed;
+    }
   }
 
-  return `${apiOrigin}/${trimmed}`;
+  return resolveRelativePath(trimmed);
 }
 
 function ProductEditor({

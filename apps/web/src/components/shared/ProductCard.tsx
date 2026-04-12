@@ -13,6 +13,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useCompareStore } from '../../store/useCompareStore';
 import { storefrontApi } from '../../utils/api';
 import { emitCartFlyAnimation } from '../../utils/cartAnimation';
+import { resolveMediaUrl } from '../../utils/media';
 import OptimizedImage from '../common/OptimizedImage';
 
 interface ProductCardProps {
@@ -78,7 +79,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   }, []);
 
   const variant = product.variants[activeVariantIndex] || product.variants[0];
-  const image = product.images[0]?.url;
+  const image = resolveMediaUrl(product.images[0]?.url);
   const discountPercent = getDiscountPercent(variant?.mrp || 0, variant?.price || 0);
   const { mrpText, priceText } = formatPrice(variant?.mrp || 0, variant?.price || 0);
   const cartItem = variant

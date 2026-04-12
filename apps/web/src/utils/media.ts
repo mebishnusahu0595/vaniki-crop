@@ -1,0 +1,78 @@
+import { API_BASE_URL } from '../config/api';
+
+function getApiOrigin(): string {
+  if (!API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://')) {
+    return '';
+  }
+
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return '';
+  }
+}
+
+function encodePathname(pathname: string): string {
+  return pathname
+    .split('/')
+    .map((segment) => {
+      if (!segment) return segment;
+
+      try {
+        return encodeURIComponent(decodeURIComponent(segment));
+      } catch {
+        return encodeURIComponent(segment);
+      }
+    })
+    .join('/');
+}
+
+function normalizeRelativePath(value: string): string {
+  const cleaned = value.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+  const withLeadingSlash = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+
+  if (withLeadingSlash.startsWith('/api/uploads/')) {
+    return withLeadingSlash.replace(/^\/api/, '');
+  }
+
+  return withLeadingSlash;
+}
+
+export function resolveMediaUrl(rawUrl?: string): string {
+  if (!rawUrl) return '';
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+
+  const apiOrigin = getApiOrigin();
+  const browserOrigin = typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : '';
+
+  const resolveRelative = (value: string): string => {
+    const normalizedPath = normalizeRelativePath(value);
+    if (apiOrigin) return `${apiOrigin}${normalizedPath}`;
+    if (browserOrigin) return `${browserOrigin}${normalizedPath}`;
+    return normalizedPath;
+  };
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      parsed.pathname = encodePathname(parsed.pathname.replace(/\\/g, '/').replace(/\/{2,}/g, '/'));
+
+      const isLocalHost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+      if (isLocalHost && (apiOrigin || browserOrigin)) {
+        const pathWithSuffix = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        return resolveRelative(pathWithSuffix);
+      }
+
+      return parsed.toString();
+    } catch {
+      return trimmed;
+    }
+  }
+
+  return resolveRelative(trimmed);
+}

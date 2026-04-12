@@ -15,6 +15,7 @@ import { useStoreStore } from '../store/useStoreStore';
 import { storefrontApi } from '../utils/api';
 import { addRecentlyViewedProduct } from '../utils/recentlyViewed';
 import { formatPrice } from '../utils/format';
+import { resolveMediaUrl } from '../utils/media';
 import type { Product } from '../types/storefront';
 
 const ProductDetail: React.FC = () => {
@@ -45,7 +46,11 @@ const ProductDetail: React.FC = () => {
     () => product?.variants.find((variant) => variant.id === selectedVariantId) || product?.variants[0],
     [product?.variants, selectedVariantId],
   );
-  const activeImage = product?.images[activeImageIndex]?.url || product?.images[0]?.url;
+  const normalizedImages = useMemo(
+    () => (product?.images || []).map((image) => ({ ...image, url: resolveMediaUrl(image.url) })),
+    [product?.images],
+  );
+  const activeImage = normalizedImages[activeImageIndex]?.url || normalizedImages[0]?.url;
   const pricing = selectedVariant ? formatPrice(selectedVariant.mrp, selectedVariant.price) : null;
   const related = (relatedProducts?.data || []).filter((item) => item.id !== product?.id).slice(0, 4);
   const canonicalUrl = product ? `${siteUrl}/product/${product.slug}` : `${siteUrl}/products`;
@@ -71,7 +76,7 @@ const ProductDetail: React.FC = () => {
       price: selectedVariant.price,
       mrp: selectedVariant.mrp,
       qty: quantity,
-      image: product.images[0]?.url,
+      image: normalizedImages[0]?.url,
     });
     toast.success(t('productDetail.addedToCart', { name: product.name }));
   };
@@ -142,7 +147,7 @@ const ProductDetail: React.FC = () => {
     '@type': 'Product',
     name: product.name,
     description: product.shortDescription || product.description.replace(/<[^>]*>/g, '').slice(0, 160),
-    image: product.images.map((image) => image.url),
+    image: normalizedImages.map((image) => image.url),
     sku: selectedVariant.sku || product.sku,
     brand: product.brand || 'Vaniki Crop',
     category: product.category?.name,
@@ -203,7 +208,7 @@ const ProductDetail: React.FC = () => {
         />
         <meta property="og:type" content="product" />
         <meta property="og:url" content={canonicalUrl} />
-        {product.images[0]?.url && <meta property="og:image" content={product.images[0].url} />}
+        {normalizedImages[0]?.url && <meta property="og:image" content={normalizedImages[0].url} />}
         <link rel="canonical" href={canonicalUrl} />
         <script type="application/ld+json">{JSON.stringify(productJsonLd)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumbJsonLd)}</script>
@@ -234,9 +239,9 @@ const ProductDetail: React.FC = () => {
             </div>
           </div>
           <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
-            {product.images.map((image, index) => (
+            {normalizedImages.map((image, index) => (
               <button
-                key={image.url}
+                key={`${image.url}-${index}`}
                 onClick={() => setActiveImageIndex(index)}
                 className={`h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 ${
                   activeImageIndex === index ? 'border-primary' : 'border-primary-100'

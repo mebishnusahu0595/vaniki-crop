@@ -1,6 +1,7 @@
 import {
   Boxes,
   PackageSearch,
+  Settings,
   ShoppingCart,
   X,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ interface SidebarNavItem {
 
 const navItems: SidebarNavItem[] = [
   { to: '/orders', label: 'Orders', icon: ShoppingCart },
+  { to: '/settings', label: 'Profile', icon: Settings },
 ];
 
 export function Sidebar({
@@ -56,7 +58,7 @@ export function Sidebar({
       />
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 flex h-full w-[280px] flex-col border-r border-primary-100 bg-white px-4 py-5 shadow-[0_20px_80px_rgba(15,23,42,0.12)] transition md:static md:translate-x-0 md:shadow-none',
+          'fixed left-0 top-0 z-40 flex h-full w-[280px] flex-col border-r border-primary-100 bg-white px-4 py-5 shadow-[0_20px_80px_rgba(15,23,42,0.12)] transition md:sticky md:top-0 md:h-screen md:translate-x-0 md:overflow-y-auto md:shadow-none',
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
