@@ -274,7 +274,7 @@ export default function OrdersPage() {
             <div>
               <label
                 htmlFor="request-existing-product"
-                className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
               >
                 Existing Product (Optional)
               </label>
@@ -303,7 +303,7 @@ export default function OrdersPage() {
             <div>
               <label
                 htmlFor="request-product-name"
-                className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
               >
                 Product Name
               </label>
@@ -320,7 +320,7 @@ export default function OrdersPage() {
               <div>
                 <label
                   htmlFor="request-quantity"
-                  className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                  className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
                 >
                   Quantity
                 </label>
@@ -337,7 +337,7 @@ export default function OrdersPage() {
               <div>
                 <label
                   htmlFor="request-pack"
-                  className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                  className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
                 >
                   Pack Size
                 </label>
@@ -354,7 +354,7 @@ export default function OrdersPage() {
             <div>
               <label
                 htmlFor="request-notes"
-                className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
               >
                 Extra Details
               </label>
