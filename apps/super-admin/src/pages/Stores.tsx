@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { LoadingBlock } from '../components/LoadingBlock';
@@ -8,6 +8,7 @@ import { PageHeader } from '../components/PageHeader';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import type { StoreSummary } from '../types/admin';
 import { adminApi } from '../utils/api';
+import { formatDisplayStoreAddress, isMeaningfulAddressText, reverseGeocodeCoordinates } from '../utils/geocoding';
 import { currencyFormatter } from '../utils/format';
 
 const storeSchema = z.object({
@@ -64,15 +65,23 @@ export default function StoresPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
+    getValues,
+    watch,
     formState: { isSubmitting },
   } = useForm<StoreFormInput, undefined, StoreFormOutput>({
     resolver: zodResolver(storeSchema),
     defaultValues: storeDefaultValues,
   });
+  const lastResolvedCoordinatesRef = useRef('');
+  const autoFilledStreetRef = useRef('');
+  const [latitude, longitude] = watch(['latitude', 'longitude']);
 
   useEffect(() => {
     if (!editing) {
       reset(storeDefaultValues);
+      lastResolvedCoordinatesRef.current = '';
+      autoFilledStreetRef.current = '';
       return;
     }
 
@@ -91,7 +100,63 @@ export default function StoresPage() {
       longitude: editing.location.coordinates[0],
       deliveryRadius: editing.deliveryRadius,
     });
+    lastResolvedCoordinatesRef.current = '';
+    autoFilledStreetRef.current = '';
   }, [editing, reset]);
+
+  useEffect(() => {
+    const nextLatitude = Number(latitude);
+    const nextLongitude = Number(longitude);
+
+    if (!Number.isFinite(nextLatitude) || !Number.isFinite(nextLongitude) || (nextLatitude === 0 && nextLongitude === 0)) {
+      return;
+    }
+
+    const coordinatesKey = `${nextLatitude.toFixed(6)},${nextLongitude.toFixed(6)}`;
+    if (lastResolvedCoordinatesRef.current === coordinatesKey) {
+      return;
+    }
+
+    let isCancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const resolvedAddress = await reverseGeocodeCoordinates(nextLatitude, nextLongitude);
+          if (isCancelled) {
+            return;
+          }
+
+          const currentStreet = getValues('street');
+          if (
+            resolvedAddress.street
+            && (!isMeaningfulAddressText(currentStreet) || currentStreet.trim() === autoFilledStreetRef.current)
+          ) {
+            setValue('street', resolvedAddress.street, { shouldDirty: true, shouldValidate: true });
+            autoFilledStreetRef.current = resolvedAddress.street;
+          }
+
+          if (resolvedAddress.city) {
+            setValue('city', resolvedAddress.city, { shouldDirty: true, shouldValidate: true });
+          }
+          if (resolvedAddress.state) {
+            setValue('state', resolvedAddress.state, { shouldDirty: true, shouldValidate: true });
+          }
+          if (resolvedAddress.pincode) {
+            setValue('pincode', resolvedAddress.pincode, { shouldDirty: true, shouldValidate: true });
+          }
+
+          lastResolvedCoordinatesRef.current = coordinatesKey;
+        } catch {
+          lastResolvedCoordinatesRef.current = coordinatesKey;
+        }
+      })();
+    }, 700);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [getValues, latitude, longitude, setValue]);
 
   const availableAdmins = useMemo(() => {
     const rows = adminsQuery.data?.data || [];
@@ -196,6 +261,7 @@ export default function StoresPage() {
             <input type="number" step="0.000001" {...register('longitude', { valueAsNumber: true })} placeholder="Longitude" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
             <input type="number" {...register('deliveryRadius', { valueAsNumber: true })} placeholder="Delivery radius (km)" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
           </div>
+          <p className="text-xs font-semibold text-slate-500">City, state, and pincode auto-fill from the latitude and longitude.</p>
 
           <div className="flex gap-3">
             <button
@@ -240,7 +306,7 @@ export default function StoresPage() {
               <div>
                 <p className="text-lg font-black text-slate-900">{store.name}</p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {store.address.street}, {store.address.city}, {store.address.state} - {store.address.pincode}
+                  {formatDisplayStoreAddress(store.address) || 'Address needs update'}
                 </p>
                 <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary-600">
                   Admin: {store.adminName}

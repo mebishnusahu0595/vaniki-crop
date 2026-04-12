@@ -4,6 +4,7 @@ import { createPaginationResponse, parsePagination } from '../../utils/paginatio
 import { deleteFromCloudinary, uploadImageUrlToCloudinary, uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 import { invalidateHomepageCache } from '../../utils/cache.helpers.js';
 import { decryptStoreSecret, encryptStoreSecret, maskSecret } from '../../utils/storeSecrets.js';
+import { buildStoreAddressFromCoordinates, repairStoreAddressIfNeeded } from '../../utils/storeAddress.js';
 import { Store } from '../../models/Store.model.js';
 import { User } from '../../models/User.model.js';
 import { Order } from '../../models/Order.model.js';
@@ -391,7 +392,9 @@ export async function listStores(query: Record<string, any>) {
     secretMap.set(doc.storeId.toString(), maskEncryptedSecrets(doc.secrets));
   }
 
-  const rows = stores.map((store) => {
+  const hydratedStores = await Promise.all(stores.map((store) => repairStoreAddressIfNeeded(store)));
+
+  const rows = hydratedStores.map((store) => {
     const storeId = (store._id as mongoose.Types.ObjectId).toString();
     const stats = orderStatsMap.get(storeId) || { totalOrders: 0, totalRevenue: 0 };
     const admin = store.adminId as any;
@@ -629,12 +632,11 @@ export async function createAdmin(input: Record<string, any>, file?: Express.Mul
       email: normalizedEmail,
       adminId: admin._id,
       isActive: true,
-      address: {
-        street: input.storeLocation,
-        city: 'Pending',
-        state: 'Pending',
-        pincode: '000000',
-      },
+      address: await buildStoreAddressFromCoordinates({
+        latitude: Number(input.latitude),
+        longitude: Number(input.longitude),
+        fallbackStreet: input.storeLocation,
+      }),
       location: {
         type: 'Point',
         coordinates: [Number(input.longitude), Number(input.latitude)],
@@ -771,6 +773,26 @@ export async function updateAdmin(adminId: string, input: Record<string, any>, f
     if (input.email !== undefined) {
       targetStore.email = input.email || undefined;
     }
+
+    const [nextLongitude, nextLatitude] = targetStore.location.coordinates;
+    const shouldRefreshStoreAddress = (
+      input.storeLocation !== undefined
+      || input.longitude !== undefined
+      || input.latitude !== undefined
+    );
+    targetStore.address = await buildStoreAddressFromCoordinates({
+      latitude: nextLatitude,
+      longitude: nextLongitude,
+      fallbackStreet: input.storeLocation || targetStore.address.street,
+      existingAddress: shouldRefreshStoreAddress
+        ? {
+            street: input.storeLocation || targetStore.address.street,
+            city: '',
+            state: '',
+            pincode: '',
+          }
+        : targetStore.address,
+    });
 
     await targetStore.save();
   }

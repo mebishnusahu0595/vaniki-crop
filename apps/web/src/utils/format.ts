@@ -1,5 +1,7 @@
 import i18n from '../i18n';
 
+const PLACEHOLDER_ADDRESS_VALUES = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
+
 /**
  * Formats pricing data for display.
  */
@@ -44,8 +46,11 @@ export function formatStoreAddress(
   if (!address) return i18n.t('storeSelector.chooseStore');
 
   return [address.street, address.city, address.state, address.pincode]
-    .filter(Boolean)
-    .join(', ');
+    .filter((value) => {
+      const normalized = (value || '').trim().toLowerCase();
+      return Boolean(normalized) && !PLACEHOLDER_ADDRESS_VALUES.has(normalized) && normalized !== '000000';
+    })
+    .join(', ') || i18n.t('storeSelector.chooseStore');
 }
 
 export function getDiscountPercent(mrp: number, price: number) {

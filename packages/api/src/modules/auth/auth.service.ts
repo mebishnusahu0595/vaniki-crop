@@ -6,6 +6,7 @@ import { Product } from '../../models/Product.model.js';
 import { Store } from '../../models/Store.model.js';
 import { AppError } from '../../utils/AppError.js';
 import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
+import { buildStoreAddressFromCoordinates } from '../../utils/storeAddress.js';
 import type {
   ChangePasswordInput,
   DealerSignupInput,
@@ -306,12 +307,11 @@ export async function dealerSignup(input: DealerSignupInput, file?: Express.Mult
     email: normalizedEmail,
     adminId: user._id,
     isActive: false,
-    address: {
-      street: storeLocation,
-      city: 'Pending',
-      state: 'Pending',
-      pincode: '000000',
-    },
+    address: await buildStoreAddressFromCoordinates({
+      latitude,
+      longitude,
+      fallbackStreet: storeLocation,
+    }),
     location: {
       type: 'Point',
       coordinates: [longitude, latitude],

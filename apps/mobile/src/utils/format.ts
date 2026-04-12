@@ -1,5 +1,7 @@
 import type { Address, Product } from '../types/storefront';
 
+const PLACEHOLDER_ADDRESS_VALUES = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
+
 export const currencyFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',
@@ -10,7 +12,10 @@ export function formatStoreAddress(address?: Partial<Address> | null) {
   if (!address) return '';
 
   return [address.street, address.city, address.state, address.pincode]
-    .filter(Boolean)
+    .filter((value) => {
+      const normalized = (value || '').trim().toLowerCase();
+      return Boolean(normalized) && !PLACEHOLDER_ADDRESS_VALUES.has(normalized) && normalized !== '000000';
+    })
     .join(', ');
 }
 

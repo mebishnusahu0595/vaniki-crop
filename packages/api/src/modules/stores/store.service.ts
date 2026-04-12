@@ -1,35 +1,7 @@
 import { Store, type IStore } from '../../models/Store.model.js';
 import { User } from '../../models/User.model.js';
 import { AppError } from '../../utils/AppError.js';
-
-const PLACEHOLDER_ADDRESS_VALUES = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
-
-function normalizeAddressValue(value: unknown): string {
-  return typeof value === 'string' ? value.trim().toLowerCase() : '';
-}
-
-function hasMeaningfulPickupAddress(address: IStore['address'] | undefined | null): boolean {
-  if (!address) return false;
-
-  const street = normalizeAddressValue(address.street);
-  const city = normalizeAddressValue(address.city);
-  const state = normalizeAddressValue(address.state);
-  const pincode = normalizeAddressValue(address.pincode);
-
-  if (!street || !city || !state || !pincode) {
-    return false;
-  }
-
-  if (PLACEHOLDER_ADDRESS_VALUES.has(city) || PLACEHOLDER_ADDRESS_VALUES.has(state)) {
-    return false;
-  }
-
-  if (pincode === '000000') {
-    return false;
-  }
-
-  return true;
-}
+import { hasMeaningfulPickupAddress, repairStoreAddressIfNeeded } from '../../utils/storeAddress.js';
 
 async function getApprovedActiveStoreAdminIds() {
   const approvedAdmins = await User.find({
@@ -88,7 +60,8 @@ export async function listActiveStores() {
     .select('name address phone location openHours')
     .sort({ name: 1 });
 
-  return stores.filter((store) => hasMeaningfulPickupAddress(store.address));
+  const hydratedStores = await Promise.all(stores.map((store) => repairStoreAddressIfNeeded(store)));
+  return hydratedStores.filter((store) => hasMeaningfulPickupAddress(store.address));
 }
 
 /**
@@ -96,6 +69,9 @@ export async function listActiveStores() {
  */
 export async function getStoreDetail(id: string) {
   const store = await Store.findById(id);
+  if (store) {
+    await repairStoreAddressIfNeeded(store);
+  }
   if (!store || !store.isActive || !(await isSelectableStoreForPickup(store))) {
     throw new AppError('Store not found or inactive', 404);
   }
@@ -152,7 +128,10 @@ export async function deactivateStore(id: string) {
  * Persists the user's selected store in the database.
  */
 export async function selectStoreForUser(userId: string, storeId: string) {
-  const store = await Store.findOne({ _id: storeId, isActive: true }).select('name address adminId');
+  const store = await Store.findOne({ _id: storeId, isActive: true }).select('name address adminId location');
+  if (store) {
+    await repairStoreAddressIfNeeded(store);
+  }
   if (!store || !(await isSelectableStoreForPickup(store))) {
     throw new AppError('Cannot select an invalid or inactive store', 400);
   }

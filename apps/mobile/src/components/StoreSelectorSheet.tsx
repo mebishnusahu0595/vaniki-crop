@@ -36,11 +36,9 @@ function isSelectablePickupStore(store: { address: Address }): boolean {
   const street = normalizeAddressToken(store.address.street);
   const city = normalizeAddressToken(store.address.city);
   const state = normalizeAddressToken(store.address.state);
-  const pincode = normalizeAddressToken(store.address.pincode);
 
-  if (!street || !city || !state || !pincode) return false;
+  if (!street || !city || !state) return false;
   if (PLACEHOLDER_VALUES.has(city) || PLACEHOLDER_VALUES.has(state)) return false;
-  if (pincode === '000000') return false;
 
   return true;
 }

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { LocateFixed } from 'lucide-react';
 import { z } from 'zod';
@@ -10,6 +10,7 @@ import { LoadingBlock } from '../components/LoadingBlock';
 import { PageHeader } from '../components/PageHeader';
 import type { AdminAccount } from '../types/admin';
 import { adminApi } from '../utils/api';
+import { reverseGeocodeCoordinates, shouldAutofillLocationText } from '../utils/geocoding';
 
 const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
@@ -314,11 +315,15 @@ export default function AdminsPage() {
     reset,
     setValue,
     getValues,
+    watch,
     formState: { isSubmitting, isSubmitted, errors },
   } = useForm<AdminFormInput, undefined, AdminFormOutput>({
     resolver: zodResolver(adminSchema),
     defaultValues: adminDefaultValues,
   });
+  const lastResolvedCoordinatesRef = useRef('');
+  const autoResolvedStoreLocationRef = useRef('');
+  const [longitude, latitude] = watch(['longitude', 'latitude']);
 
   useEffect(() => {
     return () => {
@@ -343,6 +348,8 @@ export default function AdminsPage() {
       setFormError('');
       setFormSuccess('');
       setShowPassword(false);
+      lastResolvedCoordinatesRef.current = '';
+      autoResolvedStoreLocationRef.current = '';
       handleImageSelection(null);
       return;
     }
@@ -364,8 +371,57 @@ export default function AdminsPage() {
     setFormError('');
     setFormSuccess('');
     setShowPassword(false);
+    lastResolvedCoordinatesRef.current = '';
+    autoResolvedStoreLocationRef.current = editing.storeLocation || '';
     handleImageSelection(null);
   }, [editing, reset]);
+
+  useEffect(() => {
+    const nextLongitude = Number(longitude);
+    const nextLatitude = Number(latitude);
+
+    if (!Number.isFinite(nextLongitude) || !Number.isFinite(nextLatitude) || (nextLongitude === 0 && nextLatitude === 0)) {
+      return;
+    }
+
+    const coordinatesKey = `${nextLatitude.toFixed(6)},${nextLongitude.toFixed(6)}`;
+    if (lastResolvedCoordinatesRef.current === coordinatesKey) {
+      return;
+    }
+
+    let isCancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const resolvedAddress = await reverseGeocodeCoordinates(nextLatitude, nextLongitude);
+          if (isCancelled) {
+            return;
+          }
+
+          const currentStoreLocation = getValues('storeLocation');
+          if (
+            resolvedAddress.displayLabel
+            && (
+              shouldAutofillLocationText(currentStoreLocation)
+              || currentStoreLocation.trim() === autoResolvedStoreLocationRef.current
+            )
+          ) {
+            setValue('storeLocation', resolvedAddress.displayLabel, { shouldDirty: true, shouldValidate: true });
+            autoResolvedStoreLocationRef.current = resolvedAddress.displayLabel;
+          }
+
+          lastResolvedCoordinatesRef.current = coordinatesKey;
+        } catch {
+          lastResolvedCoordinatesRef.current = coordinatesKey;
+        }
+      })();
+    }, 700);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [getValues, latitude, longitude, setValue]);
 
   const upsertMutation = useMutation({
     mutationFn: async (values: AdminFormOutput) => {
@@ -587,11 +643,6 @@ export default function AdminsPage() {
                   setValue('longitude', longitude, { shouldValidate: true });
                   setValue('latitude', latitude, { shouldValidate: true });
 
-                  const currentStoreLocation = getValues('storeLocation');
-                  if (!currentStoreLocation) {
-                    setValue('storeLocation', `Detected at ${latitude}, ${longitude}`, { shouldValidate: true });
-                  }
-
                   setFormError('');
                 },
                 () => {
@@ -605,6 +656,7 @@ export default function AdminsPage() {
             <LocateFixed size={14} />
             Detect Location
           </button>
+          <p className="text-xs font-semibold text-slate-500">Store location auto-fills from the latitude and longitude.</p>
 
           <div className="grid gap-3 md:grid-cols-2">
             <div>
