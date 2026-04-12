@@ -14,10 +14,12 @@ import { useCompareStore } from '../../store/useCompareStore';
 import { storefrontApi } from '../../utils/api';
 import { emitCartFlyAnimation } from '../../utils/cartAnimation';
 import { resolveMediaUrl } from '../../utils/media';
+import { cn } from '../../utils/cn';
 import OptimizedImage from '../common/OptimizedImage';
 
 interface ProductCardProps {
   product: Product;
+  compact?: boolean;
 }
 
 gsap.registerPlugin(ScrollTrigger);
@@ -51,7 +53,7 @@ const scheduleProductCardBatch = () => {
   }, 50);
 };
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const cartItems = useCartStore((state) => state.items);
@@ -156,11 +158,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <motion.div
       whileHover={{ y: -6 }}
-      className="product-card surface-card group flex h-full flex-col overflow-hidden rounded-[2rem]"
+      className={cn(
+        'product-card surface-card group flex h-full flex-col overflow-hidden',
+        compact ? 'rounded-[1.5rem]' : 'rounded-[2rem]',
+      )}
     >
       <Link to={`/product/${product.slug}`} className="relative block">
-        <div className="relative overflow-hidden bg-[radial-gradient(circle_at_top_right,_rgba(82,183,136,0.18),_transparent_28%),linear-gradient(180deg,_rgba(240,250,245,0.8),_rgba(255,255,255,0.98))] p-4 sm:p-5">
-          <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-[1.35rem] bg-white ring-1 ring-primary-100">
+        <div
+          className={cn(
+            'relative overflow-hidden bg-[radial-gradient(circle_at_top_right,_rgba(82,183,136,0.18),_transparent_28%),linear-gradient(180deg,_rgba(240,250,245,0.8),_rgba(255,255,255,0.98))]',
+            compact ? 'p-3 sm:p-3.5' : 'p-4 sm:p-5',
+          )}
+        >
+          <div
+            className={cn(
+              'relative mx-auto aspect-square w-full overflow-hidden bg-white ring-1 ring-primary-100',
+              compact ? 'rounded-[1.05rem]' : 'rounded-[1.35rem]',
+            )}
+          >
             {discountPercent > 0 && (
               <span className="absolute left-2.5 top-2.5 z-20 inline-flex max-w-[46%] items-center rounded-full bg-[#ff6b6b] px-2.5 py-1 text-[10px] font-black uppercase leading-none tracking-[0.14em] text-white shadow-sm">
                 {discountPercent}% Off
@@ -219,11 +234,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
       </Link>
 
-      <div className="flex flex-1 flex-col p-5">
-        <Link to={`/product/${product.slug}`} className="line-clamp-2 text-lg font-black leading-tight text-primary-900">
+      <div className={cn('flex flex-1 flex-col', compact ? 'p-4' : 'p-5')}>
+        <Link
+          to={`/product/${product.slug}`}
+          className={cn('line-clamp-2 font-black leading-tight text-primary-900', compact ? 'text-base' : 'text-lg')}
+        >
           {product.name}
         </Link>
-        <p className="mt-2 line-clamp-2 text-sm font-medium text-primary-900/55">
+        <p className={cn('mt-2 line-clamp-2 font-medium text-primary-900/55', compact ? 'text-xs' : 'text-sm')}>
           {product.shortDescription || t('productCard.shortDescriptionFallback')}
         </p>
 
@@ -246,11 +264,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           ))}
         </div>
 
-        <div className="mt-auto pt-5">
+        <div className={cn('mt-auto', compact ? 'pt-4' : 'pt-5')}>
           <div className="flex items-end justify-between gap-3">
             <div>
               {mrpText && <p className="text-sm font-bold text-primary-900/35 line-through">{mrpText}</p>}
-              <p className="text-3xl font-black leading-none text-primary-900">{priceText}</p>
+              <p className={cn('font-black leading-none text-primary-900', compact ? 'text-2xl' : 'text-3xl')}>{priceText}</p>
             </div>
             {discountPercent > 0 && (
               <span className="rounded-full bg-primary-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-primary">
@@ -260,7 +278,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
 
           {inCartQty > 0 ? (
-            <div className="mt-5 flex h-12 items-center justify-between rounded-2xl border border-primary-200 bg-primary-50 px-2">
+            <div
+              className={cn(
+                'mt-5 flex items-center justify-between rounded-2xl border border-primary-200 bg-primary-50 px-2',
+                compact ? 'h-10' : 'h-12',
+              )}
+            >
               <button
                 type="button"
                 onClick={(event) => {
@@ -278,7 +301,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               </button>
               <div className="text-center">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary-500">Qty</p>
-                <p className="text-base font-black text-primary-900">{inCartQty}</p>
+                <p className={cn('font-black text-primary-900', compact ? 'text-sm' : 'text-base')}>{inCartQty}</p>
               </div>
               <button
                 type="button"
@@ -298,7 +321,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <button
               onClick={handleAddToCart}
               disabled={variant.stock <= 0}
-              className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary-900 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/30"
+              className={cn(
+                'mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-900 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/30',
+                compact ? 'h-10' : 'h-12',
+              )}
             >
               <Plus size={16} />
               <span>{variant.stock > 0 ? t('productCard.addToCart') : t('productCard.outOfStock')}</span>

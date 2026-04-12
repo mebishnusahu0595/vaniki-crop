@@ -69,10 +69,14 @@ const Home: React.FC = () => {
             </Link>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            {(data?.saleProducts || []).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div className="-mx-4 sm:mx-0">
+            <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4">
+              {(data?.saleProducts || []).map((product) => (
+                <div key={product.id} className="w-[74vw] max-w-[250px] shrink-0 snap-start sm:w-auto sm:max-w-none sm:shrink">
+                  <ProductCard product={product} compact />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

@@ -63,7 +63,7 @@ const BestSellers: React.FC<BestSellersProps> = ({ products }) => {
             className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
           >
             {filteredProducts.slice(0, 8).map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} compact />
             ))}
           </motion.div>
         </AnimatePresence>
