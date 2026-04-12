@@ -32,25 +32,27 @@ const BestSellers: React.FC<BestSellersProps> = ({ products }) => {
             <h2 className="section-title">{t('home.bestSellersTitle')}</h2>
           </div>
 
-          <div className="flex flex-wrap gap-2 rounded-full bg-white p-1.5 shadow-sm">
-            {tabs.map((tab) => (
-              <button
-                key={tab.slug}
-                onClick={() => setActiveTab(tab.slug)}
-                className={`relative rounded-full px-5 py-2.5 text-sm font-black uppercase tracking-[0.18em] transition ${
-                  activeTab === tab.slug ? 'text-white' : 'text-primary-900/60'
-                }`}
-              >
-                {activeTab === tab.slug && (
-                  <motion.span
-                    layoutId="best-seller-tab"
-                    className="absolute inset-0 rounded-full bg-primary"
-                    transition={{ type: 'spring', bounce: 0.2, duration: 0.55 }}
-                  />
-                )}
-                <span className="relative z-10">{t(tab.labelKey)}</span>
-              </button>
-            ))}
+          <div className="-mx-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:overflow-visible sm:pb-0">
+            <div className="inline-flex min-w-max gap-2 rounded-2xl bg-white p-1.5 shadow-sm sm:min-w-0 sm:flex-wrap sm:rounded-full">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.slug}
+                  onClick={() => setActiveTab(tab.slug)}
+                  className={`relative whitespace-nowrap rounded-full px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition sm:px-5 sm:py-2.5 sm:text-sm sm:tracking-[0.18em] ${
+                    activeTab === tab.slug ? 'text-white' : 'text-primary-900/60'
+                  }`}
+                >
+                  {activeTab === tab.slug && (
+                    <motion.span
+                      layoutId="best-seller-tab"
+                      className="absolute inset-0 rounded-full bg-primary"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.55 }}
+                    />
+                  )}
+                  <span className="relative z-10">{t(tab.labelKey)}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
