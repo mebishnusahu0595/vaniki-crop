@@ -38,13 +38,22 @@ function getStatusFilter(status?: ModerationStatus): Record<string, any> {
 
   if (status === 'approved') {
     return {
-      $or: [{ status: 'approved' }, { status: { $exists: false }, isApproved: true }],
+      $or: [
+        { status: 'approved' },
+        {
+          isApproved: true,
+          status: { $ne: 'rejected' },
+        },
+      ],
     };
   }
 
   if (status === 'pending') {
     return {
-      $or: [{ status: 'pending' }, { status: { $exists: false }, isApproved: false }],
+      $and: [
+        { status: { $ne: 'rejected' } },
+        { isApproved: { $ne: true } },
+      ],
     };
   }
 
@@ -106,7 +115,21 @@ async function getModerationSummary(baseFilter: Record<string, any>): Promise<Mo
     {
       $addFields: {
         normalizedStatus: {
-          $ifNull: ['$status', { $cond: ['$isApproved', 'approved', 'pending'] }],
+          $switch: {
+            branches: [
+              {
+                case: { $eq: ['$status', 'rejected'] },
+                then: 'rejected',
+              },
+              {
+                case: {
+                  $or: [{ $eq: ['$status', 'approved'] }, { $eq: ['$isApproved', true] }],
+                },
+                then: 'approved',
+              },
+            ],
+            default: 'pending',
+          },
         },
       },
     },
@@ -218,8 +241,22 @@ export async function getPendingReviews(query: any, userRole?: string, userStore
     getModerationSummary(baseFilter),
   ]);
 
+  const normalizedReviews = reviews.map((reviewDoc: any) => {
+    const review = reviewDoc?.toJSON ? reviewDoc.toJSON() : reviewDoc;
+    const normalizedStatus: ModerationStatus = review.status === 'rejected'
+      ? 'rejected'
+      : (review.isApproved || review.status === 'approved')
+        ? 'approved'
+        : 'pending';
+
+    return {
+      ...review,
+      status: normalizedStatus,
+    };
+  });
+
   return {
-    ...createPaginationResponse(reviews, total, page, limit),
+    ...createPaginationResponse(normalizedReviews, total, page, limit),
     summary,
   };
 }

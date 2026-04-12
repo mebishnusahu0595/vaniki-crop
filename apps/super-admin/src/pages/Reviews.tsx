@@ -17,10 +17,13 @@ const EMPTY_SUMMARY = {
 };
 
 function getReviewStatus(review: Review): 'pending' | 'approved' | 'rejected' {
-  if (review.status === 'pending' || review.status === 'approved' || review.status === 'rejected') {
-    return review.status;
+  if (review.status === 'rejected') {
+    return 'rejected';
   }
-  return review.isApproved ? 'approved' : 'pending';
+  if (review.status === 'approved' || review.isApproved) {
+    return 'approved';
+  }
+  return 'pending';
 }
 
 function getStoreNames(review: Review): string {
