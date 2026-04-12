@@ -1,7 +1,156 @@
-import { Review, type IReview } from '../../models/Review.model.js';
+import { Review } from '../../models/Review.model.js';
 import { Product } from '../../models/Product.model.js';
+import { User } from '../../models/User.model.js';
 import { AppError } from '../../utils/AppError.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
+
+type ModerationStatus = 'pending' | 'approved' | 'rejected';
+
+interface ModerationSummary {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function combineFilters(filters: Array<Record<string, any>>): Record<string, any> {
+  const activeFilters = filters.filter((filter) => Object.keys(filter).length > 0);
+  if (!activeFilters.length) return {};
+  if (activeFilters.length === 1) return activeFilters[0] as Record<string, any>;
+  return { $and: activeFilters };
+}
+
+function parseModerationStatus(value?: string): ModerationStatus | undefined {
+  if (!value) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'pending' || normalized === 'approved' || normalized === 'rejected') {
+    return normalized;
+  }
+  throw new AppError('Invalid review status. Use pending, approved, or rejected.', 400);
+}
+
+function getStatusFilter(status?: ModerationStatus): Record<string, any> {
+  if (!status) return {};
+
+  if (status === 'approved') {
+    return {
+      $or: [{ status: 'approved' }, { status: { $exists: false }, isApproved: true }],
+    };
+  }
+
+  if (status === 'pending') {
+    return {
+      $or: [{ status: 'pending' }, { status: { $exists: false }, isApproved: false }],
+    };
+  }
+
+  return { status: 'rejected' };
+}
+
+async function resolveStoreScopedProductIds(storeId?: string) {
+  if (!storeId) return [];
+  return Product.find({ storeId }).distinct('_id');
+}
+
+async function buildBaseModerationFilter(query: any, userRole?: string, userStoreId?: string) {
+  const filterParts: Array<Record<string, any>> = [];
+
+  const requestedStoreId = typeof query.storeId === 'string' ? query.storeId.trim() : '';
+  const scopedStoreId = userRole === 'storeAdmin' ? userStoreId : requestedStoreId || undefined;
+
+  if (scopedStoreId) {
+    const productIds = await resolveStoreScopedProductIds(scopedStoreId);
+    filterParts.push({ productId: { $in: productIds } });
+  }
+
+  const productId = typeof query.productId === 'string' ? query.productId.trim() : '';
+  if (productId) {
+    filterParts.push({ productId });
+  }
+
+  const search = typeof query.search === 'string' ? query.search.trim() : '';
+  if (search) {
+    const pattern = new RegExp(escapeRegex(search), 'i');
+    const [productIds, userIds] = await Promise.all([
+      Product.find({ name: pattern }).distinct('_id'),
+      User.find({
+        $or: [{ name: pattern }, { mobile: pattern }, { email: pattern }],
+      }).distinct('_id'),
+    ]);
+
+    const orConditions: Array<Record<string, any>> = [{ comment: pattern }];
+    if (productIds.length) {
+      orConditions.push({ productId: { $in: productIds } });
+    }
+    if (userIds.length) {
+      orConditions.push({ userId: { $in: userIds } });
+    }
+
+    filterParts.push({ $or: orConditions });
+  }
+
+  return combineFilters(filterParts);
+}
+
+async function getModerationSummary(baseFilter: Record<string, any>): Promise<ModerationSummary> {
+  const pipeline: any[] = [];
+  if (Object.keys(baseFilter).length) {
+    pipeline.push({ $match: baseFilter });
+  }
+
+  pipeline.push(
+    {
+      $addFields: {
+        normalizedStatus: {
+          $ifNull: ['$status', { $cond: ['$isApproved', 'approved', 'pending'] }],
+        },
+      },
+    },
+    {
+      $group: {
+        _id: '$normalizedStatus',
+        count: { $sum: 1 },
+      },
+    },
+  );
+
+  const counts = await Review.aggregate(pipeline);
+  const summary: ModerationSummary = {
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  };
+
+  for (const entry of counts) {
+    if (entry._id === 'pending') summary.pending = entry.count as number;
+    if (entry._id === 'approved') summary.approved = entry.count as number;
+    if (entry._id === 'rejected') summary.rejected = entry.count as number;
+  }
+
+  summary.total = summary.pending + summary.approved + summary.rejected;
+  return summary;
+}
+
+async function findModeratableReview(reviewId: string, userRole?: string, userStoreId?: string) {
+  const review = await Review.findById(reviewId);
+  if (!review) {
+    throw new AppError('Review not found', 404);
+  }
+
+  if (userRole === 'storeAdmin' && userStoreId) {
+    const product = await Product.findOne({ _id: review.productId, storeId: userStoreId });
+    if (!product) {
+      throw new AppError('You can only moderate reviews for your own store products', 403);
+    }
+  }
+
+  return review;
+}
 
 /**
  * Submits or updates a user's review for a product.
@@ -12,12 +161,15 @@ export async function submitReview(userId: string, data: any) {
 
   const review = await Review.findOneAndUpdate(
     { productId, userId },
-    { 
-      rating, 
-      comment, 
-      isApproved: false // Require re-approval on edit
+    {
+      rating,
+      comment,
+      status: 'pending',
+      isApproved: false,
+      approvedBy: undefined,
+      approvedAt: undefined,
     },
-    { upsert: true, new: true, runValidators: true }
+    { upsert: true, new: true, runValidators: true },
   );
 
   return review;
@@ -28,14 +180,15 @@ export async function submitReview(userId: string, data: any) {
  */
 export async function getProductReviews(productId: string, query: any) {
   const { page, limit, skip } = parsePagination(query);
+  const approvedFilter = combineFilters([{ productId }, getStatusFilter('approved')]);
 
   const [reviews, total] = await Promise.all([
-    Review.find({ productId, isApproved: true })
+    Review.find(approvedFilter)
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
-    Review.countDocuments({ productId, isApproved: true }),
+    Review.countDocuments(approvedFilter),
   ]);
 
   return createPaginationResponse(reviews, total, page, limit);
@@ -44,31 +197,31 @@ export async function getProductReviews(productId: string, query: any) {
 /**
  * Admin: Fetches pending reviews for moderation.
  */
-async function getStoreScopedProductIds(storeId?: string) {
-  if (!storeId) return [];
-  return Product.find({ storeId }).distinct('_id');
-}
-
 export async function getPendingReviews(query: any, userRole?: string, userStoreId?: string) {
+  const status = parseModerationStatus(typeof query.status === 'string' ? query.status : undefined);
   const { page, limit, skip } = parsePagination(query);
-  const filter: any = { isApproved: false };
+  const baseFilter = await buildBaseModerationFilter(query, userRole, userStoreId);
+  const finalFilter = combineFilters([baseFilter, getStatusFilter(status)]);
 
-  if (userRole === 'storeAdmin' && userStoreId) {
-    const productIds = await getStoreScopedProductIds(userStoreId);
-    filter.productId = { $in: productIds };
-  }
-
-  const [reviews, total] = await Promise.all([
-    Review.find(filter)
-      .populate('productId', 'name slug')
+  const [reviews, total, summary] = await Promise.all([
+    Review.find(finalFilter)
+      .populate({
+        path: 'productId',
+        select: 'name slug images storeId',
+        populate: { path: 'storeId', select: 'name' },
+      })
       .populate('userId', 'name email mobile')
-      .sort({ createdAt: 1 }) // Oldest first for queue
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
-    Review.countDocuments(filter),
+    Review.countDocuments(finalFilter),
+    getModerationSummary(baseFilter),
   ]);
 
-  return createPaginationResponse(reviews, total, page, limit);
+  return {
+    ...createPaginationResponse(reviews, total, page, limit),
+    summary,
+  };
 }
 
 /**
@@ -76,21 +229,27 @@ export async function getPendingReviews(query: any, userRole?: string, userStore
  * Triggers Product stat recalculation via Mongoose post-save hook.
  */
 export async function approveReview(reviewId: string, adminId: string, userRole?: string, userStoreId?: string) {
-  const review = await Review.findById(reviewId);
-  if (!review) {
-    throw new AppError('Review not found', 404);
-  }
+  const review = await findModeratableReview(reviewId, userRole, userStoreId);
 
-  if (userRole === 'storeAdmin' && userStoreId) {
-    const product = await Product.findOne({ _id: review.productId, storeId: userStoreId });
-    if (!product) {
-      throw new AppError('You can only approve reviews for your own store products', 403);
-    }
-  }
-
+  review.status = 'approved';
   review.isApproved = true;
   review.approvedBy = adminId as any;
   review.approvedAt = new Date();
+
+  await review.save();
+  return review;
+}
+
+/**
+ * Admin: Rejects a review.
+ */
+export async function rejectReview(reviewId: string, userRole?: string, userStoreId?: string) {
+  const review = await findModeratableReview(reviewId, userRole, userStoreId);
+
+  review.status = 'rejected';
+  review.isApproved = false;
+  review.approvedBy = undefined;
+  review.approvedAt = undefined;
 
   await review.save();
   return review;

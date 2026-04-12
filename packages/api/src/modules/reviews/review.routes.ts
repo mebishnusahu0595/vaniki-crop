@@ -20,10 +20,13 @@ router.delete('/:id', requireAuth, reviewController.deleteReview);
 
 // ─── Admin Moderation Routes ───────────────────────────────────────────
 
-/** GET /api/admin/reviews — List pending moderation queue */
+/** GET /api/admin/reviews — List moderation queue (pending/approved/rejected) */
 router.get('/admin', requireAuth, requireStoreAdmin, reviewController.getPendingReviews);
 
 /** PATCH /api/admin/reviews/:id/approve — Set isApproved=true */
 router.patch('/admin/:id/approve', requireAuth, requireStoreAdmin, reviewController.approveReview);
+
+/** PATCH /api/admin/reviews/:id/reject — Set status=rejected */
+router.patch('/admin/:id/reject', requireAuth, requireStoreAdmin, reviewController.rejectReview);
 
 export default router;

@@ -17,18 +17,19 @@ import type {
   Product,
   ProductRequest,
   Review,
+  ReviewModerationSummary,
   SiteSettings,
   StoreSecretsResponse,
   StoreSummary,
   Testimonial,
 } from '../types/admin';
 
-export interface ApiResponse<T> {
+export interface ApiResponse<T, TSummary = PaymentSummary> {
   success: boolean;
   data: T;
   message?: string;
   pagination?: PaginationMeta;
-  summary?: PaymentSummary;
+  summary?: TSummary;
 }
 
 type UserRole = AuthUser['role'];
@@ -294,11 +295,30 @@ export const adminApi = {
     return response.data;
   },
   reviews: async (params?: Record<string, unknown>) => {
-    const response = await api.get<ApiResponse<Review[]>>('/reviews/admin', { params });
-    return { data: response.data.data, pagination: response.data.pagination! };
+    const response = await api.get<ApiResponse<Review[], ReviewModerationSummary>>('/reviews/admin', { params });
+    const fallbackSummary: ReviewModerationSummary = {
+      total: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+    };
+
+    return {
+      data: response.data.data,
+      pagination: response.data.pagination!,
+      summary: (response.data.summary as ReviewModerationSummary | undefined) ?? fallbackSummary,
+    };
+  },
+  createReview: async (payload: { productId: string; rating: number; comment?: string }) => {
+    const response = await api.post<ApiResponse<Review>>('/reviews', payload);
+    return response.data.data;
   },
   approveReview: async (id: string) => {
     const response = await api.patch<ApiResponse<Review>>(`/reviews/admin/${id}/approve`);
+    return response.data.data;
+  },
+  rejectReview: async (id: string) => {
+    const response = await api.patch<ApiResponse<Review>>(`/reviews/admin/${id}/reject`);
     return response.data.data;
   },
   deleteReview: async (id: string) => {

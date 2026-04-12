@@ -136,8 +136,23 @@ export interface Review {
   rating: number;
   comment?: string;
   createdAt: string;
-  productId?: { id?: string; name: string; slug?: string };
+  status?: 'pending' | 'approved' | 'rejected';
+  isApproved?: boolean;
+  productId?: {
+    id?: string;
+    name: string;
+    slug?: string;
+    images?: ImageAsset[];
+    storeId?: Array<{ id?: string; name?: string } | string>;
+  };
   userId?: { id?: string; name: string; email?: string; mobile?: string };
+}
+
+export interface ReviewModerationSummary {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
 }
 
 export interface Banner {

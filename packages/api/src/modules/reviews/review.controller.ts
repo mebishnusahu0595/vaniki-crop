@@ -29,7 +29,7 @@ export async function getProductReviews(req: Request, res: Response, next: NextF
 
 /**
  * GET /api/admin/reviews
- * Admin: List pending reviews for moderation.
+ * Admin: List reviews for moderation with filters.
  */
 export async function getPendingReviews(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -42,12 +42,25 @@ export async function getPendingReviews(req: Request, res: Response, next: NextF
 
 /**
  * PATCH /api/admin/reviews/:id/approve
- * Admin: Set isApproved to true.
+ * Admin: Mark review as approved.
  */
 export async function approveReview(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const review = await reviewService.approveReview(req.params.id as string, req.userId!, req.userRole, req.userStoreId);
     res.status(200).json({ success: true, data: review, message: 'Review approved.' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * PATCH /api/admin/reviews/:id/reject
+ * Admin: Mark review as rejected.
+ */
+export async function rejectReview(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const review = await reviewService.rejectReview(req.params.id as string, req.userRole, req.userStoreId);
+    res.status(200).json({ success: true, data: review, message: 'Review rejected.' });
   } catch (error) {
     next(error);
   }

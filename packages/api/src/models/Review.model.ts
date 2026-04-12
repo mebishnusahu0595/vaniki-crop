@@ -8,6 +8,7 @@ export interface IReview extends Document {
   userId: mongoose.Types.ObjectId;
   rating: number;
   comment?: string;
+  status: 'pending' | 'approved' | 'rejected';
   isApproved: boolean;
   approvedBy?: mongoose.Types.ObjectId;
   approvedAt?: Date;
@@ -40,6 +41,12 @@ const reviewSchema = new Schema<IReview>(
       trim: true,
       maxlength: [1000, 'Comment cannot exceed 1000 characters'],
     },
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+      index: true,
+    },
     isApproved: { type: Boolean, default: false },
     approvedBy: {
       type: Schema.Types.ObjectId,
@@ -65,6 +72,7 @@ const reviewSchema = new Schema<IReview>(
 /** Compound unique index: one review per product per user */
 reviewSchema.index({ productId: 1, userId: 1 }, { unique: true });
 reviewSchema.index({ productId: 1, isApproved: 1 });
+reviewSchema.index({ status: 1, createdAt: -1 });
 
 // ─── Post-save Hook ─────────────────────────────────────────────────────
 
