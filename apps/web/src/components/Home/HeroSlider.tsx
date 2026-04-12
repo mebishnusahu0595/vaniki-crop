@@ -240,8 +240,8 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
       </AnimatePresence>
 
       <div className="container relative z-10 mx-auto px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
-        <div className="grid items-start gap-6 lg:gap-7">
-          <div ref={textScopeRef} className="max-w-3xl text-white">
+        <div className="grid items-end gap-8 lg:min-h-[596px] lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10 xl:grid-cols-[minmax(0,1fr)_400px]">
+          <div ref={textScopeRef} className="max-w-3xl self-center text-white">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-primary-100">
               <Sparkles size={12} className="text-primary-300" />
               {t('home.trustedByGrowers')}
@@ -302,9 +302,9 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
             </div>
           </div>
 
-          <div className="w-full max-w-[360px] sm:max-w-[380px] lg:max-w-[400px]">
+          <div className="w-full max-w-[360px] justify-self-start sm:max-w-[380px] lg:mt-12 lg:max-w-[360px] lg:justify-self-end xl:max-w-[400px]">
             {currentProduct && currentVariant ? (
-              <div className="surface-card overflow-hidden rounded-[1.5rem] p-3 sm:p-4">
+              <div className="surface-card overflow-hidden rounded-[1.5rem] p-3 shadow-[0_24px_70px_rgba(8,32,24,0.28)] sm:p-4">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentProduct.id}
