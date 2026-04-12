@@ -258,36 +258,40 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
         </Link>
 
         <div className="hidden min-w-0 flex-1 items-center gap-4 px-6 lg:flex">
-          <div className="rounded-full border border-primary-100 bg-primary-50 p-1">
-            <div className="flex items-center gap-1">
-              {(['delivery', 'pickup'] as const).map((option) => (
-                <button
-                  key={option}
-                  onClick={() => onOpenStoreSelector(option)}
-                  className={cn(
-                    'rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.18em] transition',
-                    mode === option ? 'bg-primary text-white' : 'text-primary-900/55 hover:text-primary-900',
-                  )}
-                >
-                  {option === 'delivery' ? t('header.delivery') : t('header.pickup')}
-                </button>
-              ))}
-            </div>
-          </div>
+          {!isAuthenticated ? (
+            <>
+              <div className="rounded-full border border-primary-100 bg-primary-50 p-1">
+                <div className="flex items-center gap-1">
+                  {(['delivery', 'pickup'] as const).map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => onOpenStoreSelector(option)}
+                      className={cn(
+                        'rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.18em] transition',
+                        mode === option ? 'bg-primary text-white' : 'text-primary-900/55 hover:text-primary-900',
+                      )}
+                    >
+                      {option === 'delivery' ? t('header.delivery') : t('header.pickup')}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          <button
-            onClick={() => onOpenStoreSelector(mode)}
-            className="flex min-w-0 items-center gap-3 rounded-2xl border border-primary-100 bg-white px-4 py-2.5 transition hover:border-primary-200 hover:bg-primary-50"
-          >
-            <MapPin size={18} className="shrink-0 text-primary" />
-            <div className="min-w-0 text-left">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-primary-500">
-                {mode === 'delivery' ? t('header.deliveringTo') : t('header.pickupFrom')}
-              </p>
-              <p className="truncate text-sm font-bold text-primary-900">{summaryText}</p>
-            </div>
-            <ChevronDown size={16} className="shrink-0 text-primary-900/40" />
-          </button>
+              <button
+                onClick={() => onOpenStoreSelector(mode)}
+                className="flex min-w-0 items-center gap-3 rounded-2xl border border-primary-100 bg-white px-4 py-2.5 transition hover:border-primary-200 hover:bg-primary-50"
+              >
+                <MapPin size={18} className="shrink-0 text-primary" />
+                <div className="min-w-0 text-left">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-primary-500">
+                    {mode === 'delivery' ? t('header.deliveringTo') : t('header.pickupFrom')}
+                  </p>
+                  <p className="truncate text-sm font-bold text-primary-900">{summaryText}</p>
+                </div>
+                <ChevronDown size={16} className="shrink-0 text-primary-900/40" />
+              </button>
+            </>
+          ) : null}
 
           <div className="relative flex-1" ref={desktopSearchRef}>
             <form

@@ -7,14 +7,14 @@ const TopNoticeBar: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="border-b border-primary-800 bg-primary-900 px-4 py-2 text-white">
-      <div className="container mx-auto flex flex-col items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.18em] sm:flex-row sm:text-xs">
+    <div className="border-b border-primary-800 bg-primary-900 px-4 py-1.5 text-white">
+      <div className="container mx-auto flex items-center justify-center text-[10px] font-bold uppercase tracking-[0.18em] sm:justify-between sm:text-xs">
         <div className="flex items-center space-x-1.5">
           <Truck size={14} className="text-primary-400" />
           <span>{t('topNotice.freeDelivery')}</span>
         </div>
         
-        <div className="flex items-center space-x-6">
+        <div className="hidden items-center space-x-6 sm:flex">
           <div className="flex items-center space-x-1.5">
             <Phone size={14} className="text-primary-400" />
             <span>{t('topNotice.call')}: {siteContent.brand.supportPhone}</span>

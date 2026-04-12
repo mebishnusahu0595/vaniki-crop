@@ -6,9 +6,10 @@ import { Package, User, KeyRound, X, Heart, Copy, Gift } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
+import { useStoreStore } from '../store/useStoreStore';
 import { storefrontApi } from '../utils/api';
 import { currencyFormatter, formatStoreAddress } from '../utils/format';
-import type { OrderStatusHistoryEntry, Product } from '../types/storefront';
+import type { OrderStatusHistoryEntry, Product, ServiceMode } from '../types/storefront';
 import { cn } from '../utils/cn';
 import ProductCard from '../components/shared/ProductCard';
 
@@ -24,6 +25,10 @@ const Account: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, token, logout, updateUser } = useAuthStore();
+  const selectedStore = useStoreStore((state) => state.selectedStore);
+  const setStore = useStoreStore((state) => state.setStore);
+  const mode = useServiceModeStore((state) => state.mode);
+  const setMode = useServiceModeStore((state) => state.setMode);
   const setAddress = useServiceModeStore((state) => state.setAddress);
 
   const statusLabelMap = useMemo<Record<OrderStatusHistoryEntry['status'], string>>(
@@ -66,6 +71,8 @@ const Account: React.FC = () => {
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [profileServiceMode, setProfileServiceMode] = useState<ServiceMode>(mode);
+  const [profilePickupStoreId, setProfilePickupStoreId] = useState(selectedStore?.id || '');
 
   useEffect(() => {
     if (!token) navigate('/login?redirect=/account');
@@ -85,6 +92,13 @@ const Account: React.FC = () => {
     staleTime: 0,
   });
 
+  const { data: pickupStores = [], isLoading: isLoadingPickupStores } = useQuery({
+    queryKey: ['account-pickup-stores'],
+    queryFn: storefrontApi.stores,
+    enabled: !!token && activeTab === 'profile',
+    staleTime: 300000,
+  });
+
   const orders = ordersResponse?.data || [];
   const wishlistProducts = useMemo(
     () => (user?.wishlist || []).filter((entry): entry is Product => typeof entry !== 'string'),
@@ -98,8 +112,19 @@ const Account: React.FC = () => {
     [orderDetail?.statusHistory],
   );
 
+  useEffect(() => {
+    setProfileServiceMode(mode);
+    setProfilePickupStoreId(selectedStore?.id || '');
+  }, [mode, selectedStore?.id]);
+
   const handleProfileSave = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (profileServiceMode === 'pickup' && !profilePickupStoreId) {
+      toast.error(t('storeSelector.choosePickupStore'));
+      return;
+    }
+
     setIsSavingProfile(true);
     try {
       const updatedUser = await storefrontApi.updateMe({
@@ -114,6 +139,18 @@ const Account: React.FC = () => {
           landmark: profileData.landmark,
         },
       });
+
+      await storefrontApi.updateServiceMode(profileServiceMode);
+      setMode(profileServiceMode);
+
+      if (profileServiceMode === 'pickup' && profilePickupStoreId) {
+        await storefrontApi.selectStore(profilePickupStoreId);
+        const matchedStore = pickupStores.find((store) => store.id === profilePickupStoreId) || null;
+        if (matchedStore) {
+          setStore(matchedStore);
+        }
+      }
+
       updateUser(updatedUser);
       setAddress(updatedUser.savedAddress || null);
       toast.success(t('accountPage.profileUpdated'));
@@ -279,6 +316,55 @@ const Account: React.FC = () => {
                     {t('accountPage.copyInviteLink')}
                   </button>
                 </div>
+              </div>
+
+              <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">{t('storeSelector.serviceMode')}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-primary-100 bg-primary-50 p-1.5">
+                  {([
+                    { key: 'delivery', label: t('storeSelector.delivery') },
+                    { key: 'pickup', label: t('storeSelector.pickup') },
+                  ] as const).map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setProfileServiceMode(item.key)}
+                      className={cn(
+                        'rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.14em] transition',
+                        profileServiceMode === item.key
+                          ? 'bg-primary text-white'
+                          : 'text-primary-900/60 hover:text-primary-900',
+                      )}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+                {profileServiceMode === 'pickup' ? (
+                  <div className="mt-4 space-y-2">
+                    <label className="block text-xs font-black uppercase tracking-[0.16em] text-primary-500">
+                      {t('serviceModeBar.selectNearbyStore')}
+                    </label>
+                    <select
+                      value={profilePickupStoreId}
+                      onChange={(event) => setProfilePickupStoreId(event.target.value)}
+                      className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                    >
+                      <option value="">{t('storeSelector.choosePickupStore')}</option>
+                      {pickupStores.map((store) => (
+                        <option key={store.id} value={store.id}>
+                          {store.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs font-medium text-primary-900/55">
+                      {isLoadingPickupStores ? t('common.loading') : t('header.pickupFrom')}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-4 text-xs font-medium text-primary-900/55">{t('storeSelector.addressHint')}</p>
+                )}
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">

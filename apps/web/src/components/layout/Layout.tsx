@@ -8,11 +8,13 @@ import CartDrawer from './CartDrawer';
 import Footer from './Footer';
 import ServiceModeBar from './ServiceModeBar';
 import type { ServiceMode } from '../../types/storefront';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
 
 const Layout: React.FC = () => {
   const location = useLocation();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [preferredMode, setPreferredMode] = useState<ServiceMode | undefined>(undefined);
@@ -31,7 +33,7 @@ const Layout: React.FC = () => {
           <div className="sticky top-0 z-50">
             <TopNoticeBar />
             <Header onOpenCart={() => setIsCartOpen(true)} onOpenStoreSelector={handleOpenStoreSelector} />
-            <ServiceModeBar onOpenStoreSelector={handleOpenStoreSelector} />
+            {!isAuthenticated ? <ServiceModeBar onOpenStoreSelector={handleOpenStoreSelector} /> : null}
           </div>
         </>
       )}
