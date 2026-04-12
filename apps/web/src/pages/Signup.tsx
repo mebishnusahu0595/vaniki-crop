@@ -22,25 +22,9 @@ const Signup: React.FC = () => {
     email: '',
     mobile: '',
     password: '',
-    otp: '',
     referralCode: searchParams.get('ref') || '',
   });
-  const [otpSent, setOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const sendOtp = async () => {
-    if (!formData.mobile) {
-      toast.error(t('authPages.enterMobileFirst'));
-      return;
-    }
-    try {
-      const response = await storefrontApi.sendOtp(formData.mobile);
-      toast.success(response.message);
-      setOtpSent(true);
-    } catch {
-      toast.error(t('authPages.otpSendFailed'));
-    }
-  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -96,22 +80,13 @@ const Signup: React.FC = () => {
           placeholder={t('authPages.emailOptional')}
           className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
         />
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <input
-            required
-            value={formData.mobile}
-            onChange={(event) => setFormData((current) => ({ ...current, mobile: event.target.value }))}
-            placeholder={t('authPages.mobileNumber')}
-            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-          />
-          <button
-            type="button"
-            onClick={sendOtp}
-            className="rounded-full border border-primary bg-white px-5 py-3 text-sm font-black uppercase tracking-[0.2em] text-primary"
-          >
-            {otpSent ? t('authPages.resendOtp') : t('authPages.sendOtp')}
-          </button>
-        </div>
+        <input
+          required
+          value={formData.mobile}
+          onChange={(event) => setFormData((current) => ({ ...current, mobile: event.target.value }))}
+          placeholder={t('authPages.mobileNumber')}
+          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+        />
         <input
           required
           type="password"
@@ -126,17 +101,8 @@ const Signup: React.FC = () => {
           placeholder={t('authPages.referralCodeOptional')}
           className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold uppercase tracking-[0.12em] text-primary-900"
         />
-        {otpSent && (
-          <input
-            required
-            value={formData.otp}
-            onChange={(event) => setFormData((current) => ({ ...current, otp: event.target.value }))}
-            placeholder={t('authPages.enterOtp')}
-            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-          />
-        )}
         <button
-          disabled={isSubmitting || !otpSent}
+          disabled={isSubmitting}
           className="w-full rounded-full bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-100"
         >
           {isSubmitting ? t('authPages.creatingAccount') : t('authPages.createAccountButton')}

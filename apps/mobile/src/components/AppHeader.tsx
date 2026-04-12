@@ -71,12 +71,20 @@ export const AppHeader = memo(function AppHeader() {
         </View>
       </View>
 
-      <View className="mt-3 flex-row items-center justify-between">
-        <Pressable onPress={() => router.push('/(tabs)')}>
-          <Text className="text-[40px] font-black leading-[40px] text-primary-900">Vaniki Crop</Text>
+      <View className="mt-3 flex-row items-center">
+        <Pressable onPress={() => router.push('/(tabs)')} className="mr-2 flex-1">
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.72}
+            className="text-[30px] leading-[32px] tracking-tight"
+          >
+            <Text className="font-black text-primary-900">Vaniki</Text>
+            <Text className="font-semibold text-primary-700"> Crop</Text>
+          </Text>
         </Pressable>
 
-        <View className="flex-row items-center gap-2">
+        <View className="shrink-0 flex-row items-center gap-2">
           <Pressable
             onPress={() => void handleLanguageToggle()}
             disabled={switchingLanguage}

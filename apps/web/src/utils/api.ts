@@ -202,7 +202,7 @@ export const storefrontApi = {
     const response = await api.post<{ success: boolean; message: string }>('/auth/send-otp', { mobile });
     return response.data;
   },
-  signup: async (payload: { name: string; email?: string; mobile: string; password: string; otp: string; referralCode?: string }) => {
+  signup: async (payload: { name: string; email?: string; mobile: string; password: string; otp?: string; referralCode?: string }) => {
     const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/signup', payload);
     return response.data.data;
   },
