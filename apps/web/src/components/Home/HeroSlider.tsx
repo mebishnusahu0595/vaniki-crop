@@ -62,8 +62,11 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
         ...banner,
         image: {
           ...banner.image,
-          url: resolveMediaUrl(banner.image.url),
-          mobileUrl: resolveMediaUrl(banner.image.mobileUrl || banner.image.url),
+          url: resolveMediaUrl(banner.image.url, banner.image.publicId),
+          mobileUrl: resolveMediaUrl(
+            banner.image.mobileUrl || banner.image.url,
+            banner.image.publicId,
+          ),
         },
       })),
     [safeBanners],

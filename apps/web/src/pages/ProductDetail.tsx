@@ -47,7 +47,7 @@ const ProductDetail: React.FC = () => {
     [product?.variants, selectedVariantId],
   );
   const normalizedImages = useMemo(
-    () => (product?.images || []).map((image) => ({ ...image, url: resolveMediaUrl(image.url) })),
+    () => (product?.images || []).map((image) => ({ ...image, url: resolveMediaUrl(image.url, image.publicId) })),
     [product?.images],
   );
   const activeImage = normalizedImages[activeImageIndex]?.url || normalizedImages[0]?.url;

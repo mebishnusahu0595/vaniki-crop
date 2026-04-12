@@ -119,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
               >
                 <div className="flex min-w-0 items-center gap-3">
                   {category.image?.url ? (
-                    <img src={resolveMediaUrl(category.image.url)} alt={category.name} className="h-11 w-11 rounded-xl object-cover" />
+                    <img src={resolveMediaUrl(category.image.url, category.image.publicId)} alt={category.name} className="h-11 w-11 rounded-xl object-cover" />
                   ) : (
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-100 text-primary-700">
                       <Search size={16} />
@@ -142,9 +142,8 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
           <div className="pb-2">
             <p className="px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary-500">{t('nav.shop')}</p>
             {productSuggestions.map((product) => {
-              const primaryImage = resolveMediaUrl(
-                product.images.find((image) => image.isPrimary)?.url || product.images[0]?.url,
-              );
+              const primaryImageAsset = product.images.find((image) => image.isPrimary) || product.images[0];
+              const primaryImage = resolveMediaUrl(primaryImageAsset?.url, primaryImageAsset?.publicId);
 
               return (
                 <button

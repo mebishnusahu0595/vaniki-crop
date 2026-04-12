@@ -1,5 +1,7 @@
 import { API_BASE_URL } from '../config/api';
 
+const LOCAL_PUBLIC_ID_PREFIX = 'local:';
+
 function getApiOrigin(): string {
   if (!API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://')) {
     return '';
@@ -38,7 +40,18 @@ function normalizeRelativePath(value: string): string {
   return withLeadingSlash;
 }
 
-export function resolveMediaUrl(rawUrl?: string): string {
+function buildMediaProxyUrl(publicId?: string): string {
+  if (!publicId?.startsWith(LOCAL_PUBLIC_ID_PREFIX)) {
+    return '';
+  }
+
+  return `${API_BASE_URL}/media?publicId=${encodeURIComponent(publicId)}`;
+}
+
+export function resolveMediaUrl(rawUrl?: string, publicId?: string): string {
+  const proxyUrl = buildMediaProxyUrl(publicId);
+  if (proxyUrl) return proxyUrl;
+
   if (!rawUrl) return '';
   const trimmed = rawUrl.trim();
   if (!trimmed) return '';

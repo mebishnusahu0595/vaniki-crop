@@ -2,6 +2,7 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStoreStore } from '../store/useStoreStore';
+import { resolveMediaUrl } from './media';
 import type {
   AuthUser,
   Category,
@@ -83,6 +84,12 @@ const normalizeVariant = (variant: VariantLike, index: number): Product['variant
   id: variant.id || variant._id || variant.sku || `${variant.label || 'variant'}-${index}`,
 });
 
+const normalizeImageAsset = <T extends { url: string; publicId?: string; mobileUrl?: string }>(image: T): T => ({
+  ...image,
+  url: resolveMediaUrl(image.url, image.publicId),
+  mobileUrl: image.mobileUrl ? resolveMediaUrl(image.mobileUrl, image.publicId) : image.mobileUrl,
+});
+
 const normalizeProduct = (product: ProductLike | null | undefined): Product | undefined => {
   if (!product) return undefined;
 
@@ -97,6 +104,7 @@ const normalizeProduct = (product: ProductLike | null | undefined): Product | un
   return {
     ...product,
     id: product.id || product._id || product.slug,
+    images: (product.images || []).map((image) => normalizeImageAsset(image)),
     variants: (product.variants || []).map((variant, index) => normalizeVariant(variant, index)),
     reviews: normalizedReviews,
   } as Product;
@@ -107,14 +115,23 @@ const normalizeProducts = (products: ProductLike[] = []): Product[] =>
 
 const normalizeHomepageData = (homepage: HomepageData): HomepageData => ({
   ...homepage,
+  featuredCategories: (homepage.featuredCategories || []).map((category) => ({
+    ...category,
+    image: category.image ? normalizeImageAsset(category.image) : category.image,
+  })),
   saleProducts: normalizeProducts(homepage.saleProducts as ProductLike[]),
   bestSellers: normalizeProducts(homepage.bestSellers as ProductLike[]),
   banners: (homepage.banners || []).map((banner) => ({
     ...banner,
+    image: normalizeImageAsset(banner.image),
     linkedProducts: (banner.linkedProducts || []).map((entry) => ({
       ...entry,
       productId: normalizeProduct(entry.productId as ProductLike) as Product,
     })),
+  })),
+  testimonials: (homepage.testimonials || []).map((testimonial) => ({
+    ...testimonial,
+    avatar: testimonial.avatar ? normalizeImageAsset(testimonial.avatar) : testimonial.avatar,
   })),
 });
 
@@ -127,7 +144,10 @@ export const storefrontApi = {
   },
   categories: async () => {
     const response = await api.get<ApiResponse<Category[]>>('/categories');
-    return response.data.data;
+    return (response.data.data || []).map((category) => ({
+      ...category,
+      image: category.image ? normalizeImageAsset(category.image) : category.image,
+    }));
   },
   products: async (params?: Record<string, string | number | undefined>) => {
     const response = await api.get<PaginatedResponse<Product>>('/products', { params });

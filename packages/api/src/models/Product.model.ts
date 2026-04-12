@@ -1,5 +1,31 @@
 import mongoose, { Schema, type Document } from 'mongoose';
 
+const LOCAL_PUBLIC_ID_PREFIX = 'local:';
+
+function toUploadPathFromPublicId(publicId?: string): string | null {
+  if (!publicId?.startsWith(LOCAL_PUBLIC_ID_PREFIX)) {
+    return null;
+  }
+
+  const relativePath = publicId.slice(LOCAL_PUBLIC_ID_PREFIX.length).replace(/^\/+/, '');
+  if (!relativePath) return null;
+
+  const encoded = relativePath
+    .split('/')
+    .map((segment) => {
+      if (!segment) return segment;
+
+      try {
+        return encodeURIComponent(decodeURIComponent(segment));
+      } catch {
+        return encodeURIComponent(segment);
+      }
+    })
+    .join('/');
+
+  return `/uploads/${encoded}`;
+}
+
 // ─── Interfaces ──────────────────────────────────────────────────────────
 
 /** Product image with Cloudinary metadata */
@@ -147,6 +173,18 @@ const productSchema = new Schema<IProduct>(
     timestamps: true,
     toJSON: {
       transform(_doc: any, ret: any) {
+        if (Array.isArray(ret.images)) {
+          ret.images = ret.images.map((image: any) => {
+            const localUploadPath = toUploadPathFromPublicId(image?.publicId);
+            if (!localUploadPath) return image;
+
+            return {
+              ...image,
+              url: localUploadPath,
+            };
+          });
+        }
+
         ret.id = ret._id;
         delete ret._id;
         delete ret.__v;

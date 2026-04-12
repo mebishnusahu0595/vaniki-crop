@@ -116,6 +116,14 @@ function getApiOrigin(): string {
   }
 }
 
+function getLocalMediaProxyUrl(publicId?: string): string {
+  if (!publicId?.startsWith('local:')) {
+    return '';
+  }
+
+  return `${API_BASE_URL}/media?publicId=${encodeURIComponent(publicId)}`;
+}
+
 function encodePathname(pathname: string): string {
   return pathname
     .split('/')
@@ -131,7 +139,10 @@ function encodePathname(pathname: string): string {
     .join('/');
 }
 
-function resolveMediaUrl(rawUrl?: string): string {
+function resolveMediaUrl(rawUrl?: string, publicId?: string): string {
+  const mediaProxyUrl = getLocalMediaProxyUrl(publicId);
+  if (mediaProxyUrl) return mediaProxyUrl;
+
   if (!rawUrl) return '';
   const trimmed = rawUrl.trim();
   if (!trimmed) return '';
@@ -485,7 +496,7 @@ function ProductEditor({
             <div className="mt-5 space-y-3">
               {existingImages.map((image, index) => (
                 <div key={image.publicId} className="flex items-center gap-3 rounded-2xl border border-primary-100 p-3">
-                  <img src={resolveMediaUrl(image.url)} alt="" className="h-16 w-16 rounded-xl object-cover" />
+                  <img src={resolveMediaUrl(image.url, image.publicId)} alt="" className="h-16 w-16 rounded-xl object-cover" />
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-slate-700">Existing image {index + 1}</p>
                     <div className="mt-2 flex flex-wrap gap-2">

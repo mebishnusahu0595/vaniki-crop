@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
+import { promises as fs } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +40,7 @@ import './workers/email.worker.js';
 
 // ─── Error Handling ──────────────────────────────────────────────────────
 import { AppError } from './utils/AppError.js';
+import { localPathFromPublicId } from './utils/cloudinary.helpers.js';
 
 const app: express.Application = express();
 const currentFilePath = fileURLToPath(import.meta.url);
@@ -84,6 +86,26 @@ app.get('/api/health', (_req: Request, res: Response) => {
     service: 'vaniki-crop-api',
     timestamp: new Date().toISOString(),
   });
+});
+
+app.get('/api/media', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const publicIdRaw = typeof req.query.publicId === 'string' ? req.query.publicId : '';
+    if (!publicIdRaw) {
+      throw new AppError('publicId query param is required', 400);
+    }
+
+    const absolutePath = localPathFromPublicId(publicIdRaw);
+    if (!absolutePath) {
+      throw new AppError('Invalid media identifier', 400);
+    }
+
+    await fs.access(absolutePath);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.sendFile(absolutePath);
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get('/sitemap.xml', async (_req: Request, res: Response, next: NextFunction) => {

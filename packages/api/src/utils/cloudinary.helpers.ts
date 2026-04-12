@@ -9,7 +9,7 @@ export interface CloudinaryUploadResult {
   publicId: string;
 }
 
-const LOCAL_PUBLIC_ID_PREFIX = 'local:';
+export const LOCAL_PUBLIC_ID_PREFIX = 'local:';
 const currentFilePath = fileURLToPath(import.meta.url);
 const currentDirectory = dirname(currentFilePath);
 const localUploadDirectory = process.env.UPLOADS_DIR?.trim()
@@ -102,7 +102,7 @@ function buildPublicImageBaseUrl(): string {
   return `http://localhost:${port}`;
 }
 
-function localPathFromPublicId(publicId: string): string | null {
+export function localPathFromPublicId(publicId: string): string | null {
   if (!publicId.startsWith(LOCAL_PUBLIC_ID_PREFIX)) {
     return null;
   }
