@@ -26,7 +26,7 @@ function RootNavigation() {
 
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style="dark" translucent={false} />
       <OfflineBanner />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />

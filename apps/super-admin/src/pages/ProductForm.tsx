@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ReactQuill from 'react-quill-new';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { z } from 'zod';
+import { API_BASE_URL } from '../config/api';
 import { LoadingBlock } from '../components/LoadingBlock';
 import type { Category, ImageAsset, Product } from '../types/admin';
 import { adminApi } from '../utils/api';
@@ -14,12 +15,29 @@ import { buildVariantLabel, parseVariantLabel, slugify } from '../utils/format';
 
 const units = ['ml', 'Liter', 'gm', 'KG', 'Packet', 'piece'] as const;
 
+const requiredNumber = (label: string) =>
+  z.preprocess(
+    (value) => {
+      if (value === '' || value === null || value === undefined) {
+        return undefined;
+      }
+
+      const numericValue = typeof value === 'number' ? value : Number(value);
+      return Number.isFinite(numericValue) ? numericValue : undefined;
+    },
+    z
+      .number({
+        message: `${label} is required`,
+      })
+      .min(0, `${label} must be zero or more`),
+  );
+
 const variantSchema = z.object({
   quantity: z.string().min(1, 'Qty is required'),
   unit: z.enum(units),
-  price: z.coerce.number().min(0),
-  mrp: z.coerce.number().min(0),
-  stock: z.coerce.number().min(0),
+  price: requiredNumber('Price'),
+  mrp: requiredNumber('MRP'),
+  stock: requiredNumber('Stock'),
 });
 
 const productSchema = z.object({
@@ -84,6 +102,36 @@ function getProductDefaultValues(product?: Product): ProductFormInput {
       stock: variant.stock,
     })),
   };
+}
+
+function getApiOrigin(): string {
+  if (!API_BASE_URL.startsWith('http://') && !API_BASE_URL.startsWith('https://')) {
+    return '';
+  }
+
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return '';
+  }
+}
+
+function resolveMediaUrl(rawUrl?: string): string {
+  if (!rawUrl) return '';
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('blob:') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+
+  const apiOrigin = getApiOrigin();
+  if (!apiOrigin) return trimmed;
+
+  if (trimmed.startsWith('/')) {
+    return `${apiOrigin}${trimmed}`;
+  }
+
+  return `${apiOrigin}/${trimmed}`;
 }
 
 function ProductEditor({
@@ -261,6 +309,7 @@ function ProductEditor({
             <div className="md:col-span-2">
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Short Description</label>
               <textarea {...register('shortDescription')} className="min-h-[100px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              {errors.shortDescription ? <p className="mt-2 text-sm text-rose-600">{errors.shortDescription.message}</p> : null}
             </div>
             <div className="md:col-span-2">
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Description</label>
@@ -269,6 +318,7 @@ function ProductEditor({
                 name="description"
                 render={({ field }) => <ReactQuill theme="snow" value={field.value} onChange={field.onChange} />}
               />
+              {errors.description ? <p className="mt-2 text-sm text-rose-600">{errors.description.message}</p> : null}
             </div>
             <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Category</label>
@@ -280,6 +330,7 @@ function ProductEditor({
                   </option>
                 ))}
               </select>
+              {errors.category ? <p className="mt-2 text-sm text-rose-600">{errors.category.message}</p> : null}
             </div>
             <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Tags</label>
@@ -314,18 +365,33 @@ function ProductEditor({
           <div className="space-y-4">
             {fields.map((field, index) => (
               <div key={field.id} className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 md:grid-cols-5">
-                <input {...register(`variants.${index}.quantity`)} placeholder="Qty" className="rounded-2xl border border-primary-100 bg-white px-3 py-3" />
-                <select {...register(`variants.${index}.unit`)} className="rounded-2xl border border-primary-100 bg-white px-3 py-3">
-                  {units.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {unit}
-                    </option>
-                  ))}
-                </select>
-                <input type="number" {...register(`variants.${index}.price`, { valueAsNumber: true })} placeholder="Price" className="rounded-2xl border border-primary-100 bg-white px-3 py-3" />
-                <input type="number" {...register(`variants.${index}.mrp`, { valueAsNumber: true })} placeholder="MRP" className="rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                <div>
+                  <input {...register(`variants.${index}.quantity`)} placeholder="Qty" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                  {errors.variants?.[index]?.quantity ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.quantity?.message}</p> : null}
+                </div>
+                <div>
+                  <select {...register(`variants.${index}.unit`)} className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3">
+                    {units.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.variants?.[index]?.unit ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.unit?.message}</p> : null}
+                </div>
+                <div>
+                  <input type="number" {...register(`variants.${index}.price`)} placeholder="Price" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                  {errors.variants?.[index]?.price ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.price?.message}</p> : null}
+                </div>
+                <div>
+                  <input type="number" {...register(`variants.${index}.mrp`)} placeholder="MRP" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                  {errors.variants?.[index]?.mrp ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.mrp?.message}</p> : null}
+                </div>
                 <div className="flex gap-2">
-                  <input type="number" {...register(`variants.${index}.stock`, { valueAsNumber: true })} placeholder="Stock" className="min-w-0 flex-1 rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                  <div className="min-w-0 flex-1">
+                    <input type="number" {...register(`variants.${index}.stock`)} placeholder="Stock" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                    {errors.variants?.[index]?.stock ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.stock?.message}</p> : null}
+                  </div>
                   {fields.length > 1 ? (
                     <button type="button" onClick={() => remove(index)} className="rounded-2xl border border-rose-100 px-3 text-rose-600">
                       <MinusCircle size={16} />
@@ -378,7 +444,7 @@ function ProductEditor({
             <div className="mt-5 space-y-3">
               {existingImages.map((image, index) => (
                 <div key={image.publicId} className="flex items-center gap-3 rounded-2xl border border-primary-100 p-3">
-                  <img src={image.url} alt="" className="h-16 w-16 rounded-xl object-cover" />
+                  <img src={resolveMediaUrl(image.url)} alt="" className="h-16 w-16 rounded-xl object-cover" />
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-slate-700">Existing image {index + 1}</p>
                     <div className="mt-2 flex flex-wrap gap-2">

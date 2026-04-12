@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCartStore } from '../store/useCartStore';
 import { shadow } from '../constants/theme';
 
@@ -35,10 +36,14 @@ interface TabBarProps {
 }
 
 export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
+  const insets = useSafeAreaInsets();
   const itemCount = useCartStore((store) => store.items.reduce((sum, item) => sum + item.qty, 0));
 
   return (
-    <View style={shadow.card} className="bg-white px-4 pb-6 pt-3">
+    <View
+      style={[shadow.card, { paddingBottom: Math.max(insets.bottom, 8) + 12 }]}
+      className="bg-white px-4 pt-3"
+    >
       <View className="flex-row rounded-[28px] border border-primary-100 bg-white px-2 py-2">
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];

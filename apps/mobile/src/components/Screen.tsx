@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
-import { SafeAreaView, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppHeader } from './AppHeader';
 import { ServiceModeBar } from './ServiceModeBar';
 import { WhatsAppFab } from './WhatsAppFab';
@@ -19,8 +20,11 @@ export function Screen({
   withWhatsAppFab = true,
   scroll = true,
 }: ScreenProps) {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = (withWhatsAppFab ? 88 : 24) + insets.bottom;
+
   const content = (
-    <View className={`flex-1 bg-offwhite px-4 ${withWhatsAppFab ? 'pb-24' : 'pb-6'}`}>
+    <View className="flex-1 bg-offwhite px-4" style={{ paddingBottom: bottomPadding }}>
       {withHeader ? (
         <View className="pb-4 pt-3">
           <AppHeader />
@@ -36,7 +40,7 @@ export function Screen({
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-offwhite">
+    <SafeAreaView className="flex-1 bg-offwhite" edges={['top', 'left', 'right']}>
       {scroll ? <ScrollView showsVerticalScrollIndicator={false}>{content}</ScrollView> : content}
       {withWhatsAppFab ? <WhatsAppFab /> : null}
     </SafeAreaView>

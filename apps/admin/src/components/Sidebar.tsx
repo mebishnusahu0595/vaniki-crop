@@ -1,7 +1,6 @@
 import {
   Boxes,
   PackageSearch,
-  Settings,
   ShoppingCart,
   X,
 } from 'lucide-react';
@@ -18,7 +17,6 @@ interface SidebarNavItem {
 
 const navItems: SidebarNavItem[] = [
   { to: '/orders', label: 'Orders', icon: ShoppingCart },
-  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar({

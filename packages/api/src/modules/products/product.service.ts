@@ -97,7 +97,8 @@ export async function getProducts(
   // Store filter (query param takes precedence over user's selected store)
   const storeId = query.storeId || query.store || userStoreId;
   if (storeId) {
-    filter.storeId = storeId;
+    // Products with no store assignment are treated as global and should be visible in every store context.
+    filter.$or = [{ storeId }, { storeId: { $size: 0 } }];
   }
 
   // Category filter (by slug or ID)
@@ -171,7 +172,9 @@ export async function searchProducts(
     $text: { $search: searchQuery },
   };
 
-  if (storeId) filter.storeId = storeId;
+  if (storeId) {
+    filter.$or = [{ storeId }, { storeId: { $size: 0 } }];
+  }
 
   return Product.find(filter, { score: { $meta: 'textScore' } })
     .select('name slug shortDescription images variants.label variants.price tags')
@@ -315,6 +318,10 @@ export async function createProduct(
   } else if (input.storeId) {
     // Super admin can assign to specific stores
     storeIds = Array.isArray(input.storeId) ? input.storeId : [input.storeId];
+  } else {
+    // If no explicit store is passed by super admin, assign to all active stores.
+    const activeStores = await Store.find({ isActive: true }).select('_id').lean();
+    storeIds = activeStores.map((store) => store._id.toString());
   }
 
   // Upload images to Cloudinary
@@ -462,8 +469,14 @@ export async function updateProduct(
   if (input.metaDescription !== undefined) product.metaDescription = input.metaDescription;
 
   // Store assignment (only super admin can change stores)
-  if (input.storeId !== undefined && userRole === 'superAdmin') {
-    product.storeId = (Array.isArray(input.storeId) ? input.storeId : [input.storeId]) as any;
+  if (userRole === 'superAdmin') {
+    if (input.storeId !== undefined) {
+      product.storeId = (Array.isArray(input.storeId) ? input.storeId : [input.storeId]) as any;
+    } else if (!product.storeId.length) {
+      // Backfill older globally-unassigned products when edited in super admin.
+      const activeStores = await Store.find({ isActive: true }).select('_id').lean();
+      product.storeId = activeStores.map((store) => store._id) as any;
+    }
   }
 
   if (product.images.length > 0) {

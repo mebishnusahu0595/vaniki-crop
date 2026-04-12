@@ -14,11 +14,26 @@ function parseJsonField<T>(raw: string, fieldName: string): T {
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format');
 
+const requiredNumber = (label: string) =>
+  z.preprocess(
+    (value) => {
+      if (value === '' || value === null || value === undefined) {
+        return undefined;
+      }
+
+      const numericValue = typeof value === 'number' ? value : Number(value);
+      return Number.isFinite(numericValue) ? numericValue : undefined;
+    },
+    z.number({
+      message: `${label} is required`,
+    }),
+  );
+
 const variantSchema = z.object({
   label: z.string().trim().min(1, 'Variant label is required'),
-  price: z.coerce.number().min(0, 'Price must be non-negative'),
-  mrp: z.coerce.number().min(0, 'MRP must be non-negative'),
-  stock: z.coerce.number().int().min(0).default(0),
+  price: requiredNumber('Price').pipe(z.number().min(0, 'Price must be non-negative')),
+  mrp: requiredNumber('MRP').pipe(z.number().min(0, 'MRP must be non-negative')),
+  stock: requiredNumber('Stock').pipe(z.number().int().min(0, 'Stock must be non-negative')),
   sku: z.string().trim().min(1, 'SKU is required').toUpperCase(),
 });
 

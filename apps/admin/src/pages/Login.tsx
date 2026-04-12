@@ -162,24 +162,16 @@ export default function LoginPage() {
             Fill dealer details to request account activation. After super-admin approval, you can sign in.
           </p>
 
-          <div className="mt-8 grid grid-cols-2 rounded-2xl border border-primary-100 bg-primary-50 p-1">
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
+            <p className="text-xs font-black uppercase tracking-[0.15em] text-primary-700">
+              {mode === 'signup' ? 'Dealer Signup Active' : 'Dealer Login Active'}
+            </p>
             <button
               type="button"
-              onClick={() => setMode('signup')}
-              className={`rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.15em] ${
-                mode === 'signup' ? 'bg-white text-primary-700 shadow' : 'text-slate-500'
-              }`}
+              onClick={() => setMode((current) => (current === 'signup' ? 'login' : 'signup'))}
+              className="text-xs font-black uppercase tracking-[0.14em] text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline"
             >
-              Dealer Signup
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              className={`rounded-xl px-3 py-2 text-xs font-black uppercase tracking-[0.15em] ${
-                mode === 'login' ? 'bg-white text-primary-700 shadow' : 'text-slate-500'
-              }`}
-            >
-              Dealer Login
+              {mode === 'signup' ? 'Already approved? Switch to login' : 'Need an account? Switch to signup'}
             </button>
           </div>
 
