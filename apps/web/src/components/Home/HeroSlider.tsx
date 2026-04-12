@@ -9,6 +9,7 @@ import { useGSAP } from '@gsap/react';
 import type { HomepageBanner } from '../../types/storefront';
 import { formatPrice, getDiscountPercent } from '../../utils/format';
 import { useCartStore } from '../../store/useCartStore';
+import { resolveMediaUrl } from '../../utils/media';
 import OptimizedImage from '../common/OptimizedImage';
 
 interface HeroSliderProps {
@@ -55,6 +56,38 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
     [banners, t],
   );
 
+  const normalizedBanners = useMemo(
+    () =>
+      safeBanners.map((banner) => ({
+        ...banner,
+        image: {
+          ...banner.image,
+          url: resolveMediaUrl(banner.image.url),
+          mobileUrl: resolveMediaUrl(banner.image.mobileUrl || banner.image.url),
+        },
+      })),
+    [safeBanners],
+  );
+
+  useEffect(() => {
+    normalizedBanners.forEach((banner) => {
+      const desktopImage = banner.image.url;
+      const mobileImage = banner.image.mobileUrl || banner.image.url;
+
+      if (desktopImage) {
+        const preloadDesktop = new Image();
+        preloadDesktop.decoding = 'async';
+        preloadDesktop.src = desktopImage;
+      }
+
+      if (mobileImage && mobileImage !== desktopImage) {
+        const preloadMobile = new Image();
+        preloadMobile.decoding = 'async';
+        preloadMobile.src = mobileImage;
+      }
+    });
+  }, [normalizedBanners]);
+
   useEffect(() => {
     if (safeBanners.length <= 1 || isPaused) return undefined;
 
@@ -63,7 +96,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
     }, 3000);
 
     return () => window.clearInterval(timer);
-  }, [isPaused, safeBanners.length]);
+  }, [isPaused, normalizedBanners.length]);
 
   useGSAP(
     () => {
@@ -105,7 +138,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
     },
   );
 
-  const activeBanner = safeBanners[current];
+  const activeBanner = normalizedBanners[current];
   const isHindi = i18n.resolvedLanguage?.startsWith('hi');
   const displayTitle = isHindi ? t('home.heroFallbackTitle') : activeBanner.title;
   const displaySubtitle = isHindi ? t('home.heroFallbackSubtitle') : activeBanner.subtitle;
@@ -138,11 +171,11 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
   }, [current]);
 
   const goToPrevious = () => {
-    setCurrent((previous) => (previous - 1 + safeBanners.length) % safeBanners.length);
+    setCurrent((previous) => (previous - 1 + normalizedBanners.length) % normalizedBanners.length);
   };
 
   const goToNext = () => {
-    setCurrent((previous) => (previous + 1) % safeBanners.length);
+    setCurrent((previous) => (previous + 1) % normalizedBanners.length);
   };
 
   const goToPreviousProduct = () => {
@@ -175,11 +208,11 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
 
   return (
     <section
-      className="relative min-h-[520px] overflow-hidden bg-primary-900 lg:min-h-[600px]"
+      className="relative min-h-[520px] overflow-hidden bg-primary-900 lg:h-[620px] lg:min-h-[620px]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={activeBanner.id}
           variants={sliderVariants}
@@ -188,11 +221,17 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
           exit="exit"
           className="absolute inset-0"
         >
-          <img
-            src={activeBanner.image.url}
-            alt={activeBanner.title}
-            className="h-full w-full object-cover"
-          />
+          <picture>
+            <source media="(max-width: 768px)" srcSet={activeBanner.image.mobileUrl || activeBanner.image.url} />
+            <img
+              src={activeBanner.image.url}
+              alt={activeBanner.title}
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+              className="h-full w-full object-cover object-center [transform:translateZ(0)]"
+            />
+          </picture>
           <div className="absolute inset-0 bg-[linear-gradient(90deg,_rgba(8,32,24,0.92)_0%,_rgba(8,32,24,0.72)_45%,_rgba(8,32,24,0.55)_100%)]" />
         </motion.div>
       </AnimatePresence>
@@ -241,7 +280,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
                 <ArrowLeft size={18} />
               </button>
               <div className="flex items-center gap-2">
-                {safeBanners.map((banner, index) => (
+                {normalizedBanners.map((banner, index) => (
                   <button
                     key={banner.id}
                     onClick={() => setCurrent(index)}
