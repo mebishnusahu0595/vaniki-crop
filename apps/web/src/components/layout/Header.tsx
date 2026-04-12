@@ -71,6 +71,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
   const summaryText = selectedStore?.name || formatStoreAddress(address);
   const activeLanguage = i18n.resolvedLanguage?.startsWith('hi') ? 'hi' : 'en';
   const languageToggleLabel = activeLanguage === 'hi' ? 'En' : 'हिंदी';
+  const compactLanguageLabel = activeLanguage === 'hi' ? 'EN' : 'हि';
 
   const buildProductsUrl = (query?: string, category?: string) => {
     const params = new URLSearchParams();
@@ -245,17 +246,18 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
 
   return (
     <header className="border-b border-primary-100 bg-white/95 backdrop-blur-xl">
-      <div className="container mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <Link to="/" className="group flex min-w-0 items-center">
+      <div className="container mx-auto px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="flex items-center justify-between gap-1.5 sm:gap-3">
+          <Link to="/" className="group flex min-w-0 max-w-[47vw] shrink items-center sm:max-w-none">
           <div className="flex flex-col">
-            <span className="font-heading text-[1.95rem] leading-[0.9] tracking-tight text-primary-900 sm:text-[2.1rem]">
+            <span className="truncate whitespace-nowrap font-heading text-[clamp(1.55rem,8vw,2rem)] leading-[0.9] tracking-tight text-primary-900 sm:text-[2rem] lg:text-[2.1rem]">
               Vaniki Crop
             </span>
             <span className="mt-0.5 hidden text-[11px] font-semibold tracking-[0.08em] text-primary-500 lg:block">
               {t('header.brandTagline')}
             </span>
           </div>
-        </Link>
+          </Link>
 
         <div className="hidden min-w-0 flex-1 items-center gap-4 px-6 lg:flex">
           {!isAuthenticated ? (
@@ -326,12 +328,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <button
             onClick={handleLanguageToggle}
-            className="h-10 rounded-2xl border border-primary-100 px-3 text-xs font-black uppercase tracking-[0.18em] text-primary-900 transition hover:border-primary-200 hover:bg-primary-50"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary-100 px-0 text-[11px] font-black uppercase tracking-[0.14em] text-primary-900 transition hover:border-primary-200 hover:bg-primary-50 sm:w-auto sm:px-3 sm:text-xs sm:tracking-[0.18em]"
           >
-            {languageToggleLabel}
+            <span className="sm:hidden">{compactLanguageLabel}</span>
+            <span className="hidden sm:inline">{languageToggleLabel}</span>
           </button>
           <button
             onClick={() => {
@@ -374,14 +377,15 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
           </motion.button>
           <button
             onClick={() => navigate(isAuthenticated ? '/account' : '/login')}
-            className="flex h-10 items-center gap-2 rounded-2xl border border-primary-100 px-3.5 text-sm font-bold text-primary-900 transition hover:border-primary-200 hover:bg-primary-50"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary-100 px-0 text-sm font-bold text-primary-900 transition hover:border-primary-200 hover:bg-primary-50 sm:w-auto sm:px-3.5"
           >
             <User size={18} className="text-primary" />
             <span className="hidden sm:inline">{isAuthenticated ? t('header.account') : t('header.login')}</span>
           </button>
         </div>
+        </div>
 
-        <div className="relative w-full lg:hidden" ref={mobileSearchRef}>
+        <div className="relative mt-2.5 lg:hidden" ref={mobileSearchRef}>
           <form
             onSubmit={(event) => {
               event.preventDefault();

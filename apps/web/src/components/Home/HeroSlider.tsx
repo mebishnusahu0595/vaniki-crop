@@ -211,7 +211,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
 
   return (
     <section
-      className="relative min-h-[520px] overflow-hidden bg-primary-900 lg:h-[620px] lg:min-h-[620px]"
+      className="relative min-h-[520px] overflow-hidden bg-primary-900 lg:min-h-[620px]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -240,7 +240,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
       </AnimatePresence>
 
       <div className="container relative z-10 mx-auto px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
-        <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid items-start gap-6 lg:gap-7">
           <div ref={textScopeRef} className="max-w-3xl text-white">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-primary-100">
               <Sparkles size={12} className="text-primary-300" />
@@ -302,9 +302,9 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
             </div>
           </div>
 
-          <div className="w-full lg:max-w-[520px] lg:justify-self-end">
+          <div className="w-full max-w-[360px] sm:max-w-[380px] lg:max-w-[400px]">
             {currentProduct && currentVariant ? (
-              <div className="surface-card overflow-hidden rounded-[1.8rem] p-4 sm:p-5">
+              <div className="surface-card overflow-hidden rounded-[1.5rem] p-3 sm:p-4">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentProduct.id}
@@ -313,8 +313,8 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
                     exit={{ opacity: 0, x: -24 }}
                     transition={{ duration: 0.32, ease: 'easeOut' }}
                   >
-                    <Link to={`/product/${currentProduct.slug}`} className="block rounded-[1.3rem] bg-primary-50 p-3">
-                      <div className="relative mx-auto aspect-square w-full max-w-[280px] overflow-hidden rounded-[1rem] bg-white ring-1 ring-primary-100">
+                    <Link to={`/product/${currentProduct.slug}`} className="block rounded-[1.05rem] bg-primary-50 p-2.5">
+                      <div className="relative mx-auto aspect-square w-full max-w-[220px] overflow-hidden rounded-[0.85rem] bg-white ring-1 ring-primary-100">
                         {discountPercent > 0 ? (
                           <span className="absolute left-2.5 top-2.5 z-10 inline-flex max-w-[48%] items-center rounded-full bg-[#ff6b6b] px-2.5 py-1 text-[10px] font-black uppercase leading-none tracking-[0.14em] text-white shadow-sm">
                             {discountPercent}%
@@ -342,7 +342,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
                     <div className="mt-4">
                       <Link
                         to={`/product/${currentProduct.slug}`}
-                        className="line-clamp-1 text-[1.75rem] font-black leading-tight text-primary-900"
+                        className="line-clamp-1 text-[1.35rem] font-black leading-tight text-primary-900"
                       >
                         {currentProduct.name}
                       </Link>
@@ -359,7 +359,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
                       <div className="mt-4 flex items-end justify-between gap-3">
                         <div>
                           {mrpText ? <p className="text-sm font-bold text-primary-900/35 line-through">{mrpText}</p> : null}
-                          <p className="text-4xl font-black leading-none text-primary-900">{priceText}</p>
+                          <p className="text-3xl font-black leading-none text-primary-900">{priceText}</p>
                         </div>
                         {discountPercent > 0 ? (
                           <span className="rounded-full bg-primary-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-primary">
@@ -370,7 +370,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
 
                       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
                         {featuredQty > 0 ? (
-                          <div className="flex h-11 items-center justify-between rounded-2xl border border-primary-200 bg-primary-50 px-2">
+                          <div className="flex h-10 items-center justify-between rounded-2xl border border-primary-200 bg-primary-50 px-2">
                             <button
                               type="button"
                               onClick={(event) => {
@@ -407,7 +407,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
                           <button
                             onClick={handleAddFeaturedProductToCart}
                             disabled={currentVariant.stock <= 0}
-                            className="flex h-11 items-center justify-center gap-2 rounded-2xl bg-primary-900 px-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/35"
+                            className="flex h-10 items-center justify-center gap-2 rounded-2xl bg-primary-900 px-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/35"
                           >
                             <Plus size={15} />
                             <span>{currentVariant.stock > 0 ? t('home.addToCart') : t('home.outOfStock')}</span>
@@ -415,7 +415,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
                         )}
                         <Link
                           to={`/product/${currentProduct.slug}`}
-                          className="inline-flex h-11 items-center justify-center rounded-2xl border border-primary-100 px-4 text-xs font-black uppercase tracking-[0.16em] text-primary-900 transition hover:bg-primary-50"
+                          className="inline-flex h-10 items-center justify-center rounded-2xl border border-primary-100 px-4 text-xs font-black uppercase tracking-[0.16em] text-primary-900 transition hover:bg-primary-50"
                         >
                           {t('home.view')}
                         </Link>
@@ -450,9 +450,9 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
                 ) : null}
               </div>
             ) : (
-              <div className="glass-card hidden rounded-[1.8rem] p-6 text-white lg:block">
+              <div className="glass-card rounded-[1.5rem] p-5 text-white">
                 <p className="section-kicker text-primary-200">{t('home.bestSeller')}</p>
-                <h3 className="mt-3 font-heading text-3xl">{t('home.bestSellerTitle')}</h3>
+                <h3 className="mt-3 font-heading text-2xl">{t('home.bestSellerTitle')}</h3>
                 <p className="mt-4 text-sm font-medium leading-7 text-white/75">
                   {t('home.bestSellerDescription')}
                 </p>
