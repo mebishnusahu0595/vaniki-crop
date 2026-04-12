@@ -35,6 +35,25 @@ const emptyAddress: Address = {
   landmark: '',
 };
 
+const PLACEHOLDER_VALUES = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
+
+function normalizeAddressToken(value?: string): string {
+  return (value || '').trim().toLowerCase();
+}
+
+function isSelectablePickupStore(store: Store): boolean {
+  const street = normalizeAddressToken(store.address.street);
+  const city = normalizeAddressToken(store.address.city);
+  const state = normalizeAddressToken(store.address.state);
+  const pincode = normalizeAddressToken(store.address.pincode);
+
+  if (!street || !city || !state || !pincode) return false;
+  if (PLACEHOLDER_VALUES.has(city) || PLACEHOLDER_VALUES.has(state)) return false;
+  if (pincode === '000000') return false;
+
+  return true;
+}
+
 function getOpenHoursText(store: Store) {
   const openHours = store.openHours || {};
   return openHours.monday || openHours.friday || openHours.saturday || '9am - 7pm';
@@ -89,6 +108,8 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
     enabled: isOpen,
   });
 
+  const availableStores = useMemo(() => stores.filter((store) => isSelectablePickupStore(store)), [stores]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -115,17 +136,26 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
 
   const filteredStores = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return stores;
+    if (!term) return availableStores;
 
-    return stores.filter((store) =>
+    return availableStores.filter((store) =>
       [store.name, store.address.street, store.address.city, store.address.state]
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [searchTerm, stores]);
+  }, [availableStores, searchTerm]);
 
-  const activeStore = filteredStores.find((store) => store.id === draftStoreId) || stores.find((store) => store.id === draftStoreId);
+  useEffect(() => {
+    if (!isOpen || draftMode !== 'pickup' || !draftStoreId) return;
+    if (!availableStores.some((store) => store.id === draftStoreId)) {
+      setDraftStoreId('');
+    }
+  }, [availableStores, draftMode, draftStoreId, isOpen]);
+
+  const activeStore =
+    filteredStores.find((store) => store.id === draftStoreId)
+    || availableStores.find((store) => store.id === draftStoreId);
 
   const handleSave = async () => {
     if (draftMode === 'pickup' && !draftStoreId) {
@@ -141,7 +171,12 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
       return;
     }
 
-    const chosenStore = stores.find((store) => store.id === draftStoreId) || null;
+    const chosenStore = availableStores.find((store) => store.id === draftStoreId) || null;
+
+    if (draftMode === 'pickup' && !chosenStore) {
+      toast.error(t('storeSelector.choosePickupStore'));
+      return;
+    }
 
     setIsSaving(true);
     try {

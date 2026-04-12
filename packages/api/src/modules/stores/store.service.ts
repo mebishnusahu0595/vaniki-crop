@@ -2,6 +2,68 @@ import { Store, type IStore } from '../../models/Store.model.js';
 import { User } from '../../models/User.model.js';
 import { AppError } from '../../utils/AppError.js';
 
+const PLACEHOLDER_ADDRESS_VALUES = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
+
+function normalizeAddressValue(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function hasMeaningfulPickupAddress(address: IStore['address'] | undefined | null): boolean {
+  if (!address) return false;
+
+  const street = normalizeAddressValue(address.street);
+  const city = normalizeAddressValue(address.city);
+  const state = normalizeAddressValue(address.state);
+  const pincode = normalizeAddressValue(address.pincode);
+
+  if (!street || !city || !state || !pincode) {
+    return false;
+  }
+
+  if (PLACEHOLDER_ADDRESS_VALUES.has(city) || PLACEHOLDER_ADDRESS_VALUES.has(state)) {
+    return false;
+  }
+
+  if (pincode === '000000') {
+    return false;
+  }
+
+  return true;
+}
+
+async function getApprovedActiveStoreAdminIds() {
+  const approvedAdmins = await User.find({
+    role: 'storeAdmin',
+    isActive: true,
+    $or: [
+      { approvalStatus: 'approved' },
+      { approvalStatus: { $exists: false } },
+      { approvalStatus: null },
+    ],
+  }).select('_id');
+
+  return approvedAdmins.map((admin) => admin._id);
+}
+
+async function isSelectableStoreForPickup(store: Pick<IStore, 'adminId' | 'address'>): Promise<boolean> {
+  if (!hasMeaningfulPickupAddress(store.address)) {
+    return false;
+  }
+
+  const approvedAdmin = await User.findOne({
+    _id: store.adminId,
+    role: 'storeAdmin',
+    isActive: true,
+    $or: [
+      { approvalStatus: 'approved' },
+      { approvalStatus: { $exists: false } },
+      { approvalStatus: null },
+    ],
+  }).select('_id');
+
+  return Boolean(approvedAdmin);
+}
+
 async function resolveStoreAdminScope(userStoreId?: string, userId?: string): Promise<string | undefined> {
   if (userStoreId) return userStoreId;
   if (!userId) return undefined;
@@ -14,19 +76,19 @@ async function resolveStoreAdminScope(userStoreId?: string, userId?: string): Pr
  * Public listing of all active stores for store selection.
  */
 export async function listActiveStores() {
-  const rejectedAdminRows = await User.find({
-    role: 'storeAdmin',
-    approvalStatus: 'rejected',
-  }).select('_id');
-
-  const rejectedAdminIds = rejectedAdminRows.map((row) => row._id);
-
-  const filter: Record<string, unknown> = { isActive: true };
-  if (rejectedAdminIds.length) {
-    filter.adminId = { $nin: rejectedAdminIds };
+  const approvedAdminIds = await getApprovedActiveStoreAdminIds();
+  if (!approvedAdminIds.length) {
+    return [];
   }
 
-  return Store.find(filter).select('name address phone location openHours');
+  const stores = await Store.find({
+    isActive: true,
+    adminId: { $in: approvedAdminIds },
+  })
+    .select('name address phone location openHours')
+    .sort({ name: 1 });
+
+  return stores.filter((store) => hasMeaningfulPickupAddress(store.address));
 }
 
 /**
@@ -34,7 +96,7 @@ export async function listActiveStores() {
  */
 export async function getStoreDetail(id: string) {
   const store = await Store.findById(id);
-  if (!store || !store.isActive) {
+  if (!store || !store.isActive || !(await isSelectableStoreForPickup(store))) {
     throw new AppError('Store not found or inactive', 404);
   }
   return store;
@@ -90,8 +152,8 @@ export async function deactivateStore(id: string) {
  * Persists the user's selected store in the database.
  */
 export async function selectStoreForUser(userId: string, storeId: string) {
-  const store = await Store.findOne({ _id: storeId, isActive: true });
-  if (!store) {
+  const store = await Store.findOne({ _id: storeId, isActive: true }).select('name address adminId');
+  if (!store || !(await isSelectableStoreForPickup(store))) {
     throw new AppError('Cannot select an invalid or inactive store', 400);
   }
 

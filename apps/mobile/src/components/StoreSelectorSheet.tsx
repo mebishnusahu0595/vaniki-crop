@@ -26,6 +26,25 @@ const emptyAddress: Address = {
   landmark: '',
 };
 
+const PLACEHOLDER_VALUES = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
+
+function normalizeAddressToken(value?: string): string {
+  return (value || '').trim().toLowerCase();
+}
+
+function isSelectablePickupStore(store: { address: Address }): boolean {
+  const street = normalizeAddressToken(store.address.street);
+  const city = normalizeAddressToken(store.address.city);
+  const state = normalizeAddressToken(store.address.state);
+  const pincode = normalizeAddressToken(store.address.pincode);
+
+  if (!street || !city || !state || !pincode) return false;
+  if (PLACEHOLDER_VALUES.has(city) || PLACEHOLDER_VALUES.has(state)) return false;
+  if (pincode === '000000') return false;
+
+  return true;
+}
+
 export function StoreSelectorSheet() {
   const { t } = useTranslation();
   const isOpen = useServiceModeStore((state) => state.selectorOpen);
@@ -60,17 +79,29 @@ export function StoreSelectorSheet() {
     setError('');
   }, [address, isOpen, mode, selectedStore?.id, user?.savedAddress]);
 
+  const availableStores = useMemo(
+    () => (storesQuery.data || []).filter((store) => isSelectablePickupStore(store)),
+    [storesQuery.data],
+  );
+
+  useEffect(() => {
+    if (!isOpen || draftMode !== 'pickup' || !draftStoreId) return;
+    if (!availableStores.some((store) => store.id === draftStoreId)) {
+      setDraftStoreId('');
+    }
+  }, [availableStores, draftMode, draftStoreId, isOpen]);
+
   const filteredStores = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return storesQuery.data || [];
+    if (!term) return availableStores;
 
-    return (storesQuery.data || []).filter((store) =>
+    return availableStores.filter((store) =>
       [store.name, store.address.city, store.address.state, store.address.street]
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [search, storesQuery.data]);
+  }, [availableStores, search]);
 
   const handleSave = async () => {
     setError('');
@@ -84,7 +115,12 @@ export function StoreSelectorSheet() {
       return;
     }
 
-    const chosenStore = (storesQuery.data || []).find((store) => store.id === draftStoreId) || null;
+    const chosenStore = availableStores.find((store) => store.id === draftStoreId) || null;
+
+    if (draftMode === 'pickup' && !chosenStore) {
+      setError('Please pick an active approved store for pickup.');
+      return;
+    }
 
     setSaving(true);
     try {
