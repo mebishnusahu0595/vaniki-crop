@@ -32,14 +32,16 @@ const BestSellers: React.FC<BestSellersProps> = ({ products }) => {
             <h2 className="section-title">{t('home.bestSellersTitle')}</h2>
           </div>
 
-          <div className="-mx-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:overflow-visible sm:pb-0">
-            <div className="inline-flex min-w-max gap-2 rounded-2xl bg-white p-1.5 shadow-sm sm:min-w-0 sm:flex-wrap sm:rounded-full">
+          <div className="-mx-1 overflow-x-auto pb-1 no-scrollbar sm:mx-0">
+            <div className="inline-flex min-w-max gap-2 px-1 sm:px-0">
               {tabs.map((tab) => (
                 <button
                   key={tab.slug}
                   onClick={() => setActiveTab(tab.slug)}
-                  className={`relative whitespace-nowrap rounded-full px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition sm:px-5 sm:py-2.5 sm:text-sm sm:tracking-[0.18em] ${
-                    activeTab === tab.slug ? 'text-white' : 'text-primary-900/60'
+                  className={`relative whitespace-nowrap rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition sm:px-5 sm:py-2.5 sm:text-sm sm:tracking-[0.18em] ${
+                    activeTab === tab.slug
+                      ? 'border-primary text-white'
+                      : 'border-primary-200 bg-white text-primary-900/65 hover:border-primary-300 hover:text-primary-900'
                   }`}
                 >
                   {activeTab === tab.slug && (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -120,23 +120,32 @@ export default function HomeScreen() {
 
         <View>
           <SectionHeader title={t('mobile.home.bestSellers')} />
-          <View className="mb-4 flex-row rounded-full bg-primary-50 p-1">
-            {bestSellerTabs.map((tab) => (
-              <Pressable
-                key={tab}
-                onPress={() => setActiveTab(tab)}
-                className={`flex-1 rounded-full px-3 py-3 ${activeTab === tab ? 'bg-white' : ''}`}
-              >
-                <Text
-                  className={`text-center text-[10px] font-black uppercase tracking-[1px] ${
-                    activeTab === tab ? 'text-primary-900' : 'text-primary-900/45'
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="-mx-1 mb-4"
+            contentContainerStyle={{ paddingHorizontal: 4 }}
+          >
+            <View className="flex-row gap-2">
+              {bestSellerTabs.map((tab) => (
+                <Pressable
+                  key={tab}
+                  onPress={() => setActiveTab(tab)}
+                  className={`rounded-full border px-4 py-2.5 ${
+                    activeTab === tab ? 'border-primary-500 bg-primary-500' : 'border-primary-200 bg-white'
                   }`}
                 >
-                  {tab}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+                  <Text
+                    className={`text-[11px] font-black uppercase tracking-[1.2px] ${
+                      activeTab === tab ? 'text-white' : 'text-primary-900/65'
+                    }`}
+                  >
+                    {tab}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
           <FlashList
             data={tabProducts}
             horizontal
