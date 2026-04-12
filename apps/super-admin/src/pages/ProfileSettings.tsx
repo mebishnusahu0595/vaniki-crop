@@ -40,7 +40,7 @@ const passwordSchema = z
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
-export default function SettingsPage() {
+export default function ProfileSettingsPage() {
   const navigate = useNavigate();
   const user = useAdminAuthStore((state) => state.user);
   const setUser = useAdminAuthStore((state) => state.setUser);
@@ -149,7 +149,7 @@ export default function SettingsPage() {
       setPasswordMessage('Password changed successfully. Please log in again.');
       resetPassword();
       clearSession();
-      navigate('/login', { replace: true });
+      navigate('/superadmin', { replace: true });
     },
     onError: (mutationError) => {
       setPasswordMessage('');
@@ -180,7 +180,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Settings"
-        subtitle="Manage account profile, personal address, and password."
+        subtitle="Manage super-admin account profile, address, and password."
       />
 
       <section className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
@@ -226,7 +226,7 @@ export default function SettingsPage() {
             <input
               {...register('name')}
               className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-              placeholder="Dealer name"
+              placeholder="Super admin name"
             />
             {errors.name ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.name.message}</p> : null}
           </div>
@@ -246,7 +246,7 @@ export default function SettingsPage() {
             <input
               {...register('email')}
               className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-              placeholder="dealer@example.com"
+              placeholder="superadmin@example.com"
             />
             {errors.email ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.email.message}</p> : null}
           </div>

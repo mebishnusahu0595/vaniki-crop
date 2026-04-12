@@ -184,6 +184,31 @@ export const adminApi = {
     const response = await api.get<ApiResponse<Partial<AuthUser>>>('/auth/me');
     return parseMeResponse(response.data?.data);
   },
+  updateMe: async (payload: {
+    name?: string;
+    email?: string;
+    mobile?: string;
+    savedAddress?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      pincode?: string;
+      landmark?: string;
+    };
+  }) => {
+    const response = await api.patch<ApiResponse<AuthUser>>('/auth/me', payload);
+    return response.data.data;
+  },
+  updateProfileImage: async (file: File) => {
+    const payload = new FormData();
+    payload.append('profileImage', file);
+    const response = await api.patch<ApiResponse<AuthUser>>('/auth/me/profile-image', payload);
+    return response.data.data;
+  },
+  changePassword: async (payload: { currentPassword: string; newPassword: string }) => {
+    const response = await api.patch<{ success: boolean; message: string }>('/auth/change-password', payload);
+    return response.data;
+  },
   logout: async () => {
     const response = await api.post<{ success: boolean; message: string }>('/auth/logout');
     return response.data;

@@ -58,6 +58,11 @@ export interface AuthUser {
   name: string;
   email?: string;
   mobile: string;
+  profileImage?: {
+    url: string;
+    publicId: string;
+  };
+  savedAddress?: Address;
   role: 'customer' | 'storeAdmin' | 'superAdmin';
   approvalStatus?: 'pending' | 'approved' | 'rejected';
 }

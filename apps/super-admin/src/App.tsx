@@ -12,6 +12,7 @@ import ReviewsPage from './pages/Reviews';
 import BannersPage from './pages/Banners';
 import PaymentsPage from './pages/Payments';
 import SettingsPage from './pages/Settings';
+import ProfileSettingsPage from './pages/ProfileSettings';
 import StoresPage from './pages/Stores';
 import AdminsPage from './pages/Admins';
 import TestimonialsPage from './pages/Testimonials';
@@ -41,6 +42,7 @@ function App() {
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/testimonials" element={<TestimonialsPage />} />
           <Route path="/site-settings" element={<SettingsPage />} />
+          <Route path="/settings" element={<ProfileSettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>

@@ -11,6 +11,7 @@ import {
   Settings,
   ShoppingCart,
   Tags,
+  UserCircle2,
   Users,
   X,
 } from 'lucide-react';
@@ -40,6 +41,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/testimonials', label: 'Testimonials', icon: MessageSquare },
   { to: '/reviews', label: 'Reviews', icon: MessageSquare },
   { to: '/site-settings', label: 'Site Settings', icon: Settings },
+  { to: '/settings', label: 'Settings', icon: UserCircle2 },
 ];
 
 export function Sidebar({

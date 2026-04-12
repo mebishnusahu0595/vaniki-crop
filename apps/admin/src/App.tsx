@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
 import LoginPage from './pages/Login';
 import OrdersPage from './pages/Orders';
-import ProfilePage from './pages/Profile';
+import SettingsPage from './pages/Profile';
 
 function App() {
   return (
@@ -13,7 +13,8 @@ function App() {
         <Route element={<AdminLayout />}>
           <Route path="/" element={<Navigate to="/orders" replace />} />
           <Route path="/orders" element={<OrdersPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/profile" element={<Navigate to="/settings" replace />} />
         </Route>
         <Route path="*" element={<Navigate to="/orders" replace />} />
       </Routes>

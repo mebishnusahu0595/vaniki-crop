@@ -1,8 +1,8 @@
 import {
   Boxes,
   PackageSearch,
+  Settings,
   ShoppingCart,
-  UserCircle2,
   X,
 } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
@@ -16,7 +16,7 @@ interface SidebarNavItem {
 
 const navItems: SidebarNavItem[] = [
   { to: '/orders', label: 'Orders', icon: ShoppingCart },
-  { to: '/profile', label: 'Profile', icon: UserCircle2 },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar({

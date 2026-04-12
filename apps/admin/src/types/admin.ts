@@ -62,6 +62,7 @@ export interface AuthUser {
     url: string;
     publicId: string;
   };
+  savedAddress?: Address;
   role: 'customer' | 'storeAdmin' | 'superAdmin';
   approvalStatus?: 'pending' | 'approved' | 'rejected';
 }
