@@ -330,6 +330,22 @@ export interface ProductRequest {
   notes?: string;
   superAdminNote?: string;
   createdAt: string;
+  storeId?:
+    | {
+        id?: string;
+        _id?: string;
+        name?: string;
+      }
+    | string;
+  adminId?:
+    | {
+        id?: string;
+        _id?: string;
+        name?: string;
+        mobile?: string;
+        email?: string;
+      }
+    | string;
   store: {
     id: string;
     name: string;

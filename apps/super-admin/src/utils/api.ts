@@ -123,6 +123,45 @@ function parseMeResponse(payload: Partial<AuthUser> | null | undefined): AuthUse
   } as AuthUser;
 }
 
+type RawProductRequest = ProductRequest & {
+  store?: { id?: string; _id?: string; name?: string };
+  requestedBy?: { id?: string; _id?: string; name?: string; mobile?: string };
+  storeId?: { id?: string; _id?: string; name?: string } | string;
+  adminId?: { id?: string; _id?: string; name?: string; mobile?: string } | string;
+};
+
+function normalizeProductRequestStatus(status: string | undefined): ProductRequest['status'] {
+  if (status === 'contacted') return 'approved';
+  if (status === 'fulfilled' || status === 'rejected' || status === 'approved') return status;
+  return 'pending';
+}
+
+function normalizeProductRequest(item: RawProductRequest): ProductRequest {
+  const storeSource =
+    item.store
+    || (typeof item.storeId === 'object' && item.storeId !== null ? item.storeId : undefined);
+  const requestedBySource =
+    item.requestedBy
+    || (typeof item.adminId === 'object' && item.adminId !== null ? item.adminId : undefined);
+
+  return {
+    ...item,
+    status: normalizeProductRequestStatus(item.status),
+    store: {
+      id: storeSource?.id || storeSource?._id || (typeof item.storeId === 'string' ? item.storeId : ''),
+      name: storeSource?.name || item.store?.name || 'Unassigned',
+    },
+    requestedBy: {
+      id:
+        requestedBySource?.id
+        || requestedBySource?._id
+        || (typeof item.adminId === 'string' ? item.adminId : ''),
+      name: requestedBySource?.name || item.requestedBy?.name || 'Unknown',
+      mobile: requestedBySource?.mobile || item.requestedBy?.mobile,
+    },
+  };
+}
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
@@ -404,15 +443,22 @@ export const adminApi = {
     return response.data;
   },
   productRequests: async (params?: Record<string, unknown>) => {
-    const response = await api.get<ApiResponse<ProductRequest[]>>('/superadmin/product-requests', { params });
-    return { data: response.data.data, pagination: response.data.pagination! };
+    const response = await api.get<ApiResponse<RawProductRequest[]>>('/superadmin/product-requests', { params });
+    return {
+      data: response.data.data.map((item) => normalizeProductRequest(item)),
+      pagination: response.data.pagination!,
+    };
   },
   updateProductRequest: async (
     id: string,
     payload: { status: 'approved' | 'rejected' | 'fulfilled'; superAdminNote?: string },
   ) => {
-    const response = await api.patch<ApiResponse<ProductRequest>>(`/superadmin/product-requests/${id}`, payload);
-    return response.data.data;
+    const normalizedPayload = {
+      ...payload,
+      status: payload.status === 'approved' ? 'contacted' : payload.status,
+    };
+    const response = await api.patch<ApiResponse<RawProductRequest>>(`/superadmin/product-requests/${id}`, normalizedPayload);
+    return normalizeProductRequest(response.data.data);
   },
   testimonials: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<Testimonial[]>>('/superadmin/testimonials', { params });
