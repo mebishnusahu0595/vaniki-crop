@@ -51,14 +51,46 @@ export function Sidebar({
   open: boolean;
   onClose: () => void;
 }) {
+  const liveBadgeQueryOptions = {
+    staleTime: 20_000,
+    refetchInterval: 30_000,
+  } as const;
+
   const pendingDealersQuery = useQuery({
     queryKey: ['super-admin-pending-dealer-count'],
     queryFn: () => adminApi.admins({ approvalStatus: 'pending', page: 1, limit: 1 }),
-    staleTime: 20_000,
-    refetchInterval: 30_000,
+    ...liveBadgeQueryOptions,
+  });
+
+  const pendingProductRequestsQuery = useQuery({
+    queryKey: ['super-admin-pending-product-request-count'],
+    queryFn: () => adminApi.productRequests({ status: 'pending', page: 1, limit: 1 }),
+    ...liveBadgeQueryOptions,
+  });
+
+  const newOrdersQuery = useQuery({
+    queryKey: ['super-admin-new-order-count'],
+    queryFn: () => adminApi.orders({ status: 'placed', page: 1, limit: 1 }),
+    ...liveBadgeQueryOptions,
+  });
+
+  const pendingReviewsQuery = useQuery({
+    queryKey: ['super-admin-pending-review-count'],
+    queryFn: () => adminApi.reviews({ status: 'pending', page: 1, limit: 1 }),
+    ...liveBadgeQueryOptions,
   });
 
   const pendingDealersCount = pendingDealersQuery.data?.pagination?.total ?? 0;
+  const pendingProductRequestsCount = pendingProductRequestsQuery.data?.pagination?.total ?? 0;
+  const newOrdersCount = newOrdersQuery.data?.pagination?.total ?? 0;
+  const pendingReviewsCount = pendingReviewsQuery.data?.pagination?.total ?? 0;
+
+  const routeBadgeCount: Partial<Record<SidebarNavItem['to'], number>> = {
+    '/admins': pendingDealersCount,
+    '/product-requests': pendingProductRequestsCount,
+    '/orders': newOrdersCount,
+    '/reviews': pendingReviewsCount,
+  };
 
   return (
     <>
@@ -92,7 +124,8 @@ export function Sidebar({
 
         <nav className="mt-8 space-y-1">
           {navItems.map((item) => {
-            const shouldShowPendingDealerBadge = item.to === '/admins' && pendingDealersCount > 0;
+            const badgeCount = routeBadgeCount[item.to] ?? 0;
+            const shouldShowBadge = badgeCount > 0;
 
             return (
               <NavLink
@@ -114,14 +147,14 @@ export function Sidebar({
                       <item.icon size={18} />
                       {item.label}
                     </span>
-                    {shouldShowPendingDealerBadge ? (
+                    {shouldShowBadge ? (
                       <span
                         className={cn(
                           'rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em]',
                           isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700',
                         )}
                       >
-                        {pendingDealersCount > 99 ? '99+' : pendingDealersCount}
+                        {badgeCount > 99 ? '99+' : badgeCount}
                       </span>
                     ) : null}
                   </>
