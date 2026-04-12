@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { Screen } from '../../src/components/Screen';
 import { storefrontApi } from '../../src/lib/api';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useServiceModeStore } from '../../src/store/useServiceModeStore';
+import { useStoreStore } from '../../src/store/useStoreStore';
 
 export default function SignupScreen() {
   const setSession = useAuthStore((state) => state.setSession);
+  const setUser = useAuthStore((state) => state.setUser);
+  const setMode = useServiceModeStore((state) => state.setMode);
+  const setAddress = useServiceModeStore((state) => state.setAddress);
+  const setStore = useStoreStore((state) => state.setStore);
+  const params = useLocalSearchParams<{ ref?: string }>();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
@@ -15,6 +22,7 @@ export default function SignupScreen() {
     email: '',
     mobile: '',
     password: '',
+    referralCode: typeof params.ref === 'string' ? params.ref : '',
   });
 
   return (
@@ -37,11 +45,17 @@ export default function SignupScreen() {
                 ['name', 'Full Name'],
                 ['email', 'Email'],
                 ['mobile', 'Mobile Number'],
+                ['referralCode', 'Referral Code'],
               ] as const).map(([key, placeholder]) => (
                 <TextInput
                   key={key}
                   value={form[key]}
-                  onChangeText={(value) => setForm((current) => ({ ...current, [key]: value }))}
+                  onChangeText={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      [key]: key === 'referralCode' ? value.toUpperCase() : value,
+                    }))
+                  }
                   placeholder={placeholder}
                   keyboardType={key === 'mobile' ? 'number-pad' : 'default'}
                   className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
@@ -75,10 +89,18 @@ export default function SignupScreen() {
                     email: form.email,
                     mobile: form.mobile,
                     password: form.password,
+                    referralCode: form.referralCode || undefined,
                   });
 
                   setSession({ user: response.user, token: response.accessToken });
-                  router.replace('/(tabs)');
+                  const session = await storefrontApi.me();
+                  setUser(session);
+                  setMode(session.serviceMode);
+                  setAddress(session.savedAddress || null);
+                  if (session.selectedStore && typeof session.selectedStore !== 'string') {
+                    setStore(session.selectedStore);
+                  }
+                  router.replace('/(tabs)/account');
                 } catch (caughtError) {
                   Alert.alert('Signup failed', caughtError instanceof Error ? caughtError.message : 'Try again.');
                 } finally {

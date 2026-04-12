@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -14,30 +14,56 @@ const sortOptions = [
   { key: 'popular', label: 'Popular' },
   { key: 'price_asc', label: 'Price Low' },
   { key: 'price_desc', label: 'Price High' },
+  { key: 'newest', label: 'Newest' },
+  { key: 'rating', label: 'Top Rated' },
+  { key: 'name', label: 'Name' },
 ] as const;
+
+interface MobileCategoryOption {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 export default function ProductsScreen() {
   const params = useLocalSearchParams<{ category?: string; search?: string }>();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState(params.search || '');
+  const [selectedCategory, setSelectedCategory] = useState(params.category || '');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [sort, setSort] = useState<(typeof sortOptions)[number]['key']>('popular');
   const debouncedSearch = useDebouncedValue(search, 300);
+  const categoriesQuery = useQuery({
+    queryKey: ['mobile-product-categories'],
+    queryFn: storefrontApi.categories,
+  });
 
   const productsQuery = useQuery({
-    queryKey: ['mobile-products', page, params.category, debouncedSearch, selectedStore?.id, sort],
+    queryKey: ['mobile-products', page, selectedCategory, debouncedSearch, selectedStore?.id, sort, minPrice, maxPrice],
     queryFn: () =>
       storefrontApi.products({
         page,
         limit: 12,
-        category: params.category,
+        category: selectedCategory || undefined,
         search: debouncedSearch,
         storeId: selectedStore?.id,
         sort,
+        minPrice: minPrice || undefined,
+        maxPrice: maxPrice || undefined,
       }),
   });
 
   const products = useMemo(() => productsQuery.data?.data || [], [productsQuery.data?.data]);
+  const categoryOptions = useMemo<MobileCategoryOption[]>(
+    () => [{ id: 'all', name: 'All', slug: '' }, ...((categoriesQuery.data || []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+    })))],
+    [categoriesQuery.data],
+  );
 
   return (
     <Screen>
@@ -49,11 +75,50 @@ export default function ProductsScreen() {
         className="mb-4 rounded-[22px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
         placeholderTextColor="#7a978b"
       />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
+        <View className="flex-row gap-2">
+          {categoryOptions.map((item) => (
+          <Pressable
+            key={item.id}
+            onPress={() => {
+              setSelectedCategory(item.slug);
+              setPage(1);
+            }}
+            className={`rounded-full px-4 py-3 ${selectedCategory === item.slug ? 'bg-primary-500' : 'bg-white'}`}
+          >
+            <Text className={`text-[10px] font-black uppercase tracking-[1.2px] ${selectedCategory === item.slug ? 'text-white' : 'text-primary-900'}`}>
+              {item.name}
+            </Text>
+          </Pressable>
+          ))}
+        </View>
+      </ScrollView>
+      <View className="mb-4 flex-row gap-3">
+        <TextInput
+          value={minPrice}
+          onChangeText={setMinPrice}
+          placeholder="Min Price"
+          keyboardType="number-pad"
+          className="flex-1 rounded-[22px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
+          placeholderTextColor="#7a978b"
+        />
+        <TextInput
+          value={maxPrice}
+          onChangeText={setMaxPrice}
+          placeholder="Max Price"
+          keyboardType="number-pad"
+          className="flex-1 rounded-[22px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
+          placeholderTextColor="#7a978b"
+        />
+      </View>
       <View className="mb-5 flex-row gap-2">
         {sortOptions.map((option) => (
           <Pressable
             key={option.key}
-            onPress={() => setSort(option.key)}
+            onPress={() => {
+              setSort(option.key);
+              setPage(1);
+            }}
             className={`rounded-full px-4 py-3 ${sort === option.key ? 'bg-primary-500' : 'bg-white'}`}
           >
             <Text className={`text-xs font-black uppercase tracking-[1px] ${sort === option.key ? 'text-white' : 'text-primary-900'}`}>

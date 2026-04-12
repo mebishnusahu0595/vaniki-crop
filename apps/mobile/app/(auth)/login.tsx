@@ -6,13 +6,18 @@ import { Feather } from '@expo/vector-icons';
 import { Screen } from '../../src/components/Screen';
 import { storefrontApi } from '../../src/lib/api';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useServiceModeStore } from '../../src/store/useServiceModeStore';
+import { useStoreStore } from '../../src/store/useStoreStore';
 
 export default function LoginScreen() {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { setSession, token, enableBiometrics } = useAuthStore();
+  const { setSession, setUser, token, enableBiometrics } = useAuthStore();
+  const setMode = useServiceModeStore((state) => state.setMode);
+  const setAddress = useServiceModeStore((state) => state.setAddress);
+  const setStore = useStoreStore((state) => state.setStore);
 
   return (
     <Screen withServiceBar={false} scroll={false}>
@@ -69,6 +74,13 @@ export default function LoginScreen() {
                   try {
                     const response = await storefrontApi.login({ mobile, password });
                     setSession({ user: response.user, token: response.accessToken });
+                    const session = await storefrontApi.me();
+                    setUser(session);
+                    setMode(session.serviceMode);
+                    setAddress(session.savedAddress || null);
+                    if (session.selectedStore && typeof session.selectedStore !== 'string') {
+                      setStore(session.selectedStore);
+                    }
                     await enableBiometrics();
                     router.replace('/(tabs)');
                   } catch (caughtError) {

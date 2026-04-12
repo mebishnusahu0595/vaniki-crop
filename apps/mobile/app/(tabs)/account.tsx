@@ -1,14 +1,15 @@
-import { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, Share, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '../../src/components/Screen';
 import { ProductCard } from '../../src/components/ProductCard';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useServiceModeStore } from '../../src/store/useServiceModeStore';
+import { useStoreStore } from '../../src/store/useStoreStore';
 import { storefrontApi } from '../../src/lib/api';
 import { currencyFormatter, formatStoreAddress } from '../../src/utils/format';
-import type { Product } from '../../src/types/storefront';
+import type { Product, ServiceMode } from '../../src/types/storefront';
 
 const tabs = ['orders', 'wishlist', 'profile', 'password'] as const;
 
@@ -16,6 +17,10 @@ export default function AccountScreen() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('orders');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const { user, logout, setUser } = useAuthStore();
+  const selectedStore = useStoreStore((state) => state.selectedStore);
+  const setStore = useStoreStore((state) => state.setStore);
+  const mode = useServiceModeStore((state) => state.mode);
+  const setMode = useServiceModeStore((state) => state.setMode);
   const setAddress = useServiceModeStore((state) => state.setAddress);
   const [profile, setProfile] = useState({
     name: user?.name || '',
@@ -28,6 +33,8 @@ export default function AccountScreen() {
     landmark: user?.savedAddress?.landmark || '',
   });
   const [password, setPassword] = useState({ currentPassword: '', newPassword: '' });
+  const [serviceMode, setServiceMode] = useState<ServiceMode>(mode);
+  const [pickupStoreId, setPickupStoreId] = useState(selectedStore?.id || '');
   const wishlistProducts = (user?.wishlist || []).filter(
     (entry): entry is Product => typeof entry !== 'string',
   );
@@ -42,6 +49,18 @@ export default function AccountScreen() {
     queryFn: () => storefrontApi.orderDetail(selectedOrderId || ''),
     enabled: Boolean(selectedOrderId),
   });
+  const pickupStoresQuery = useQuery({
+    queryKey: ['mobile-account-pickup-stores'],
+    queryFn: storefrontApi.stores,
+    enabled: Boolean(user) && activeTab === 'profile',
+  });
+
+  const pickupStores = useMemo(() => pickupStoresQuery.data || [], [pickupStoresQuery.data]);
+
+  useEffect(() => {
+    setServiceMode(mode);
+    setPickupStoreId(selectedStore?.id || '');
+  }, [mode, selectedStore?.id]);
 
   if (!user) {
     return (
@@ -138,8 +157,67 @@ export default function AccountScreen() {
         </View>
       ) : null}
 
-      {activeTab === 'profile' ? (
+          {activeTab === 'profile' ? (
         <View className="mt-5 gap-3 rounded-[28px] bg-white p-5">
+          <View className="rounded-[24px] bg-primary-50 p-4">
+            <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Referral Program</Text>
+            <Text className="mt-2 text-lg font-black text-primary-900">Code: {user.referralCode || 'Generating'}</Text>
+            <Text className="mt-1 text-sm text-primary-900/65">Successful referrals: {user.referralCount || 0}</Text>
+            <Pressable
+              onPress={async () => {
+                if (!user.referralCode) {
+                  Alert.alert('Referral unavailable', 'Your referral code is not ready yet.');
+                  return;
+                }
+
+                const referralLink = `https://vanikicrop.com/signup?ref=${user.referralCode}`;
+                await Share.share({
+                  message: `Join Vaniki Crop with my referral link: ${referralLink}`,
+                });
+              }}
+              className="mt-3 rounded-full border border-primary-200 bg-white px-4 py-3"
+            >
+              <Text className="text-center text-[10px] font-black uppercase tracking-[1.5px] text-primary-900">Share Invite Link</Text>
+            </Pressable>
+          </View>
+
+          <View className="rounded-[24px] bg-primary-50 p-4">
+            <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Service Mode</Text>
+            <View className="mt-3 flex-row rounded-full bg-white p-1">
+              {(['delivery', 'pickup'] as const).map((item) => (
+                <Pressable
+                  key={item}
+                  onPress={() => setServiceMode(item)}
+                  className={`flex-1 rounded-full px-3 py-3 ${serviceMode === item ? 'bg-primary-500' : ''}`}
+                >
+                  <Text className={`text-center text-[10px] font-black uppercase tracking-[1.2px] ${serviceMode === item ? 'text-white' : 'text-primary-900/55'}`}>
+                    {item}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {serviceMode === 'pickup' ? (
+              <View className="mt-4 gap-2">
+                {pickupStores.map((store) => (
+                  <Pressable
+                    key={store.id}
+                    onPress={() => setPickupStoreId(store.id)}
+                    className={`rounded-[18px] border px-4 py-4 ${pickupStoreId === store.id ? 'border-primary-500 bg-white' : 'border-primary-100 bg-white/70'}`}
+                  >
+                    <Text className="text-sm font-black text-primary-900">{store.name}</Text>
+                    <Text className="mt-1 text-sm text-primary-900/60">{formatStoreAddress(store.address)}</Text>
+                  </Pressable>
+                ))}
+                {!pickupStores.length ? (
+                  <Text className="text-sm text-primary-900/60">No pickup stores available right now.</Text>
+                ) : null}
+              </View>
+            ) : (
+              <Text className="mt-4 text-sm text-primary-900/60">Delivery mode will use your saved address at checkout.</Text>
+            )}
+          </View>
+
           {([
             ['name', 'Full Name'],
             ['mobile', 'Mobile'],
@@ -161,25 +239,67 @@ export default function AccountScreen() {
           ))}
           <Pressable
             onPress={async () => {
-              const updated = await storefrontApi.updateMe({
-                name: profile.name,
-                email: profile.email,
-                mobile: profile.mobile,
-                savedAddress: {
-                  street: profile.street,
-                  city: profile.city,
-                  state: profile.state,
-                  pincode: profile.pincode,
-                  landmark: profile.landmark,
-                },
-              });
-              setUser(updated);
-              setAddress(updated.savedAddress || null);
+              if (serviceMode === 'pickup' && !pickupStoreId) {
+                Alert.alert('Choose store', 'Please choose a pickup store before saving.');
+                return;
+              }
+
+              try {
+                const updatedProfile = await storefrontApi.updateMe({
+                  name: profile.name,
+                  email: profile.email,
+                  mobile: profile.mobile,
+                  savedAddress: {
+                    street: profile.street,
+                    city: profile.city,
+                    state: profile.state,
+                    pincode: profile.pincode,
+                    landmark: profile.landmark,
+                  },
+                });
+
+                const updatedMode = await storefrontApi.updateServiceMode(serviceMode);
+                let nextUser = {
+                  ...updatedProfile,
+                  serviceMode: updatedMode.serviceMode,
+                };
+
+                setMode(serviceMode);
+
+                if (serviceMode === 'pickup' && pickupStoreId) {
+                  const storeUser = await storefrontApi.updateSelectedStore(pickupStoreId);
+                  await storefrontApi.selectStore(pickupStoreId);
+                  const matchedStore = pickupStores.find((store) => store.id === pickupStoreId) || null;
+                  if (matchedStore) {
+                    setStore(matchedStore);
+                  }
+                  nextUser = {
+                    ...nextUser,
+                    selectedStore: storeUser.selectedStore,
+                  };
+                }
+
+                setUser(nextUser);
+                setAddress(nextUser.savedAddress || null);
+                Alert.alert('Profile saved', 'Your account preferences have been updated.');
+              } catch (caughtError) {
+                Alert.alert('Save failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
+              }
             }}
             className="rounded-full bg-primary-500 px-5 py-4"
           >
             <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">Save Profile</Text>
           </Pressable>
+
+          <View className="mt-2 gap-3 rounded-[24px] bg-primary-50 p-4">
+            <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Explore</Text>
+            <Pressable onPress={() => router.push('/about' as any)} className="rounded-full bg-white px-4 py-3">
+              <Text className="text-center text-[10px] font-black uppercase tracking-[1.4px] text-primary-900">About Vaniki</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/contact' as any)} className="rounded-full bg-white px-4 py-3">
+              <Text className="text-center text-[10px] font-black uppercase tracking-[1.4px] text-primary-900">Contact Support</Text>
+            </Pressable>
+          </View>
         </View>
       ) : null}
 
