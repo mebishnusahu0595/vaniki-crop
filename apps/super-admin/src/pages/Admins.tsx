@@ -59,6 +59,94 @@ function getApiOrigin(): string {
   }
 }
 
+function getApiPathPrefix(): string {
+  if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
+    try {
+      const path = new URL(API_BASE_URL).pathname.replace(/\/+$/, '');
+      return path || '/api';
+    } catch {
+      return '/api';
+    }
+  }
+
+  const trimmed = API_BASE_URL.trim();
+  if (!trimmed) return '/api';
+
+  if (trimmed.startsWith('/')) {
+    return trimmed.replace(/\/+$/, '') || '/api';
+  }
+
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}`;
+}
+
+function normalizeRelativePath(value: string): string {
+  const cleaned = value.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+  const withLeadingSlash = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
+
+  if (withLeadingSlash.startsWith('/api/uploads/')) {
+    return withLeadingSlash.replace(/^\/api/, '');
+  }
+
+  return withLeadingSlash;
+}
+
+function decodePathSegments(pathname: string): string {
+  return pathname
+    .split('/')
+    .map((segment) => {
+      if (!segment) return segment;
+      try {
+        return decodeURIComponent(segment);
+      } catch {
+        return segment;
+      }
+    })
+    .join('/');
+}
+
+function getLocalPublicIdFromRawUrl(rawUrl?: string | null): string {
+  if (!rawUrl) return '';
+
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      const queryPublicId = parsed.searchParams.get('publicId') || parsed.searchParams.get('public_id');
+      if (queryPublicId?.startsWith('local:')) {
+        return queryPublicId;
+      }
+
+      const normalizedPath = normalizeRelativePath(parsed.pathname);
+      if (!normalizedPath.startsWith('/uploads/')) return '';
+
+      const relativePath = decodePathSegments(normalizedPath.replace(/^\/uploads\//, ''));
+      return relativePath ? `local:${relativePath}` : '';
+    } catch {
+      return '';
+    }
+  }
+
+  const queryMatch = trimmed.match(/[?&](publicId|public_id)=([^&#]+)/i);
+  if (queryMatch?.[2]) {
+    try {
+      const decoded = decodeURIComponent(queryMatch[2]);
+      if (decoded.startsWith('local:')) {
+        return decoded;
+      }
+    } catch {
+      // Ignore malformed query encoding and continue path parsing.
+    }
+  }
+
+  const pathOnly = normalizeRelativePath(trimmed.split(/[?#]/, 1)[0] || '');
+  if (!pathOnly.startsWith('/uploads/')) return '';
+
+  const relativePath = decodePathSegments(pathOnly.replace(/^\/uploads\//, ''));
+  return relativePath ? `local:${relativePath}` : '';
+}
+
 function encodePathSegments(pathname: string): string {
   return pathname
     .split('/')
@@ -73,10 +161,8 @@ function encodePathSegments(pathname: string): string {
     .join('/');
 }
 
-function createImageCandidates(rawUrl?: string | null): string[] {
-  if (!rawUrl) return [];
-  const raw = rawUrl.trim();
-  if (!raw) return [];
+function createImageCandidates(rawUrl?: string | null, publicId?: string | null): string[] {
+  const normalizedPublicId = publicId?.startsWith('local:') ? publicId : getLocalPublicIdFromRawUrl(rawUrl);
 
   const apiOrigin = getApiOrigin();
   const browserOrigin = typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : '';
@@ -88,6 +174,14 @@ function createImageCandidates(rawUrl?: string | null): string[] {
     if (!cleaned || candidates.includes(cleaned)) return;
     candidates.push(cleaned);
   };
+
+  if (normalizedPublicId) {
+    addCandidate(`${getApiPathPrefix()}/media?publicId=${encodeURIComponent(normalizedPublicId)}`);
+  }
+
+  if (!rawUrl) return candidates;
+  const raw = rawUrl.trim();
+  if (!raw) return candidates;
 
   const addByPath = (pathWithQueryHash: string) => {
     addCandidate(pathWithQueryHash);
@@ -105,8 +199,8 @@ function createImageCandidates(rawUrl?: string | null): string[] {
 
       const pathWithQueryHash = `${parsed.pathname}${parsed.search}${parsed.hash}`;
 
-      if ((parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') && apiOrigin) {
-        addCandidate(`${apiOrigin}${pathWithQueryHash}`);
+      if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+        addByPath(pathWithQueryHash);
       }
 
       if (pathWithQueryHash.startsWith('/uploads/')) {
@@ -148,13 +242,23 @@ function createImageCandidates(rawUrl?: string | null): string[] {
   return candidates;
 }
 
-function FallbackImage({ rawUrl, alt, className }: { rawUrl?: string | null; alt: string; className: string }) {
-  const candidates = useMemo(() => createImageCandidates(rawUrl), [rawUrl]);
+function FallbackImage({
+  rawUrl,
+  publicId,
+  alt,
+  className,
+}: {
+  rawUrl?: string | null;
+  publicId?: string | null;
+  alt: string;
+  className: string;
+}) {
+  const candidates = useMemo(() => createImageCandidates(rawUrl, publicId), [publicId, rawUrl]);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     setIndex(0);
-  }, [rawUrl]);
+  }, [publicId, rawUrl]);
 
   if (!candidates.length) {
     return null;
@@ -548,7 +652,12 @@ export default function AdminsPage() {
             {selectedImagePreview ? (
               <img src={selectedImagePreview} alt="Dealer preview" className="mt-3 h-20 w-20 rounded-2xl object-cover" />
             ) : editing?.profileImage?.url ? (
-              <FallbackImage rawUrl={editing.profileImage.url} alt={editing.name} className="mt-3 h-20 w-20 rounded-2xl object-cover" />
+              <FallbackImage
+                rawUrl={editing.profileImage.url}
+                publicId={editing.profileImage.publicId}
+                alt={editing.name}
+                className="mt-3 h-20 w-20 rounded-2xl object-cover"
+              />
             ) : null}
           </div>
 
@@ -777,6 +886,7 @@ export default function AdminsPage() {
               {selectedAdmin.profileImage?.url ? (
                 <FallbackImage
                   rawUrl={selectedAdmin.profileImage.url}
+                  publicId={selectedAdmin.profileImage.publicId}
                   alt={selectedAdmin.name}
                   className="h-20 w-20 rounded-2xl object-cover"
                 />
