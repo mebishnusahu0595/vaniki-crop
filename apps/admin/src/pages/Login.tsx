@@ -8,6 +8,89 @@ import { adminApi } from '../utils/api';
 import { useAdminAuthStore } from '../store/useAdminAuthStore';
 
 const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+const MAX_SIGNUP_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const SIGNUP_IMAGE_MAX_DIMENSION = 1600;
+const SIGNUP_IMAGE_MIN_QUALITY = 0.6;
+
+async function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error('Unable to read selected image.'));
+    };
+    reader.onerror = () => reject(new Error('Unable to read selected image.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Unable to process selected image.'));
+    image.src = src;
+  });
+}
+
+async function canvasToJpegFile(canvas: HTMLCanvasElement, name: string, quality: number): Promise<File> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('Unable to compress selected image.'));
+          return;
+        }
+
+        const safeName = name.replace(/\.[^.]+$/, '') || 'dealer-photo';
+        resolve(new File([blob], `${safeName}.jpg`, { type: 'image/jpeg' }));
+      },
+      'image/jpeg',
+      quality,
+    );
+  });
+}
+
+async function prepareSignupImage(file: File): Promise<File> {
+  if (file.size <= MAX_SIGNUP_IMAGE_SIZE_BYTES) {
+    return file;
+  }
+
+  const imageDataUrl = await readFileAsDataUrl(file);
+  const image = await loadImageElement(imageDataUrl);
+  const scale = Math.min(1, SIGNUP_IMAGE_MAX_DIMENSION / Math.max(image.width, image.height));
+  const targetWidth = Math.max(1, Math.round(image.width * scale));
+  const targetHeight = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement('canvas');
+
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const context = canvas.getContext('2d');
+  if (!context) {
+    throw new Error('Unable to prepare image on this device.');
+  }
+
+  context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+  let quality = 0.85;
+  let compressedFile = await canvasToJpegFile(canvas, file.name, quality);
+
+  while (compressedFile.size > MAX_SIGNUP_IMAGE_SIZE_BYTES && quality > SIGNUP_IMAGE_MIN_QUALITY) {
+    quality -= 0.1;
+    compressedFile = await canvasToJpegFile(canvas, file.name, quality);
+  }
+
+  if (compressedFile.size > MAX_SIGNUP_IMAGE_SIZE_BYTES) {
+    throw new Error('Selected photo is too large. Please choose an image under 5MB.');
+  }
+
+  return compressedFile;
+}
 
 const dealerSignupSchema = z
   .object({
@@ -185,6 +268,8 @@ export default function LoginPage() {
                     return;
                   }
 
+                  const uploadImage = await prepareSignupImage(signupImageFile);
+
                   const payload = new FormData();
                   payload.append('name', values.name);
                   payload.append('mobile', values.mobile);
@@ -196,7 +281,7 @@ export default function LoginPage() {
                   payload.append('gstNumber', values.gstNumber);
                   payload.append('sgstNumber', values.sgstNumber);
                   payload.append('password', values.password);
-                  payload.append('profileImage', signupImageFile);
+                  payload.append('profileImage', uploadImage);
 
                   await adminApi.dealerSignup(payload);
                   setSignupMessage('Signup submitted. Super admin will approve.');
@@ -336,7 +421,16 @@ export default function LoginPage() {
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) => handleSignupImageSelection(event.target.files?.[0] || null)}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] || null;
+                    handleSignupImageSelection(file);
+
+                    if (file && file.size > MAX_SIGNUP_IMAGE_SIZE_BYTES) {
+                      setSignupError('root', {
+                        message: 'Large phone photos will be compressed automatically before upload.',
+                      });
+                    }
+                  }}
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm"
                 />
                 {signupImagePreview ? (
