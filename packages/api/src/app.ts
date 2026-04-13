@@ -174,7 +174,6 @@ app.use('/api/stores', storeRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/homepage', homepageRoutes);
-app.use('/api/coupons', couponRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/contact', contactRoutes);
 

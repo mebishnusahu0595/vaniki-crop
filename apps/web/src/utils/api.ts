@@ -218,21 +218,9 @@ export const storefrontApi = {
     const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/login', payload);
     return response.data.data;
   },
-  sendOtp: async (mobile: string) => {
-    const response = await api.post<{ success: boolean; message: string }>('/auth/send-otp', { mobile });
-    return response.data;
-  },
-  signup: async (payload: { name: string; email?: string; mobile: string; password: string; otp?: string; referralCode?: string }) => {
+  signup: async (payload: { name: string; email?: string; mobile: string; password: string; referralCode?: string }) => {
     const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/signup', payload);
     return response.data.data;
-  },
-  forgotPassword: async (mobile: string) => {
-    const response = await api.post<{ success: boolean; message: string }>('/auth/forgot-password', { mobile });
-    return response.data;
-  },
-  resetPassword: async (payload: { mobile: string; otp: string; newPassword: string }) => {
-    const response = await api.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
-    return response.data;
   },
   me: async () => {
     const response = await api.get<ApiResponse<AuthUser>>('/auth/me');

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Trash2 } from 'lucide-react';
@@ -13,20 +13,33 @@ import OptimizedImage from '../components/common/OptimizedImage';
 const Cart: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { items, removeItem, updateQty, clearCart, getSubtotal } = useCartStore();
+  const {
+    items,
+    couponCode,
+    couponDiscount,
+    removeItem,
+    updateQty,
+    clearCart,
+    setCoupon,
+    clearCoupon,
+    getSubtotal,
+  } = useCartStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const subtotal = getSubtotal();
 
-  const [couponCode, setCouponCode] = useState('');
-  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponInput, setCouponInput] = useState(couponCode);
   const [couponMessage, setCouponMessage] = useState('');
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  useEffect(() => {
+    setCouponInput(couponCode);
+  }, [couponCode]);
 
   const deliveryCharge = subtotal > 1000 || subtotal === 0 ? 0 : 50;
   const total = subtotal - couponDiscount + deliveryCharge;
 
   const validateCoupon = async () => {
-    if (!couponCode || !selectedStore) {
+    if (!couponInput || !selectedStore) {
       toast.error(t('cartPage.chooseStoreCoupon'));
       return;
     }
@@ -34,15 +47,15 @@ const Cart: React.FC = () => {
     setIsValidatingCoupon(true);
     try {
       const response = await storefrontApi.validateCoupon({
-        code: couponCode.toUpperCase(),
+        code: couponInput.toUpperCase(),
         storeId: selectedStore.id,
         cartTotal: subtotal,
       });
-      setCouponDiscount(response.discount || 0);
+      setCoupon(couponInput.toUpperCase(), response.discount || 0);
       setCouponMessage(response.message);
       toast.success(response.message);
     } catch {
-      setCouponDiscount(0);
+      clearCoupon();
       setCouponMessage(t('cartPage.couponCouldNotApply'));
       toast.error(t('cartPage.couponCouldNotApply'));
     } finally {
@@ -152,8 +165,14 @@ const Cart: React.FC = () => {
           <div className="mt-5 rounded-[1.5rem] bg-primary-50 p-4">
             <div className="flex items-center gap-3">
               <input
-                value={couponCode}
-                onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+                value={couponInput}
+                onChange={(event) => {
+                  const value = event.target.value.toUpperCase();
+                  setCouponInput(value);
+                  if (value !== couponCode) {
+                    clearCoupon();
+                  }
+                }}
                 placeholder={t('cartPage.couponCode')}
                 className="w-full rounded-xl border border-primary-100 bg-white px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-primary-900"
               />

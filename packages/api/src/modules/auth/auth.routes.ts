@@ -5,13 +5,9 @@ import { requireAuth } from './auth.middleware.js';
 import { upload } from '../../middleware/upload.js';
 import {
   validate,
-  sendOtpSchema,
   signupSchema,
   dealerSignupSchema,
   loginSchema,
-  loginOtpSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
   serviceModeSchema,
   selectedStoreSchema,
   pushTokenSchema,
@@ -22,23 +18,7 @@ import {
 
 const router: Router = Router();
 
-// ─── OTP Rate Limiter ────────────────────────────────────────────────────
-
-/**
- * Rate limiter for OTP endpoints.
- * Allows max 3 OTP requests per mobile per hour.
- */
-const otpRateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3,
-  keyGenerator: (req: any) => req.body?.mobile || req.ip || 'unknown',
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: 'Too many OTP requests. Please try again after an hour.',
-  },
-});
+// ─── Login Rate Limiter ──────────────────────────────────────────────────
 
 /**
  * Rate limiter for login attempts.
@@ -57,10 +37,7 @@ const loginRateLimiter = rateLimit({
 
 // ─── Public Routes ───────────────────────────────────────────────────────
 
-/** POST /api/auth/send-otp — Send OTP to mobile number */
-router.post('/send-otp', otpRateLimiter, validate(sendOtpSchema), authController.sendOtp);
-
-/** POST /api/auth/signup — Register with OTP verification */
+/** POST /api/auth/signup — Register with mobile + password */
 router.post('/signup', validate(signupSchema), authController.signup);
 
 /** POST /api/auth/dealer-signup — Dealer self registration (pending approval) */
@@ -69,17 +46,8 @@ router.post('/dealer-signup', upload.single('profileImage'), validate(dealerSign
 /** POST /api/auth/login — Login with mobile + password */
 router.post('/login', loginRateLimiter, validate(loginSchema), authController.login);
 
-/** POST /api/auth/login-otp — Login with mobile + OTP */
-router.post('/login-otp', otpRateLimiter, validate(loginOtpSchema), authController.loginWithOtp);
-
 /** POST /api/auth/refresh — Refresh access token using httpOnly cookie */
 router.post('/refresh', authController.refresh);
-
-/** POST /api/auth/forgot-password — Send OTP for password reset */
-router.post('/forgot-password', otpRateLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
-
-/** POST /api/auth/reset-password — Reset password with OTP */
-router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 
 // ─── Protected Routes ────────────────────────────────────────────────────
 

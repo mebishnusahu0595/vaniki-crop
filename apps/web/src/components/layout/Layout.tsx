@@ -10,7 +10,7 @@ import ServiceModeBar from './ServiceModeBar';
 import type { ServiceMode } from '../../types/storefront';
 import { useAuthStore } from '../../store/useAuthStore';
 
-const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password'];
+const authRoutes = ['/login', '/signup'];
 
 const Layout: React.FC = () => {
   const location = useLocation();

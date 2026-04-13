@@ -13,7 +13,7 @@ interface AuthShellProps {
   compactMobile?: boolean;
 }
 
-const authRoutes = new Set(['/login', '/signup', '/forgot-password', '/reset-password']);
+const authRoutes = new Set(['/login', '/signup']);
 
 const AuthShell: React.FC<AuthShellProps> = ({
   title,

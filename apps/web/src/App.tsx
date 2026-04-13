@@ -28,8 +28,6 @@ const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
-const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
 // Register GSAP Plugins
 gsap.registerPlugin(ScrollTrigger);
@@ -176,8 +174,6 @@ const AnimatedRoutes = () => {
             <Route path="/contact" element={<PageFrame><Contact /></PageFrame>} />
             <Route path="/login" element={<PageFrame><Login /></PageFrame>} />
             <Route path="/signup" element={<PageFrame><Signup /></PageFrame>} />
-            <Route path="/forgot-password" element={<PageFrame><ForgotPassword /></PageFrame>} />
-            <Route path="/reset-password" element={<PageFrame><ResetPassword /></PageFrame>} />
             <Route path="/order-success/:id" element={<PageFrame><OrderSuccess /></PageFrame>} />
           </Route>
         </Routes>

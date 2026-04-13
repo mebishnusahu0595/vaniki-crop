@@ -15,10 +15,14 @@ export interface CartItem {
 
 interface CartState {
   items: CartItem[];
+  couponCode: string;
+  couponDiscount: number;
   addItem: (item: CartItem) => void;
   removeItem: (productId: string, variantId: string) => void;
   updateQty: (productId: string, variantId: string, qty: number) => void;
   clearCart: () => void;
+  setCoupon: (couponCode: string, couponDiscount: number) => void;
+  clearCoupon: () => void;
   getTotalItems: () => number;
   getSubtotal: () => number;
 }
@@ -27,6 +31,8 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      couponCode: '',
+      couponDiscount: 0,
       addItem: (newItem) => {
         const { items } = get();
         const existingItem = items.find(
@@ -61,7 +67,9 @@ export const useCartStore = create<CartState>()(
           ),
         });
       },
-      clearCart: () => set({ items: [] }),
+      clearCart: () => set({ items: [], couponCode: '', couponDiscount: 0 }),
+      setCoupon: (couponCode, couponDiscount) => set({ couponCode, couponDiscount }),
+      clearCoupon: () => set({ couponCode: '', couponDiscount: 0 }),
       getTotalItems: () => get().items.reduce((acc, item) => acc + item.qty, 0),
       getSubtotal: () => get().items.reduce((acc, item) => acc + item.price * item.qty, 0),
     }),

@@ -100,10 +100,7 @@ const Login: React.FC = () => {
         >
           {isSubmitting ? t('authPages.signingIn') : t('authPages.login')}
         </button>
-        <div className="flex justify-between text-sm font-medium text-primary-900/60">
-          <Link to="/forgot-password" className="hover:text-primary">
-            {t('authPages.forgotPassword')}
-          </Link>
+        <div className="flex justify-end text-sm font-medium text-primary-900/60">
           <Link to="/signup" className="hover:text-primary">
             {t('authPages.createAccountLink')}
           </Link>

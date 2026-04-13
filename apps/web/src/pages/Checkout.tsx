@@ -28,7 +28,7 @@ declare global {
 const Checkout: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { items, getSubtotal, clearCart } = useCartStore();
+  const { items, couponCode, couponDiscount, getSubtotal, clearCart } = useCartStore();
   const { user, token } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const { mode, address, setMode, setAddress } = useServiceModeStore();
@@ -46,7 +46,7 @@ const Checkout: React.FC = () => {
 
   const subtotal = getSubtotal();
   const deliveryCharge = mode === 'delivery' ? (subtotal > 1000 ? 0 : 50) : 0;
-  const total = subtotal + deliveryCharge;
+  const total = subtotal - couponDiscount + deliveryCharge;
 
   useEffect(() => {
     if (!items.length) navigate('/cart');
@@ -118,6 +118,7 @@ const Checkout: React.FC = () => {
         })),
         storeId: selectedStore.id,
         serviceMode: mode,
+        couponCode: couponCode || undefined,
         shippingAddress,
       };
 
@@ -349,6 +350,10 @@ const Checkout: React.FC = () => {
             <div className="flex justify-between">
               <span>{t('common.subtotal')}</span>
               <span>{currencyFormatter.format(subtotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>{t('common.couponDiscount')}</span>
+              <span>{couponDiscount ? `-${currencyFormatter.format(couponDiscount)}` : currencyFormatter.format(0)}</span>
             </div>
             <div className="flex justify-between">
               <span>{t('common.delivery')}</span>

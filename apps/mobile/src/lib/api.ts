@@ -228,23 +228,7 @@ export const storefrontApi = {
       user: normalizeAuthUser(response.data.user as AuthUserLike),
     };
   },
-  loginWithOtp: async (payload: { mobile: string; otp: string }) => {
-    const response = await request<{ user: AuthUser; accessToken: string }>('/auth/login-otp', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-    return {
-      ...response.data,
-      user: normalizeAuthUser(response.data.user as AuthUserLike),
-    };
-  },
-  sendOtp: async (mobile: string) => {
-    return request<{ success: boolean; message: string }>('/auth/send-otp', {
-      method: 'POST',
-      body: JSON.stringify({ mobile }),
-    });
-  },
-  signup: async (payload: { name: string; email?: string; mobile: string; password: string; otp?: string; referralCode?: string }) => {
+  signup: async (payload: { name: string; email?: string; mobile: string; password: string; referralCode?: string }) => {
     const response = await request<{ user: AuthUser; accessToken: string }>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -253,18 +237,6 @@ export const storefrontApi = {
       ...response.data,
       user: normalizeAuthUser(response.data.user as AuthUserLike),
     };
-  },
-  forgotPassword: async (mobile: string) => {
-    return request<{ success: boolean; message: string }>('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ mobile }),
-    });
-  },
-  resetPassword: async (payload: { mobile: string; otp: string; newPassword: string }) => {
-    return request<{ success: boolean; message: string }>('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
   },
   me: async () => {
     const response = await request<AuthUser>('/auth/me');

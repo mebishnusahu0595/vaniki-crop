@@ -120,25 +120,6 @@ export default function LoginScreen() {
                 Create Account
               </Text>
             </Pressable>
-            <Pressable
-              onPress={async () => {
-                if (!mobile) {
-                  Alert.alert('Enter mobile number', 'Add your mobile number first to reset your password.');
-                  return;
-                }
-                try {
-                  await storefrontApi.forgotPassword(mobile);
-                  router.push({ pathname: '/(auth)/otp-verify', params: { flow: 'reset', mobile } });
-                } catch (caughtError) {
-                  Alert.alert('Reset failed', caughtError instanceof Error ? caughtError.message : 'Try again.');
-                }
-              }}
-              className="mt-2 py-2"
-            >
-              <Text className="text-center text-xs font-black uppercase tracking-[2px] text-primary-400">
-                Forgot Password
-              </Text>
-            </Pressable>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
