@@ -19,6 +19,13 @@ const otpSchema = z
   .length(6, 'OTP must be exactly 6 digits')
   .regex(/^\d{6}$/, 'OTP must contain only digits');
 
+const referralCodeSchema = z
+  .string()
+  .trim()
+  .min(4, 'Referral code must be at least 4 characters')
+  .max(20, 'Referral code cannot exceed 20 characters')
+  .regex(/^[A-Za-z0-9]+$/, 'Referral code can contain only letters and numbers');
+
 // ─── Schemas ─────────────────────────────────────────────────────────────
 
 /**
@@ -44,13 +51,18 @@ export const signupSchema = z.object({
     mobile: mobileSchema,
     password: passwordSchema,
     otp: otpSchema.optional(),
-    referralCode: z
-      .string()
-      .trim()
-      .min(4, 'Referral code must be at least 4 characters')
-      .max(20, 'Referral code cannot exceed 20 characters')
-      .regex(/^[A-Za-z0-9]+$/, 'Referral code can contain only letters and numbers')
-      .optional(),
+    referralCode: referralCodeSchema.optional(),
+  }),
+});
+
+/**
+ * Zod schema for POST /api/auth/google
+ */
+export const googleAuthSchema = z.object({
+  body: z.object({
+    idToken: z.string().trim().min(20, 'Google ID token is required'),
+    mobile: mobileSchema.optional(),
+    referralCode: referralCodeSchema.optional(),
   }),
 });
 
@@ -195,6 +207,7 @@ export type SendOtpInput = z.infer<typeof sendOtpSchema>['body'];
 export type SignupInput = z.infer<typeof signupSchema>['body'];
 export type DealerSignupInput = z.infer<typeof dealerSignupSchema>['body'];
 export type LoginInput = z.infer<typeof loginSchema>['body'];
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>['body'];
 export type LoginOtpInput = z.infer<typeof loginOtpSchema>['body'];
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>['body'];
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>['body'];

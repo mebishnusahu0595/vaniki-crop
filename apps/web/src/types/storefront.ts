@@ -172,6 +172,14 @@ export interface AuthUser {
   referralCount?: number;
 }
 
+export interface GoogleAuthResponse {
+  requiresMobile: boolean;
+  user?: AuthUser;
+  accessToken?: string;
+  prefillName?: string;
+  prefillEmail?: string;
+}
+
 export interface CouponValidation {
   valid: boolean;
   message: string;

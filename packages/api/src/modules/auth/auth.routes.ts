@@ -6,6 +6,7 @@ import { upload } from '../../middleware/upload.js';
 import {
   validate,
   signupSchema,
+  googleAuthSchema,
   dealerSignupSchema,
   loginSchema,
   serviceModeSchema,
@@ -45,6 +46,9 @@ router.post('/dealer-signup', upload.single('profileImage'), validate(dealerSign
 
 /** POST /api/auth/login — Login with mobile + password */
 router.post('/login', loginRateLimiter, validate(loginSchema), authController.login);
+
+/** POST /api/auth/google — Login/signup with Google ID token */
+router.post('/google', loginRateLimiter, validate(googleAuthSchema), authController.googleAuth);
 
 /** POST /api/auth/refresh — Refresh access token using httpOnly cookie */
 router.post('/refresh', authController.refresh);
