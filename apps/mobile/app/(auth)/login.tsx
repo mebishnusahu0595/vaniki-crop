@@ -8,6 +8,7 @@ import { storefrontApi } from '../../src/lib/api';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
+import { useFocusAwareScroll } from '../../src/hooks/useFocusAwareScroll';
 
 export default function LoginScreen() {
   const [mobile, setMobile] = useState('');
@@ -18,17 +19,20 @@ export default function LoginScreen() {
   const setMode = useServiceModeStore((state) => state.setMode);
   const setAddress = useServiceModeStore((state) => state.setAddress);
   const setStore = useStoreStore((state) => state.setStore);
+  const { scrollRef, onInputFocus } = useFocusAwareScroll(110);
 
   return (
-    <Screen withServiceBar={false} scroll={false}>
+    <Screen withServiceBar={false} scroll={false} keyboardAware={false}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
       >
         <ScrollView
+          ref={scrollRef}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: 24 }}
         >
           <View className="mt-10 rounded-[32px] bg-white p-8">
@@ -39,6 +43,7 @@ export default function LoginScreen() {
             <TextInput
               value={mobile}
               onChangeText={setMobile}
+              onFocus={onInputFocus}
               placeholder="Mobile Number"
               keyboardType="number-pad"
               className="mt-6 rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
@@ -50,6 +55,7 @@ export default function LoginScreen() {
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
+                  onFocus={onInputFocus}
                   secureTextEntry={!showPassword}
                   placeholder="Password"
                   className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"

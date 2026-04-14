@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
 import { Screen } from '../src/components/Screen';
+import { useDebouncedValue } from '../src/hooks/useDebouncedValue';
+import { useFocusAwareScroll } from '../src/hooks/useFocusAwareScroll';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useCartStore } from '../src/store/useCartStore';
 import { useServiceModeStore } from '../src/store/useServiceModeStore';
@@ -12,9 +14,10 @@ import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
 
 export default function CheckoutScreen() {
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const token = useAuthStore((state) => state.token);
   const { items, couponCode, couponDiscount, clearCart } = useCartStore();
-  const { mode, address, openSelector } = useServiceModeStore();
+  const { mode, address, openSelector, setAddress } = useServiceModeStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const [name, setName] = useState(user?.name || '');
   const [mobile, setMobile] = useState(user?.mobile || '');
@@ -24,23 +27,82 @@ export default function CheckoutScreen() {
   const [pincode, setPincode] = useState(address?.pincode || user?.savedAddress?.pincode || '');
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [paying, setPaying] = useState(false);
+  const { scrollRef, onInputFocus } = useFocusAwareScroll(120);
+  const lastSavedAddressSignature = useRef('');
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.qty, 0), [items]);
+  const addressDraft = useMemo(
+    () => ({
+      street: street.trim(),
+      city: city.trim(),
+      state: state.trim(),
+      pincode: pincode.trim(),
+      landmark: address?.landmark || user?.savedAddress?.landmark || '',
+    }),
+    [street, city, state, pincode, address?.landmark, user?.savedAddress?.landmark],
+  );
+  const debouncedAddressSignature = useDebouncedValue(
+    `${addressDraft.street}|${addressDraft.city}|${addressDraft.state}|${addressDraft.pincode}|${addressDraft.landmark || ''}`,
+    700,
+  );
+
+  useEffect(() => {
+    if (mode !== 'delivery' || !address) return;
+    if (address.street !== street) setStreet(address.street || '');
+    if (address.city !== city) setCity(address.city || '');
+    if (address.state !== state) setState(address.state || '');
+    if (address.pincode !== pincode) setPincode(address.pincode || '');
+  }, [address?.street, address?.city, address?.state, address?.pincode, mode, street, city, state, pincode]);
+
+  useEffect(() => {
+    if (mode !== 'delivery') return;
+    setAddress(addressDraft);
+  }, [mode, addressDraft, setAddress]);
+
+  useEffect(() => {
+    if (mode !== 'delivery' || !token || !user?.id) return;
+    if (!addressDraft.street || !addressDraft.city || !addressDraft.state || !addressDraft.pincode) return;
+    if (debouncedAddressSignature === lastSavedAddressSignature.current) return;
+
+    let cancelled = false;
+
+    void storefrontApi
+      .updateMe({ savedAddress: addressDraft })
+      .then((updatedUser) => {
+        if (cancelled) return;
+        setUser(updatedUser);
+        lastSavedAddressSignature.current = debouncedAddressSignature;
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, token, user?.id, addressDraft, debouncedAddressSignature, setUser]);
 
   const shippingAddress =
     mode === 'delivery'
       ? {
-          name,
-          mobile,
-          street,
-          city,
-          state,
-          pincode,
+          name: name.trim(),
+          mobile: mobile.trim(),
+          ...addressDraft,
         }
       : undefined;
 
   return (
-    <Screen>
+    <Screen scroll={false} keyboardAware={false}>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
+      >
+        <ScrollView
+          ref={scrollRef}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{ paddingBottom: 24 }}
+        >
       <Text className="text-3xl font-black text-primary-900">Checkout</Text>
 
       <View className="mt-5 rounded-[28px] bg-white p-5">
@@ -71,6 +133,7 @@ export default function CheckoutScreen() {
                 key={placeholder}
                 value={value}
                 onChangeText={setter}
+                onFocus={onInputFocus}
                 placeholder={placeholder}
                 className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
                 placeholderTextColor="#7a978b"
@@ -229,6 +292,8 @@ export default function CheckoutScreen() {
               : 'Place COD Order'}
         </Text>
       </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }

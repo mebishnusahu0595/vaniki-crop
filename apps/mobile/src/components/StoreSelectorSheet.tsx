@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -17,6 +19,7 @@ import { useStoreStore } from '../store/useStoreStore';
 import { useAuthStore } from '../store/useAuthStore';
 import type { Address, ServiceMode } from '../types/storefront';
 import { formatStoreAddress } from '../utils/format';
+import { useFocusAwareScroll } from '../hooks/useFocusAwareScroll';
 
 const emptyAddress: Address = {
   street: '',
@@ -62,6 +65,7 @@ export function StoreSelectorSheet() {
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const { scrollRef, onInputFocus } = useFocusAwareScroll(100);
 
   const storesQuery = useQuery({
     queryKey: ['mobile-stores'],
@@ -158,115 +162,127 @@ export function StoreSelectorSheet() {
     <Modal visible={isOpen} animationType="slide" transparent onRequestClose={closeSelector}>
       <View className="flex-1 justify-end bg-primary-900/40">
         <Pressable className="flex-1" onPress={closeSelector} />
-        <View className="max-h-[90%] rounded-t-[32px] bg-offwhite px-5 pb-8 pt-5">
-          <View className="mb-5 h-1.5 w-14 self-center rounded-full bg-primary-100" />
-          <View className="mb-5 flex-row rounded-full bg-primary-50 p-1">
-            {(['delivery', 'pickup'] as const).map((item) => (
-              <Pressable
-                key={item}
-                onPress={() => setDraftMode(item)}
-                className={`flex-1 rounded-full px-3 py-3 ${draftMode === item ? 'bg-white' : ''}`}
-              >
-                <View className="flex-row items-center justify-center gap-1.5">
-                  <Feather
-                    name={item === 'delivery' ? 'truck' : 'shopping-bag'}
-                    size={13}
-                    color={draftMode === item ? '#082018' : '#6D8A7D'}
-                  />
-                  <Text
-                    className={`text-center text-xs font-black uppercase tracking-[2px] ${
-                      draftMode === item ? 'text-primary-900' : 'text-primary-900/45'
-                    }`}
-                  >
-                    {item === 'delivery' ? t('mobile.serviceMode.delivery') : t('mobile.serviceMode.pickup')}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {draftMode === 'delivery' ? (
-              <View className="gap-3">
-                {([
-                  ['street', 'Street Address'],
-                  ['city', 'City'],
-                  ['state', 'State'],
-                  ['pincode', 'Pincode'],
-                  ['landmark', 'Landmark'],
-                ] as const).map(([key, label]) => (
-                  <View key={key}>
-                    <Text className="mb-2 text-[11px] font-black uppercase tracking-[2px] text-primary-500">
-                      {label}
-                    </Text>
-                    <TextInput
-                      value={draftAddress[key] || ''}
-                      onChangeText={(value) =>
-                        setDraftAddress((current) => ({ ...current, [key]: value }))
-                      }
-                      placeholder={label}
-                      className="rounded-[20px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
-                      placeholderTextColor="#7a978b"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
+        >
+          <View className="max-h-[90%] rounded-t-[32px] bg-offwhite px-5 pb-8 pt-5">
+            <View className="mb-5 h-1.5 w-14 self-center rounded-full bg-primary-100" />
+            <View className="mb-5 flex-row rounded-full bg-primary-50 p-1">
+              {(['delivery', 'pickup'] as const).map((item) => (
+                <Pressable
+                  key={item}
+                  onPress={() => setDraftMode(item)}
+                  className={`flex-1 rounded-full px-3 py-3 ${draftMode === item ? 'bg-white' : ''}`}
+                >
+                  <View className="flex-row items-center justify-center gap-1.5">
+                    <Feather
+                      name={item === 'delivery' ? 'truck' : 'shopping-bag'}
+                      size={13}
+                      color={draftMode === item ? '#082018' : '#6D8A7D'}
                     />
+                    <Text
+                      className={`text-center text-xs font-black uppercase tracking-[2px] ${
+                        draftMode === item ? 'text-primary-900' : 'text-primary-900/45'
+                      }`}
+                    >
+                      {item === 'delivery' ? t('mobile.serviceMode.delivery') : t('mobile.serviceMode.pickup')}
+                    </Text>
                   </View>
-                ))}
-              </View>
-            ) : (
-              <View className="gap-3">
-                <TextInput
-                  value={search}
-                  onChangeText={setSearch}
-                  placeholder="Search by city, area, or store"
-                  className="rounded-[20px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
-                  placeholderTextColor="#7a978b"
-                />
-                {storesQuery.isLoading ? (
-                  <View className="py-10">
-                    <ActivityIndicator color="#2D6A4F" />
-                  </View>
-                ) : (
-                  filteredStores.map((store) => {
-                    const active = draftStoreId === store.id;
+                </Pressable>
+              ))}
+            </View>
 
-                    return (
-                      <Pressable
-                        key={store.id}
-                        onPress={() => setDraftStoreId(store.id)}
-                        className={`rounded-[24px] border px-4 py-4 ${
-                          active ? 'border-primary-500 bg-primary-500' : 'border-primary-100 bg-white'
-                        }`}
-                      >
-                        <Text className={`text-base font-black ${active ? 'text-white' : 'text-primary-900'}`}>
-                          {store.name}
-                        </Text>
-                        <Text className={`mt-2 text-sm ${active ? 'text-white/80' : 'text-primary-900/60'}`}>
-                          {formatStoreAddress(store.address)}
-                        </Text>
-                        <Text className={`mt-2 text-xs font-semibold ${active ? 'text-white/80' : 'text-primary-500'}`}>
-                          {store.phone}
-                        </Text>
-                      </Pressable>
-                    );
-                  })
-                )}
-              </View>
+            <ScrollView
+              ref={scrollRef}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+            >
+              {draftMode === 'delivery' ? (
+                <View className="gap-3">
+                  {([
+                    ['street', 'Street Address'],
+                    ['city', 'City'],
+                    ['state', 'State'],
+                    ['pincode', 'Pincode'],
+                    ['landmark', 'Landmark'],
+                  ] as const).map(([key, label]) => (
+                    <View key={key}>
+                      <Text className="mb-2 text-[11px] font-black uppercase tracking-[2px] text-primary-500">
+                        {label}
+                      </Text>
+                      <TextInput
+                        value={draftAddress[key] || ''}
+                        onChangeText={(value) =>
+                          setDraftAddress((current) => ({ ...current, [key]: value }))
+                        }
+                        onFocus={onInputFocus}
+                        placeholder={label}
+                        className="rounded-[20px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
+                        placeholderTextColor="#7a978b"
+                      />
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View className="gap-3">
+                  <TextInput
+                    value={search}
+                    onChangeText={setSearch}
+                    onFocus={onInputFocus}
+                    placeholder="Search by city, area, or store"
+                    className="rounded-[20px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
+                    placeholderTextColor="#7a978b"
+                  />
+                  {storesQuery.isLoading ? (
+                    <View className="py-10">
+                      <ActivityIndicator color="#2D6A4F" />
+                    </View>
+                  ) : (
+                    filteredStores.map((store) => {
+                      const active = draftStoreId === store.id;
+
+                      return (
+                        <Pressable
+                          key={store.id}
+                          onPress={() => setDraftStoreId(store.id)}
+                          className={`rounded-[24px] border px-4 py-4 ${
+                            active ? 'border-primary-500 bg-primary-500' : 'border-primary-100 bg-white'
+                          }`}
+                        >
+                          <Text className={`text-base font-black ${active ? 'text-white' : 'text-primary-900'}`}>
+                            {store.name}
+                          </Text>
+                          <Text className={`mt-2 text-sm ${active ? 'text-white/80' : 'text-primary-900/60'}`}>
+                            {formatStoreAddress(store.address)}
+                          </Text>
+                          <Text className={`mt-2 text-xs font-semibold ${active ? 'text-white/80' : 'text-primary-500'}`}>
+                            {store.phone}
+                          </Text>
+                        </Pressable>
+                      );
+                    })
+                  )}
+                </View>
+              )}
+            </ScrollView>
+
+            {Boolean(error) && (
+              <Text className="mt-4 text-center text-sm font-semibold text-red-600">{error}</Text>
             )}
-          </ScrollView>
 
-          {Boolean(error) && (
-            <Text className="mt-4 text-center text-sm font-semibold text-red-600">{error}</Text>
-          )}
-
-          <Pressable
-            onPress={handleSave}
-            disabled={saving}
-            className="mt-5 rounded-full bg-primary-500 px-5 py-4"
-          >
-            <Text className="text-center text-sm font-black uppercase tracking-[2px] text-white">
-              {saving ? 'Saving...' : 'Save Preference'}
-            </Text>
-          </Pressable>
-        </View>
+            <Pressable
+              onPress={handleSave}
+              disabled={saving}
+              className="mt-5 rounded-full bg-primary-500 px-5 py-4"
+            >
+              <Text className="text-center text-sm font-black uppercase tracking-[2px] text-white">
+                {saving ? 'Saving...' : 'Save Preference'}
+              </Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );

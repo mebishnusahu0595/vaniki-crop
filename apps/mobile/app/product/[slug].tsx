@@ -52,6 +52,10 @@ export default function ProductDetailScreen() {
     () => (relatedQuery.data?.data || []).filter((item) => item.slug !== product?.slug),
     [product?.slug, relatedQuery.data?.data],
   );
+  const galleryImages = useMemo(
+    () => (product?.images || []).filter((image) => Boolean(image.url?.trim())),
+    [product?.images],
+  );
 
   const maxStock = Math.max(selectedVariant?.stock || 0, 0);
   const canIncrease = maxStock > quantityInCart;
@@ -93,8 +97,8 @@ export default function ProductDetailScreen() {
   return (
     <Screen>
       <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} className="mb-5">
-        {product.images.length ? (
-          product.images.map((image) => (
+        {galleryImages.length ? (
+          galleryImages.map((image) => (
             <Image
               key={image.url}
               source={{ uri: image.url }}

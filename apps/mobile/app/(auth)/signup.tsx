@@ -7,6 +7,7 @@ import { storefrontApi } from '../../src/lib/api';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
+import { useFocusAwareScroll } from '../../src/hooks/useFocusAwareScroll';
 
 export default function SignupScreen() {
   const setSession = useAuthStore((state) => state.setSession);
@@ -24,17 +25,20 @@ export default function SignupScreen() {
     password: '',
     referralCode: typeof params.ref === 'string' ? params.ref : '',
   });
+  const { scrollRef, onInputFocus } = useFocusAwareScroll(110);
 
   return (
-    <Screen withServiceBar={false} scroll={false}>
+    <Screen withServiceBar={false} scroll={false} keyboardAware={false}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
       >
         <ScrollView
+          ref={scrollRef}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: 24 }}
         >
           <View className="mt-10 rounded-[32px] bg-white p-8">
@@ -56,6 +60,7 @@ export default function SignupScreen() {
                       [key]: key === 'referralCode' ? value.toUpperCase() : value,
                     }))
                   }
+                  onFocus={onInputFocus}
                   placeholder={placeholder}
                   keyboardType={key === 'mobile' ? 'number-pad' : 'default'}
                   className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
@@ -66,6 +71,7 @@ export default function SignupScreen() {
                 <TextInput
                   value={form.password}
                   onChangeText={(value) => setForm((current) => ({ ...current, password: value }))}
+                  onFocus={onInputFocus}
                   placeholder="Password"
                   secureTextEntry={!showPassword}
                   className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"
