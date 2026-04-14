@@ -33,6 +33,10 @@ function slugify(text: string): string {
     .trim();
 }
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Ensures a product slug is unique.
  */
@@ -169,20 +173,64 @@ export async function searchProducts(
   storeId?: string,
   limit = 10,
 ): Promise<IProduct[]> {
-  const filter: any = {
+  const sanitizedQuery = searchQuery.trim();
+  if (!sanitizedQuery) return [];
+
+  const normalizedLimit = Math.max(1, Math.min(Number(limit) || 10, 30));
+  const storeObjectId =
+    storeId && mongoose.Types.ObjectId.isValid(storeId)
+      ? new mongoose.Types.ObjectId(storeId)
+      : storeId;
+  const storeScope = storeObjectId
+    ? ({ $or: [{ storeId: storeObjectId }, { storeId: { $size: 0 } }] } as const)
+    : undefined;
+
+  const textFilter: any = {
     isActive: true,
-    $text: { $search: searchQuery },
+    $text: { $search: sanitizedQuery },
+    ...(storeScope || {}),
   };
 
-  if (storeId) {
-    filter.$or = [{ storeId }, { storeId: { $size: 0 } }];
-  }
-
-  return Product.find(filter, { score: { $meta: 'textScore' } })
+  const textMatches = await Product.find(textFilter, { score: { $meta: 'textScore' } })
     .select('name slug shortDescription images variants.label variants.price tags')
     .populate('category', 'name slug')
     .sort({ score: { $meta: 'textScore' } })
-    .limit(limit);
+    .limit(normalizedLimit);
+
+  if (textMatches.length >= normalizedLimit) {
+    return textMatches;
+  }
+
+  const escapedQuery = escapeRegex(sanitizedQuery);
+  const wordPrefixPattern = new RegExp(`\\b${escapedQuery}`, 'i');
+  const containsPattern = new RegExp(escapedQuery, 'i');
+  const matchedIds = textMatches.map((item) => item._id);
+
+  const regexClauses = [
+    { name: wordPrefixPattern },
+    { name: containsPattern },
+    { tags: containsPattern },
+    { shortDescription: containsPattern },
+  ];
+
+  const regexFilter: any = {
+    isActive: true,
+    ...(matchedIds.length ? { _id: { $nin: matchedIds } } : {}),
+  };
+
+  if (storeScope) {
+    regexFilter.$and = [storeScope, { $or: regexClauses }];
+  } else {
+    regexFilter.$or = regexClauses;
+  }
+
+  const regexMatches = await Product.find(regexFilter)
+    .select('name slug shortDescription images variants.label variants.price tags')
+    .populate('category', 'name slug')
+    .sort({ totalSold: -1, createdAt: -1 })
+    .limit(Math.max(0, normalizedLimit - textMatches.length));
+
+  return [...textMatches, ...regexMatches];
 }
 
 /**

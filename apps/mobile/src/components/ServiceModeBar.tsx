@@ -1,10 +1,9 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
-import { getLanguageToggleLabel, toggleAppLanguage } from '../i18n';
 import { formatStoreAddress } from '../utils/format';
 
 export const ServiceModeBar = memo(function ServiceModeBar() {
@@ -13,19 +12,6 @@ export const ServiceModeBar = memo(function ServiceModeBar() {
   const address = useServiceModeStore((state) => state.address);
   const openSelector = useServiceModeStore((state) => state.openSelector);
   const selectedStore = useStoreStore((state) => state.selectedStore);
-  const [switchingLanguage, setSwitchingLanguage] = useState(false);
-
-  const handleLanguageToggle = async () => {
-    if (switchingLanguage) return;
-    setSwitchingLanguage(true);
-    try {
-      await toggleAppLanguage();
-    } finally {
-      setSwitchingLanguage(false);
-    }
-  };
-
-  const languageToggleLabel = getLanguageToggleLabel();
   const deliveryAddressText = formatStoreAddress(address);
 
   return (
@@ -67,15 +53,6 @@ export const ServiceModeBar = memo(function ServiceModeBar() {
               : `${t('mobile.serviceMode.pickupFrom')}: ${selectedStore?.name || t('mobile.serviceMode.chooseStore')}`}
           </Text>
           <Text className="text-xs font-semibold text-primary-500">{t('mobile.serviceMode.change')}</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => void handleLanguageToggle()}
-          disabled={switchingLanguage}
-          className="rounded-full border border-primary-100 bg-primary-50 px-3 py-1.5"
-        >
-          <Text className="text-[10px] font-black uppercase tracking-[1.5px] text-primary-900">
-            {languageToggleLabel}
-          </Text>
         </Pressable>
       </View>
     </View>

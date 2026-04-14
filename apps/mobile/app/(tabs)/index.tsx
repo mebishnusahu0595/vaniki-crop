@@ -27,17 +27,48 @@ export default function HomeScreen() {
     queryKey: ['mobile-homepage', selectedStore?.id],
     queryFn: () => storefrontApi.homepage(selectedStore?.id),
   });
+  const shouldLoadFallbackProducts =
+    !homepageQuery.isLoading &&
+    Boolean(homepageQuery.data) &&
+    ((homepageQuery.data?.saleProducts || []).length === 0 ||
+      (homepageQuery.data?.bestSellers || []).length === 0);
+  const fallbackProductsQuery = useQuery({
+    queryKey: ['mobile-home-fallback-products', selectedStore?.id],
+    queryFn: () =>
+      storefrontApi.products({
+        page: 1,
+        limit: 12,
+        sort: 'popular',
+        storeId: selectedStore?.id,
+      }),
+    enabled: shouldLoadFallbackProducts,
+    staleTime: 60 * 1000,
+  });
 
   const testimonialCardWidth = Math.min(Math.max(width - 72, 220), 300);
   const testimonialSnapInterval = testimonialCardWidth + 12;
 
-  const tabProducts = useMemo(
-    () =>
-      (homepageQuery.data?.bestSellers || []).filter((product) =>
-        (product.category?.name || '').toLowerCase().includes(activeTab.toLowerCase().replace('icides', 'icide')),
-      ),
-    [activeTab, homepageQuery.data?.bestSellers],
-  );
+  const saleProducts = useMemo(() => {
+    const directSaleProducts = homepageQuery.data?.saleProducts || [];
+    if (directSaleProducts.length) return directSaleProducts;
+
+    return (fallbackProductsQuery.data?.data || []).slice(0, 10);
+  }, [homepageQuery.data?.saleProducts, fallbackProductsQuery.data?.data]);
+
+  const bestSellerProducts = useMemo(() => {
+    const directBestSellers = homepageQuery.data?.bestSellers || [];
+    if (directBestSellers.length) return directBestSellers;
+
+    return fallbackProductsQuery.data?.data || [];
+  }, [homepageQuery.data?.bestSellers, fallbackProductsQuery.data?.data]);
+
+  const tabProducts = useMemo(() => {
+    const filtered = bestSellerProducts.filter((product) =>
+      (product.category?.name || '').toLowerCase().includes(activeTab.toLowerCase().replace('icides', 'icide')),
+    );
+
+    return filtered.length ? filtered : bestSellerProducts.slice(0, 10);
+  }, [activeTab, bestSellerProducts]);
 
   useEffect(() => {
     const total = homepageQuery.data?.testimonials?.length || 0;
@@ -106,16 +137,26 @@ export default function HomeScreen() {
 
         <View>
           <SectionHeader title={t('mobile.home.bestDeals')} />
-          <FlashList
-            horizontal
-            data={homepageQuery.data?.saleProducts || []}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <View className="mr-3 w-[184px]">
-                <ProductCard product={item} compact />
-              </View>
-            )}
-          />
+          {saleProducts.length ? (
+            <FlashList
+              horizontal
+              data={saleProducts}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View className="mr-3 w-[184px]">
+                  <ProductCard product={item} compact />
+                </View>
+              )}
+            />
+          ) : fallbackProductsQuery.isLoading ? (
+            <View className="rounded-[24px] bg-white py-8">
+              <ActivityIndicator color="#2D6A4F" />
+            </View>
+          ) : (
+            <View className="rounded-[24px] bg-white px-4 py-5">
+              <Text className="text-sm font-semibold text-primary-900/65">Products will appear shortly.</Text>
+            </View>
+          )}
         </View>
 
         <View>
@@ -146,16 +187,26 @@ export default function HomeScreen() {
               ))}
             </View>
           </ScrollView>
-          <FlashList
-            data={tabProducts}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <View className="mr-3 w-[184px]">
-                <ProductCard product={item} compact />
-              </View>
-            )}
-          />
+          {tabProducts.length ? (
+            <FlashList
+              data={tabProducts}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View className="mr-3 w-[184px]">
+                  <ProductCard product={item} compact />
+                </View>
+              )}
+            />
+          ) : fallbackProductsQuery.isLoading ? (
+            <View className="rounded-[24px] bg-white py-8">
+              <ActivityIndicator color="#2D6A4F" />
+            </View>
+          ) : (
+            <View className="rounded-[24px] bg-white px-4 py-5">
+              <Text className="text-sm font-semibold text-primary-900/65">No products found for this tab yet.</Text>
+            </View>
+          )}
         </View>
 
         <View className="pb-4">

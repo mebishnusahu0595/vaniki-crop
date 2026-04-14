@@ -150,7 +150,7 @@ export const storefrontApi = {
   },
   searchProducts: async (query: string, storeId?: string) => {
     const response = await request<Product[]>('/products/search', {
-      params: { q: query, storeId, limit: 8 },
+      params: { q: query, storeId, limit: 12 },
     });
     return {
       data: normalizeProducts(response.data as ProductLike[]),

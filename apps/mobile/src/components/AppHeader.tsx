@@ -19,7 +19,7 @@ export const AppHeader = memo(function AppHeader() {
   const cartCount = useCartStore((state) => state.items.reduce((sum, item) => sum + item.qty, 0));
   const user = useAuthStore((state) => state.user);
   const selectedStore = useStoreStore((state) => state.selectedStore);
-  const debouncedQuery = useDebouncedValue(query.trim(), 280);
+  const debouncedQuery = useDebouncedValue(query.trim(), 160);
   const isHomepageSearch = pathname === '/(tabs)' || pathname === '/(tabs)/index' || pathname === '/';
   const shouldRunSearch = isHomepageSearch && debouncedQuery.length >= 2;
 
@@ -33,6 +33,8 @@ export const AppHeader = memo(function AppHeader() {
     queryKey: ['mobile-inline-search', debouncedQuery, selectedStore?.id],
     queryFn: () => storefrontApi.searchProducts(debouncedQuery, selectedStore?.id),
     enabled: shouldRunSearch,
+    staleTime: 30 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 
   const matchedCategories = useMemo(() => {
