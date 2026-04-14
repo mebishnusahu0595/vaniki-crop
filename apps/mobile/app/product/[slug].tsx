@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -16,6 +16,7 @@ import { stripHtml } from '../../src/utils/html';
 
 export default function ProductDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { width } = useWindowDimensions();
   const addItem = useCartStore((state) => state.addItem);
   const increaseQty = useCartStore((state) => state.increaseQty);
   const decreaseQty = useCartStore((state) => state.decreaseQty);
@@ -56,6 +57,7 @@ export default function ProductDetailScreen() {
     () => (product?.images || []).filter((image) => Boolean(image.url?.trim())),
     [product?.images],
   );
+  const galleryImageWidth = Math.max(width - 32, 240);
 
   const maxStock = Math.max(selectedVariant?.stock || 0, 0);
   const canIncrease = maxStock > quantityInCart;
@@ -102,14 +104,14 @@ export default function ProductDetailScreen() {
             <Image
               key={image.url}
               source={{ uri: image.url }}
-              style={{ width: 330, height: 280, borderRadius: 28, marginRight: 12 }}
+              style={{ width: galleryImageWidth, height: 280, borderRadius: 28 }}
               contentFit="cover"
             />
           ))
         ) : (
           <Image
             source={{ uri: getPrimaryImage(product) }}
-            style={{ width: 330, height: 280, borderRadius: 28 }}
+            style={{ width: galleryImageWidth, height: 280, borderRadius: 28 }}
             contentFit="cover"
           />
         )}

@@ -26,7 +26,30 @@ export function Screen({
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
-  const showPersistentBottomNav = !pathname.startsWith('/(tabs)') && !pathname.startsWith('/(auth)');
+  const normalizedPath = pathname.replace(/\/+$/, '') || '/';
+
+  const matchesPath = (basePath: string) =>
+    basePath === '/'
+      ? normalizedPath === '/'
+      : normalizedPath === basePath || normalizedPath.startsWith(`${basePath}/`);
+
+  const isTabsRoute = [
+    '/',
+    '/categories',
+    '/compare',
+    '/cart',
+    '/account',
+    '/(tabs)',
+    '/(tabs)/index',
+    '/(tabs)/categories',
+    '/(tabs)/compare',
+    '/(tabs)/cart',
+    '/(tabs)/account',
+  ].some(matchesPath);
+
+  const isAuthRoute = ['/login', '/signup', '/(auth)', '/(auth)/login', '/(auth)/signup'].some(matchesPath);
+
+  const showPersistentBottomNav = !isTabsRoute && !isAuthRoute;
   const bottomPadding = (withWhatsAppFab ? 36 : 20) + insets.bottom;
   const contentClassName = scroll ? 'bg-offwhite px-4' : 'flex-1 bg-offwhite px-4';
 
