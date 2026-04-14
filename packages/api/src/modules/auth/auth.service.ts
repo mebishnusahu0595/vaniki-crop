@@ -10,7 +10,6 @@ import { buildStoreAddressFromCoordinates } from '../../utils/storeAddress.js';
 import type {
   ChangePasswordInput,
   DealerSignupInput,
-  GoogleAuthInput,
   SendOtpInput,
   SignupInput,
   LoginInput,
@@ -43,27 +42,6 @@ export interface JwtAccessPayload {
   storeId?: string;
 }
 
-interface GoogleTokenInfo {
-  aud: string;
-  sub: string;
-  email?: string;
-  email_verified?: string;
-  name?: string;
-  iss?: string;
-}
-
-export type GoogleAuthResult =
-  | {
-      requiresMobile: true;
-      prefillName?: string;
-      prefillEmail: string;
-    }
-  | {
-      requiresMobile: false;
-      user: IUser;
-      tokens: TokenPair;
-    };
-
 // ─── OTP ─────────────────────────────────────────────────────────────────
 
 /**
@@ -78,53 +56,6 @@ function buildReferralCode(name: string, mobile: string): string {
   const cleanedName = name.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 4).padEnd(4, 'V');
   const mobileSeed = mobile.slice(-4);
   return `${cleanedName}${mobileSeed}`;
-}
-
-function generateRandomPassword(): string {
-  return crypto.randomBytes(24).toString('hex');
-}
-
-function getAllowedGoogleClientIds(): string[] {
-  return (process.env.GOOGLE_OAUTH_ALLOWED_CLIENT_IDS || '')
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-}
-
-async function verifyGoogleIdToken(idToken: string): Promise<GoogleTokenInfo> {
-  const googleAuthEnabled = (process.env.GOOGLE_AUTH_ENABLED || '').toLowerCase() === 'true';
-  if (!googleAuthEnabled) {
-    throw new AppError('Google authentication is disabled', 503);
-  }
-
-  const allowedClientIds = getAllowedGoogleClientIds();
-  if (!allowedClientIds.length) {
-    throw new AppError('Google authentication is not configured', 500);
-  }
-
-  const endpoint = new URL('https://oauth2.googleapis.com/tokeninfo');
-  endpoint.searchParams.set('id_token', idToken);
-
-  const response = await fetch(endpoint.toString());
-  if (!response.ok) {
-    throw new AppError('Invalid Google token', 401);
-  }
-
-  const tokenInfo = (await response.json()) as GoogleTokenInfo;
-  if (!tokenInfo.aud || !allowedClientIds.includes(tokenInfo.aud)) {
-    throw new AppError('Unauthorized Google client', 401);
-  }
-
-  const issuer = tokenInfo.iss || '';
-  if (issuer && issuer !== 'accounts.google.com' && issuer !== 'https://accounts.google.com') {
-    throw new AppError('Invalid Google token issuer', 401);
-  }
-
-  if (!tokenInfo.email || tokenInfo.email_verified !== 'true') {
-    throw new AppError('Google account email is not verified', 400);
-  }
-
-  return tokenInfo;
 }
 
 async function generateUniqueReferralCode(name: string, mobile: string): Promise<string> {
@@ -424,84 +355,6 @@ export async function login(
 
   const tokens = await generateTokenPair(user);
   return { user, tokens };
-}
-
-/**
- * Authenticates or registers a customer using Google ID token.
- * For first-time users, mobile number is mandatory before account creation.
- */
-export async function googleAuth(input: GoogleAuthInput): Promise<GoogleAuthResult> {
-  const { idToken, mobile, referralCode } = input;
-  const tokenInfo = await verifyGoogleIdToken(idToken);
-
-  const normalizedEmail = tokenInfo.email!.trim().toLowerCase();
-  const normalizedName = tokenInfo.name?.trim() || normalizedEmail.split('@')[0] || 'Vaniki Customer';
-
-  const existingByEmail = await User.findOne({ email: normalizedEmail }).select('+password');
-  if (existingByEmail) {
-    if (!existingByEmail.isActive) {
-      throw new AppError('Your account has been deactivated. Contact support.', 403);
-    }
-
-    if (existingByEmail.role === 'storeAdmin' && existingByEmail.approvalStatus !== 'approved') {
-      if (existingByEmail.approvalStatus === 'rejected') {
-        throw new AppError('Your dealer account has been rejected. Please contact support.', 403);
-      }
-      throw new AppError('Your dealer account is pending super admin approval.', 403);
-    }
-
-    const tokens = await generateTokenPair(existingByEmail);
-    return {
-      requiresMobile: false,
-      user: existingByEmail,
-      tokens,
-    };
-  }
-
-  if (!mobile) {
-    return {
-      requiresMobile: true,
-      prefillName: normalizedName,
-      prefillEmail: normalizedEmail,
-    };
-  }
-
-  const existingByMobile = await User.findOne({ mobile });
-  if (existingByMobile) {
-    throw new AppError('Another account already uses this mobile number', 409);
-  }
-
-  let referredById: IUser['_id'] | undefined;
-  if (referralCode) {
-    const referrer = await User.findOne({ referralCode: referralCode.trim().toUpperCase() }).select('_id');
-    if (!referrer) {
-      throw new AppError('Invalid referral code', 400);
-    }
-    referredById = referrer._id;
-  }
-
-  const ownReferralCode = await generateUniqueReferralCode(normalizedName, mobile);
-
-  const user = await User.create({
-    name: normalizedName,
-    email: normalizedEmail,
-    mobile,
-    password: generateRandomPassword(),
-    referralCode: ownReferralCode,
-    ...(referredById ? { referredBy: referredById } : {}),
-    isActive: true,
-  });
-
-  if (referredById) {
-    await User.findByIdAndUpdate(referredById, { $inc: { referralCount: 1 } });
-  }
-
-  const tokens = await generateTokenPair(user);
-  return {
-    requiresMobile: false,
-    user,
-    tokens,
-  };
 }
 
 /**

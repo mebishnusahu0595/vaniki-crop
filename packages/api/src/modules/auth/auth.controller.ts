@@ -101,42 +101,6 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 }
 
 /**
- * POST /api/auth/google
- * Authenticates user with Google ID token.
- * If mobile is missing for first-time signup, returns requiresMobile=true.
- */
-export async function googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const result = await authService.googleAuth(req.body);
-
-    if (result.requiresMobile) {
-      res.status(200).json({
-        success: true,
-        data: {
-          requiresMobile: true,
-          prefillName: result.prefillName,
-          prefillEmail: result.prefillEmail,
-        },
-      });
-      return;
-    }
-
-    res.cookie(REFRESH_TOKEN_COOKIE, result.tokens.refreshToken, cookieOptions);
-
-    res.status(200).json({
-      success: true,
-      data: {
-        requiresMobile: false,
-        user: result.user.toJSON(),
-        accessToken: result.tokens.accessToken,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-/**
  * POST /api/auth/login-otp
  * Authenticates user with mobile + OTP.
  * Returns access token in body + refresh token in httpOnly cookie.

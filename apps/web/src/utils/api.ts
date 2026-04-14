@@ -7,7 +7,6 @@ import type {
   AuthUser,
   Category,
   CouponValidation,
-  GoogleAuthResponse,
   HomepageData,
   Order,
   OrderConfirmationResponse,
@@ -217,10 +216,6 @@ export const storefrontApi = {
   },
   login: async (payload: { mobile: string; password: string }) => {
     const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/login', payload);
-    return response.data.data;
-  },
-  googleAuth: async (payload: { idToken: string; mobile?: string; referralCode?: string }) => {
-    const response = await api.post<ApiResponse<GoogleAuthResponse>>('/auth/google', payload);
     return response.data.data;
   },
   signup: async (payload: { name: string; email?: string; mobile: string; password: string; referralCode?: string }) => {
