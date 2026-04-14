@@ -285,6 +285,25 @@ export default function StoresPage() {
     },
   });
 
+  const deleteStoreMutation = useMutation({
+    mutationFn: async (id: string) => adminApi.deleteStore(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin-stores'] });
+      queryClient.invalidateQueries({ queryKey: ['super-admin-admin-options'] });
+      if (editing) {
+        setEditing(null);
+        reset(storeDefaultValues);
+      }
+      setFormError('');
+    },
+    onError: (error) => {
+      setFormError(error instanceof Error ? error.message : 'Unable to delete store.');
+    },
+    onSettled: () => {
+      setActioningStoreId(null);
+    },
+  });
+
   if (storesQuery.isLoading && !storesQuery.data) return <LoadingBlock label="Loading stores..." />;
 
   return (
@@ -508,12 +527,25 @@ export default function StoresPage() {
                   Admin: {store.adminName}
                 </p>
               </div>
-              <button
-                onClick={() => setEditing(store)}
-                className="rounded-xl border border-primary-100 px-4 py-2 text-sm font-semibold text-primary-700"
-              >
-                Edit
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  onClick={() => setEditing(store)}
+                  className="rounded-xl border border-primary-100 px-4 py-2 text-sm font-semibold text-primary-700"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    if (!window.confirm(`Delete store ${store.name}? This action cannot be undone.`)) return;
+                    setActioningStoreId(store.id);
+                    deleteStoreMutation.mutate(store.id);
+                  }}
+                  disabled={actioningStoreId === store.id}
+                  className="rounded-xl border border-rose-100 px-4 py-2 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-4">

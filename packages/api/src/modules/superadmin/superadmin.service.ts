@@ -496,6 +496,23 @@ export async function reassignStoreAdmin(storeId: string, adminId: string) {
   return store;
 }
 
+export async function deleteStore(storeId: string): Promise<void> {
+  const store = await Store.findById(storeId).select('_id');
+  if (!store) {
+    throw new AppError('Store not found', 404);
+  }
+
+  const storeObjectId = store._id as mongoose.Types.ObjectId;
+
+  await Promise.all([
+    StoreSecret.deleteMany({ storeId: storeObjectId }),
+    Product.updateMany({ storeId: storeObjectId }, { $pull: { storeId: storeObjectId } }),
+    ProductRequest.deleteMany({ storeId: storeObjectId }),
+    User.updateMany({ selectedStore: storeObjectId }, { $unset: { selectedStore: 1 } }),
+    Store.deleteOne({ _id: storeObjectId }),
+  ]);
+}
+
 function toAdminAccountResponse(admin: any, assignedStore: any) {
   const dealerProfile = admin.dealerProfile || {};
 

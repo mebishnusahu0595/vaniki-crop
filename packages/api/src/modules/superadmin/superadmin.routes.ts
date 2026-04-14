@@ -9,6 +9,7 @@ import {
   createStoreSchema,
   createTestimonialSchema,
   customerQuerySchema,
+  deleteStoreSchema,
   orderQuerySchema,
   orderStatusUpdateSchema,
   paymentQuerySchema,
@@ -37,6 +38,7 @@ router.post('/stores', validate(createStoreSchema), superAdminController.createS
 router.put('/stores/:id', validate(updateStoreSchema), superAdminController.updateStore);
 router.patch('/stores/:id/toggle-active', validate(toggleStoreSchema), superAdminController.toggleStoreActive);
 router.patch('/stores/:id/reassign-admin', validate(reassignStoreAdminSchema), superAdminController.reassignStoreAdmin);
+router.delete('/stores/:id', validate(deleteStoreSchema), superAdminController.deleteStore);
 router.get('/stores/:id/secrets', superAdminController.getStoreSecrets);
 router.patch('/stores/:id/secrets', validate(updateStoreSecretsSchema), superAdminController.updateStoreSecrets);
 

@@ -55,6 +55,15 @@ export async function reassignStoreAdmin(req: Request, res: Response, next: Next
   }
 }
 
+export async function deleteStore(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await superAdminService.deleteStore(req.params.id as string);
+    res.status(200).json({ success: true, message: 'Store deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listAdmins(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await superAdminService.listAdmins(req.query);

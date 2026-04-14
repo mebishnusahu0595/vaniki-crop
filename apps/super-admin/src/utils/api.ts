@@ -420,6 +420,10 @@ export const adminApi = {
     });
     return response.data.data;
   },
+  deleteStore: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/superadmin/stores/${id}`);
+    return response.data;
+  },
   admins: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<AdminAccount[]>>('/superadmin/admins', { params });
     return { data: response.data.data, pagination: response.data.pagination! };

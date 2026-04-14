@@ -87,6 +87,10 @@ export const reassignStoreAdminSchema = z.object({
   body: z.object({ adminId: objectIdSchema }),
 });
 
+export const deleteStoreSchema = z.object({
+  params: z.object({ id: objectIdSchema }),
+});
+
 const createAdminBodySchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email().optional().or(z.literal('')),
