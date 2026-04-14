@@ -54,6 +54,17 @@ const storeSchema = z.object({
     coordinates: z.array(z.number()).length(2),
   }),
   deliveryRadius: numberFromInput(z.number().min(0), 10).default(10),
+  openHours: z
+    .object({
+      monday: z.string().trim().max(80).optional(),
+      tuesday: z.string().trim().max(80).optional(),
+      wednesday: z.string().trim().max(80).optional(),
+      thursday: z.string().trim().max(80).optional(),
+      friday: z.string().trim().max(80).optional(),
+      saturday: z.string().trim().max(80).optional(),
+      sunday: z.string().trim().max(80).optional(),
+    })
+    .optional(),
   isActive: boolish.optional(),
 });
 

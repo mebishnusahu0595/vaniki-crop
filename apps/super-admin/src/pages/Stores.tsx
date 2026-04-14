@@ -23,6 +23,13 @@ const storeSchema = z.object({
   latitude: z.coerce.number(),
   longitude: z.coerce.number(),
   deliveryRadius: z.coerce.number().min(0),
+  openHoursMonday: z.string().optional().or(z.literal('')),
+  openHoursTuesday: z.string().optional().or(z.literal('')),
+  openHoursWednesday: z.string().optional().or(z.literal('')),
+  openHoursThursday: z.string().optional().or(z.literal('')),
+  openHoursFriday: z.string().optional().or(z.literal('')),
+  openHoursSaturday: z.string().optional().or(z.literal('')),
+  openHoursSunday: z.string().optional().or(z.literal('')),
 });
 
 type StoreFormInput = z.input<typeof storeSchema>;
@@ -40,6 +47,13 @@ const storeDefaultValues: StoreFormInput = {
   latitude: 0,
   longitude: 0,
   deliveryRadius: 10,
+  openHoursMonday: '',
+  openHoursTuesday: '',
+  openHoursWednesday: '',
+  openHoursThursday: '',
+  openHoursFriday: '',
+  openHoursSaturday: '',
+  openHoursSunday: '',
 };
 
 export default function StoresPage() {
@@ -87,18 +101,30 @@ export default function StoresPage() {
 
     setFormError('');
 
+    const locationCoordinates = editing.location?.coordinates || [0, 0];
+    const [nextLongitude, nextLatitude] = locationCoordinates;
+    const editingAddress = editing.address || { street: '', city: '', state: '', pincode: '' };
+    const editingOpenHours = editing.openHours || {};
+
     reset({
       name: editing.name,
       phone: editing.phone,
       email: editing.email || '',
       adminId: editing.admin?.id || '',
-      street: editing.address.street,
-      city: editing.address.city,
-      state: editing.address.state,
-      pincode: editing.address.pincode,
-      latitude: editing.location.coordinates[1],
-      longitude: editing.location.coordinates[0],
+      street: editingAddress.street || '',
+      city: editingAddress.city || '',
+      state: editingAddress.state || '',
+      pincode: editingAddress.pincode || '',
+      latitude: nextLatitude || 0,
+      longitude: nextLongitude || 0,
       deliveryRadius: editing.deliveryRadius,
+      openHoursMonday: editingOpenHours.monday || '',
+      openHoursTuesday: editingOpenHours.tuesday || '',
+      openHoursWednesday: editingOpenHours.wednesday || '',
+      openHoursThursday: editingOpenHours.thursday || '',
+      openHoursFriday: editingOpenHours.friday || '',
+      openHoursSaturday: editingOpenHours.saturday || '',
+      openHoursSunday: editingOpenHours.sunday || '',
     });
     lastResolvedCoordinatesRef.current = '';
     autoFilledStreetRef.current = '';
@@ -160,17 +186,54 @@ export default function StoresPage() {
 
   const availableAdmins = useMemo(() => {
     const rows = adminsQuery.data?.data || [];
-    if (editing) {
-      return rows.filter(
-        (admin) => !admin.assignedStore || admin.assignedStore.id === editing.id || admin.id === editing.admin?.id,
-      );
+    const activeApproved = rows.filter((admin) => admin.isActive && admin.approvalStatus === 'approved');
+
+    const filteredRows = editing
+      ? activeApproved
+      : activeApproved.filter((admin) => !admin.assignedStore || !admin.assignedStore.isActive);
+
+    if (
+      editing?.admin
+      && !filteredRows.some((admin) => admin.id === editing.admin?.id)
+    ) {
+      return [
+        {
+          id: editing.admin.id,
+          name: editing.admin.name,
+          email: editing.admin.email,
+          mobile: editing.admin.mobile || '',
+          role: 'storeAdmin' as const,
+          isActive: Boolean(editing.admin.isActive),
+          status: editing.admin.isActive ? 'active' as const : 'inactive' as const,
+          approvalStatus: 'approved' as const,
+          assignedStore: editing
+            ? {
+                id: editing.id,
+                name: editing.name,
+                isActive: Boolean(editing.isActive),
+              }
+            : null,
+        },
+        ...filteredRows,
+      ];
     }
-    return rows.filter((admin) => !admin.assignedStore || !admin.assignedStore.isActive);
+
+    return filteredRows;
   }, [adminsQuery.data?.data, editing]);
 
   const upsertMutation = useMutation({
     mutationFn: async (values: StoreFormOutput) => {
       setFormError('');
+      const openHours = {
+        monday: values.openHoursMonday?.trim() || undefined,
+        tuesday: values.openHoursTuesday?.trim() || undefined,
+        wednesday: values.openHoursWednesday?.trim() || undefined,
+        thursday: values.openHoursThursday?.trim() || undefined,
+        friday: values.openHoursFriday?.trim() || undefined,
+        saturday: values.openHoursSaturday?.trim() || undefined,
+        sunday: values.openHoursSunday?.trim() || undefined,
+      };
+
       const payload = {
         name: values.name,
         phone: values.phone,
@@ -187,6 +250,7 @@ export default function StoresPage() {
           coordinates: [values.longitude, values.latitude] as [number, number],
         },
         deliveryRadius: values.deliveryRadius,
+        openHours,
       };
 
       if (editing) {
@@ -248,6 +312,7 @@ export default function StoresPage() {
             {availableAdmins.map((admin) => (
               <option key={admin.id} value={admin.id}>
                 {admin.name} ({admin.mobile})
+                {admin.assignedStore ? ` • assigned to ${admin.assignedStore.name}` : ''}
               </option>
             ))}
           </select>
@@ -260,6 +325,16 @@ export default function StoresPage() {
             <input type="number" step="0.000001" {...register('latitude', { valueAsNumber: true })} placeholder="Latitude" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
             <input type="number" step="0.000001" {...register('longitude', { valueAsNumber: true })} placeholder="Longitude" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
             <input type="number" {...register('deliveryRadius', { valueAsNumber: true })} placeholder="Delivery radius (km)" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <input {...register('openHoursMonday')} placeholder="Monday hours (e.g. 09:00-21:00)" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            <input {...register('openHoursTuesday')} placeholder="Tuesday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            <input {...register('openHoursWednesday')} placeholder="Wednesday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            <input {...register('openHoursThursday')} placeholder="Thursday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            <input {...register('openHoursFriday')} placeholder="Friday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            <input {...register('openHoursSaturday')} placeholder="Saturday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            <input {...register('openHoursSunday')} placeholder="Sunday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 md:col-span-2" />
           </div>
           <p className="text-xs font-semibold text-slate-500">City, state, and pincode auto-fill from the latitude and longitude.</p>
 
