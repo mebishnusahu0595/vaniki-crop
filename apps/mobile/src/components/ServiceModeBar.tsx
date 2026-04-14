@@ -5,10 +5,12 @@ import { useTranslation } from 'react-i18next';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
 import { getLanguageToggleLabel, toggleAppLanguage } from '../i18n';
+import { formatStoreAddress } from '../utils/format';
 
 export const ServiceModeBar = memo(function ServiceModeBar() {
   const { t } = useTranslation();
   const mode = useServiceModeStore((state) => state.mode);
+  const address = useServiceModeStore((state) => state.address);
   const openSelector = useServiceModeStore((state) => state.openSelector);
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
@@ -24,6 +26,7 @@ export const ServiceModeBar = memo(function ServiceModeBar() {
   };
 
   const languageToggleLabel = getLanguageToggleLabel();
+  const deliveryAddressText = formatStoreAddress(address);
 
   return (
     <View className="gap-2 rounded-[28px] border border-primary-100 bg-white px-4 py-4">
@@ -59,7 +62,9 @@ export const ServiceModeBar = memo(function ServiceModeBar() {
       <View className="flex-row items-center justify-between gap-3">
         <Pressable onPress={openSelector} className="flex-1 flex-row items-center justify-between">
           <Text className="text-xs font-black uppercase tracking-[2px] text-primary-400">
-            {t('mobile.serviceMode.from')}: {selectedStore?.name || t('mobile.serviceMode.chooseStore')}
+            {mode === 'delivery'
+              ? `${t('mobile.serviceMode.deliveringTo')}: ${deliveryAddressText || t('mobile.serviceMode.addAddress')}`
+              : `${t('mobile.serviceMode.pickupFrom')}: ${selectedStore?.name || t('mobile.serviceMode.chooseStore')}`}
           </Text>
           <Text className="text-xs font-semibold text-primary-500">{t('mobile.serviceMode.change')}</Text>
         </Pressable>

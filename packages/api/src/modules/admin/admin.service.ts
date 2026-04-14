@@ -191,6 +191,16 @@ export async function upsertDealerInventory(
 
     const safeQuantity = Number.isFinite(Number(entry.quantity)) ? Math.max(0, Number(entry.quantity)) : 0;
 
+    const existingInventoryRow = await DealerInventory.findOne({
+      storeId,
+      productId: entry.productId,
+      variantId: entry.variantId,
+    }).select('quantity');
+
+    if (existingInventoryRow && safeQuantity < existingInventoryRow.quantity) {
+      throw new AppError('Quantity can only be increased by store admins. Decreases happen through order deductions.', 400);
+    }
+
     await DealerInventory.findOneAndUpdate(
       {
         storeId,

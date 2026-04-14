@@ -68,7 +68,9 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
   const hasSearchSuggestions = categorySuggestions.length > 0 || productSuggestions.length > 0;
   const shouldShowSearchDropdown = isSearchFocused && debouncedSearch.length > 0;
 
-  const summaryText = selectedStore?.name || formatStoreAddress(address);
+  const summaryText = mode === 'delivery'
+    ? (formatStoreAddress(address) || t('storeSelector.addAddressPrompt'))
+    : (selectedStore?.name || t('storeSelector.chooseStore'));
   const activeLanguage = i18n.resolvedLanguage?.startsWith('hi') ? 'hi' : 'en';
   const languageToggleLabel = activeLanguage === 'hi' ? 'En' : 'हिंदी';
   const compactLanguageLabel = activeLanguage === 'hi' ? 'EN' : 'हि';
