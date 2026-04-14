@@ -12,17 +12,17 @@ import { formatDisplayStoreAddress, isMeaningfulAddressText, reverseGeocodeCoord
 import { currencyFormatter } from '../utils/format';
 
 const storeSchema = z.object({
-  name: z.string().min(2),
-  phone: z.string().min(10),
-  email: z.string().email().or(z.literal('')),
-  adminId: z.string().min(1),
-  street: z.string().min(3),
-  city: z.string().min(2),
-  state: z.string().min(2),
-  pincode: z.string().regex(/^\d{6}$/),
-  latitude: z.coerce.number(),
-  longitude: z.coerce.number(),
-  deliveryRadius: z.coerce.number().min(0),
+  name: z.string().trim().min(2, 'Store name must be at least 2 characters.'),
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number.'),
+  email: z.string().trim().email('Please enter a valid email address.').or(z.literal('')),
+  adminId: z.string().min(1, 'Please assign a store admin.'),
+  street: z.string().trim().min(3, 'Street is required.'),
+  city: z.string().trim().min(2, 'City is required.'),
+  state: z.string().trim().min(2, 'State is required.'),
+  pincode: z.string().trim().regex(/^\d{6}$/, 'Pincode must be exactly 6 digits.'),
+  latitude: z.coerce.number().min(-90, 'Latitude must be between -90 and 90.').max(90, 'Latitude must be between -90 and 90.'),
+  longitude: z.coerce.number().min(-180, 'Longitude must be between -180 and 180.').max(180, 'Longitude must be between -180 and 180.'),
+  deliveryRadius: z.coerce.number().min(0, 'Delivery radius cannot be negative.'),
   openHoursMonday: z.string().optional().or(z.literal('')),
   openHoursTuesday: z.string().optional().or(z.literal('')),
   openHoursWednesday: z.string().optional().or(z.literal('')),
@@ -82,7 +82,7 @@ export default function StoresPage() {
     setValue,
     getValues,
     watch,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = useForm<StoreFormInput, undefined, StoreFormOutput>({
     resolver: zodResolver(storeSchema),
     defaultValues: storeDefaultValues,
@@ -302,41 +302,162 @@ export default function StoresPage() {
           })}
           className="mt-6 space-y-4"
         >
-          <input {...register('name')} placeholder="Store name" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-          <div className="grid gap-3 md:grid-cols-2">
-            <input {...register('phone')} placeholder="Phone" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('email')} placeholder="Email" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-          </div>
-          <select {...register('adminId')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-            <option value="">Assign admin</option>
-            {availableAdmins.map((admin) => (
-              <option key={admin.id} value={admin.id}>
-                {admin.name} ({admin.mobile})
-                {admin.assignedStore ? ` • assigned to ${admin.assignedStore.name}` : ''}
-              </option>
-            ))}
-          </select>
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <input {...register('street')} placeholder="Street" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 md:col-span-2" />
-            <input {...register('city')} placeholder="City" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('state')} placeholder="State" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('pincode')} placeholder="Pincode" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input type="number" step="0.000001" {...register('latitude', { valueAsNumber: true })} placeholder="Latitude" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input type="number" step="0.000001" {...register('longitude', { valueAsNumber: true })} placeholder="Longitude" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input type="number" {...register('deliveryRadius', { valueAsNumber: true })} placeholder="Delivery radius (km)" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Store Name</label>
+            <input
+              {...register('name')}
+              placeholder="Store name"
+              className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.name ? 'border-rose-300' : 'border-primary-100'}`}
+            />
+            {errors.name ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.name.message}</p> : null}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
-            <input {...register('openHoursMonday')} placeholder="Monday hours (e.g. 09:00-21:00)" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('openHoursTuesday')} placeholder="Tuesday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('openHoursWednesday')} placeholder="Wednesday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('openHoursThursday')} placeholder="Thursday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('openHoursFriday')} placeholder="Friday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('openHoursSaturday')} placeholder="Saturday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            <input {...register('openHoursSunday')} placeholder="Sunday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 md:col-span-2" />
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Phone</label>
+              <input
+                {...register('phone')}
+                inputMode="numeric"
+                maxLength={10}
+                onInput={(event) => {
+                  event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
+                }}
+                placeholder="9876543210"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.phone ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.phone ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.phone.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Email</label>
+              <input
+                {...register('email')}
+                placeholder="store@example.com"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.email ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.email ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.email.message}</p> : null}
+            </div>
           </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Assign Admin</label>
+            <select
+              {...register('adminId')}
+              className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.adminId ? 'border-rose-300' : 'border-primary-100'}`}
+            >
+              <option value="">Assign admin</option>
+              {availableAdmins.map((admin) => (
+                <option key={admin.id} value={admin.id}>
+                  {admin.name} ({admin.mobile})
+                  {admin.assignedStore ? ` • assigned to ${admin.assignedStore.name}` : ''}
+                </option>
+              ))}
+            </select>
+            {errors.adminId ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.adminId.message}</p> : null}
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Street</label>
+              <input
+                {...register('street')}
+                placeholder="Street"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.street ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.street ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.street.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">City</label>
+              <input
+                {...register('city')}
+                placeholder="City"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.city ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.city ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.city.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">State</label>
+              <input
+                {...register('state')}
+                placeholder="State"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.state ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.state ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.state.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Pincode</label>
+              <input
+                {...register('pincode')}
+                inputMode="numeric"
+                maxLength={6}
+                onInput={(event) => {
+                  event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 6);
+                }}
+                placeholder="493332"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.pincode ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.pincode ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.pincode.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Latitude</label>
+              <input
+                type="number"
+                step="0.000001"
+                {...register('latitude', { valueAsNumber: true })}
+                placeholder="21.2333"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.latitude ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.latitude ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.latitude.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Longitude</label>
+              <input
+                type="number"
+                step="0.000001"
+                {...register('longitude', { valueAsNumber: true })}
+                placeholder="81.6333"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.longitude ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.longitude ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.longitude.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Delivery Radius (km)</label>
+              <input
+                type="number"
+                {...register('deliveryRadius', { valueAsNumber: true })}
+                placeholder="10"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.deliveryRadius ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.deliveryRadius ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.deliveryRadius.message}</p> : null}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Open Hours</label>
+            <div className="grid gap-3 md:grid-cols-2">
+              <input {...register('openHoursMonday')} placeholder="Monday hours (e.g. 09:00-21:00)" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              <input {...register('openHoursTuesday')} placeholder="Tuesday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              <input {...register('openHoursWednesday')} placeholder="Wednesday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              <input {...register('openHoursThursday')} placeholder="Thursday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              <input {...register('openHoursFriday')} placeholder="Friday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              <input {...register('openHoursSaturday')} placeholder="Saturday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              <input {...register('openHoursSunday')} placeholder="Sunday hours" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 md:col-span-2" />
+            </div>
+          </div>
+
           <p className="text-xs font-semibold text-slate-500">City, state, and pincode auto-fill from the latitude and longitude.</p>
+
+          {Object.keys(errors).length > 0 ? (
+            <p className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+              Please fix highlighted fields before submitting.
+            </p>
+          ) : null}
 
           <div className="flex gap-3">
             <button
