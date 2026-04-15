@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../config/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStoreStore } from '../store/useStoreStore';
@@ -24,6 +24,26 @@ const api = axios.create({
   withCredentials: true,
 });
 
+type RetryableRequestConfig = AxiosRequestConfig & {
+  _retry?: boolean;
+};
+
+let refreshAccessTokenPromise: Promise<string | null> | null = null;
+
+const shouldSkipRefresh = (url?: string) => {
+  if (!url) return false;
+  return url.includes('/auth/login') || url.includes('/auth/signup') || url.includes('/auth/refresh');
+};
+
+const refreshAccessToken = async (): Promise<string | null> => {
+  const response = await api.post<ApiResponse<{ accessToken: string }>>('/auth/refresh');
+  const nextToken = response.data.data?.accessToken;
+  if (!nextToken) return null;
+
+  useAuthStore.getState().setToken(nextToken);
+  return nextToken;
+};
+
 // Request interceptor to add Auth token and Store ID
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
@@ -44,11 +64,53 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      useAuthStore.getState().logout();
+  async (error) => {
+    if (!axios.isAxiosError(error)) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    const originalRequest = (error.config || {}) as RetryableRequestConfig;
+    const statusCode = error.response?.status;
+
+    if (statusCode !== 401 || !originalRequest) {
+      return Promise.reject(error);
+    }
+
+    if (originalRequest._retry || shouldSkipRefresh(originalRequest.url)) {
+      useAuthStore.getState().logout();
+      return Promise.reject(error);
+    }
+
+    const existingToken = useAuthStore.getState().token;
+    if (!existingToken) {
+      return Promise.reject(error);
+    }
+
+    originalRequest._retry = true;
+
+    try {
+      if (!refreshAccessTokenPromise) {
+        refreshAccessTokenPromise = refreshAccessToken().finally(() => {
+          refreshAccessTokenPromise = null;
+        });
+      }
+
+      const refreshedToken = await refreshAccessTokenPromise;
+      if (!refreshedToken) {
+        useAuthStore.getState().logout();
+        return Promise.reject(error);
+      }
+
+      originalRequest.headers = {
+        ...(originalRequest.headers || {}),
+        Authorization: `Bearer ${refreshedToken}`,
+      };
+
+      return api(originalRequest);
+    } catch (refreshError) {
+      useAuthStore.getState().logout();
+      return Promise.reject(refreshError);
+    }
   }
 );
 

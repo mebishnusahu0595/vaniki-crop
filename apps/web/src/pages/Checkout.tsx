@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -38,6 +38,7 @@ const Checkout: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [pickupStoreId, setPickupStoreId] = useState(selectedStore?.id || '');
+  const hasPlacedOrderRef = useRef(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     mobile: user?.mobile || '',
@@ -59,7 +60,9 @@ const Checkout: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!items.length) navigate('/cart');
+    if (!items.length && !hasPlacedOrderRef.current) {
+      navigate('/cart');
+    }
     if (!token) navigate('/login?redirect=/checkout');
   }, [items.length, navigate, token]);
 
@@ -174,6 +177,7 @@ const Checkout: React.FC = () => {
 
       if (paymentMethod === 'cod') {
         const confirmation = await storefrontApi.placeCodOrder(orderPayload);
+        hasPlacedOrderRef.current = true;
         clearCart();
         toast.success(t('checkoutPage.codOrderSuccess'));
         navigate(`/order-success/${confirmation.orderId}`);
@@ -213,6 +217,7 @@ const Checkout: React.FC = () => {
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
             });
+            hasPlacedOrderRef.current = true;
             clearCart();
             toast.success('Order placed successfully.');
             navigate(`/order-success/${confirmation.orderId}`);
