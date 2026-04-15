@@ -8,7 +8,11 @@ import * as orderService from './order.service.js';
  */
 export async function initiateOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await orderService.initiateOrder(req.userId!, req.body);
+    const payload = {
+      ...req.body,
+      storeId: req.body.storeId || req.storeId,
+    };
+    const result = await orderService.initiateOrder(req.userId!, payload);
     res.status(200).json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -20,7 +24,11 @@ export async function initiateOrder(req: Request, res: Response, next: NextFunct
  */
 export async function placeCodOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await orderService.placeCodOrder(req.userId!, req.body);
+    const payload = {
+      ...req.body,
+      storeId: req.body.storeId || req.storeId,
+    };
+    const result = await orderService.placeCodOrder(req.userId!, payload);
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -32,7 +40,11 @@ export async function placeCodOrder(req: Request, res: Response, next: NextFunct
  */
 export async function confirmOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await orderService.confirmOrder(req.userId!, req.body);
+    const payload = {
+      ...req.body,
+      storeId: req.body.storeId || req.storeId,
+    };
+    const result = await orderService.confirmOrder(req.userId!, payload);
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);

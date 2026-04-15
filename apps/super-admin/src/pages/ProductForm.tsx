@@ -763,6 +763,11 @@ export default function ProductFormPage() {
     enabled: isEdit,
   });
 
+  const currentCategoryId = productQuery.data?.category?.id;
+  const visibleCategories = (categoriesQuery.data?.data || []).filter(
+    (category) => category.isActive || category.id === currentCategoryId,
+  );
+
   if (isEdit && productQuery.isLoading) {
     return <LoadingBlock label="Loading product..." />;
   }
@@ -784,7 +789,7 @@ export default function ProductFormPage() {
         isEdit={isEdit}
         productId={id}
         product={productQuery.data}
-        categories={categoriesQuery.data?.data || []}
+        categories={visibleCategories}
       />
     </div>
   );

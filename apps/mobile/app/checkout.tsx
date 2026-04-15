@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
+import { useQuery } from '@tanstack/react-query';
 import { Screen } from '../src/components/Screen';
 import { useDebouncedValue } from '../src/hooks/useDebouncedValue';
 import { useFocusAwareScroll } from '../src/hooks/useFocusAwareScroll';
@@ -19,6 +20,7 @@ export default function CheckoutScreen() {
   const { items, couponCode, couponDiscount, clearCart } = useCartStore();
   const { mode, address, openSelector, setAddress } = useServiceModeStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
+  const setStore = useStoreStore((state) => state.setStore);
   const [name, setName] = useState(user?.name || '');
   const [mobile, setMobile] = useState(user?.mobile || '');
   const [street, setStreet] = useState(address?.street || user?.savedAddress?.street || '');
@@ -26,6 +28,7 @@ export default function CheckoutScreen() {
   const [state, setState] = useState(address?.state || user?.savedAddress?.state || '');
   const [pincode, setPincode] = useState(address?.pincode || user?.savedAddress?.pincode || '');
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
+  const [pickupStoreId, setPickupStoreId] = useState(selectedStore?.id || '');
   const [paying, setPaying] = useState(false);
   const { scrollRef, onInputFocus } = useFocusAwareScroll(120);
   const lastSavedAddressSignature = useRef('');
@@ -46,6 +49,14 @@ export default function CheckoutScreen() {
     700,
   );
 
+  const pickupStoresQuery = useQuery({
+    queryKey: ['mobile-checkout-pickup-stores'],
+    queryFn: storefrontApi.stores,
+    enabled: Boolean(token),
+  });
+
+  const pickupStores = pickupStoresQuery.data || [];
+
   useEffect(() => {
     if (mode !== 'delivery' || !address) return;
     if (address.street !== street) setStreet(address.street || '');
@@ -53,6 +64,10 @@ export default function CheckoutScreen() {
     if (address.state !== state) setState(address.state || '');
     if (address.pincode !== pincode) setPincode(address.pincode || '');
   }, [address?.street, address?.city, address?.state, address?.pincode, mode, street, city, state, pincode]);
+
+  useEffect(() => {
+    setPickupStoreId(selectedStore?.id || '');
+  }, [selectedStore?.id]);
 
   useEffect(() => {
     if (mode !== 'delivery') return;
@@ -144,9 +159,33 @@ export default function CheckoutScreen() {
       ) : (
         <View className="mt-5 rounded-[28px] bg-white p-5">
           <Text className="text-lg font-black text-primary-900">Pickup Store</Text>
-          <Text className="mt-2 text-sm leading-6 text-primary-900/70">
-            {selectedStore ? formatStoreAddress(selectedStore.address) : 'No store selected.'}
-          </Text>
+          <View className="mt-3 gap-2">
+            {pickupStores.map((store) => {
+              const isActive = pickupStoreId === store.id;
+
+              return (
+                <Pressable
+                  key={store.id}
+                  onPress={async () => {
+                    setPickupStoreId(store.id);
+                    try {
+                      await storefrontApi.selectStore(store.id);
+                      setStore(store);
+                    } catch (caughtError) {
+                      Alert.alert('Store selection failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
+                    }
+                  }}
+                  className={`rounded-[18px] border px-4 py-4 ${isActive ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-white'}`}
+                >
+                  <Text className="text-sm font-black text-primary-900">{store.name}</Text>
+                  <Text className="mt-1 text-sm text-primary-900/60">{formatStoreAddress(store.address)}</Text>
+                </Pressable>
+              );
+            })}
+            {!pickupStores.length ? (
+              <Text className="text-sm leading-6 text-primary-900/70">No pickup stores available right now.</Text>
+            ) : null}
+          </View>
         </View>
       )}
 
@@ -206,7 +245,7 @@ export default function CheckoutScreen() {
             return;
           }
 
-          if (!selectedStore) {
+          if (mode === 'pickup' && !selectedStore) {
             Alert.alert('Select a store', 'Please choose a store before checkout.');
             return;
           }
@@ -218,8 +257,8 @@ export default function CheckoutScreen() {
 
           setPaying(true);
           try {
+            const effectiveStoreId = mode === 'pickup' ? selectedStore?.id : selectedStore?.id || undefined;
             const orderPayload = {
-              storeId: selectedStore.id,
               serviceMode: mode,
               couponCode: couponCode || undefined,
               items: items.map((item) => ({
@@ -227,6 +266,7 @@ export default function CheckoutScreen() {
                 variantId: item.variantId,
                 qty: item.qty,
               })),
+              ...(effectiveStoreId ? { storeId: effectiveStoreId } : {}),
               shippingAddress,
             };
 
@@ -238,6 +278,7 @@ export default function CheckoutScreen() {
             }
 
             const initiated = await storefrontApi.initiateOrder(orderPayload);
+            const confirmedStoreId = (initiated as { storeId?: string }).storeId || effectiveStoreId;
             const payment = await RazorpayCheckout.open({
               key: initiated.razorpayKeyId,
               amount: Math.round(initiated.amount * 100),
@@ -255,6 +296,7 @@ export default function CheckoutScreen() {
 
             const confirmed = await storefrontApi.confirmOrder({
               ...orderPayload,
+              ...(confirmedStoreId ? { storeId: confirmedStoreId } : {}),
               razorpayOrderId: payment.razorpay_order_id,
               razorpayPaymentId: payment.razorpay_payment_id,
               razorpaySignature: payment.razorpay_signature,

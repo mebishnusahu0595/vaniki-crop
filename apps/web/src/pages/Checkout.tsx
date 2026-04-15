@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { useQuery } from '@tanstack/react-query';
 import { CreditCard, MapPin, Store as StoreIcon, ShieldCheck, Wallet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../store/useCartStore';
@@ -31,10 +32,12 @@ const Checkout: React.FC = () => {
   const { items, couponCode, couponDiscount, getSubtotal, clearCart } = useCartStore();
   const { user, token } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
+  const setStore = useStoreStore((state) => state.setStore);
   const { mode, address, setMode, setAddress } = useServiceModeStore();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
+  const [pickupStoreId, setPickupStoreId] = useState(selectedStore?.id || '');
   const [formData, setFormData] = useState({
     name: user?.name || '',
     mobile: user?.mobile || '',
@@ -48,10 +51,21 @@ const Checkout: React.FC = () => {
   const deliveryCharge = mode === 'delivery' ? (subtotal > 1000 ? 0 : 50) : 0;
   const total = subtotal - couponDiscount + deliveryCharge;
 
+  const { data: pickupStores = [], isLoading: isLoadingPickupStores } = useQuery({
+    queryKey: ['checkout-pickup-stores'],
+    queryFn: storefrontApi.stores,
+    enabled: !!token,
+    staleTime: 300000,
+  });
+
   useEffect(() => {
     if (!items.length) navigate('/cart');
     if (!token) navigate('/login?redirect=/checkout');
   }, [items.length, navigate, token]);
+
+  useEffect(() => {
+    setPickupStoreId(selectedStore?.id || '');
+  }, [selectedStore?.id]);
 
   const loadRazorpay = async () => {
     if (window.Razorpay) return true;
@@ -75,6 +89,10 @@ const Checkout: React.FC = () => {
 
     try {
       await storefrontApi.updateServiceMode(nextMode);
+      if (nextMode === 'delivery') {
+        setStore(null);
+        setPickupStoreId('');
+      }
     } catch (error) {
       setMode(previousMode);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -86,8 +104,27 @@ const Checkout: React.FC = () => {
     }
   };
 
+  const handlePickupStoreChange = async (nextStoreId: string) => {
+    setPickupStoreId(nextStoreId);
+
+    if (!nextStoreId) {
+      setStore(null);
+      return;
+    }
+
+    try {
+      await storefrontApi.selectStore(nextStoreId);
+      const matchedStore = pickupStores.find((store) => store.id === nextStoreId) || null;
+      if (matchedStore) {
+        setStore(matchedStore);
+      }
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('checkoutPage.chooseStoreFirst')));
+    }
+  };
+
   const handlePayment = async () => {
-    if (!selectedStore) {
+    if (mode === 'pickup' && !selectedStore) {
       toast.error(t('checkoutPage.chooseStoreFirst'));
       return;
     }
@@ -110,15 +147,17 @@ const Checkout: React.FC = () => {
             }
           : undefined;
 
+      const effectiveStoreId = mode === 'pickup' ? selectedStore?.id : selectedStore?.id || undefined;
+
       const orderPayload = {
         items: items.map((item) => ({
           productId: item.productId,
           variantId: item.variantId,
           qty: item.qty,
         })),
-        storeId: selectedStore.id,
         serviceMode: mode,
         couponCode: couponCode || undefined,
+        ...(effectiveStoreId ? { storeId: effectiveStoreId } : {}),
         shippingAddress,
       };
 
@@ -148,6 +187,7 @@ const Checkout: React.FC = () => {
       }
 
       const initiation = await storefrontApi.initiateOrder(orderPayload);
+      const confirmedStoreId = (initiation as { storeId?: string }).storeId || effectiveStoreId;
 
       const paymentObject = new window.Razorpay({
         key: initiation.razorpayKeyId,
@@ -168,6 +208,7 @@ const Checkout: React.FC = () => {
           try {
             const confirmation = await storefrontApi.confirmOrder({
               ...orderPayload,
+              ...(confirmedStoreId ? { storeId: confirmedStoreId } : {}),
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
@@ -284,10 +325,28 @@ const Checkout: React.FC = () => {
           ) : (
             <section className="surface-card p-6">
               <p className="section-kicker mb-2">{t('checkoutPage.pickupStore')}</p>
-              <h2 className="text-2xl font-black text-primary-900">{selectedStore?.name || t('checkoutPage.noStoreSelected')}</h2>
-              <p className="mt-3 text-sm font-medium leading-7 text-primary-900/60">
-                {selectedStore ? formatStoreAddress(selectedStore.address) : t('checkoutPage.choosePickupHint')}
-              </p>
+              <div className="space-y-3">
+                <select
+                  value={pickupStoreId}
+                  onChange={(event) => handlePickupStoreChange(event.target.value)}
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                >
+                  <option value="">{t('storeSelector.choosePickupStore')}</option>
+                  {pickupStores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+                <h2 className="text-2xl font-black text-primary-900">{selectedStore?.name || t('checkoutPage.noStoreSelected')}</h2>
+                <p className="text-sm font-medium leading-7 text-primary-900/60">
+                  {isLoadingPickupStores
+                    ? t('common.loading')
+                    : selectedStore
+                      ? formatStoreAddress(selectedStore.address)
+                      : t('checkoutPage.choosePickupHint')}
+                </p>
+              </div>
             </section>
           )}
 

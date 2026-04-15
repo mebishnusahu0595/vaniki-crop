@@ -71,6 +71,7 @@ const Account: React.FC = () => {
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isQuickModeSaving, setIsQuickModeSaving] = useState(false);
   const [profileServiceMode, setProfileServiceMode] = useState<ServiceMode>(mode);
   const [profilePickupStoreId, setProfilePickupStoreId] = useState(selectedStore?.id || '');
 
@@ -95,7 +96,7 @@ const Account: React.FC = () => {
   const { data: pickupStores = [], isLoading: isLoadingPickupStores } = useQuery({
     queryKey: ['account-pickup-stores'],
     queryFn: storefrontApi.stores,
-    enabled: !!token && activeTab === 'profile',
+    enabled: !!token,
     staleTime: 300000,
   });
 
@@ -116,6 +117,53 @@ const Account: React.FC = () => {
     setProfileServiceMode(mode);
     setProfilePickupStoreId(selectedStore?.id || '');
   }, [mode, selectedStore?.id]);
+
+  const handleQuickModeChange = async (nextMode: ServiceMode) => {
+    if (nextMode === mode) return;
+
+    setIsQuickModeSaving(true);
+    try {
+      const modeUser = await storefrontApi.updateServiceMode(nextMode);
+      setMode(nextMode);
+
+      if (nextMode === 'delivery') {
+        setStore(null);
+        setProfilePickupStoreId('');
+        updateUser({
+          ...modeUser,
+          selectedStore: null,
+        });
+      } else {
+        updateUser(modeUser);
+      }
+
+      toast.success(nextMode === 'delivery' ? t('storeSelector.deliverySaved') : t('storeSelector.pickupSaved'));
+    } catch {
+      toast.error(t('storeSelector.saveFailed'));
+    } finally {
+      setIsQuickModeSaving(false);
+    }
+  };
+
+  const handleQuickPickupStoreChange = async (nextStoreId: string) => {
+    setProfilePickupStoreId(nextStoreId);
+    if (!nextStoreId) return;
+
+    setIsQuickModeSaving(true);
+    try {
+      await storefrontApi.selectStore(nextStoreId);
+      const matchedStore = pickupStores.find((store) => store.id === nextStoreId) || null;
+      if (matchedStore) {
+        setStore(matchedStore);
+        updateUser({ selectedStore: matchedStore });
+      }
+      toast.success(t('storeSelector.pickupSaved'));
+    } catch {
+      toast.error(t('storeSelector.saveFailed'));
+    } finally {
+      setIsQuickModeSaving(false);
+    }
+  };
 
   const handleProfileSave = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -218,6 +266,57 @@ const Account: React.FC = () => {
         <p className="mt-4 text-base font-medium leading-8 text-white/75">
           {t('accountPage.accountDescription')}
         </p>
+      </section>
+
+      <section className="surface-card mt-6 p-6">
+        <p className="section-kicker mb-2">{t('storeSelector.serviceMode')}</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {([
+            { key: 'delivery', label: t('storeSelector.delivery') },
+            { key: 'pickup', label: t('storeSelector.pickup') },
+          ] as const).map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => handleQuickModeChange(item.key)}
+              disabled={isQuickModeSaving}
+              className={cn(
+                'rounded-2xl border px-4 py-3 text-sm font-black uppercase tracking-[0.16em] transition disabled:cursor-not-allowed disabled:opacity-60',
+                mode === item.key
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-primary-100 bg-primary-50 text-primary-900/70 hover:border-primary-300',
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        {mode === 'pickup' ? (
+          <div className="mt-4 space-y-2">
+            <label className="block text-xs font-black uppercase tracking-[0.16em] text-primary-500">
+              {t('serviceModeBar.selectNearbyStore')}
+            </label>
+            <select
+              value={profilePickupStoreId}
+              onChange={(event) => handleQuickPickupStoreChange(event.target.value)}
+              disabled={isQuickModeSaving}
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <option value="">{t('storeSelector.choosePickupStore')}</option>
+              {pickupStores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs font-medium text-primary-900/55">
+              {isLoadingPickupStores ? t('common.loading') : selectedStore ? formatStoreAddress(selectedStore.address) : t('checkoutPage.choosePickupHint')}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-4 text-xs font-medium text-primary-900/55">{t('storeSelector.addressHint')}</p>
+        )}
       </section>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[250px_1fr]">

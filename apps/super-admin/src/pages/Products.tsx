@@ -106,7 +106,7 @@ export default function ProductsPage() {
           className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none"
         >
           <option value="">All categories</option>
-          {categoriesQuery.data?.data.map((item) => (
+          {(categoriesQuery.data?.data || []).filter((item) => item.isActive).map((item) => (
             <option key={item.id} value={item.id}>{item.name}</option>
           ))}
         </select>

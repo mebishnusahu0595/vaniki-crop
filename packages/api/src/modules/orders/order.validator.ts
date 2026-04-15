@@ -17,17 +17,29 @@ const shippingAddressSchema = z.object({
   pincode: z.string().regex(/^\d{6}$/, 'Invalid pincode'),
 });
 
-/**
- * Zod schema for initiating an order.
- */
-export const initiateOrderSchema = z.object({
-  body: z.object({
-    storeId: objectIdSchema,
+const orderRequestBodySchema = z
+  .object({
+    storeId: objectIdSchema.optional(),
     serviceMode: z.enum(['delivery', 'pickup']),
     items: z.array(orderItemSchema).min(1, 'At least one item is required'),
     couponCode: z.string().trim().toUpperCase().optional(),
     shippingAddress: shippingAddressSchema.optional(),
-  }),
+  })
+  .superRefine((value, ctx) => {
+    if (value.serviceMode === 'pickup' && !value.storeId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['storeId'],
+        message: 'Pickup orders require a store selection',
+      });
+    }
+  });
+
+/**
+ * Zod schema for initiating an order.
+ */
+export const initiateOrderSchema = z.object({
+  body: orderRequestBodySchema,
 });
 
 /**
@@ -39,30 +51,40 @@ export const placeCodOrderSchema = initiateOrderSchema;
  * Zod schema for confirming an order.
  */
 export const confirmOrderSchema = z.object({
-  body: z.object({
-    razorpayOrderId: z.string().min(1, 'Razorpay Order ID is required'),
-    razorpayPaymentId: z.string().min(1, 'Razorpay Payment ID is required'),
-    razorpaySignature: z.string().min(1, 'Razorpay Signature is required'),
-    // These must match the initial request for verification and DB save
-    storeId: objectIdSchema,
-    serviceMode: z.enum(['delivery', 'pickup']),
-    items: z.array(
-      z.object({
-        productId: objectIdSchema,
-        variantId: z.string().min(1),
-        qty: z.number().int().min(1),
-      })
-    ).min(1),
-    couponCode: z.string().trim().toUpperCase().optional(),
-    shippingAddress: z.object({
-      name: z.string().trim(),
-      mobile: z.string(),
-      street: z.string(),
-      city: z.string(),
-      state: z.string(),
-      pincode: z.string(),
-    }).optional(),
-  }),
+  body: z
+    .object({
+      razorpayOrderId: z.string().min(1, 'Razorpay Order ID is required'),
+      razorpayPaymentId: z.string().min(1, 'Razorpay Payment ID is required'),
+      razorpaySignature: z.string().min(1, 'Razorpay Signature is required'),
+      // These must match the initial request for verification and DB save
+      storeId: objectIdSchema.optional(),
+      serviceMode: z.enum(['delivery', 'pickup']),
+      items: z.array(
+        z.object({
+          productId: objectIdSchema,
+          variantId: z.string().min(1),
+          qty: z.number().int().min(1),
+        })
+      ).min(1),
+      couponCode: z.string().trim().toUpperCase().optional(),
+      shippingAddress: z.object({
+        name: z.string().trim(),
+        mobile: z.string(),
+        street: z.string(),
+        city: z.string(),
+        state: z.string(),
+        pincode: z.string(),
+      }).optional(),
+    })
+    .superRefine((value, ctx) => {
+      if (value.serviceMode === 'pickup' && !value.storeId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['storeId'],
+          message: 'Pickup orders require a store selection',
+        });
+      }
+    }),
 });
 
 /**

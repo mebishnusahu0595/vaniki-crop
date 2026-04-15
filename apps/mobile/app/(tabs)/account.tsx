@@ -35,6 +35,7 @@ export default function AccountScreen() {
   const [password, setPassword] = useState({ currentPassword: '', newPassword: '' });
   const [serviceMode, setServiceMode] = useState<ServiceMode>(mode);
   const [pickupStoreId, setPickupStoreId] = useState(selectedStore?.id || '');
+  const [isQuickModeSaving, setIsQuickModeSaving] = useState(false);
   const wishlistProducts = (user?.wishlist || []).filter(
     (entry): entry is Product => typeof entry !== 'string',
   );
@@ -52,7 +53,7 @@ export default function AccountScreen() {
   const pickupStoresQuery = useQuery({
     queryKey: ['mobile-account-pickup-stores'],
     queryFn: storefrontApi.stores,
-    enabled: Boolean(user) && activeTab === 'profile',
+    enabled: Boolean(user),
   });
 
   const pickupStores = useMemo(() => pickupStoresQuery.data || [], [pickupStoresQuery.data]);
@@ -78,12 +79,116 @@ export default function AccountScreen() {
     );
   }
 
+  const handleQuickModeChange = async (nextMode: ServiceMode) => {
+    if (nextMode === mode) return;
+
+    setIsQuickModeSaving(true);
+    try {
+      const modeUser = await storefrontApi.updateServiceMode(nextMode);
+      setMode(nextMode);
+
+      if (nextMode === 'delivery') {
+        setStore(null);
+        setPickupStoreId('');
+        setUser({
+          ...user,
+          ...modeUser,
+          serviceMode: 'delivery',
+          selectedStore: null,
+        });
+      } else {
+        setUser({
+          ...user,
+          ...modeUser,
+          serviceMode: 'pickup',
+          selectedStore: modeUser.selectedStore ?? user.selectedStore ?? null,
+        });
+      }
+
+      Alert.alert('Updated', nextMode === 'delivery' ? 'Delivery mode activated.' : 'Pickup mode activated.');
+    } catch (caughtError) {
+      Alert.alert('Update failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
+    } finally {
+      setIsQuickModeSaving(false);
+    }
+  };
+
+  const handleQuickPickupStoreChange = async (nextStoreId: string) => {
+    if (!nextStoreId) return;
+
+    setPickupStoreId(nextStoreId);
+    setIsQuickModeSaving(true);
+    try {
+      const modeUser = mode === 'pickup' ? null : await storefrontApi.updateServiceMode('pickup');
+      const storeUser = await storefrontApi.updateSelectedStore(nextStoreId);
+      await storefrontApi.selectStore(nextStoreId);
+
+      const matchedStore = pickupStores.find((store) => store.id === nextStoreId) || null;
+      if (matchedStore) {
+        setStore(matchedStore);
+      }
+
+      setMode('pickup');
+      setUser({
+        ...user,
+        ...(modeUser || {}),
+        ...storeUser,
+        serviceMode: 'pickup',
+        selectedStore: storeUser.selectedStore ?? modeUser?.selectedStore ?? matchedStore ?? null,
+      });
+      Alert.alert('Store updated', 'Pickup store has been selected.');
+    } catch (caughtError) {
+      Alert.alert('Update failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
+    } finally {
+      setIsQuickModeSaving(false);
+    }
+  };
+
   return (
     <Screen>
       <Text className="text-3xl font-black text-primary-900">{user.name}</Text>
       <Text className="mt-2 text-sm text-primary-900/60">{user.mobile}</Text>
 
-      <View className="mt-5 flex-row rounded-full bg-primary-50 p-1">
+      <View className="mt-5 rounded-[28px] bg-white p-5">
+        <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Service Mode</Text>
+        <View className="mt-3 flex-row rounded-full bg-primary-50 p-1">
+          {(['delivery', 'pickup'] as const).map((item) => (
+            <Pressable
+              key={item}
+              onPress={() => handleQuickModeChange(item)}
+              disabled={isQuickModeSaving}
+              className={`flex-1 rounded-full px-3 py-3 ${mode === item ? 'bg-primary-500' : 'bg-transparent'} ${isQuickModeSaving ? 'opacity-60' : ''}`}
+            >
+              <Text className={`text-center text-[10px] font-black uppercase tracking-[1.2px] ${mode === item ? 'text-white' : 'text-primary-900/55'}`}>
+                {item}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {mode === 'pickup' ? (
+          <View className="mt-4 gap-2">
+            {pickupStores.map((store) => (
+              <Pressable
+                key={store.id}
+                onPress={() => handleQuickPickupStoreChange(store.id)}
+                disabled={isQuickModeSaving}
+                className={`rounded-[18px] border px-4 py-4 ${pickupStoreId === store.id ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-white'} ${isQuickModeSaving ? 'opacity-60' : ''}`}
+              >
+                <Text className="text-sm font-black text-primary-900">{store.name}</Text>
+                <Text className="mt-1 text-sm text-primary-900/60">{formatStoreAddress(store.address)}</Text>
+              </Pressable>
+            ))}
+            {!pickupStores.length ? (
+              <Text className="text-sm text-primary-900/60">No pickup stores available right now.</Text>
+            ) : null}
+          </View>
+        ) : (
+          <Text className="mt-4 text-sm text-primary-900/60">Delivery mode will use your saved address at checkout.</Text>
+        )}
+      </View>
+
+      <View className="mt-4 flex-row rounded-full bg-primary-50 p-1">
         {tabs.map((tab) => (
           <Pressable
             key={tab}

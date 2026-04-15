@@ -28,8 +28,9 @@ async function calculateCart(items: any[], storeId: string) {
       throw new AppError(`Product "${item.productName || item.productId}" not found or inactive`, 400);
     }
 
-    // Check if available at selected store
-    const isAvailableAtStore = product.storeId.some(id => id.toString() === storeId);
+    // Products without store assignment are treated as globally available.
+    const assignedStoreIds = (product.storeId || []).map((id: any) => id.toString());
+    const isAvailableAtStore = assignedStoreIds.length === 0 || assignedStoreIds.includes(storeId);
     if (!isAvailableAtStore) {
       throw new AppError(`Product "${product.name}" is not available at the selected store`, 400);
     }
@@ -66,6 +67,62 @@ async function calculateCart(items: any[], storeId: string) {
   return { subtotal, validatedItems };
 }
 
+async function resolveStoreIdForOrder(items: any[], serviceMode: 'delivery' | 'pickup', requestedStoreId?: string): Promise<string> {
+  if (requestedStoreId) {
+    return requestedStoreId;
+  }
+
+  if (serviceMode === 'pickup') {
+    throw new AppError('Please choose a pickup store to place this order', 400);
+  }
+
+  const activeStores = await Store.find({ isActive: true }).select('_id').lean();
+  const activeStoreIds = activeStores.map((store) => store._id.toString());
+
+  if (!activeStoreIds.length) {
+    throw new AppError('No active stores are available to fulfil this order right now', 400);
+  }
+
+  let candidateStoreIds: Set<string> | null = null;
+
+  for (const item of items) {
+    const product = await Product.findById(item.productId).select('isActive storeId name');
+    if (!product || !product.isActive) {
+      throw new AppError(`Product "${item.productName || item.productId}" not found or inactive`, 400);
+    }
+
+    const assignedStoreIds = (product.storeId || []).map((id: any) => id.toString());
+    const productStoreIds = assignedStoreIds.length ? assignedStoreIds : activeStoreIds;
+
+    if (candidateStoreIds === null) {
+      candidateStoreIds = new Set(productStoreIds);
+      continue;
+    }
+
+    const intersection = productStoreIds.filter((id) => candidateStoreIds!.has(id));
+    candidateStoreIds = new Set(intersection);
+
+    if (!candidateStoreIds.size) {
+      break;
+    }
+  }
+
+  if (!candidateStoreIds || !candidateStoreIds.size) {
+    throw new AppError('No single store can fulfil all cart items. Please choose pickup store or update cart.', 400);
+  }
+
+  for (const candidateStoreId of candidateStoreIds) {
+    try {
+      await calculateCart(items, candidateStoreId);
+      return candidateStoreId;
+    } catch {
+      // Try next candidate; final error is thrown below if no candidate works.
+    }
+  }
+
+  throw new AppError('Items are currently unavailable in stock for delivery. Please choose another store or update cart.', 400);
+}
+
 // ─── Customer Services ───────────────────────────────────────────────────
 
 /**
@@ -82,18 +139,20 @@ export async function initiateOrder(userId: string, input: any) {
     throw new AppError('Shipping address is required for delivery orders', 400);
   }
 
-  const store = await Store.findById(storeId);
+  const resolvedStoreId = await resolveStoreIdForOrder(items, serviceMode, storeId);
+
+  const store = await Store.findById(resolvedStoreId);
   if (!store || !store.isActive) {
     throw new AppError('Store not found or inactive', 400);
   }
 
   // 2. Calculate Subtotal & Validate Stock
-  const { subtotal, validatedItems } = await calculateCart(items, storeId);
+  const { subtotal, validatedItems } = await calculateCart(items, resolvedStoreId);
 
   // 3. Handle Coupon
   let couponDiscount = 0;
   if (couponCode) {
-    const couponResult = await validateCoupon(couponCode, storeId, subtotal);
+    const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal);
     if (!couponResult.valid) {
       throw new AppError(couponResult.message, 400);
     }
@@ -112,7 +171,7 @@ export async function initiateOrder(userId: string, input: any) {
     receipt: `rcpt_${Date.now()}`,
     notes: {
       userId,
-      storeId,
+      storeId: resolvedStoreId,
     },
   });
 
@@ -121,6 +180,7 @@ export async function initiateOrder(userId: string, input: any) {
     razorpayKeyId: process.env.RAZORPAY_KEY_ID,
     amount: totalAmount,
     currency: 'INR',
+    storeId: resolvedStoreId,
     orderSummary: {
       subtotal,
       couponDiscount,
@@ -144,17 +204,19 @@ export async function placeCodOrder(userId: string, input: any) {
     throw new AppError('Shipping address is required for delivery orders', 400);
   }
 
-  const store = await Store.findById(storeId);
+  const resolvedStoreId = await resolveStoreIdForOrder(items, serviceMode, storeId);
+
+  const store = await Store.findById(resolvedStoreId);
   if (!store || !store.isActive) {
     throw new AppError('Store not found or inactive', 400);
   }
 
-  const { subtotal, validatedItems } = await calculateCart(items, storeId);
+  const { subtotal, validatedItems } = await calculateCart(items, resolvedStoreId);
 
   let couponDiscount = 0;
   let validatedCoupon: any = null;
   if (couponCode) {
-    const couponResult = await validateCoupon(couponCode, storeId, subtotal);
+    const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal);
     if (!couponResult.valid) {
       throw new AppError(couponResult.message, 400);
     }
@@ -169,7 +231,7 @@ export async function placeCodOrder(userId: string, input: any) {
   const order = await Order.create({
     orderNumber,
     userId,
-    storeId,
+    storeId: resolvedStoreId,
     serviceMode,
     items: validatedItems,
     subtotal,
@@ -189,7 +251,7 @@ export async function placeCodOrder(userId: string, input: any) {
 
   for (const item of items) {
     const inventoryRow = await DealerInventory.findOne({
-      storeId,
+      storeId: resolvedStoreId,
       productId: item.productId,
       variantId: item.variantId,
     });
@@ -229,7 +291,7 @@ export async function placeCodOrder(userId: string, input: any) {
     });
   }
 
-  const populatedStore = await Store.findById(storeId).populate('adminId');
+  const populatedStore = await Store.findById(resolvedStoreId).populate('adminId');
   if (populatedStore && populatedStore.adminId && (populatedStore.adminId as any).email) {
     addEmailToQueue({
       to: (populatedStore.adminId as any).email,
@@ -272,10 +334,12 @@ export async function confirmOrder(userId: string, input: any) {
   }
 
   // 2. Re-calculate totals (Security measure)
-  const { subtotal, validatedItems } = await calculateCart(items, storeId);
+  const resolvedStoreId = await resolveStoreIdForOrder(items, serviceMode, storeId);
+
+  const { subtotal, validatedItems } = await calculateCart(items, resolvedStoreId);
   let couponDiscount = 0;
   if (couponCode) {
-    const couponResult = await validateCoupon(couponCode, storeId, subtotal);
+    const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal);
     if (!couponResult.valid) {
       throw new AppError(couponResult.message, 400);
     }
@@ -291,7 +355,7 @@ export async function confirmOrder(userId: string, input: any) {
   const order = await Order.create({
     orderNumber,
     userId,
-    storeId,
+    storeId: resolvedStoreId,
     serviceMode,
     items: validatedItems,
     subtotal,
@@ -311,7 +375,7 @@ export async function confirmOrder(userId: string, input: any) {
   // 4. Decrement Stock
   for (const item of items) {
     const inventoryRow = await DealerInventory.findOne({
-      storeId,
+      storeId: resolvedStoreId,
       productId: item.productId,
       variantId: item.variantId,
     });
@@ -352,7 +416,7 @@ export async function confirmOrder(userId: string, input: any) {
   }
 
   // Notify Store Admin
-  const store = await Store.findById(storeId).populate('adminId');
+  const store = await Store.findById(resolvedStoreId).populate('adminId');
   if (store && store.adminId && (store.adminId as any).email) {
     // Basic notification for admin, could use a separate template
     addEmailToQueue({
