@@ -36,8 +36,12 @@ const BestSellers: React.FC<BestSellersProps> = ({ products }) => {
             <div className="inline-flex min-w-max gap-2 px-1 sm:px-0">
               {tabs.map((tab) => (
                 <button
+                  type="button"
                   key={tab.slug}
-                  onClick={() => setActiveTab(tab.slug)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setActiveTab(tab.slug);
+                  }}
                   className={`relative whitespace-nowrap rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.12em] transition sm:px-5 sm:py-2.5 sm:text-sm sm:tracking-[0.18em] ${
                     activeTab === tab.slug
                       ? 'border-primary text-white'
