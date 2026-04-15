@@ -35,8 +35,10 @@ const Signup: React.FC = () => {
     setAuth(session, accessToken);
     setMode(session.serviceMode);
     setAddress(session.savedAddress || null);
-    if (session.selectedStore && typeof session.selectedStore !== 'string') {
+    if (session.serviceMode === 'pickup' && session.selectedStore && typeof session.selectedStore !== 'string') {
       setStore(session.selectedStore);
+    } else {
+      setStore(null);
     }
     navigate('/account');
   }, [navigate, setAddress, setAuth, setMode, setStore]);

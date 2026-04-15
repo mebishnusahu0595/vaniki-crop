@@ -66,9 +66,15 @@ const BestSellers: React.FC<BestSellersProps> = ({ products }) => {
             exit={{ opacity: 0, y: -16 }}
             className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
           >
-            {filteredProducts.slice(0, 8).map((product) => (
-              <ProductCard key={product.id} product={product} compact />
-            ))}
+            {filteredProducts.length ? (
+              filteredProducts.slice(0, 8).map((product) => (
+                <ProductCard key={product.id} product={product} compact />
+              ))
+            ) : (
+              <div className="col-span-full rounded-[1.5rem] border border-primary-100 bg-white px-5 py-6 text-sm font-medium text-primary-900/60">
+                Products will appear shortly.
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>

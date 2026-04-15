@@ -16,32 +16,38 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const CategoryStrip: React.FC<CategoryStripProps> = ({ categories }) => {
   const { t } = useTranslation();
+  const sectionRef = useRef<HTMLElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const safeCategories = categories.length ? categories : [];
 
   useGSAP(
     () => {
-      gsap.from('.category-circle', {
+      if (!sectionRef.current || !containerRef.current) return;
+
+      const circles = containerRef.current.querySelectorAll('.category-circle');
+      if (!circles.length) return;
+
+      gsap.from(circles, {
         x: -60,
         opacity: 0,
         stagger: 0.15,
         duration: 0.8,
         ease: 'power3.out',
         scrollTrigger: {
-          trigger: '.category-section',
+          trigger: sectionRef.current,
           start: 'top 80%',
         },
       });
     },
     {
-      scope: containerRef,
+      scope: sectionRef,
       dependencies: [safeCategories.length],
       revertOnUpdate: true,
     },
   );
 
   return (
-    <section className="category-section bg-white py-10 sm:py-14">
+    <section ref={sectionRef} className="category-section bg-white py-10 sm:py-14">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="mb-6 flex items-center justify-between">
           <div>

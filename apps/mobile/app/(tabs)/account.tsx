@@ -262,6 +262,7 @@ export default function AccountScreen() {
                 let nextUser = {
                   ...updatedProfile,
                   serviceMode: updatedMode.serviceMode,
+                  selectedStore: updatedMode.selectedStore ?? null,
                 };
 
                 setMode(serviceMode);
@@ -275,7 +276,14 @@ export default function AccountScreen() {
                   }
                   nextUser = {
                     ...nextUser,
-                    selectedStore: storeUser.selectedStore,
+                    selectedStore: storeUser.selectedStore ?? null,
+                  };
+                } else if (serviceMode === 'delivery') {
+                  setStore(null);
+                  setPickupStoreId('');
+                  nextUser = {
+                    ...nextUser,
+                    selectedStore: null,
                   };
                 }
 

@@ -129,8 +129,10 @@ export function StoreSelectorSheet() {
       setMode(draftMode);
       if (draftMode === 'delivery') {
         setAddress(draftAddress);
+        setStore(null);
+        setDraftStoreId('');
       }
-      if (chosenStore) {
+      if (draftMode === 'pickup' && chosenStore) {
         setStore(chosenStore);
       }
 
@@ -142,7 +144,7 @@ export function StoreSelectorSheet() {
           nextUser = await storefrontApi.updateMe({ savedAddress: draftAddress });
         }
 
-        if (chosenStore) {
+        if (draftMode === 'pickup' && chosenStore) {
           nextUser = await storefrontApi.updateSelectedStore(chosenStore.id);
           await storefrontApi.selectStore(chosenStore.id);
         }

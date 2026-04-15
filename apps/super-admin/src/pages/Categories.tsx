@@ -154,6 +154,36 @@ export default function CategoriesPage() {
     },
   });
 
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteCategory(id),
+    onSuccess: (deletedCategory) => {
+      queryClient.setQueryData(['admin-categories-screen'], (current: { data: Category[]; pagination?: unknown } | undefined) => {
+        if (!current?.data) return current;
+        return {
+          ...current,
+          data: current.data.filter((entry) => entry.id !== deletedCategory.id),
+        };
+      });
+
+      if (editing?.id === deletedCategory.id) {
+        setEditing(null);
+        setFormError('');
+        reset(categoryDefaultValues);
+        setImageUrlInput('');
+        setImageUrlError('');
+        clearFilePreview();
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['admin-categories-screen'] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to delete category.');
+    },
+    onSettled: () => {
+      setActioningCategoryId(null);
+    },
+  });
+
   if (categoriesQuery.isLoading) return <LoadingBlock label="Loading categories..." />;
 
   return (
@@ -274,24 +304,46 @@ export default function CategoriesPage() {
               <span className={category.isActive ? 'text-emerald-700' : 'text-slate-500'}>
                 {category.isActive ? 'Active' : 'Inactive'}
               </span>
-              <button
-                onClick={async () => {
-                  const nextState = !category.isActive;
-                  const actionLabel = nextState ? 'activate' : 'deactivate';
-                  if (!window.confirm(`${actionLabel[0].toUpperCase()}${actionLabel.slice(1)} ${category.name}?`)) return;
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    const nextState = !category.isActive;
+                    const actionLabel = nextState ? 'activate' : 'deactivate';
+                    if (!window.confirm(`${actionLabel[0].toUpperCase()}${actionLabel.slice(1)} ${category.name}?`)) return;
 
-                  setActioningCategoryId(category.id);
-                  try {
-                    await toggleCategoryMutation.mutateAsync({ id: category.id, isActive: nextState });
-                  } catch {
-                    // Error is already surfaced by mutation onError.
-                  }
-                }}
-                disabled={actioningCategoryId === category.id}
-                className={`text-sm font-semibold ${category.isActive ? 'text-rose-600' : 'text-emerald-700'}`}
-              >
-                {category.isActive ? 'Deactivate' : 'Activate'}
-              </button>
+                    setActioningCategoryId(category.id);
+                    try {
+                      await toggleCategoryMutation.mutateAsync({ id: category.id, isActive: nextState });
+                    } catch {
+                      // Error is already surfaced by mutation onError.
+                    }
+                  }}
+                  disabled={actioningCategoryId === category.id}
+                  className={`rounded-xl border px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] disabled:cursor-not-allowed disabled:opacity-60 ${
+                    category.isActive
+                      ? 'border-amber-100 text-amber-700'
+                      : 'border-emerald-100 text-emerald-700'
+                  }`}
+                >
+                  {category.isActive ? 'Deactivate' : 'Activate'}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm(`Delete ${category.name} permanently? This cannot be undone.`)) return;
+
+                    setActioningCategoryId(category.id);
+                    try {
+                      await deleteCategoryMutation.mutateAsync(category.id);
+                    } catch {
+                      // Error is already surfaced by mutation onError.
+                    }
+                  }}
+                  disabled={actioningCategoryId === category.id}
+                  className="rounded-xl border border-rose-100 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         ))}

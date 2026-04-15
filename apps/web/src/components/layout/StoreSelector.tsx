@@ -181,21 +181,25 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
       setMode(draftMode);
       if (draftMode === 'delivery') {
         setAddress(draftAddress);
+        setStore(null);
+        setDraftStoreId('');
       }
-      if (chosenStore) {
+      if (draftMode === 'pickup' && chosenStore) {
         setStore(chosenStore);
       }
 
       if (isAuthenticated) {
-        await storefrontApi.updateServiceMode(draftMode);
+        const modeUser = await storefrontApi.updateServiceMode(draftMode);
+        updateUser(modeUser);
 
         if (draftMode === 'delivery') {
           const updatedUser = await storefrontApi.updateMe({ savedAddress: draftAddress });
           updateUser(updatedUser);
         }
 
-        if (chosenStore) {
+        if (draftMode === 'pickup' && chosenStore) {
           await storefrontApi.selectStore(chosenStore.id);
+          updateUser({ selectedStore: chosenStore });
         }
       }
 

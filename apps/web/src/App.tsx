@@ -112,8 +112,10 @@ const SessionBootstrap: React.FC = () => {
     setUser(session);
     if (session.serviceMode) setMode(session.serviceMode);
     if (session.savedAddress) setAddress(session.savedAddress);
-    if (session.selectedStore && typeof session.selectedStore !== 'string') {
+    if (session.serviceMode === 'pickup' && session.selectedStore && typeof session.selectedStore !== 'string') {
       setStore(session.selectedStore);
+    } else {
+      setStore(null);
     }
     updateUser(session);
   }, [sessionQuery.data, setAddress, setMode, setStore, setUser, updateUser]);

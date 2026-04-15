@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Flame } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import HeroBanner from '../components/HeroBanner';
 import CategoryStrip from '../components/Home/CategoryStrip';
 import BestSellers from '../components/Home/BestSellers';
@@ -10,11 +11,40 @@ import Testimonials from '../components/Home/Testimonials';
 import ProductCard from '../components/shared/ProductCard';
 import { useHomepage } from '../hooks/useHomepage';
 import { useStoreStore } from '../store/useStoreStore';
+import { storefrontApi } from '../utils/api';
 
 const Home: React.FC = () => {
   const { t } = useTranslation();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const { data, isLoading } = useHomepage(selectedStore?.id);
+  const shouldLoadFallbackProducts =
+    !isLoading &&
+    Boolean(data) &&
+    ((data?.saleProducts || []).length === 0 || (data?.bestSellers || []).length === 0);
+  const fallbackProductsQuery = useQuery({
+    queryKey: ['home-fallback-products', selectedStore?.id],
+    queryFn: () =>
+      storefrontApi.products({
+        page: 1,
+        limit: 12,
+        sort: 'popular',
+        store: selectedStore?.id,
+      }),
+    enabled: shouldLoadFallbackProducts,
+    staleTime: 60 * 1000,
+  });
+  const saleProducts = React.useMemo(() => {
+    const directSaleProducts = data?.saleProducts || [];
+    if (directSaleProducts.length) return directSaleProducts;
+
+    return (fallbackProductsQuery.data?.data || []).slice(0, 10);
+  }, [data?.saleProducts, fallbackProductsQuery.data?.data]);
+  const bestSellerProducts = React.useMemo(() => {
+    const directBestSellers = data?.bestSellers || [];
+    if (directBestSellers.length) return directBestSellers;
+
+    return fallbackProductsQuery.data?.data || [];
+  }, [data?.bestSellers, fallbackProductsQuery.data?.data]);
 
   if (isLoading) {
     return (
@@ -70,18 +100,30 @@ const Home: React.FC = () => {
           </div>
 
           <div className="-mx-4 sm:mx-0">
-            <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4">
-              {(data?.saleProducts || []).map((product) => (
-                <div key={product.id} className="w-[74vw] max-w-[250px] shrink-0 snap-start sm:w-auto sm:max-w-none sm:shrink">
-                  <ProductCard product={product} compact />
-                </div>
-              ))}
-            </div>
+            {saleProducts.length ? (
+              <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4">
+                {saleProducts.map((product) => (
+                  <div key={product.id} className="w-[74vw] max-w-[250px] shrink-0 snap-start sm:w-auto sm:max-w-none sm:shrink">
+                    <ProductCard product={product} compact />
+                  </div>
+                ))}
+              </div>
+            ) : fallbackProductsQuery.isLoading ? (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                {[...Array(4)].map((_, index) => (
+                  <div key={index} className="h-[300px] animate-pulse rounded-[2rem] bg-primary-50" />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-5 text-sm font-medium text-primary-900/60">
+                Products will appear shortly.
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      <BestSellers products={data?.bestSellers || []} />
+      <BestSellers products={bestSellerProducts} />
 
       <section className="px-4 py-10 sm:px-6">
         <div className="container mx-auto">

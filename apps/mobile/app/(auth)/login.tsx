@@ -84,8 +84,10 @@ export default function LoginScreen() {
                     setUser(session);
                     setMode(session.serviceMode);
                     setAddress(session.savedAddress || null);
-                    if (session.selectedStore && typeof session.selectedStore !== 'string') {
+                    if (session.serviceMode === 'pickup' && session.selectedStore && typeof session.selectedStore !== 'string') {
                       setStore(session.selectedStore);
+                    } else {
+                      setStore(null);
                     }
                     await enableBiometrics();
                     router.replace('/(tabs)');

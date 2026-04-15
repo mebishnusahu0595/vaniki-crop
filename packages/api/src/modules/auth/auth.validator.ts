@@ -26,6 +26,16 @@ const referralCodeSchema = z
   .max(20, 'Referral code cannot exceed 20 characters')
   .regex(/^[A-Za-z0-9]+$/, 'Referral code can contain only letters and numbers');
 
+const optionalTrimmedField = (schema: z.ZodString) =>
+  z.preprocess(
+    (value) => {
+      if (typeof value !== 'string') return value;
+      const trimmed = value.trim();
+      return trimmed ? value : undefined;
+    },
+    schema.optional(),
+  );
+
 // ─── Schemas ─────────────────────────────────────────────────────────────
 
 /**
@@ -161,11 +171,11 @@ export const updateMeSchema = z.object({
     mobile: mobileSchema.optional(),
     savedAddress: z
       .object({
-        street: z.string().trim().min(3, 'Street must be at least 3 characters').optional(),
-        city: z.string().trim().min(2, 'City must be at least 2 characters').optional(),
-        state: z.string().trim().min(2, 'State must be at least 2 characters').optional(),
-        pincode: z.string().trim().regex(/^\d{6}$/, 'Pincode must be 6 digits').optional(),
-        landmark: z.string().trim().max(120, 'Landmark cannot exceed 120 characters').optional(),
+        street: optionalTrimmedField(z.string().trim().min(3, 'Street must be at least 3 characters')),
+        city: optionalTrimmedField(z.string().trim().min(2, 'City must be at least 2 characters')),
+        state: optionalTrimmedField(z.string().trim().min(2, 'State must be at least 2 characters')),
+        pincode: optionalTrimmedField(z.string().trim().regex(/^\d{6}$/, 'Pincode must be 6 digits')),
+        landmark: optionalTrimmedField(z.string().trim().max(120, 'Landmark cannot exceed 120 characters')),
       })
       .optional(),
   }),

@@ -529,9 +529,14 @@ export async function updateServiceMode(
   userId: string,
   serviceMode: 'delivery' | 'pickup',
 ): Promise<IUser> {
+  const updatePayload: Record<string, unknown> = { serviceMode };
+  if (serviceMode === 'delivery') {
+    updatePayload.selectedStore = null;
+  }
+
   const user = await User.findByIdAndUpdate(
     userId,
-    { serviceMode },
+    updatePayload,
     { new: true, runValidators: true },
   ).populate('selectedStore', 'name address');
   if (!user) throw new AppError('User not found', 404);
@@ -614,6 +619,34 @@ export async function updateMe(userId: string, input: UpdateMeInput): Promise<IU
   }
 
   if (input.savedAddress) {
+    const addressPatch: Partial<{
+      street: string;
+      city: string;
+      state: string;
+      pincode: string;
+      landmark?: string;
+    }> = {};
+
+    const street = input.savedAddress.street?.trim();
+    if (street) addressPatch.street = street;
+
+    const city = input.savedAddress.city?.trim();
+    if (city) addressPatch.city = city;
+
+    const state = input.savedAddress.state?.trim();
+    if (state) addressPatch.state = state;
+
+    const pincode = input.savedAddress.pincode?.trim();
+    if (pincode) addressPatch.pincode = pincode;
+
+    const landmark = input.savedAddress.landmark?.trim();
+    if (landmark) {
+      addressPatch.landmark = landmark;
+    } else if (input.savedAddress.landmark !== undefined) {
+      addressPatch.landmark = undefined;
+    }
+
+    if (Object.keys(addressPatch).length > 0) {
     const existingAddress = user.savedAddress
       ? { ...user.savedAddress }
       : {
@@ -625,7 +658,7 @@ export async function updateMe(userId: string, input: UpdateMeInput): Promise<IU
         };
     const mergedAddress = {
       ...existingAddress,
-      ...input.savedAddress,
+      ...addressPatch,
     };
 
     user.savedAddress = {
@@ -635,6 +668,7 @@ export async function updateMe(userId: string, input: UpdateMeInput): Promise<IU
       pincode: mergedAddress.pincode,
       ...(mergedAddress.landmark ? { landmark: mergedAddress.landmark } : {}),
     };
+    }
   }
 
   await user.save();

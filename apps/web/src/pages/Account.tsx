@@ -140,19 +140,35 @@ const Account: React.FC = () => {
         },
       });
 
-      await storefrontApi.updateServiceMode(profileServiceMode);
+      const modeUser = await storefrontApi.updateServiceMode(profileServiceMode);
       setMode(profileServiceMode);
+      let nextUser = {
+        ...updatedUser,
+        serviceMode: modeUser.serviceMode,
+        selectedStore: modeUser.selectedStore ?? null,
+      };
 
       if (profileServiceMode === 'pickup' && profilePickupStoreId) {
         await storefrontApi.selectStore(profilePickupStoreId);
         const matchedStore = pickupStores.find((store) => store.id === profilePickupStoreId) || null;
         if (matchedStore) {
           setStore(matchedStore);
+          nextUser = {
+            ...nextUser,
+            selectedStore: matchedStore,
+          };
         }
+      } else if (profileServiceMode === 'delivery') {
+        setStore(null);
+        setProfilePickupStoreId('');
+        nextUser = {
+          ...nextUser,
+          selectedStore: null,
+        };
       }
 
-      updateUser(updatedUser);
-      setAddress(updatedUser.savedAddress || null);
+      updateUser(nextUser);
+      setAddress(nextUser.savedAddress || null);
       toast.success(t('accountPage.profileUpdated'));
     } catch {
       toast.error(t('accountPage.profileUpdateFailed'));
