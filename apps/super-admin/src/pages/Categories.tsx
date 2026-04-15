@@ -155,17 +155,20 @@ export default function CategoriesPage() {
   });
 
   const deleteCategoryMutation = useMutation({
-    mutationFn: (id: string) => adminApi.deleteCategory(id),
-    onSuccess: (deletedCategory) => {
+    mutationFn: async (id: string) => {
+      await adminApi.permanentlyDeleteCategory(id);
+      return id;
+    },
+    onSuccess: (deletedCategoryId) => {
       queryClient.setQueryData(['admin-categories-screen'], (current: { data: Category[]; pagination?: unknown } | undefined) => {
         if (!current?.data) return current;
         return {
           ...current,
-          data: current.data.filter((entry) => entry.id !== deletedCategory.id),
+          data: current.data.filter((entry) => entry.id !== deletedCategoryId),
         };
       });
 
-      if (editing?.id === deletedCategory.id) {
+      if (editing?.id === deletedCategoryId) {
         setEditing(null);
         setFormError('');
         reset(categoryDefaultValues);
@@ -329,6 +332,11 @@ export default function CategoriesPage() {
                 </button>
                 <button
                   onClick={async () => {
+                    if (category.isActive) {
+                      window.alert('Deactivate category first, then use Delete for permanent removal.');
+                      return;
+                    }
+
                     if (!window.confirm(`Delete ${category.name} permanently? This cannot be undone.`)) return;
 
                     setActioningCategoryId(category.id);
@@ -338,7 +346,7 @@ export default function CategoriesPage() {
                       // Error is already surfaced by mutation onError.
                     }
                   }}
-                  disabled={actioningCategoryId === category.id}
+                  disabled={actioningCategoryId === category.id || category.isActive}
                   className="rounded-xl border border-rose-100 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Delete

@@ -305,6 +305,10 @@ export const adminApi = {
     const response = await api.delete<ApiResponse<Category>>(`/admin/categories/${id}`);
     return response.data.data;
   },
+  permanentlyDeleteCategory: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/admin/categories/${id}/permanent`);
+    return response.data;
+  },
   orders: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<Order[]>>('/superadmin/orders', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
