@@ -50,16 +50,29 @@ const uploadsDirectory = resolve(currentDirectory, '../../../uploads');
 app.set('trust proxy', 1);
 
 // ─── Security Middleware ─────────────────────────────────────────────────
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  }),
+);
+
+const allowedOrigins = [
+  'https://vanikicrop.com',
+  'https://www.vanikicrop.com',
+  'https://admin.vanikicrop.com',
+  'https://superadmin.vanikicrop.com',
+  ...(process.env.NODE_ENV !== 'production'
+    ? ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4173']
+    : []),
+];
+
 app.use(
   cors({
-    origin: [
-      'https://vanikicrop.com',
-      'https://www.vanikicrop.com',
-      'https://admin.vanikicrop.com',
-      'https://superadmin.vanikicrop.com',
-    ],
+    origin: allowedOrigins,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 app.use(compression());
