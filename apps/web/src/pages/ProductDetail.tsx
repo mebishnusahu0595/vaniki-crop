@@ -233,7 +233,7 @@ const ProductDetail: React.FC = () => {
                   heightHint={1000}
                   loading="lazy"
                   containerClassName="h-full w-full"
-                  className="h-full w-full object-cover transition duration-500 hover:scale-105"
+                  className="h-full w-full object-contain p-4 transition duration-500 hover:scale-105"
                 />
               ) : null}
             </div>
@@ -254,7 +254,7 @@ const ProductDetail: React.FC = () => {
                   heightHint={140}
                   loading="lazy"
                   containerClassName="h-full w-full"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain p-1"
                 />
               </button>
             ))}
@@ -301,32 +301,34 @@ const ProductDetail: React.FC = () => {
               </p>
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <div className="flex items-center rounded-full border border-primary-100 bg-white px-2 py-1">
-                <button onClick={() => setQuantity((current) => Math.max(1, current - 1))} className="px-3 py-2 font-black">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex h-[52px] w-full items-center justify-between rounded-full border border-primary-100 bg-white px-2 sm:w-auto sm:justify-start">
+                <button onClick={() => setQuantity((current) => Math.max(1, current - 1))} className="flex h-10 w-12 items-center justify-center font-black">
                   -
                 </button>
-                <span className="w-10 text-center text-lg font-black text-primary-900">{quantity}</span>
-                <button onClick={() => setQuantity((current) => current + 1)} className="px-3 py-2 font-black">
+                <span className="w-12 text-center text-lg font-black text-primary-900">{quantity}</span>
+                <button onClick={() => setQuantity((current) => current + 1)} className="flex h-10 w-12 items-center justify-center font-black">
                   +
                 </button>
               </div>
-              <button
-                onClick={handleAddToCart}
-                disabled={selectedVariant.stock <= 0}
-                className="flex flex-1 items-center justify-center gap-2 rounded-full bg-primary-900 px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/30"
-              >
-                <ShoppingCart size={18} />
-                <span>{t('productDetail.addToCart')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleShare}
-                className="flex items-center justify-center gap-2 rounded-full border border-primary-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-primary-900 transition hover:bg-primary-50"
-              >
-                <Share2 size={16} />
-                <span>{t('productDetail.share')}</span>
-              </button>
+              <div className="flex w-full gap-3 sm:w-auto sm:flex-1">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={selectedVariant.stock <= 0}
+                  className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-primary-900 px-6 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/30"
+                >
+                  <ShoppingCart size={18} />
+                  <span>{t('productDetail.addToCart')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border border-primary-200 bg-white text-primary-900 transition hover:bg-primary-50 sm:w-auto sm:px-6"
+                >
+                  <Share2 size={16} />
+                  <span className="hidden sm:inline-block sm:ml-2 text-sm font-black uppercase tracking-[0.2em]">{t('productDetail.share')}</span>
+                </button>
+              </div>
             </div>
           </div>
 

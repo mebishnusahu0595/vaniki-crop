@@ -222,7 +222,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
                   heightHint={560}
                   loading="lazy"
                   containerClassName="h-full w-full"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-primary-50 text-primary-400">
