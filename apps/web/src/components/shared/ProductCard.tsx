@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Minus, Plus, Scale, Sparkles } from 'lucide-react';
+import { Heart, Minus, Plus, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +10,6 @@ import type { Product } from '../../types/storefront';
 import { formatPrice, getDiscountPercent } from '../../utils/format';
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { useCompareStore } from '../../store/useCompareStore';
 import { storefrontApi } from '../../utils/api';
 import { emitCartFlyAnimation } from '../../utils/cartAnimation';
 import { resolveMediaUrl } from '../../utils/media';
@@ -63,14 +62,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const updateUser = useAuthStore((state) => state.updateUser);
-  const comparedProducts = useCompareStore((state) => state.products);
-  const toggleCompareProduct = useCompareStore((state) => state.toggleProduct);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [activeVariantIndex, setActiveVariantIndex] = useState(0);
 
   const wishlistIds = (user?.wishlist || []).map((entry) => (typeof entry === 'string' ? entry : entry.id));
   const isWishlisted = wishlistIds.includes(product.id);
-  const isCompared = comparedProducts.some((entry) => entry.id === product.id);
 
   useEffect(() => {
     scheduleProductCardBatch();
@@ -138,19 +134,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
     } catch {
       toast.error(t('productCard.wishlistFailed'));
     }
-  };
-
-  const handleToggleCompare = (event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const result = toggleCompareProduct(product);
-    if (result.message.includes('up to 3')) {
-      toast.error(result.message);
-      return;
-    }
-
-    toast.success(result.message);
   };
 
   if (!variant) return null;

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ShoppingCart, ChevronRight, Share2, Truck, ShieldCheck, RotateCcw } from 'lucide-react';
+import { ChevronRight, Share2, Truck, ShieldCheck, RotateCcw } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import toast from 'react-hot-toast';
 import { Helmet } from 'react-helmet-async';
@@ -16,6 +16,7 @@ import { storefrontApi } from '../utils/api';
 import { addRecentlyViewedProduct } from '../utils/recentlyViewed';
 import { formatPrice } from '../utils/format';
 import { resolveMediaUrl } from '../utils/media';
+import { cn } from '../utils/cn';
 import type { Product } from '../types/storefront';
 
 const ProductDetail: React.FC = () => {
@@ -50,7 +51,6 @@ const ProductDetail: React.FC = () => {
     () => (product?.images || []).map((image) => ({ ...image, url: resolveMediaUrl(image.url, image.publicId) })),
     [product?.images],
   );
-  const activeImage = normalizedImages[activeImageIndex]?.url || normalizedImages[0]?.url;
   const pricing = selectedVariant ? formatPrice(selectedVariant.mrp, selectedVariant.price) : null;
   const related = (relatedProducts?.data || []).filter((item) => item.id !== product?.id).slice(0, 4);
   const canonicalUrl = product ? `${siteUrl}/product/${product.slug}` : `${siteUrl}/products`;
