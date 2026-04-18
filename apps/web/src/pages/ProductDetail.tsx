@@ -221,10 +221,10 @@ const ProductDetail: React.FC = () => {
         <span className="text-primary-900">{product.name}</span>
       </div>
 
-      <section className="grid gap-8 lg:grid-cols-[1fr_0.95fr]">
-        <div className="space-y-4">
-          <div className="surface-card overflow-hidden p-6">
-            <div className="aspect-square overflow-hidden rounded-[2rem] bg-primary-50">
+      <section className="mx-auto max-w-2xl space-y-8">
+        <div className="mx-auto max-w-lg space-y-4">
+          <div className="surface-card flex items-center justify-center p-6">
+            <div className="relative flex h-[350px] w-full max-w-[350px] items-center justify-center overflow-hidden rounded-[2rem] bg-primary-50 sm:h-[420px] sm:max-w-[420px]">
               {activeImage ? (
                 <OptimizedImage
                   src={activeImage}
@@ -238,7 +238,7 @@ const ProductDetail: React.FC = () => {
               ) : null}
             </div>
           </div>
-          <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
+          <div className="no-scrollbar flex justify-center gap-3 overflow-x-auto pb-2">
             {normalizedImages.map((image, index) => (
               <button
                 key={`${image.url}-${index}`}
@@ -339,7 +339,7 @@ const ProductDetail: React.FC = () => {
         </div>
       </section>
 
-      <section className="mt-10 grid gap-6 lg:grid-cols-[1fr_0.95fr]">
+      <section className="mx-auto mt-10 max-w-2xl space-y-6">
         <div className="surface-card p-6">
           <div className="flex items-center justify-between">
             <div>
