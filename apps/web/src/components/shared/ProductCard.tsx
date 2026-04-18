@@ -157,61 +157,47 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
 
   return (
     <motion.div
-      whileHover={{ y: -6 }}
+      whileHover={{ y: -8 }}
       className={cn(
-        'product-card surface-card group flex h-full flex-col overflow-hidden',
-        compact ? 'rounded-[1.5rem]' : 'rounded-[2rem]',
+        'product-card group flex h-full flex-col overflow-hidden bg-white transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 border border-primary-50',
+        compact ? 'rounded-[2rem]' : 'rounded-[2.5rem]',
       )}
     >
       <Link to={`/product/${product.slug}`} className="relative block">
         <div
           className={cn(
-            'relative overflow-hidden bg-[radial-gradient(circle_at_top_right,_rgba(82,183,136,0.18),_transparent_28%),linear-gradient(180deg,_rgba(240,250,245,0.8),_rgba(255,255,255,0.98))]',
-            compact ? 'p-3 sm:p-3.5' : 'p-4 sm:p-5',
+            'relative overflow-hidden bg-[#fafafa]',
+            compact ? 'p-2' : 'p-3',
           )}
         >
           <div
             className={cn(
-              'relative mx-auto aspect-square w-full overflow-hidden bg-white ring-1 ring-primary-100',
-              compact ? 'rounded-[1.05rem]' : 'rounded-[1.35rem]',
+              'relative mx-auto aspect-square w-full overflow-hidden bg-white shadow-sm ring-1 ring-primary-50',
+              compact ? 'rounded-[1.5rem]' : 'rounded-[2rem]',
             )}
           >
             {discountPercent > 0 && (
-              <span className="absolute left-2.5 top-2.5 z-20 inline-flex max-w-[46%] items-center rounded-full bg-[#ff6b6b] px-2.5 py-1 text-[10px] font-black uppercase leading-none tracking-[0.14em] text-white shadow-sm">
+              <span className="absolute left-3 top-3 z-20 inline-flex items-center rounded-lg bg-red-500 px-2 py-1 text-[9px] font-black uppercase leading-none tracking-widest text-white shadow-lg shadow-red-500/20">
                 {discountPercent}% Off
               </span>
             )}
-            {product.category?.name && (
-              <span className="absolute right-2.5 top-2.5 z-20 max-w-[46%] truncate rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-black uppercase leading-none tracking-[0.14em] text-primary-500 shadow-sm">
-                {product.category.name}
-              </span>
-            )}
-            <div className="absolute bottom-2.5 right-2.5 z-20 flex items-center gap-2">
+            
+            <div className="absolute bottom-3 right-3 z-20 flex flex-col gap-2 opacity-0 transition-all duration-300 group-hover:translate-y-[-4px] group-hover:opacity-100 lg:group-hover:flex">
               <button
                 type="button"
                 onClick={handleToggleWishlist}
-                className={`rounded-full border px-2.5 py-2 transition ${
+                className={cn(
+                  "rounded-xl border p-2.5 transition-all shadow-sm",
                   isWishlisted
-                    ? 'border-red-200 bg-red-50 text-red-500'
-                    : 'border-white/85 bg-white/90 text-primary-900 hover:bg-white'
-                }`}
+                    ? "border-red-100 bg-red-50 text-red-500"
+                    : "border-primary-50 bg-white text-primary-900/40 hover:bg-primary-900 hover:text-white"
+                )}
                 aria-label={isWishlisted ? t('productCard.removeFromWishlist') : t('productCard.addToWishlist')}
               >
                 <Heart size={14} fill={isWishlisted ? 'currentColor' : 'none'} />
               </button>
-              <button
-                type="button"
-                onClick={handleToggleCompare}
-                className={`rounded-full border px-2.5 py-2 transition ${
-                  isCompared
-                    ? 'border-primary bg-primary text-white'
-                    : 'border-white/85 bg-white/90 text-primary-900 hover:bg-white'
-                }`}
-                aria-label={isCompared ? t('productCard.removeFromCompare') : t('productCard.addToCompare')}
-              >
-                <Scale size={14} />
-              </button>
             </div>
+
             <div className="flex h-full items-center justify-center">
               {image ? (
                 <OptimizedImage
@@ -222,7 +208,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
                   heightHint={560}
                   loading="lazy"
                   containerClassName="h-full w-full"
-                  className="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-105"
+                  className="h-full w-full object-contain p-4 transition-transform duration-700 group-hover:scale-110"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-primary-50 text-primary-400">
@@ -234,54 +220,52 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
         </div>
       </Link>
 
-      <div className={cn('flex flex-1 flex-col', compact ? 'p-4' : 'p-5')}>
+      <div className={cn('flex flex-1 flex-col', compact ? 'p-5' : 'p-6')}>
+        <div className="mb-2">
+           <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">{product.category?.name}</span>
+        </div>
         <Link
           to={`/product/${product.slug}`}
-          className={cn('line-clamp-2 font-black leading-tight text-primary-900', compact ? 'text-base' : 'text-lg')}
+          className={cn('line-clamp-2 font-black leading-tight text-primary-900 transition-colors hover:text-primary', compact ? 'text-lg' : 'text-xl')}
         >
           {product.name}
         </Link>
-        <p className={cn('mt-2 line-clamp-2 font-medium text-primary-900/55', compact ? 'text-xs' : 'text-sm')}>
-          {product.shortDescription || t('productCard.shortDescriptionFallback')}
-        </p>
-
+        
         <div className="mt-4 flex flex-wrap gap-2">
-          {product.variants.map((item, index) => (
+          {product.variants.slice(0, 3).map((item, index) => (
             <button
               key={item.id}
               onClick={(event) => {
                 event.preventDefault();
                 setActiveVariantIndex(index);
               }}
-              className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] transition ${
+              className={cn(
+                "rounded-lg px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest transition-all",
                 activeVariantIndex === index
-                  ? 'bg-primary text-white'
-                  : 'bg-primary-50 text-primary-900/55 hover:bg-primary-100'
-              }`}
+                  ? "bg-primary-900 text-white shadow-md shadow-primary-900/10"
+                  : "bg-primary-50/50 text-primary-900/30 hover:bg-primary-50"
+              )}
             >
               {item.label}
             </button>
           ))}
         </div>
 
-        <div className={cn('mt-auto', compact ? 'pt-4' : 'pt-5')}>
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              {mrpText && <p className="text-sm font-bold text-primary-900/35 line-through">{mrpText}</p>}
-              <p className={cn('font-black leading-none text-primary-900', compact ? 'text-2xl' : 'text-3xl')}>{priceText}</p>
+        <div className={cn('mt-auto', compact ? 'pt-6' : 'pt-8')}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col">
+              <p className={cn('font-black leading-none text-primary-900', compact ? 'text-2xl' : 'text-3xl')}>
+                {priceText}
+              </p>
+              {mrpText && <p className="mt-1 text-xs font-bold text-primary-900/20 line-through tracking-tight">{mrpText}</p>}
             </div>
-            {discountPercent > 0 && (
-              <span className="rounded-full bg-primary-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-primary">
-                {t('productCard.savePercent', { percent: discountPercent })}
-              </span>
-            )}
           </div>
 
           {inCartQty > 0 ? (
             <div
               className={cn(
-                'mt-5 flex items-center justify-between rounded-2xl border border-primary-200 bg-primary-50 px-2',
-                compact ? 'h-10' : 'h-12',
+                'mt-5 flex items-center justify-between rounded-xl bg-primary-50/50 p-1 ring-1 ring-primary-100/50',
+                compact ? 'h-11' : 'h-12',
               )}
             >
               <button
@@ -294,15 +278,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
                   }
                   updateQty(product.id, variant.id, inCartQty - 1);
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary-200 bg-white text-primary-900 transition hover:bg-primary-100"
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-primary-900 shadow-sm transition-all hover:bg-primary-900 hover:text-white"
                 aria-label="Decrease quantity"
               >
                 <Minus size={14} />
               </button>
-              <div className="text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-primary-500">Qty</p>
-                <p className={cn('font-black text-primary-900', compact ? 'text-sm' : 'text-base')}>{inCartQty}</p>
-              </div>
+              <span className={cn('font-black text-primary-900', compact ? 'text-sm' : 'text-base')}>{inCartQty}</span>
               <button
                 type="button"
                 onClick={(event) => {
@@ -311,7 +292,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
                   updateQty(product.id, variant.id, inCartQty + 1);
                 }}
                 disabled={variant.stock > 0 && inCartQty >= variant.stock}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary-200 bg-white text-primary-900 transition hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-45"
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-primary-900 shadow-sm transition-all hover:bg-primary-900 hover:text-white disabled:opacity-30"
                 aria-label="Increase quantity"
               >
                 <Plus size={14} />
@@ -322,11 +303,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
               onClick={handleAddToCart}
               disabled={variant.stock <= 0}
               className={cn(
-                'mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-900 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:bg-primary-100 disabled:text-primary-900/30',
-                compact ? 'h-10' : 'h-12',
+                'mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-900 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-primary-900/10 transition-all hover:bg-primary hover:translate-y-[-2px] active:translate-y-0 disabled:opacity-30 disabled:translate-y-0',
+                compact ? 'h-11' : 'h-12',
               )}
             >
-              <Plus size={16} />
+              <Plus size={14} />
               <span>{variant.stock > 0 ? t('productCard.addToCart') : t('productCard.outOfStock')}</span>
             </button>
           )}
