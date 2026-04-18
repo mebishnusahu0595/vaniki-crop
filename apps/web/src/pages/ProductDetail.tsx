@@ -527,6 +527,23 @@ const ProductDetail: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Recently Viewed */}
+          {recentlyViewed.length > 0 && (
+            <div className="mt-24 space-y-12">
+              <div className="flex items-end justify-between border-b-4 border-primary-50 pb-6">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.3em] text-primary mb-2">History</p>
+                  <h2 className="text-3xl font-black uppercase tracking-tight text-primary-900 lg:text-4xl">
+                    {t('productDetail.recentlyViewed')}
+                  </h2>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-6 lg:grid-cols-4 lg:gap-10">
+                {recentlyViewed.map(p => <ProductCard key={p.id} product={p} />)}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
