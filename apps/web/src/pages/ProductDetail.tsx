@@ -526,8 +526,8 @@ const ProductDetail: React.FC = () => {
                 {related.map(p => <ProductCard key={p.id} product={p} />)}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Mobile Sticky CTA */}
