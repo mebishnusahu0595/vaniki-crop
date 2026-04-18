@@ -416,7 +416,7 @@ const ProductDetail: React.FC = () => {
             Description
           </h2>
           <div
-            className="prose max-w-none rounded-2xl border border-primary-50 bg-[#fafaf8] p-6 text-sm leading-relaxed text-primary-900/70 prose-headings:text-primary-900 prose-strong:text-primary-900 sm:p-8 lg:p-10"
+            className="prose max-w-none overflow-hidden break-words rounded-2xl border border-primary-50 bg-[#fafaf8] p-6 text-sm leading-relaxed text-primary-900/70 prose-headings:text-primary-900 prose-strong:text-primary-900 sm:p-8 lg:p-10 [overflow-wrap:anywhere]"
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(product.description) }}
           />
         </div>

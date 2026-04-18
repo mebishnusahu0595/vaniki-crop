@@ -226,7 +226,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
                 "rounded-lg px-2.5 py-1.5 text-[9px] font-black uppercase tracking-widest transition-all",
                 activeVariantIndex === index
                   ? "bg-primary-900 text-white shadow-md shadow-primary-900/10"
-                  : "bg-primary-50/50 text-primary-900/30 hover:bg-primary-50"
+                  : "bg-primary-50 text-primary-900/60 hover:bg-primary-100"
               )}
             >
               {item.label}
@@ -286,7 +286,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, compact = false }) =
               onClick={handleAddToCart}
               disabled={variant.stock <= 0}
               className={cn(
-                'mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-900 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-primary-900/10 transition-all hover:bg-primary hover:translate-y-[-2px] active:translate-y-0 disabled:opacity-30 disabled:translate-y-0',
+                'mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary-900 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-primary-900/10 transition-all hover:bg-primary hover:translate-y-[-2px] active:translate-y-0 disabled:bg-primary-900/40 disabled:shadow-none disabled:translate-y-0',
                 compact ? 'h-11' : 'h-12',
               )}
             >
