@@ -102,7 +102,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
           </Pressable>
         </View>
         {discount ? (
-          <View className="absolute left-3 top-3 rounded-full bg-rose-500 px-2.5 py-1">
+          <View className="absolute left-3 top-3 z-20 rounded-full bg-rose-500 px-2.5 py-1">
             <Text className="text-[10px] font-black uppercase tracking-[1px] text-white">{discount}% Off</Text>
           </View>
         ) : null}

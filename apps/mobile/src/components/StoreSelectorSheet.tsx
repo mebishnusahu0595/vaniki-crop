@@ -165,7 +165,7 @@ export function StoreSelectorSheet() {
       <View className="flex-1 justify-end bg-primary-900/40">
         <Pressable className="flex-1" onPress={closeSelector} />
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
         >
           <View className="max-h-[90%] rounded-t-[32px] bg-offwhite px-5 pb-8 pt-5">

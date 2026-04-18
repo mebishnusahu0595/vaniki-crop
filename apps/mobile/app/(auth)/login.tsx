@@ -25,7 +25,7 @@ export default function LoginScreen() {
     <Screen withServiceBar={false} scroll={false} keyboardAware={false}>
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
       >
         <ScrollView
@@ -33,41 +33,47 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 300 }}
         >
           <View className="mt-10 rounded-[32px] bg-white p-8">
             <Text className="text-[11px] font-black uppercase tracking-[2px] text-primary-400">Mobile Login</Text>
             <Text className="mt-3 text-3xl font-black text-primary-900">Welcome back to Vaniki Crop.</Text>
             <Text className="mt-4 text-sm leading-7 text-primary-900/70">Login with your mobile number and password.</Text>
 
-            <TextInput
-              value={mobile}
-              onChangeText={setMobile}
-              onFocus={onInputFocus}
-              placeholder="Mobile Number"
-              keyboardType="number-pad"
-              className="mt-6 rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-              placeholderTextColor="#7a978b"
-            />
+            <View className="mt-6">
+              <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Mobile Number</Text>
+              <TextInput
+                value={mobile}
+                onChangeText={setMobile}
+                onFocus={onInputFocus}
+                placeholder="Mobile Number"
+                keyboardType="number-pad"
+                className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                placeholderTextColor="#7a978b"
+              />
+            </View>
 
             <View className="mt-5 gap-3">
-              <View className="relative">
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  onFocus={onInputFocus}
-                  secureTextEntry={!showPassword}
-                  placeholder="Password"
-                  className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"
-                  placeholderTextColor="#7a978b"
-                />
-                <Pressable
-                  onPress={() => setShowPassword((current) => !current)}
-                  className="absolute right-4 top-1/2 -mt-3 h-6 w-6 items-center justify-center"
-                  hitSlop={8}
-                >
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#527164" />
-                </Pressable>
+              <View>
+                <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Password</Text>
+                <View className="relative">
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    onFocus={onInputFocus}
+                    secureTextEntry={!showPassword}
+                    placeholder="Password"
+                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"
+                    placeholderTextColor="#7a978b"
+                  />
+                  <Pressable
+                    onPress={() => setShowPassword((current) => !current)}
+                    className="absolute right-4 top-1/2 -mt-3 h-6 w-6 items-center justify-center"
+                    hitSlop={8}
+                  >
+                    <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#527164" />
+                  </Pressable>
+                </View>
               </View>
               <Pressable
                 disabled={loading}

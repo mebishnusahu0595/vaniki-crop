@@ -31,7 +31,7 @@ export default function SignupScreen() {
     <Screen withServiceBar={false} scroll={false} keyboardAware={false}>
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
       >
         <ScrollView
@@ -39,7 +39,7 @@ export default function SignupScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: 300 }}
         >
           <View className="mt-10 rounded-[32px] bg-white p-8">
             <Text className="text-[11px] font-black uppercase tracking-[2px] text-primary-400">Create Account</Text>
@@ -47,43 +47,48 @@ export default function SignupScreen() {
             <View className="mt-6 gap-3">
               {([
                 ['name', 'Full Name'],
-                ['email', 'Email'],
+                ['email', 'Email Address'],
                 ['mobile', 'Mobile Number'],
-                ['referralCode', 'Referral Code'],
-              ] as const).map(([key, placeholder]) => (
-                <TextInput
-                  key={key}
-                  value={form[key]}
-                  onChangeText={(value) =>
-                    setForm((current) => ({
-                      ...current,
-                      [key]: key === 'referralCode' ? value.toUpperCase() : value,
-                    }))
-                  }
-                  onFocus={onInputFocus}
-                  placeholder={placeholder}
-                  keyboardType={key === 'mobile' ? 'number-pad' : 'default'}
-                  className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-                  placeholderTextColor="#7a978b"
-                />
+                ['referralCode', 'Referral Code (Optional)'],
+              ] as const).map(([key, label]) => (
+                <View key={key}>
+                  <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">{label}</Text>
+                  <TextInput
+                    value={form[key]}
+                    onChangeText={(value) =>
+                      setForm((current) => ({
+                        ...current,
+                        [key]: key === 'referralCode' ? value.toUpperCase() : value,
+                      }))
+                    }
+                    onFocus={onInputFocus}
+                    placeholder={label}
+                    keyboardType={key === 'mobile' ? 'number-pad' : 'default'}
+                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                    placeholderTextColor="#7a978b"
+                  />
+                </View>
               ))}
-              <View className="relative">
-                <TextInput
-                  value={form.password}
-                  onChangeText={(value) => setForm((current) => ({ ...current, password: value }))}
-                  onFocus={onInputFocus}
-                  placeholder="Password"
-                  secureTextEntry={!showPassword}
-                  className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"
-                  placeholderTextColor="#7a978b"
-                />
-                <Pressable
-                  onPress={() => setShowPassword((current) => !current)}
-                  className="absolute right-4 top-1/2 -mt-3 h-6 w-6 items-center justify-center"
-                  hitSlop={8}
-                >
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#527164" />
-                </Pressable>
+              <View>
+                <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Password</Text>
+                <View className="relative">
+                  <TextInput
+                    value={form.password}
+                    onChangeText={(value) => setForm((current) => ({ ...current, password: value }))}
+                    onFocus={onInputFocus}
+                    placeholder="Password"
+                    secureTextEntry={!showPassword}
+                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"
+                    placeholderTextColor="#7a978b"
+                  />
+                  <Pressable
+                    onPress={() => setShowPassword((current) => !current)}
+                    className="absolute right-4 top-1/2 -mt-3 h-6 w-6 items-center justify-center"
+                    hitSlop={8}
+                  >
+                    <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#527164" />
+                  </Pressable>
+                </View>
               </View>
             </View>
             <Pressable

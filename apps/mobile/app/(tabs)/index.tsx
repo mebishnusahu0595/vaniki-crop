@@ -122,32 +122,36 @@ export default function HomeScreen() {
               </Pressable>
             }
           />
-          <FlashList
-            horizontal
-            data={homepageQuery.data?.featuredCategories || []}
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <CategoryCard
-                category={item}
-                onPress={() => router.push({ pathname: '/products', params: { category: item.slug } })}
-              />
-            )}
-          />
+          <View style={{ height: 110 }}>
+            <FlashList
+              horizontal
+              data={homepageQuery.data?.featuredCategories || []}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <CategoryCard
+                  category={item}
+                  onPress={() => router.push({ pathname: '/products', params: { category: item.slug } })}
+                />
+              )}
+            />
+          </View>
         </View>
 
         <View>
           <SectionHeader title={t('mobile.home.bestDeals')} />
           {saleProducts.length ? (
-            <FlashList
-              horizontal
-              data={saleProducts}
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <View className="mr-3 w-[184px]">
-                  <ProductCard product={item} compact />
-                </View>
-              )}
-            />
+            <View style={{ minHeight: 330, width: '100%' }}>
+              <FlashList
+                horizontal
+                data={saleProducts}
+                showsHorizontalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <View className="mr-3 w-[184px]">
+                    <ProductCard product={item} compact />
+                  </View>
+                )}
+              />
+            </View>
           ) : fallbackProductsQuery.isLoading ? (
             <View className="rounded-[24px] bg-white py-8">
               <ActivityIndicator color="#2D6A4F" />
@@ -188,16 +192,18 @@ export default function HomeScreen() {
             </View>
           </ScrollView>
           {tabProducts.length ? (
-            <FlashList
-              data={tabProducts}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <View className="mr-3 w-[184px]">
-                  <ProductCard product={item} compact />
-                </View>
-              )}
-            />
+            <View style={{ minHeight: 330, width: '100%' }}>
+              <FlashList
+                data={tabProducts}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                renderItem={({ item }) => (
+                  <View className="mr-3 w-[184px]">
+                    <ProductCard product={item} compact />
+                  </View>
+                )}
+              />
+            </View>
           ) : fallbackProductsQuery.isLoading ? (
             <View className="rounded-[24px] bg-white py-8">
               <ActivityIndicator color="#2D6A4F" />
@@ -211,30 +217,32 @@ export default function HomeScreen() {
 
         <View className="pb-4">
           <SectionHeader title={t('mobile.home.whatFarmersSay')} />
-          <FlashList
-            ref={testimonialListRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={homepageQuery.data?.testimonials || []}
-            snapToInterval={testimonialSnapInterval}
-            decelerationRate="fast"
-            onMomentumScrollEnd={(event) => {
-              const offsetX = event.nativeEvent.contentOffset.x;
-              const nextIndex = Math.round(offsetX / testimonialSnapInterval);
-              setActiveTestimonialIndex(nextIndex);
-            }}
-            renderItem={({ item }) => (
-              <View
-                style={{ width: testimonialCardWidth }}
-                className="mr-3 rounded-[24px] border border-primary-100 bg-white p-4"
-              >
-                <ReviewStars rating={item.rating} />
-                <Text className="mt-4 text-sm leading-6 text-primary-900/70">{item.message}</Text>
-                <Text className="mt-5 text-sm font-black text-primary-900">{item.name}</Text>
-                <Text className="text-xs font-semibold text-primary-500">{item.designation}</Text>
-              </View>
-            )}
-          />
+          <View style={{ minHeight: 200, width: '100%' }}>
+            <FlashList
+              ref={testimonialListRef}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={homepageQuery.data?.testimonials || []}
+              snapToInterval={testimonialSnapInterval}
+              decelerationRate="fast"
+              onMomentumScrollEnd={(event) => {
+                const offsetX = event.nativeEvent.contentOffset.x;
+                const nextIndex = Math.round(offsetX / testimonialSnapInterval);
+                setActiveTestimonialIndex(nextIndex);
+              }}
+              renderItem={({ item }) => (
+                <View
+                  style={{ width: testimonialCardWidth }}
+                  className="mr-3 rounded-[24px] border border-primary-100 bg-white p-4"
+                >
+                  <ReviewStars rating={item.rating} />
+                  <Text className="mt-4 text-sm leading-6 text-primary-900/70">{item.message}</Text>
+                  <Text className="mt-5 text-sm font-black text-primary-900">{item.name}</Text>
+                  <Text className="text-xs font-semibold text-primary-500">{item.designation}</Text>
+                </View>
+              )}
+            />
+          </View>
           {(homepageQuery.data?.testimonials || []).length > 1 ? (
             <View className="mt-3 flex-row justify-center gap-2">
               {(homepageQuery.data?.testimonials || []).map((item, index) => (

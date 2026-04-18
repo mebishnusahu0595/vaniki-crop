@@ -105,7 +105,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <Link to={`/product/${product.slug}`} className="relative block">
         <div className="relative aspect-square overflow-hidden bg-[#fafaf8]">
           {discountPercent > 0 && (
-            <span className="absolute left-2 top-2 z-10 rounded-md bg-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
+            <span className="absolute left-2 top-2 z-20 rounded-md bg-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
               {discountPercent}% Off
             </span>
           )}

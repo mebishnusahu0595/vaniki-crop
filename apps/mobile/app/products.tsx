@@ -66,7 +66,7 @@ export default function ProductsScreen() {
   );
 
   return (
-    <Screen>
+    <Screen scroll={false}>
       <SectionHeader title="Products" kicker={selectedStore ? `Showing ${selectedStore.name}` : 'All stores'} />
       <TextInput
         value={search}
@@ -128,38 +128,41 @@ export default function ProductsScreen() {
         ))}
       </View>
 
-      <FlashList
-        data={products}
-        numColumns={2}
-        renderItem={({ item }) => (
-          <View className="flex-1 px-1.5">
-            <ProductCard product={item} />
-          </View>
-        )}
-        ListFooterComponent={
-          <View className="flex-row items-center justify-between py-4">
-            <Pressable
-              disabled={page <= 1}
-              onPress={() => setPage((current) => Math.max(1, current - 1))}
-              className={`rounded-full px-4 py-3 ${page <= 1 ? 'bg-primary-100' : 'bg-white'}`}
-            >
-              <Text className="text-xs font-black uppercase tracking-[1px] text-primary-900">Previous</Text>
-            </Pressable>
-            <Text className="text-xs font-black uppercase tracking-[2px] text-primary-400">
-              Page {productsQuery.data?.pagination.page || 1}
-            </Text>
-            <Pressable
-              disabled={!productsQuery.data || page >= productsQuery.data.pagination.totalPages}
-              onPress={() => setPage((current) => current + 1)}
-              className={`rounded-full px-4 py-3 ${
-                !productsQuery.data || page >= productsQuery.data.pagination.totalPages ? 'bg-primary-100' : 'bg-white'
-              }`}
-            >
-              <Text className="text-xs font-black uppercase tracking-[1px] text-primary-900">Next</Text>
-            </Pressable>
-          </View>
-        }
-      />
+      <View className="flex-1 mt-2 mb-4">
+        <FlashList
+          data={products}
+          numColumns={2}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <View className="flex-1 px-1.5 mb-4">
+              <ProductCard product={item} />
+            </View>
+          )}
+          ListFooterComponent={
+            <View className="flex-row items-center justify-between py-4 pb-8">
+              <Pressable
+                disabled={page <= 1}
+                onPress={() => setPage((current) => Math.max(1, current - 1))}
+                className={`rounded-full px-4 py-3 ${page <= 1 ? 'bg-primary-100' : 'bg-white'}`}
+              >
+                <Text className="text-xs font-black uppercase tracking-[1px] text-primary-900">Previous</Text>
+              </Pressable>
+              <Text className="text-xs font-black uppercase tracking-[2px] text-primary-400">
+                Page {productsQuery.data?.pagination.page || 1}
+              </Text>
+              <Pressable
+                disabled={!productsQuery.data || page >= productsQuery.data.pagination.totalPages}
+                onPress={() => setPage((current) => current + 1)}
+                className={`rounded-full px-4 py-3 ${
+                  !productsQuery.data || page >= productsQuery.data.pagination.totalPages ? 'bg-primary-100' : 'bg-white'
+                }`}
+              >
+                <Text className="text-xs font-black uppercase tracking-[1px] text-primary-900">Next</Text>
+              </Pressable>
+            </View>
+          }
+        />
+      </View>
     </Screen>
   );
 }

@@ -1,4 +1,5 @@
 import type { Address, Product } from '../types/storefront';
+import { API_BASE_URL } from '../config/api';
 
 const PLACEHOLDER_ADDRESS_VALUES = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
 
@@ -20,7 +21,11 @@ export function formatStoreAddress(address?: Partial<Address> | null) {
 }
 
 export function getPrimaryImage(product?: Product | null) {
-  return product?.images?.[0]?.url || 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80';
+  const url = product?.images?.[0]?.url;
+  if (!url) return 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80';
+  if (url.startsWith('http')) return url;
+  const baseUrl = API_BASE_URL.replace(/\/api$/, '');
+  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
 export function getDefaultVariant(product?: Product | null) {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
 import { useQuery } from '@tanstack/react-query';
@@ -36,10 +37,10 @@ export default function CheckoutScreen() {
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.qty, 0), [items]);
   const addressDraft = useMemo(
     () => ({
-      street: street.trim(),
-      city: city.trim(),
-      state: state.trim(),
-      pincode: pincode.trim(),
+      street: street,
+      city: city,
+      state: state,
+      pincode: pincode,
       landmark: address?.landmark || user?.savedAddress?.landmark || '',
     }),
     [street, city, state, pincode, address?.landmark, user?.savedAddress?.landmark],
@@ -100,7 +101,11 @@ export default function CheckoutScreen() {
       ? {
           name: name.trim(),
           mobile: mobile.trim(),
-          ...addressDraft,
+          street: addressDraft.street.trim(),
+          city: addressDraft.city.trim(),
+          state: addressDraft.state.trim(),
+          pincode: addressDraft.pincode.trim(),
+          landmark: addressDraft.landmark,
         }
       : undefined;
 
@@ -108,7 +113,7 @@ export default function CheckoutScreen() {
     <Screen scroll={false} keyboardAware={false}>
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
       >
         <ScrollView
@@ -118,7 +123,12 @@ export default function CheckoutScreen() {
           keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: 24 }}
         >
-      <Text className="text-3xl font-black text-primary-900">Checkout</Text>
+      <View className="mb-4 mt-6 flex-row items-center">
+        <Pressable onPress={() => router.back()} className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-white">
+          <Feather name="arrow-left" size={20} color="#082018" />
+        </Pressable>
+        <Text className="text-3xl font-black text-primary-900">Checkout</Text>
+      </View>
 
       <View className="mt-5 rounded-[28px] bg-white p-5">
         <Text className="text-lg font-black text-primary-900">Service Mode</Text>
@@ -144,15 +154,17 @@ export default function CheckoutScreen() {
               [state, setState, 'State'],
               [pincode, setPincode, 'Pincode'],
             ] as const).map(([value, setter, placeholder]) => (
-              <TextInput
-                key={placeholder}
-                value={value}
-                onChangeText={setter}
-                onFocus={onInputFocus}
-                placeholder={placeholder}
-                className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-                placeholderTextColor="#7a978b"
-              />
+              <View key={placeholder}>
+                <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">{placeholder}</Text>
+                <TextInput
+                  value={value}
+                  onChangeText={setter}
+                  onFocus={onInputFocus}
+                  placeholder={placeholder}
+                  className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                  placeholderTextColor="#7a978b"
+                />
+              </View>
             ))}
           </View>
         </View>

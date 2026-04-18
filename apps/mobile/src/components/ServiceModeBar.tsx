@@ -11,11 +11,36 @@ export const ServiceModeBar = memo(function ServiceModeBar() {
   const mode = useServiceModeStore((state) => state.mode);
   const address = useServiceModeStore((state) => state.address);
   const openSelector = useServiceModeStore((state) => state.openSelector);
+  const barExpanded = useServiceModeStore((state) => state.barExpanded);
+  const setBarExpanded = useServiceModeStore((state) => state.setBarExpanded);
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const deliveryAddressText = formatStoreAddress(address);
 
+  if (!barExpanded) {
+    return (
+      <View className="flex-row justify-end">
+        <Pressable
+          onPress={() => setBarExpanded(true)}
+          className="flex-row items-center gap-2 rounded-full bg-primary-900 px-4 py-2 mb-2"
+        >
+          <Text className="text-[10px] font-black uppercase tracking-[1px] text-white">
+            SERVICE MODE
+          </Text>
+          <Feather name="chevron-down" size={14} color="white" />
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
-    <View className="gap-2 rounded-[28px] border border-primary-100 bg-white px-4 py-4">
+    <View className="gap-2 rounded-[28px] border border-primary-100 bg-white px-4 py-4 relative">
+      <Pressable 
+        onPress={() => setBarExpanded(false)}
+        className="absolute -right-1 -top-1 z-10 rounded-full bg-white border border-primary-100 p-1.5 shadow-sm"
+        hitSlop={8}
+      >
+        <Feather name="x" size={14} color="#082018" />
+      </Pressable>
       <View className="flex-row rounded-full bg-primary-50 p-1">
         {([
           { key: 'delivery', label: t('mobile.serviceMode.delivery'), icon: 'truck' },
