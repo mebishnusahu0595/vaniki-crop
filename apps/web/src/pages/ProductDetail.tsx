@@ -221,10 +221,10 @@ const ProductDetail: React.FC = () => {
         <span className="text-primary-900">{product.name}</span>
       </div>
 
-      <section className="mx-auto max-w-2xl space-y-8">
-        <div className="mx-auto max-w-lg space-y-4">
+      <section className="grid gap-8 lg:grid-cols-[400px_1fr] xl:grid-cols-[480px_1fr] xl:gap-12">
+        <div className="space-y-4">
           <div className="surface-card flex items-center justify-center p-6">
-            <div className="relative flex h-[350px] w-full max-w-[350px] items-center justify-center overflow-hidden rounded-[2rem] bg-primary-50 sm:h-[420px] sm:max-w-[420px]">
+            <div className="relative flex h-[350px] w-full max-w-[400px] items-center justify-center overflow-hidden rounded-[2rem] bg-primary-50 sm:h-[420px] sm:max-w-[450px] lg:h-[400px] lg:max-w-none xl:h-[460px]">
               {activeImage ? (
                 <OptimizedImage
                   src={activeImage}
@@ -339,7 +339,7 @@ const ProductDetail: React.FC = () => {
         </div>
       </section>
 
-      <section className="mx-auto mt-10 max-w-2xl space-y-6">
+      <section className="mt-10 grid gap-6 lg:grid-cols-[1fr_0.8fr] xl:gap-12">
         <div className="surface-card p-6">
           <div className="flex items-center justify-between">
             <div>
