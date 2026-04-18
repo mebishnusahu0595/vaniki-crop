@@ -1,7 +1,4 @@
 import React, { useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Leaf } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -12,42 +9,14 @@ interface CategoryStripProps {
   categories: Category[];
 }
 
-gsap.registerPlugin(ScrollTrigger, useGSAP);
-
 const CategoryStrip: React.FC<CategoryStripProps> = ({ categories }) => {
   const { t } = useTranslation();
-  const sectionRef = useRef<HTMLElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const safeCategories = categories.length ? categories : [];
 
-  useGSAP(
-    () => {
-      if (!sectionRef.current || !containerRef.current) return;
-
-      const circles = containerRef.current.querySelectorAll('.category-circle');
-      if (!circles.length) return;
-
-      gsap.from(circles, {
-        x: -60,
-        opacity: 0,
-        stagger: 0.15,
-        duration: 0.8,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 80%',
-        },
-      });
-    },
-    {
-      scope: sectionRef,
-      dependencies: [safeCategories.length],
-      revertOnUpdate: true,
-    },
-  );
 
   return (
-    <section ref={sectionRef} className="category-section bg-white py-10 sm:py-14">
+    <section className="category-section bg-white py-10 sm:py-14">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="mb-6 flex items-center justify-between">
           <div>
