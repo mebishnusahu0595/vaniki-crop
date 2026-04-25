@@ -133,7 +133,12 @@ app.get('/api/media', async (req: Request, res: Response, next: NextFunction) =>
       throw new AppError('Invalid media identifier', 400);
     }
 
-    await fs.access(absolutePath);
+    try {
+      await fs.access(absolutePath);
+    } catch {
+      throw new AppError('Media file not found', 404);
+    }
+
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.sendFile(absolutePath);
   } catch (error) {

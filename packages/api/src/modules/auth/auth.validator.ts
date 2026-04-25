@@ -4,10 +4,13 @@ import { AppError } from '../../utils/AppError.js';
 
 // ─── Common ──────────────────────────────────────────────────────────────
 
-const mobileSchema = z
-  .string()
-  .trim()
-  .regex(/^[6-9]\d{9}$/, 'Please provide a valid 10-digit Indian mobile number');
+const mobileSchema = z.preprocess((val) => {
+  if (typeof val !== 'string') return val;
+  let cleaned = val.trim().replace(/\s+/g, '');
+  if (cleaned.startsWith('+91')) cleaned = cleaned.slice(3);
+  else if (cleaned.startsWith('91') && cleaned.length === 12) cleaned = cleaned.slice(2);
+  return cleaned;
+}, z.string().regex(/^[6-9]\d{9}$/, 'Please provide a valid 10-digit Indian mobile number'));
 
 const passwordSchema = z
   .string()

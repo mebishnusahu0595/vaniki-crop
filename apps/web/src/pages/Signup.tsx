@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import AuthShell from '../components/common/AuthShell';
 import { storefrontApi } from '../utils/api';
+import { getApiErrorMessage } from '../utils/error';
 import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
@@ -52,9 +53,8 @@ const Signup: React.FC = () => {
         referralCode: formData.referralCode || undefined,
       });
       await applySession(result.user, result.accessToken);
-      toast.success(t('authPages.accountCreated'));
-    } catch {
-      toast.error(t('authPages.signupFailed'));
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('authPages.signupFailed')));
     } finally {
       setIsSubmitting(false);
     }

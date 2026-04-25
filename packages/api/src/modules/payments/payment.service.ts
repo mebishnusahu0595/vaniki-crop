@@ -1,6 +1,7 @@
 import { Payment, type IPayment } from '../../models/Payment.model.js';
 import { Order } from '../../models/Order.model.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
+import { finalizeOrder } from '../orders/order.service.js';
 
 /**
  * Handles processed Razorpay webhook events.
@@ -42,10 +43,7 @@ export async function handleWebhookEvent(event: string, payload: any) {
   switch (event) {
     case 'payment.captured':
       payment.status = 'captured';
-      await Order.updateOne(
-        { razorpayOrderId },
-        { paymentStatus: 'paid' }
-      );
+      await finalizeOrder(razorpayOrderId, razorpayPaymentId);
       break;
 
     case 'payment.failed':

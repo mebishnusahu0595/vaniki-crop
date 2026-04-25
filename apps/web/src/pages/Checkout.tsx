@@ -10,13 +10,10 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useStoreStore } from '../store/useStoreStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { storefrontApi } from '../utils/api';
+import { getApiErrorMessage } from '../utils/error';
 import { currencyFormatter, formatStoreAddress } from '../utils/format';
 
-const getApiErrorMessage = (error: unknown, fallback: string): string => {
-  if (!axios.isAxiosError(error)) return fallback;
-  const payload = error.response?.data as { message?: string; error?: string } | undefined;
-  return payload?.message || payload?.error || fallback;
-};
+
 
 declare global {
   interface Window {

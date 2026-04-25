@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import AuthShell from '../components/common/AuthShell';
 import { storefrontApi } from '../utils/api';
+import { getApiErrorMessage } from '../utils/error';
 import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
@@ -52,8 +53,8 @@ const Login: React.FC = () => {
       const loginResult = await storefrontApi.login({ mobile, password });
       await applySession(loginResult.user, loginResult.accessToken);
       toast.success(t('authPages.welcomeBack'));
-    } catch {
-      toast.error(t('authPages.invalidCredentials'));
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('authPages.invalidCredentials')));
     } finally {
       setIsSubmitting(false);
     }

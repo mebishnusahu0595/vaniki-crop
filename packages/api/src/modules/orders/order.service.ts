@@ -326,47 +326,29 @@ export async function placeCodOrder(userId: string, input: any) {
 }
 
 /**
- * Confirms an order by verifying Razorpay signature and creating the DB record.
- * 
- * @param userId - ID of the authenticated user
- * @param input - Confirmation data (Razorpay details + original cart)
+ * Finalizes an order after successful payment.
+ * This function is idempotent and handles stock decrement and notifications.
  */
-export async function confirmOrder(userId: string, input: any) {
-  const { 
-    razorpayOrderId, razorpayPaymentId, razorpaySignature, 
-    items, storeId, serviceMode, couponCode, shippingAddress 
-  } = input;
-
-  // 1. Verify Razorpay Signature
-  const secret = process.env.RAZORPAY_KEY_SECRET || '';
-  const body = razorpayOrderId + '|' + razorpayPaymentId;
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(body.toString())
-    .digest('hex');
-
-  if (expectedSignature !== razorpaySignature) {
-    throw new AppError('Invalid payment signature. Potential fraud detected.', 400);
-  }
-
-  // Check if order already exists
+export async function finalizeOrder(razorpayOrderId: string, paymentId: string, signature?: string) {
   const order = await Order.findOne({ razorpayOrderId });
   if (!order) {
-    throw new AppError('Order not found. Invalid Razorpay Order ID.', 404);
+    console.warn(`[ORDER] Finalization failed: Order not found for RP ID ${razorpayOrderId}`);
+    return null;
   }
 
-  // If already confirmed (e.g. via webhook race), return early
   if (order.paymentStatus === 'paid') {
-    return { orderId: order._id, orderNumber: order.orderNumber };
+    return order;
   }
 
-  // 2. Mark as paid
+  // 1. Update status
   order.paymentStatus = 'paid';
-  order.razorpayPaymentId = razorpayPaymentId;
-  order.razorpaySignature = razorpaySignature;
+  order.razorpayPaymentId = paymentId;
+  if (signature) {
+    order.razorpaySignature = signature;
+  }
   await order.save();
 
-  // 3. Decrement Stock
+  // 2. Decrement Stock
   for (const item of order.items) {
     const inventoryRow = await DealerInventory.findOne({
       storeId: order.storeId,
@@ -398,6 +380,7 @@ export async function confirmOrder(userId: string, input: any) {
     );
   }
 
+  // 3. Update Coupon
   if (order.couponCode) {
     await mongoose.model('Coupon').updateOne(
       { code: order.couponCode },
@@ -406,7 +389,7 @@ export async function confirmOrder(userId: string, input: any) {
   }
 
   // 4. Send Email Notifications (Async)
-  const user = await User.findById(userId);
+  const user = await User.findById(order.userId);
   if (user && user.email) {
     const html = orderPlacedTemplate(order as any, user);
     addEmailToQueue({
@@ -424,6 +407,36 @@ export async function confirmOrder(userId: string, input: any) {
       subject: `New Order Received - ${order.orderNumber}`,
       html: `<h3>New order received for ${store.name}</h3><p>Order Number: ${order.orderNumber}</p><p>Total: ₹${order.totalAmount}</p>`,
     });
+  }
+
+  return order;
+}
+
+/**
+ * Confirms an order by verifying Razorpay signature and finalising the DB record.
+ * 
+ * @param userId - ID of the authenticated user
+ * @param input - Confirmation data (Razorpay details)
+ */
+export async function confirmOrder(userId: string, input: any) {
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = input;
+
+  // 1. Verify Razorpay Signature
+  const secret = process.env.RAZORPAY_KEY_SECRET || '';
+  const body = razorpayOrderId + '|' + razorpayPaymentId;
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(body.toString())
+    .digest('hex');
+
+  if (expectedSignature !== razorpaySignature) {
+    throw new AppError('Invalid payment signature. Potential fraud detected.', 400);
+  }
+
+  // 2. Finalize Order
+  const order = await finalizeOrder(razorpayOrderId, razorpayPaymentId, razorpaySignature);
+  if (!order) {
+    throw new AppError('Order not found. Invalid Razorpay Order ID.', 404);
   }
 
   return { orderId: order._id, orderNumber: order.orderNumber };
