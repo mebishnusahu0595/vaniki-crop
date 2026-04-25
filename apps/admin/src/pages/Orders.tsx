@@ -22,6 +22,19 @@ export default function OrdersPage() {
   const [note, setNote] = useState('');
   const [inventorySearch, setInventorySearch] = useState(searchParams.get('inventory') || '');
 
+  // Sync state with URL params during render to avoid useEffect cascading renders
+  const [prevInventoryParam, setPrevInventoryParam] = useState(searchParams.get('inventory'));
+  const [prevSearchParam, setPrevSearchParam] = useState(searchParams.get('search'));
+
+  if (searchParams.get('inventory') !== prevInventoryParam) {
+    setPrevInventoryParam(searchParams.get('inventory'));
+    setInventorySearch(searchParams.get('inventory') || '');
+  }
+  if (searchParams.get('search') !== prevSearchParam) {
+    setPrevSearchParam(searchParams.get('search'));
+    setSearch(searchParams.get('search') || '');
+  }
+
   const [selectedProductId, setSelectedProductId] = useState('');
   const [requestedProductName, setRequestedProductName] = useState('');
   const [requestedQuantity, setRequestedQuantity] = useState(1);
@@ -59,12 +72,7 @@ export default function OrdersPage() {
     queryFn: () => adminApi.productRequests({ limit: 30 }),
   });
 
-  useEffect(() => {
-    const nextInventoryQuery = searchParams.get('inventory') || '';
-    if (nextInventoryQuery !== inventorySearch) {
-      setInventorySearch(nextInventoryQuery);
-    }
-  }, [inventorySearch, searchParams]);
+
 
   const filteredInventory = useMemo(() => {
     const rows = inventoryQuery.data || [];
