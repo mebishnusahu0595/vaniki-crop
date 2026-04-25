@@ -41,6 +41,19 @@ export default function OrdersPage() {
   const [requestedPack, setRequestedPack] = useState('');
   const [requestNotes, setRequestNotes] = useState('');
   const [inventoryDraft, setInventoryDraft] = useState<Record<string, number>>({});
+  const [prevInventoryData, setPrevInventoryData] = useState<any>(null);
+
+  // Sync draft with query data during render to avoid useEffect cascading renders
+  if (inventoryQuery.data && inventoryQuery.data !== prevInventoryData) {
+    setPrevInventoryData(inventoryQuery.data);
+    const nextDraft: Record<string, number> = {};
+    for (const product of inventoryQuery.data) {
+      for (const variant of product.variants) {
+        nextDraft[`${product.id}:${variant.id}`] = variant.quantity;
+      }
+    }
+    setInventoryDraft(nextDraft);
+  }
 
   const ordersQuery = useQuery({
     queryKey: ['admin-orders', status, paymentMethod, debouncedSearch, startDate, endDate],
@@ -85,18 +98,7 @@ export default function OrdersPage() {
     });
   }, [inventoryQuery.data, inventorySearch]);
 
-  useEffect(() => {
-    if (!inventoryQuery.data) return;
 
-    const nextDraft: Record<string, number> = {};
-    for (const product of inventoryQuery.data) {
-      for (const variant of product.variants) {
-        nextDraft[`${product.id}:${variant.id}`] = variant.quantity;
-      }
-    }
-
-    setInventoryDraft(nextDraft);
-  }, [inventoryQuery.data]);
 
   const changedInventoryEntries = useMemo(() => {
     if (!inventoryQuery.data) {
