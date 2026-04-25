@@ -150,8 +150,18 @@ export default function PaymentsPage() {
                 <td className="px-4 py-3 text-sm text-slate-600">{payment.customer.name}</td>
                 <td className="px-4 py-3 text-sm font-black text-primary-700">{currencyFormatter.format(payment.amount)}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{payment.razorpayId}</td>
-                <td className="px-4 py-3 text-sm text-slate-600">{payment.method}</td>
-                <td className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-700">{payment.status}</td>
+                <td className="px-4 py-3 text-sm text-slate-600">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                    payment.method === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                  }`}>{payment.method === 'cod' ? 'COD' : 'Razorpay'}</span>
+                </td>
+                <td className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-slate-700">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                    payment.status === 'captured' ? 'bg-emerald-100 text-emerald-700' :
+                    payment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                    'bg-amber-100 text-amber-700'
+                  }`}>{payment.status}</span>
+                </td>
                 <td className="px-4 py-3 text-sm text-slate-600">{formatDateTime(payment.createdAt)}</td>
               </tr>
             ))}
@@ -166,7 +176,11 @@ export default function PaymentsPage() {
             <p className="mt-1 text-sm text-slate-500">{payment.store.name} · {payment.customer.name}</p>
             <p className="mt-1 text-sm text-slate-500">{payment.razorpayId}</p>
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-700">{payment.status}</span>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                payment.status === 'captured' ? 'bg-emerald-100 text-emerald-700' :
+                payment.status === 'failed' ? 'bg-red-100 text-red-700' :
+                'bg-amber-100 text-amber-700'
+              }`}>{payment.status}</span>
               <span className="text-sm font-black text-primary-700">{currencyFormatter.format(payment.amount)}</span>
             </div>
           </div>

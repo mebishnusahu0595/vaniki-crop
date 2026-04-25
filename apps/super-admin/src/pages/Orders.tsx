@@ -219,6 +219,16 @@ export default function OrdersPage() {
               <span className="text-xs font-black uppercase tracking-[0.14em] text-primary-700">{order.status}</span>
               <span className="text-sm font-black text-slate-900">{currencyFormatter.format(order.totalAmount)}</span>
             </div>
+            <div className="mt-2 flex items-center gap-3">
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                order.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                order.paymentStatus === 'failed' ? 'bg-red-100 text-red-700' :
+                'bg-amber-100 text-amber-700'
+              }`}>{order.paymentStatus}</span>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                order.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+              }`}>{order.paymentMethod === 'cod' ? 'COD' : 'Razorpay'}</span>
+            </div>
           </button>
         ))}
       </div>
@@ -281,6 +291,19 @@ export default function OrdersPage() {
                     <p><span className="font-black text-slate-900">Email:</span> {detail.userId?.email || '-'}</p>
                     <p><span className="font-black text-slate-900">Address:</span> {formatAddress(detail.shippingAddress || detail.userId?.savedAddress)}</p>
                     <p><span className="font-black text-slate-900">Service Mode:</span> {detail.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}</p>
+                    <p><span className="font-black text-slate-900">Payment Method:</span>{' '}
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                        detail.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                      }`}>{detail.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Razorpay'}</span>
+                    </p>
+                    <p><span className="font-black text-slate-900">Payment Status:</span>{' '}
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                        detail.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                        detail.paymentStatus === 'failed' ? 'bg-red-100 text-red-700' :
+                        detail.paymentStatus === 'refunded' ? 'bg-purple-100 text-purple-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>{detail.paymentStatus}</span>
+                    </p>
                     <p><span className="font-black text-slate-900">Razorpay Payment ID:</span> {detail.razorpayPaymentId || '-'}</p>
                   </div>
                 </div>

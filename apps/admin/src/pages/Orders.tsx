@@ -508,6 +508,9 @@ export default function OrdersPage() {
                   {order.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}
                 </span>
                 <span className="text-sm font-semibold text-slate-500">{order.paymentStatus}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                  order.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                }`}>{order.paymentMethod === 'cod' ? 'COD' : 'Razorpay'}</span>
                 <span className="text-lg font-black text-slate-900">{currencyFormatter.format(order.totalAmount)}</span>
               </div>
             </div>
@@ -592,6 +595,21 @@ export default function OrdersPage() {
                       <p>
                         <span className="font-black text-slate-900">Service Mode:</span>{' '}
                         {detail.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}
+                      </p>
+                      <p>
+                        <span className="font-black text-slate-900">Payment Method:</span>{' '}
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                          detail.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                        }`}>{detail.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Razorpay'}</span>
+                      </p>
+                      <p>
+                        <span className="font-black text-slate-900">Payment Status:</span>{' '}
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] ${
+                          detail.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                          detail.paymentStatus === 'failed' ? 'bg-red-100 text-red-700' :
+                          detail.paymentStatus === 'refunded' ? 'bg-purple-100 text-purple-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>{detail.paymentStatus}</span>
                       </p>
                       <p>
                         <span className="font-black text-slate-900">Razorpay Payment ID:</span>{' '}

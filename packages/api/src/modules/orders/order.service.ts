@@ -549,6 +549,18 @@ export async function getSuperAdminOrders(query: any) {
 
   if (query.status) filter.status = query.status;
   if (query.storeId) filter.storeId = query.storeId;
+  if (query.paymentStatus) filter.paymentStatus = query.paymentStatus;
+  if (query.paymentMethod) filter.paymentMethod = query.paymentMethod;
+  
+  if (query.search) {
+    filter.orderNumber = { $regex: query.search, $options: 'i' };
+  }
+
+  if (query.startDate || query.endDate) {
+    filter.createdAt = {};
+    if (query.startDate) filter.createdAt.$gte = new Date(query.startDate);
+    if (query.endDate) filter.createdAt.$lte = new Date(query.endDate);
+  }
 
   const [orders, total] = await Promise.all([
     Order.find(filter)

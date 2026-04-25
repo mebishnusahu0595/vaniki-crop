@@ -116,7 +116,16 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-left sm:text-right">
                     <p className="text-sm font-black text-primary-700">{currencyFormatter.format(order.totalAmount)}</p>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{order.status}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 sm:justify-end">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{order.status}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${
+                        order.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>{order.paymentStatus}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] ${
+                        order.paymentMethod === 'cod' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                      }`}>{order.paymentMethod === 'cod' ? 'COD' : 'Razorpay'}</span>
+                    </div>
                   </div>
                 </div>
               </div>
