@@ -13,6 +13,7 @@ export interface CartItem {
   price: number;
   mrp: number;
   qty: number;
+  stock?: number;
 }
 
 interface CartState {
@@ -58,6 +59,7 @@ export const useCartStore = create<CartState>()(
                 price: variant.price,
                 mrp: variant.mrp,
                 qty: 1,
+                stock: variant.stock,
               },
             ],
           };

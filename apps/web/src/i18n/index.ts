@@ -177,6 +177,7 @@ const resources = {
         removedFromWishlist: 'Removed from wishlist',
         addedToWishlist: 'Added to wishlist',
         wishlistFailed: 'Could not update wishlist.',
+        onlyLeft: 'Only {{count}} left',
       },
       productDetail: {
         productNotFound: 'Product not found',
@@ -263,6 +264,7 @@ const resources = {
         placeCodOrder: 'Place COD Order',
         securePaymentHint: 'Secure payment, verified order confirmation, and store-aware fulfillment.',
         backToCart: 'Back to cart',
+        insufficientStock: 'Only {{count}} units available in this store',
       },
       accountPage: {
         myAccount: 'My Account',
@@ -665,6 +667,7 @@ const resources = {
         removedFromWishlist: 'विशलिस्ट से हटाया गया',
         addedToWishlist: 'विशलिस्ट में जोड़ा गया',
         wishlistFailed: 'विशलिस्ट अपडेट नहीं हो सकी।',
+        onlyLeft: 'केवल {{count}} बचे हैं',
       },
       productDetail: {
         productNotFound: 'प्रोडक्ट नहीं मिला',
@@ -749,6 +752,7 @@ const resources = {
         placeCodOrder: 'COD ऑर्डर करें',
         securePaymentHint: 'सुरक्षित भुगतान, सत्यापित ऑर्डर पुष्टि और स्टोर-आधारित फुलफिलमेंट।',
         backToCart: 'कार्ट पर वापस',
+        insufficientStock: 'इस स्टोर में केवल {{count}} यूनिट उपलब्ध हैं',
       },
       accountPage: {
         myAccount: 'मेरा अकाउंट',

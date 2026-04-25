@@ -70,6 +70,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       mrp: variant.mrp,
       qty: 1,
       image,
+      stock: variant.stock,
     });
 
     toast.success(t('productCard.addedToCart', { name: product.name }));
@@ -104,9 +105,23 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     >
       <Link to={`/product/${product.slug}`} className="relative block">
         <div className="relative aspect-square overflow-hidden bg-[#fafaf8]">
-          {discountPercent > 0 && (
+          {discountPercent > 0 && variant.stock > 0 && (
             <span className="absolute left-2 top-2 z-20 rounded-md bg-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
               {discountPercent}% Off
+            </span>
+          )}
+
+          {variant.stock <= 0 && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60 backdrop-blur-[2px]">
+              <span className="rounded-full bg-red-600 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white shadow-lg">
+                {t('productCard.outOfStock')}
+              </span>
+            </div>
+          )}
+
+          {variant.stock > 0 && variant.stock < 10 && (
+            <span className="absolute left-2 bottom-2 z-20 rounded-md bg-orange-500 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">
+              {t('productCard.onlyLeft', { count: variant.stock })}
             </span>
           )}
 
@@ -133,7 +148,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 widthHint={400}
                 heightHint={400}
                 loading="lazy"
-                containerClassName="h-full w-full"
+                containerClassName={cn("h-full w-full", variant.stock <= 0 && "grayscale-[0.5] opacity-50")}
                 className="h-full w-full object-contain"
               />
             ) : (

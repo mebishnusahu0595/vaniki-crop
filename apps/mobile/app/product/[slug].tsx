@@ -167,7 +167,22 @@ export default function ProductDetailScreen() {
           </>
         ) : null}
       </View>
-      <Text className="mt-2 text-xs font-semibold text-primary-500">Stock: {selectedVariant.stock}</Text>
+      <View className="mt-3 flex-row items-center gap-3">
+        <View
+          className={`rounded-full px-3 py-1 ${isOutOfStock ? 'bg-rose-100' : maxStock < 10 ? 'bg-amber-100' : 'bg-emerald-100'}`}
+        >
+          <Text
+            className={`text-[10px] font-black uppercase tracking-[1px] ${
+              isOutOfStock ? 'text-rose-600' : maxStock < 10 ? 'text-amber-600' : 'text-emerald-600'
+            }`}
+          >
+            {isOutOfStock ? t('mobile.actions.outOfStock') : maxStock < 10 ? t('mobile.actions.onlyLeft', { count: maxStock }) : t('mobile.actions.unitsAvailable', { count: maxStock })}
+          </Text>
+        </View>
+        <Text className="text-[10px] font-black uppercase tracking-[1px] text-primary-900/40">
+          Dealer Inventory
+        </Text>
+      </View>
 
       <View className="mt-5 flex-row flex-wrap gap-2">
         {product.variants.map((variant) => (

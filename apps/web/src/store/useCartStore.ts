@@ -11,6 +11,7 @@ export interface CartItem {
   mrp: number;
   qty: number;
   image?: string;
+  stock?: number;
 }
 
 interface CartState {

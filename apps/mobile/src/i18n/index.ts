@@ -31,6 +31,9 @@ const resources = {
           removeFromWishlist: 'Remove from Wishlist',
           addToCompare: 'Add to Compare',
           removeFromCompare: 'Remove from Compare',
+          onlyLeft: 'Only {{count}} left',
+          insufficientStock: 'Only {{count}} units available in this store',
+          unitsAvailable: '{{count}} units available',
         },
         home: {
           title: 'Crop care made local, fast, and reliable.',
@@ -75,12 +78,15 @@ const resources = {
           searchPlaceholder: 'कीटनाशक, पोषक तत्व और फसल देखभाल खोजें',
         },
         actions: {
-          addToCart: 'कार्ट में जोड़ें',
+          addToCart: 'कैरट में जोड़ें',
           outOfStock: 'स्टॉक खत्म',
           addToWishlist: 'विशलिस्ट में जोड़ें',
           removeFromWishlist: 'विशलिस्ट से हटाएं',
           addToCompare: 'तुलना में जोड़ें',
           removeFromCompare: 'तुलना से हटाएं',
+          onlyLeft: 'केवल {{count}} बचे हैं',
+          insufficientStock: 'इस स्टोर में केवल {{count}} यूनिट उपलब्ध हैं',
+          unitsAvailable: '{{count}} यूनिट उपलब्ध हैं',
         },
         home: {
           title: 'फसल देखभाल अब स्थानीय, तेज और भरोसेमंद।',

@@ -77,6 +77,7 @@ const ProductDetail: React.FC = () => {
       mrp: selectedVariant.mrp,
       qty: quantity,
       image: normalizedImages[0]?.url,
+      stock: selectedVariant.stock,
     });
     toast.success(t('productDetail.addedToCart', { name: product.name }));
   };

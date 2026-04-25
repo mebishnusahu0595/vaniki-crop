@@ -77,6 +77,24 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
           style={{ width: '100%', height: compact ? 118 : 150 }}
           contentFit="cover"
         />
+        {isOutOfStock ? (
+          <View className="absolute inset-0 z-30 items-center justify-center bg-white/60">
+            <View className="rounded-full bg-rose-600 px-3 py-1 shadow-lg">
+              <Text className="text-[10px] font-black uppercase tracking-[1px] text-white">
+                {t('mobile.actions.outOfStock')}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+
+        {!isOutOfStock && maxStock < 10 ? (
+          <View className="absolute bottom-2 left-3 z-20 rounded-full bg-amber-500 px-2 py-0.5">
+            <Text className="text-[8px] font-black uppercase text-white">
+              Only {maxStock} left
+            </Text>
+          </View>
+        ) : null}
+
         <View className="absolute right-3 top-3 z-20 flex-row gap-2">
           <Pressable
             onPress={(event) => {

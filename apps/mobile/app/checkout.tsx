@@ -204,14 +204,25 @@ export default function CheckoutScreen() {
       <View className="mt-5 rounded-[28px] bg-primary-900 p-5">
         <Text className="text-lg font-black text-white">Order Summary</Text>
         <View className="mt-4 gap-3">
-          {items.map((item) => (
-            <View key={item.variantId} className="flex-row justify-between">
-              <Text className="flex-1 pr-4 text-sm text-white/75">{item.productName}</Text>
-              <Text className="text-sm font-bold text-white">
-                {item.qty} x {currencyFormatter.format(item.price)}
-              </Text>
-            </View>
-          ))}
+          {items.map((item) => {
+            const isOutOfStock = item.stock !== undefined && item.stock < item.qty;
+
+            return (
+              <View key={item.variantId} className="mb-2">
+                <View className="flex-row justify-between">
+                  <Text className="flex-1 pr-4 text-sm text-white/75">{item.productName}</Text>
+                  <Text className="text-sm font-bold text-white">
+                    {item.qty} x {currencyFormatter.format(item.price)}
+                  </Text>
+                </View>
+                {isOutOfStock ? (
+                  <Text className="mt-1 text-[10px] font-bold text-rose-300">
+                    Only {item.stock} units available in this store
+                  </Text>
+                ) : null}
+              </View>
+            );
+          })}
           <View className="mt-3 flex-row justify-between border-t border-white/10 pt-3">
             <Text className="text-base font-black text-white">Total</Text>
             <Text className="text-base font-black text-white">

@@ -355,17 +355,28 @@ const Checkout: React.FC = () => {
           <section className="surface-card p-6">
             <p className="section-kicker mb-2">{t('checkoutPage.orderSummary')}</p>
             <div className="space-y-4">
-              {items.map((item) => (
-                <div key={`${item.productId}-${item.variantId}`} className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-black text-primary-900">{item.productName}</p>
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary-500">
-                      {item.qty} x {item.variantLabel}
-                    </p>
+              {items.map((item) => {
+                const isOutOfStock = item.stock !== undefined && item.stock < item.qty;
+
+                return (
+                  <div key={`${item.productId}-${item.variantId}`} className="space-y-1">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-black text-primary-900">{item.productName}</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary-500">
+                          {item.qty} x {item.variantLabel}
+                        </p>
+                      </div>
+                      <p className="text-sm font-black text-primary-900">{currencyFormatter.format(item.qty * item.price)}</p>
+                    </div>
+                    {isOutOfStock && (
+                      <p className="text-[10px] font-bold text-red-500">
+                        {t('checkoutPage.insufficientStock', 'Only {{count}} units available in this store', { count: item.stock })}
+                      </p>
+                    )}
                   </div>
-                  <p className="text-sm font-black text-primary-900">{currencyFormatter.format(item.qty * item.price)}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         </div>
