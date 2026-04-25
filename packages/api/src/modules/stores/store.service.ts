@@ -61,7 +61,7 @@ export async function listActiveStores() {
     .sort({ name: 1 });
 
   const hydratedStores = await Promise.all(stores.map((store) => repairStoreAddressIfNeeded(store)));
-  return hydratedStores.filter((store) => hasMeaningfulPickupAddress(store.address));
+  return hydratedStores;
 }
 
 /**

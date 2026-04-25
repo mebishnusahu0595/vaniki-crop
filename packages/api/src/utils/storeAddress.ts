@@ -54,7 +54,8 @@ export function needsStoreAddressBackfill(address?: Partial<IStoreAddress> | nul
 
 export function hasMeaningfulPickupAddress(address?: Partial<IStoreAddress> | null): boolean {
   const sanitized = sanitizeStoreAddress(address);
-  return Boolean(sanitized.street && sanitized.city && sanitized.state);
+  // Relaxed: only street is absolutely required for it to be visible.
+  return Boolean(sanitized.street);
 }
 
 function pickFirstMeaningfulValue(...values: Array<unknown>): string {
