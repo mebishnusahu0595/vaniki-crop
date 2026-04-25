@@ -135,12 +135,15 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
     } else {
       document.body.style.overflow = '';
+      document.body.classList.remove('modal-open');
     }
 
     return () => {
       document.body.style.overflow = '';
+      document.body.classList.remove('modal-open');
     };
   }, [isOpen]);
 
@@ -253,7 +256,7 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
             </div>
 
             <div className="flex flex-col gap-0 overflow-hidden md:flex-row md:divide-x md:divide-primary-100">
-              <div data-lenis-prevent="true" className="w-full space-y-6 overflow-y-auto p-5 sm:p-8 md:w-[380px]">
+              <div data-lenis-prevent="true" className="w-full space-y-6 overflow-y-auto overscroll-contain p-5 sm:p-8 md:w-[380px]" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
                 <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] border border-primary-100 bg-primary-50 p-1">
                   {([
                     { key: 'delivery', label: t('storeSelector.delivery'), icon: Truck },
