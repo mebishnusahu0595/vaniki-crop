@@ -7,6 +7,7 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { adminApi } from '../utils/api';
 import { currencyFormatter, formatAddress, formatDateTime } from '../utils/format';
 import { resolveMediaUrl } from '../utils/media';
+import type { DealerInventoryProduct } from '../types/admin';
 
 export default function OrdersPage() {
   const [searchParams] = useSearchParams();
@@ -33,7 +34,7 @@ export default function OrdersPage() {
   const [requestedPack, setRequestedPack] = useState('');
   const [requestNotes, setRequestNotes] = useState('');
   const [inventoryDraft, setInventoryDraft] = useState<Record<string, number>>({});
-  const [prevInventoryData, setPrevInventoryData] = useState<any>(null);
+  const [prevInventoryData, setPrevInventoryData] = useState<DealerInventoryProduct[] | null>(null);
 
 
 
