@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
-import { CreditCard, MapPin, Store as StoreIcon, ShieldCheck, Wallet } from 'lucide-react';
+import { CreditCard, MapPin, Store as StoreIcon, ShieldCheck, Wallet, Plus, Minus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../store/useCartStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -26,7 +26,7 @@ declare global {
 const Checkout: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { items, couponCode, couponDiscount, getSubtotal, clearCart } = useCartStore();
+  const { items, couponCode, couponDiscount, getSubtotal, clearCart, updateQty, removeItem } = useCartStore();
   const { user, token } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const setStore = useStoreStore((state) => state.setStore);
@@ -359,21 +359,60 @@ const Checkout: React.FC = () => {
                 const isOutOfStock = item.stock !== undefined && item.stock < item.qty;
 
                 return (
-                  <div key={`${item.productId}-${item.variantId}`} className="space-y-1">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="text-sm font-black text-primary-900">{item.productName}</p>
-                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary-500">
-                          {item.qty} x {item.variantLabel}
-                        </p>
-                      </div>
-                      <p className="text-sm font-black text-primary-900">{currencyFormatter.format(item.qty * item.price)}</p>
+                  <div key={`${item.productId}-${item.variantId}`} className="flex gap-4">
+                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-primary-50">
+                      {item.image ? (
+                        <img src={item.image} alt={item.productName} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-primary-200">
+                          <StoreIcon size={24} />
+                        </div>
+                      )}
                     </div>
-                    {isOutOfStock && (
-                      <p className="text-[10px] font-bold text-red-500">
-                        {t('checkoutPage.insufficientStock', 'Only {{count}} units available in this store', { count: item.stock })}
-                      </p>
-                    )}
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-black text-primary-900 line-clamp-1">{item.productName}</p>
+                          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary-500">
+                            {item.variantLabel}
+                          </p>
+                        </div>
+                        <p className="text-sm font-black text-primary-900">{currencyFormatter.format(item.qty * item.price)}</p>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 rounded-full bg-primary-50 p-1">
+                          <button
+                            type="button"
+                            onClick={() => updateQty(item.productId, item.variantId, item.qty - 1)}
+                            className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-primary-900 shadow-sm transition hover:bg-primary-100"
+                          >
+                            <Minus size={12} />
+                          </button>
+                          <span className="min-w-[20px] text-center text-xs font-black text-primary-900">{item.qty}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateQty(item.productId, item.variantId, item.qty + 1)}
+                            className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-sm transition hover:bg-primary-600"
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.productId, item.variantId)}
+                          className="text-primary-300 transition hover:text-rose-500"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      {isOutOfStock && (
+                        <p className="mt-1 text-[10px] font-bold text-rose-500">
+                          {t('checkoutPage.insufficientStock', 'Only {{count}} units available in this store', { count: item.stock })}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 );
               })}
