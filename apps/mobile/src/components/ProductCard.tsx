@@ -74,8 +74,10 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
       <View className="relative">
         <Image
           source={{ uri: getPrimaryImage(product) }}
+          placeholder={{ uri: 'https://placehold.co/400x400?text=Vaniki+Crop' }}
           style={{ width: '100%', height: compact ? 118 : 150 }}
           contentFit="cover"
+          transition={500}
         />
         {isOutOfStock ? (
           <View className="absolute inset-0 z-30 items-center justify-center bg-white/60">

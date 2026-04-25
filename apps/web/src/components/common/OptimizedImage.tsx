@@ -25,21 +25,24 @@ const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
     ref,
   ) => {
     const [isLoaded, setIsLoaded] = useState(false);
+    const [hasError, setHasError] = useState(false);
 
     const optimizedSrc = useMemo(() => {
       if (!src) return undefined;
+      if (hasError) return 'https://placehold.co/400x400?text=Vaniki+Crop';
+
       return withCloudinaryTransforms(src, {
         width: widthHint,
         height: heightHint,
         quality: 'auto',
         format: 'auto',
       });
-    }, [heightHint, src, widthHint]);
+    }, [heightHint, src, widthHint, hasError]);
 
     const placeholderSrc = useMemo(() => {
-      if (!src || !isCloudinaryUrl(src)) return undefined;
+      if (!src || !isCloudinaryUrl(src) || hasError) return undefined;
       return getCloudinaryPlaceholderUrl(src);
-    }, [src]);
+    }, [src, hasError]);
 
     if (!optimizedSrc) return null;
 
@@ -66,6 +69,12 @@ const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
           onLoad={(event) => {
             setIsLoaded(true);
             onLoad?.(event);
+          }}
+          onError={() => {
+            if (!hasError) {
+              setHasError(true);
+              setIsLoaded(true);
+            }
           }}
           className={cn('relative z-10 transition-opacity duration-500', className, isLoaded ? 'opacity-100' : 'opacity-0')}
         />
