@@ -12,9 +12,10 @@ export async function handleWebhook(req: Request, res: Response, next: NextFunct
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 
     // Verify webhook signature
+    const rawBody = (req as any).rawBody || JSON.stringify(req.body);
     const expectedSignature = crypto
       .createHmac('sha256', secret)
-      .update(JSON.stringify(req.body))
+      .update(rawBody)
       .digest('hex');
 
     if (signature !== expectedSignature) {

@@ -97,7 +97,16 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 // ─── Body Parsing, Cookies & Logging ─────────────────────────────────────
-app.use(express.json({ limit: '10mb' }));
+app.use(
+  express.json({
+    limit: '10mb',
+    verify: (req: Request, _res: Response, buf: Buffer) => {
+      if (req.originalUrl && req.originalUrl.includes('/api/payments/webhook')) {
+        (req as any).rawBody = buf.toString('utf8');
+      }
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan('dev'));
