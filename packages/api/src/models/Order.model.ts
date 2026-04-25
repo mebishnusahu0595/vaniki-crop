@@ -5,6 +5,7 @@ import mongoose, { Schema, type Document, type Model } from 'mongoose';
 /** Order item sub-document */
 export interface IOrderItem {
   productId: mongoose.Types.ObjectId;
+  variantId: mongoose.Types.ObjectId;
   productName: string;
   variantLabel: string;
   price: number;
@@ -90,6 +91,7 @@ export interface IOrderModel extends Model<IOrder> {
 const orderItemSchema = new Schema<IOrderItem>(
   {
     productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+    variantId: { type: Schema.Types.ObjectId, required: true },
     productName: { type: String, required: true },
     variantLabel: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },

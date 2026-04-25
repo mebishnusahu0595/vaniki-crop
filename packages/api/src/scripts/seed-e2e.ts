@@ -696,6 +696,7 @@ async function upsertOrderAndPayment(params: {
   storeId: ObjectId;
   items: Array<{
     productId: ObjectId;
+    variantId: ObjectId;
     productName: string;
     variantLabel: string;
     price: number;
@@ -970,6 +971,7 @@ async function main() {
     items: [
       {
         productId: imidacloprid._id,
+        variantId: imidaclopridVariant._id as ObjectId,
         productName: imidacloprid.get('name') as string,
         variantLabel: imidaclopridVariant.label,
         price: imidaclopridVariant.price,
@@ -979,6 +981,7 @@ async function main() {
       },
       {
         productId: mancozeb._id,
+        variantId: mancozebVariant._id as ObjectId,
         productName: mancozeb.get('name') as string,
         variantLabel: mancozebVariant.label,
         price: mancozebVariant.price,
@@ -1022,6 +1025,7 @@ async function main() {
     items: [
       {
         productId: glyphosate._id,
+        variantId: glyphosateVariant._id as ObjectId,
         productName: glyphosate.get('name') as string,
         variantLabel: glyphosateVariant.label,
         price: glyphosateVariant.price,

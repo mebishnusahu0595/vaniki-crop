@@ -55,6 +55,7 @@ async function calculateCart(items: any[], storeId: string) {
     subtotal += variant.price * item.qty;
     validatedItems.push({
       productId: product._id,
+      variantId: item.variantId,
       productName: product.name,
       variantLabel: variant.label,
       price: variant.price,
@@ -175,6 +176,26 @@ export async function initiateOrder(userId: string, input: any) {
     },
   });
 
+  // 6. Create Draft Order in DB
+  const orderNumber = await (Order as any).generateOrderNumber();
+  const order = await Order.create({
+    orderNumber,
+    userId,
+    storeId: resolvedStoreId,
+    serviceMode,
+    items: validatedItems,
+    subtotal,
+    couponCode,
+    couponDiscount,
+    deliveryCharge,
+    totalAmount,
+    shippingAddress,
+    paymentStatus: 'pending',
+    paymentMethod: 'razorpay',
+    razorpayOrderId: rpOrder.id,
+    status: 'placed',
+  });
+
   return {
     razorpayOrderId: rpOrder.id,
     razorpayKeyId: process.env.RAZORPAY_KEY_ID,
@@ -188,6 +209,7 @@ export async function initiateOrder(userId: string, input: any) {
       totalAmount,
       items: validatedItems,
     },
+    orderId: order._id,
   };
 }
 
@@ -327,55 +349,27 @@ export async function confirmOrder(userId: string, input: any) {
     throw new AppError('Invalid payment signature. Potential fraud detected.', 400);
   }
 
-  // Check if order already exists (prevent duplicate creation on webhook race)
-  const existingOrder = await Order.findOne({ razorpayOrderId });
-  if (existingOrder) {
-    return { orderId: existingOrder._id, orderNumber: existingOrder.orderNumber };
+  // Check if order already exists
+  const order = await Order.findOne({ razorpayOrderId });
+  if (!order) {
+    throw new AppError('Order not found. Invalid Razorpay Order ID.', 404);
   }
 
-  // 2. Re-calculate totals (Security measure)
-  const resolvedStoreId = await resolveStoreIdForOrder(items, serviceMode, storeId);
-
-  const { subtotal, validatedItems } = await calculateCart(items, resolvedStoreId);
-  let couponDiscount = 0;
-  if (couponCode) {
-    const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal);
-    if (!couponResult.valid) {
-      throw new AppError(couponResult.message, 400);
-    }
-    couponDiscount = couponResult.discount!;
-    // Increment coupon used count
-    await couponResult.coupon!.updateOne({ $inc: { usedCount: 1 } });
+  // If already confirmed (e.g. via webhook race), return early
+  if (order.paymentStatus === 'paid') {
+    return { orderId: order._id, orderNumber: order.orderNumber };
   }
-  const deliveryCharge = serviceMode === 'delivery' ? (subtotal > 1000 ? 0 : 50) : 0;
-  const totalAmount = subtotal - couponDiscount + deliveryCharge;
 
-  // 3. Create Order
-  const orderNumber = await (Order as any).generateOrderNumber();
-  const order = await Order.create({
-    orderNumber,
-    userId,
-    storeId: resolvedStoreId,
-    serviceMode,
-    items: validatedItems,
-    subtotal,
-    couponCode,
-    couponDiscount,
-    deliveryCharge,
-    totalAmount,
-    shippingAddress,
-    paymentStatus: 'paid', // Confirming from successful Razorpay UI
-    paymentMethod: 'razorpay',
-    razorpayOrderId,
-    razorpayPaymentId,
-    razorpaySignature,
-    status: 'placed',
-  });
+  // 2. Mark as paid
+  order.paymentStatus = 'paid';
+  order.razorpayPaymentId = razorpayPaymentId;
+  order.razorpaySignature = razorpaySignature;
+  await order.save();
 
-  // 4. Decrement Stock
-  for (const item of items) {
+  // 3. Decrement Stock
+  for (const item of order.items) {
     const inventoryRow = await DealerInventory.findOne({
-      storeId: resolvedStoreId,
+      storeId: order.storeId,
       productId: item.productId,
       variantId: item.variantId,
     });
@@ -404,29 +398,35 @@ export async function confirmOrder(userId: string, input: any) {
     );
   }
 
-  // 5. Send Email Notifications (Async)
+  if (order.couponCode) {
+    await mongoose.model('Coupon').updateOne(
+      { code: order.couponCode },
+      { $inc: { usedCount: 1 } }
+    );
+  }
+
+  // 4. Send Email Notifications (Async)
   const user = await User.findById(userId);
   if (user && user.email) {
-    const html = orderPlacedTemplate(order, user);
+    const html = orderPlacedTemplate(order as any, user);
     addEmailToQueue({
       to: user.email,
-      subject: `Order Confirmed - ${orderNumber}`,
+      subject: `Order Confirmed - ${order.orderNumber}`,
       html,
     });
   }
 
   // Notify Store Admin
-  const store = await Store.findById(resolvedStoreId).populate('adminId');
+  const store = await Store.findById(order.storeId).populate('adminId');
   if (store && store.adminId && (store.adminId as any).email) {
-    // Basic notification for admin, could use a separate template
     addEmailToQueue({
       to: (store.adminId as any).email,
-      subject: `New Order Received - ${orderNumber}`,
-      html: `<h3>New order received for ${store.name}</h3><p>Order Number: ${orderNumber}</p><p>Total: ₹${order.totalAmount}</p>`,
+      subject: `New Order Received - ${order.orderNumber}`,
+      html: `<h3>New order received for ${store.name}</h3><p>Order Number: ${order.orderNumber}</p><p>Total: ₹${order.totalAmount}</p>`,
     });
   }
 
-  return { orderId: order._id, orderNumber };
+  return { orderId: order._id, orderNumber: order.orderNumber };
 }
 
 /**

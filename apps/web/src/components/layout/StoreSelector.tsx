@@ -132,6 +132,18 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
     };
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   const filteredStores = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return availableStores;
@@ -334,7 +346,7 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
                       />
                     </div>
 
-                    <div className="no-scrollbar max-h-[42vh] space-y-3 overflow-y-auto pr-1">
+                    <div className="space-y-3 pr-1">
                       {isLoading ? (
                         [...Array(4)].map((_, index) => (
                           <div key={index} className="h-24 animate-pulse rounded-[1.5rem] bg-primary-50" />
