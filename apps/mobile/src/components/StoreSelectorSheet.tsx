@@ -168,7 +168,7 @@ export function StoreSelectorSheet() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
         >
-          <View className="max-h-[90%] rounded-t-[32px] bg-offwhite px-5 pb-8 pt-5">
+          <View className="max-h-[88%] rounded-t-[32px] bg-offwhite px-5 pb-8 pt-5">
             <View className="mb-5 h-1.5 w-14 self-center rounded-full bg-primary-100" />
             <View className="mb-5 flex-row rounded-full bg-primary-50 p-1">
               {(['delivery', 'pickup'] as const).map((item) => (
@@ -194,15 +194,29 @@ export function StoreSelectorSheet() {
                 </Pressable>
               ))}
             </View>
+            
+            {draftMode === 'pickup' && (
+              <View className="mb-4">
+                <TextInput
+                  value={search}
+                  onChangeText={setSearch}
+                  onFocus={onInputFocus}
+                  placeholder="Search by city, area, or store"
+                  className="rounded-[20px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
+                  placeholderTextColor="#7a978b"
+                />
+              </View>
+            )}
 
             <ScrollView
               ref={scrollRef}
+              className="flex-1"
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
             >
               {draftMode === 'delivery' ? (
-                <View className="gap-3">
+                <View className="gap-3 pb-4">
                   {([
                     ['street', 'Street Address'],
                     ['city', 'City'],
@@ -228,15 +242,7 @@ export function StoreSelectorSheet() {
                   ))}
                 </View>
               ) : (
-                <View className="gap-3">
-                  <TextInput
-                    value={search}
-                    onChangeText={setSearch}
-                    onFocus={onInputFocus}
-                    placeholder="Search by city, area, or store"
-                    className="rounded-[20px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
-                    placeholderTextColor="#7a978b"
-                  />
+                <View className="gap-3 pb-4">
                   {storesQuery.isLoading ? (
                     <View className="py-10">
                       <ActivityIndicator color="#2D6A4F" />

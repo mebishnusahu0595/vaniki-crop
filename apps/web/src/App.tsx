@@ -63,11 +63,22 @@ const SmoothScroll: React.FC = () => {
       lenis.raf(time * 1000);
     };
 
+    const observer = new MutationObserver(() => {
+      if (document.body.classList.contains('modal-open')) {
+        lenis.stop();
+      } else {
+        lenis.start();
+      }
+    });
+
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(updateLenisFrame);
     gsap.ticker.lagSmoothing(0);
 
     return () => {
+      observer.disconnect();
       gsap.ticker.remove(updateLenisFrame);
       lenis.destroy();
     };

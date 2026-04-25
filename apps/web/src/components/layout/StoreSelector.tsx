@@ -243,7 +243,8 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-x-4 bottom-4 top-14 z-[201] flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[85vh] md:w-full md:max-w-5xl md:-translate-x-1/2 md:-translate-y-1/2"
+            data-lenis-prevent
+            className="fixed inset-x-4 bottom-4 top-14 z-[201] flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[82vh] md:w-full md:max-w-5xl md:-translate-x-1/2 md:-translate-y-1/2"
           >
             <div className="flex items-center justify-between border-b border-primary-100 bg-primary-50/60 px-5 py-4 sm:px-8">
               <div>
@@ -255,90 +256,30 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
               </button>
             </div>
 
-            <div className="flex flex-col gap-0 overflow-hidden md:flex-row md:divide-x md:divide-primary-100">
-              <div data-lenis-prevent="true" className="w-full space-y-6 overflow-y-auto overscroll-contain p-5 sm:p-8 md:w-[380px]" onWheel={(e) => e.stopPropagation()} onTouchMove={(e) => e.stopPropagation()}>
-                <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] border border-primary-100 bg-primary-50 p-1">
-                  {([
-                    { key: 'delivery', label: t('storeSelector.delivery'), icon: Truck },
-                    { key: 'pickup', label: t('storeSelector.pickup'), icon: StoreIcon },
-                  ] as const).map((item) => (
-                    <button
-                      key={item.key}
-                      onClick={() => setDraftMode(item.key)}
-                      className={cn(
-                        'flex items-center justify-center gap-2 rounded-[1.25rem] px-4 py-3 text-sm font-black transition',
-                        draftMode === item.key ? 'bg-white text-primary-900 shadow-sm' : 'text-primary-900/55',
-                      )}
-                    >
-                      <item.icon size={16} />
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {draftMode === 'delivery' ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
-                        {t('storeSelector.streetAddress')}
-                      </label>
-                      <input
-                        value={draftAddress.street}
-                        onChange={(event) => setDraftAddress((current) => ({ ...current, street: event.target.value }))}
-                        placeholder={t('storeSelector.streetPlaceholder')}
-                        className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
-                          {t('storeSelector.city')}
-                        </label>
-                        <input
-                          value={draftAddress.city}
-                          onChange={(event) => setDraftAddress((current) => ({ ...current, city: event.target.value }))}
-                          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
-                          {t('storeSelector.state')}
-                        </label>
-                        <input
-                          value={draftAddress.state}
-                          onChange={(event) => setDraftAddress((current) => ({ ...current, state: event.target.value }))}
-                          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
-                          {t('storeSelector.pincode')}
-                        </label>
-                        <input
-                          value={draftAddress.pincode}
-                          onChange={(event) => setDraftAddress((current) => ({ ...current, pincode: event.target.value }))}
-                          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
-                          {t('storeSelector.landmark')}
-                        </label>
-                        <input
-                          value={draftAddress.landmark || ''}
-                          onChange={(event) => setDraftAddress((current) => ({ ...current, landmark: event.target.value }))}
-                          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-                        />
-                      </div>
-                    </div>
-                    <div className="rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 text-sm font-medium text-primary-900/65">
-                      {t('storeSelector.addressHint')}
-                    </div>
+            <div className="flex flex-1 flex-col overflow-hidden md:flex-row md:divide-x md:divide-primary-100">
+              <div className="flex w-full flex-col overflow-hidden md:w-[400px]">
+                {/* Header & Fixed Controls */}
+                <div className="space-y-6 p-5 sm:p-8 pb-4">
+                  <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] border border-primary-100 bg-primary-50 p-1">
+                    {([
+                      { key: 'delivery', label: t('storeSelector.delivery'), icon: Truck },
+                      { key: 'pickup', label: t('storeSelector.pickup'), icon: StoreIcon },
+                    ] as const).map((item) => (
+                      <button
+                        key={item.key}
+                        onClick={() => setDraftMode(item.key)}
+                        className={cn(
+                          'flex items-center justify-center gap-2 rounded-[1.25rem] px-4 py-3 text-sm font-black transition',
+                          draftMode === item.key ? 'bg-white text-primary-900 shadow-sm' : 'text-primary-900/55',
+                        )}
+                      >
+                        <item.icon size={16} />
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
                   </div>
-                ) : (
-                  <div className="space-y-4">
+
+                  {draftMode === 'pickup' && (
                     <div className="relative">
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-900/25" size={18} />
                       <input
@@ -348,8 +289,74 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
                         className="w-full rounded-2xl border border-primary-100 bg-primary-50 py-3 pl-11 pr-4 font-semibold text-primary-900"
                       />
                     </div>
+                  )}
+                </div>
 
-                    <div className="space-y-3 pr-1">
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto overscroll-contain px-5 sm:px-8">
+                  {draftMode === 'delivery' ? (
+                    <div className="space-y-4 pb-8">
+                      <div>
+                        <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
+                          {t('storeSelector.streetAddress')}
+                        </label>
+                        <input
+                          value={draftAddress.street}
+                          onChange={(event) => setDraftAddress((current) => ({ ...current, street: event.target.value }))}
+                          placeholder={t('storeSelector.streetPlaceholder')}
+                          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
+                            {t('storeSelector.city')}
+                          </label>
+                          <input
+                            value={draftAddress.city}
+                            onChange={(event) => setDraftAddress((current) => ({ ...current, city: event.target.value }))}
+                            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
+                            {t('storeSelector.state')}
+                          </label>
+                          <input
+                            value={draftAddress.state}
+                            onChange={(event) => setDraftAddress((current) => ({ ...current, state: event.target.value }))}
+                            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
+                            {t('storeSelector.pincode')}
+                          </label>
+                          <input
+                            value={draftAddress.pincode}
+                            onChange={(event) => setDraftAddress((current) => ({ ...current, pincode: event.target.value }))}
+                            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-xs font-black uppercase tracking-[0.22em] text-primary-500">
+                            {t('storeSelector.landmark')}
+                          </label>
+                          <input
+                            value={draftAddress.landmark || ''}
+                            onChange={(event) => setDraftAddress((current) => ({ ...current, landmark: event.target.value }))}
+                            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                          />
+                        </div>
+                      </div>
+                      <div className="rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 text-sm font-medium text-primary-900/65">
+                        {t('storeSelector.addressHint')}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 pb-8">
                       {isLoading ? (
                         [...Array(4)].map((_, index) => (
                           <div key={index} className="h-24 animate-pulse rounded-[1.5rem] bg-primary-50" />
@@ -393,20 +400,23 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
                         })
                       )}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-black uppercase tracking-[0.22em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-100"
-                >
-                  {isSaving
-                    ? t('storeSelector.saving')
-                    : draftMode === 'delivery'
-                      ? t('storeSelector.saveDeliveryDetails')
-                      : t('storeSelector.savePickupStore')}
-                </button>
+                {/* Footer Action */}
+                <div className="border-t border-primary-100 bg-white p-5 sm:p-8">
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="flex w-full items-center justify-center rounded-2xl bg-primary px-4 py-3 text-sm font-black uppercase tracking-[0.22em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-100"
+                  >
+                    {isSaving
+                      ? t('storeSelector.saving')
+                      : draftMode === 'delivery'
+                        ? t('storeSelector.saveDeliveryDetails')
+                        : t('storeSelector.savePickupStore')}
+                  </button>
+                </div>
               </div>
 
               <div className="hidden flex-1 bg-[linear-gradient(180deg,_rgba(240,250,245,0.9),_rgba(255,255,255,0.96))] p-8 md:block">
