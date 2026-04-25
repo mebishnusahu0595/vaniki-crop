@@ -6,6 +6,7 @@ import { adminApi } from '../utils/api';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { currencyFormatter } from '../utils/format';
+import { resolveMediaUrl } from '../utils/media';
 
 export default function ProductsPage() {
   const queryClient = useQueryClient();
@@ -115,15 +116,16 @@ export default function ProductsPage() {
           <tbody>
             {productsQuery.data?.data.map((product) => {
               const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock, 0);
-              const firstImage = product.images?.[0]?.url;
+              const firstImage = product.images?.[0];
+              const imageUrl = firstImage ? resolveMediaUrl(firstImage.url, firstImage.publicId) : null;
 
               return (
                 <tr key={product.id} className="border-t border-primary-100">
                   <td className="px-5 py-4">
                     <div className="h-10 w-10 overflow-hidden rounded-lg bg-primary-50">
-                      {firstImage ? (
+                      {imageUrl ? (
                         <img
-                          src={firstImage}
+                          src={imageUrl}
                           alt={product.name}
                           className="h-full w-full object-cover"
                           onError={(event) => {
