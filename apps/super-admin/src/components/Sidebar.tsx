@@ -52,8 +52,8 @@ export function Sidebar({
   onClose: () => void;
 }) {
   const liveBadgeQueryOptions = {
-    staleTime: 20_000,
-    refetchInterval: 30_000,
+    staleTime: 5_000,
+    refetchInterval: 10_000,
   } as const;
 
   const pendingDealersQuery = useQuery({
