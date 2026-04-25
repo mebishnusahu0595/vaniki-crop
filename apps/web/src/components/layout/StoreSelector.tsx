@@ -240,7 +240,7 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-x-4 bottom-4 top-14 z-[201] flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[88vh] md:w-full md:max-w-5xl md:-translate-x-1/2 md:-translate-y-1/2"
+            className="fixed inset-x-4 bottom-4 top-14 z-[201] flex flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl md:inset-auto md:left-1/2 md:top-1/2 md:max-h-[85vh] md:w-full md:max-w-5xl md:-translate-x-1/2 md:-translate-y-1/2"
           >
             <div className="flex items-center justify-between border-b border-primary-100 bg-primary-50/60 px-5 py-4 sm:px-8">
               <div>
@@ -253,7 +253,7 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
             </div>
 
             <div className="flex flex-col gap-0 overflow-hidden md:flex-row md:divide-x md:divide-primary-100">
-              <div className="w-full space-y-6 overflow-y-auto p-5 sm:p-8 md:w-[380px]">
+              <div data-lenis-prevent="true" className="w-full space-y-6 overflow-y-auto p-5 sm:p-8 md:w-[380px]">
                 <div className="grid grid-cols-2 gap-2 rounded-[1.5rem] border border-primary-100 bg-primary-50 p-1">
                   {([
                     { key: 'delivery', label: t('storeSelector.delivery'), icon: Truck },
