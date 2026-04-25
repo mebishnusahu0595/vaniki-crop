@@ -22,18 +22,10 @@ export default function OrdersPage() {
   const [note, setNote] = useState('');
   const [inventorySearch, setInventorySearch] = useState(searchParams.get('inventory') || '');
 
-  // Sync state with URL params during render to avoid useEffect cascading renders
   const [prevInventoryParam, setPrevInventoryParam] = useState(searchParams.get('inventory'));
   const [prevSearchParam, setPrevSearchParam] = useState(searchParams.get('search'));
 
-  if (searchParams.get('inventory') !== prevInventoryParam) {
-    setPrevInventoryParam(searchParams.get('inventory'));
-    setInventorySearch(searchParams.get('inventory') || '');
-  }
-  if (searchParams.get('search') !== prevSearchParam) {
-    setPrevSearchParam(searchParams.get('search'));
-    setSearch(searchParams.get('search') || '');
-  }
+
 
   const [selectedProductId, setSelectedProductId] = useState('');
   const [requestedProductName, setRequestedProductName] = useState('');
@@ -43,17 +35,7 @@ export default function OrdersPage() {
   const [inventoryDraft, setInventoryDraft] = useState<Record<string, number>>({});
   const [prevInventoryData, setPrevInventoryData] = useState<any>(null);
 
-  // Sync draft with query data during render to avoid useEffect cascading renders
-  if (inventoryQuery.data && inventoryQuery.data !== prevInventoryData) {
-    setPrevInventoryData(inventoryQuery.data);
-    const nextDraft: Record<string, number> = {};
-    for (const product of inventoryQuery.data) {
-      for (const variant of product.variants) {
-        nextDraft[`${product.id}:${variant.id}`] = variant.quantity;
-      }
-    }
-    setInventoryDraft(nextDraft);
-  }
+
 
   const ordersQuery = useQuery({
     queryKey: ['admin-orders', status, paymentMethod, debouncedSearch, startDate, endDate],
@@ -84,6 +66,28 @@ export default function OrdersPage() {
     queryKey: ['admin-product-requests'],
     queryFn: () => adminApi.productRequests({ limit: 30 }),
   });
+
+  // Sync state with URL params during render to avoid useEffect cascading renders
+  if (searchParams.get('inventory') !== prevInventoryParam) {
+    setPrevInventoryParam(searchParams.get('inventory'));
+    setInventorySearch(searchParams.get('inventory') || '');
+  }
+  if (searchParams.get('search') !== prevSearchParam) {
+    setPrevSearchParam(searchParams.get('search'));
+    setSearch(searchParams.get('search') || '');
+  }
+
+  // Sync draft with query data during render to avoid useEffect cascading renders
+  if (inventoryQuery.data && inventoryQuery.data !== prevInventoryData) {
+    setPrevInventoryData(inventoryQuery.data);
+    const nextDraft: Record<string, number> = {};
+    for (const product of inventoryQuery.data) {
+      for (const variant of product.variants) {
+        nextDraft[`${product.id}:${variant.id}`] = variant.quantity;
+      }
+    }
+    setInventoryDraft(nextDraft);
+  }
 
 
 
