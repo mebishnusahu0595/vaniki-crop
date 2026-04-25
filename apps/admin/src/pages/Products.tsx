@@ -103,6 +103,7 @@ export default function ProductsPage() {
         <table className="min-w-full">
           <thead className="bg-primary-50/70">
             <tr className="text-left text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+              <th className="px-5 py-4">Image</th>
               <th className="px-5 py-4">Product</th>
               <th className="px-5 py-4">Category</th>
               <th className="px-5 py-4">Variants</th>
@@ -114,8 +115,28 @@ export default function ProductsPage() {
           <tbody>
             {productsQuery.data?.data.map((product) => {
               const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock, 0);
+              const firstImage = product.images?.[0]?.url;
+
               return (
                 <tr key={product.id} className="border-t border-primary-100">
+                  <td className="px-5 py-4">
+                    <div className="h-10 w-10 overflow-hidden rounded-lg bg-primary-50">
+                      {firstImage ? (
+                        <img
+                          src={firstImage}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                          onError={(event) => {
+                            (event.target as HTMLImageElement).src = 'https://placehold.co/100x100?text=No+Image';
+                          }}
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-primary-200">
+                          <Plus size={16} />
+                        </div>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-5 py-4">
                     <p className="font-black text-slate-900">{product.name}</p>
                     <p className="mt-1 text-xs text-slate-500">
