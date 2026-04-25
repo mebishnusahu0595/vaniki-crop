@@ -1,15 +1,6 @@
-import dotenv from 'dotenv';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import './config/env.js';
 import app from './app.js';
 import { connectDB } from './config/database.js';
-
-const currentFilePath = fileURLToPath(import.meta.url);
-const currentDirectory = dirname(currentFilePath);
-const envPath = process.env.NODE_ENV === 'production'
-  ? resolve(currentDirectory, '../../../.env.production')
-  : resolve(currentDirectory, '../../../.env');
-dotenv.config({ path: envPath });
 
 const PORT = process.env.PORT || 5000;
 
