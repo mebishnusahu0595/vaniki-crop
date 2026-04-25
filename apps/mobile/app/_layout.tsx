@@ -37,6 +37,7 @@ function RootNavigation() {
         <Stack.Screen name="order-success/[id]" />
         <Stack.Screen name="about" />
         <Stack.Screen name="contact" />
+        <Stack.Screen name="privacy-policy" />
       </Stack>
       <StoreSelectorSheet />
     </>

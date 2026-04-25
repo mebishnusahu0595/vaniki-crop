@@ -3,15 +3,17 @@
     "name": "Vaniki Crop",
     "slug": "vaniki-crop",
     "version": "1.0.0",
+    "description": "Vaniki Crop — India's trusted crop protection marketplace. Buy genuine pesticides, insecticides, fungicides & herbicides from local agri stores with delivery or pickup. Secure Razorpay payments, real-time order tracking, and farmer-first support.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "vanikicrop",
+    "primaryColor": "#2D6A4F",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2D6A4F"
     },
     "plugins": [
       "expo-router",
@@ -43,16 +45,36 @@
     },
     "android": {
       "package": "com.vanikicrop.app",
+      "versionCode": 1,
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2D6A4F"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "vanikicrop.com",
+              "pathPrefix": "/product"
+            },
+            {
+              "scheme": "https",
+              "host": "vanikicrop.com",
+              "pathPrefix": "/products"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "experiments": {

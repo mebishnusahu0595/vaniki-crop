@@ -412,6 +412,9 @@ export default function AccountScreen() {
             <Pressable onPress={() => router.push('/contact' as any)} className="rounded-full bg-white px-4 py-3">
               <Text className="text-center text-[10px] font-black uppercase tracking-[1.4px] text-primary-900">Contact Support</Text>
             </Pressable>
+            <Pressable onPress={() => router.push('/privacy-policy' as any)} className="rounded-full bg-white px-4 py-3">
+              <Text className="text-center text-[10px] font-black uppercase tracking-[1.4px] text-primary-900">Privacy Policy</Text>
+            </Pressable>
           </View>
         </View>
       ) : null}
