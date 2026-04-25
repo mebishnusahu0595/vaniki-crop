@@ -283,7 +283,7 @@ const Checkout: React.FC = () => {
           </section>
 
           {mode === 'delivery' ? (
-            <section className="surface-card p-6">
+            <section key="delivery-section" className="surface-card p-6">
               <p className="section-kicker mb-2">{t('checkoutPage.deliveryAddress')}</p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <input
@@ -325,7 +325,7 @@ const Checkout: React.FC = () => {
               </div>
             </section>
           ) : (
-            <section className="surface-card p-6">
+            <section key="pickup-section" className="surface-card p-6">
               <p className="section-kicker mb-2">{t('checkoutPage.pickupStore')}</p>
               <div className="space-y-3">
                 <select
