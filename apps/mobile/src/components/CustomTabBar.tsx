@@ -73,7 +73,8 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
                 ) : null}
               </View>
               <Text
-                className={`text-[10px] font-black uppercase tracking-[1px] ${
+                numberOfLines={1}
+                className={`text-[9px] font-black uppercase tracking-[0.5px] ${
                   isFocused ? 'text-primary-500' : 'text-primary-900/45'
                 }`}
               >

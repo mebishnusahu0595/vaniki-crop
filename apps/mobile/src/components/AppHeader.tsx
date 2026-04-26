@@ -118,25 +118,28 @@ export const AppHeader = memo(function AppHeader() {
         </View>
       </View>
 
-      <View className="mt-3 flex-row items-center">
-        <Pressable onPress={() => router.push('/(tabs)')} className="mr-2">
-          <View>
-            <Text className="text-[20px] font-black leading-tight tracking-tight text-primary-900">
-              Vaniki
-            </Text>
-            <Text className="text-[14px] font-semibold leading-tight tracking-tight text-primary-700">
-              Crop
-            </Text>
-          </View>
+      <View className="mt-3 flex-row items-center justify-between">
+        <Pressable onPress={() => router.push('/(tabs)')} className="flex-row items-baseline gap-1">
+          <Text className="text-[20px] font-black leading-tight tracking-tight text-primary-900">
+            Vaniki
+          </Text>
+          <Text className="text-[20px] font-black leading-tight tracking-tight text-primary-500">
+            Crop
+          </Text>
         </Pressable>
 
-        <View className="shrink-0 flex-row items-center gap-2">
+        <View className="flex-row items-center gap-1.5">
           <Pressable
             onPress={() => void handleLanguageToggle()}
             disabled={switchingLanguage}
             className="h-10 min-w-[56px] items-center justify-center rounded-2xl border border-primary-100 bg-white px-2"
           >
-            <Text className="text-[10px] font-black uppercase tracking-[1.6px] text-primary-900">
+            <Text
+              numberOfLines={1}
+              className={`text-[9px] font-black uppercase tracking-[0.5px] ${
+                switchingLanguage ? 'text-primary-900/45' : 'text-primary-900'
+              }`}
+            >
               {getLanguageToggleLabel()}
             </Text>
           </Pressable>
