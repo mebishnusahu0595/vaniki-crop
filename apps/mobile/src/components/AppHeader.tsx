@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useCartStore } from '../store/useCartStore';
 import { useStoreStore } from '../store/useStoreStore';
+import { Image } from 'expo-image';
 import { storefrontApi } from '../lib/api';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { getLanguageToggleLabel, toggleAppLanguage } from '../i18n';
@@ -118,16 +119,20 @@ export const AppHeader = memo(function AppHeader() {
       </View>
 
       <View className="mt-3 flex-row items-center">
-        <Pressable onPress={() => router.push('/(tabs)')} className="mr-2 flex-1">
-          <Text
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.72}
-            className="text-[30px] leading-[32px] tracking-tight"
-          >
-            <Text className="font-black text-primary-900">Vaniki</Text>
-            <Text className="font-semibold text-primary-700"> Crop</Text>
-          </Text>
+        <Pressable onPress={() => router.push('/(tabs)')} className="mr-2 flex-row items-center gap-2">
+          <Image
+            source={require('../../../assets/icon.png')}
+            style={{ width: 36, height: 36, borderRadius: 8 }}
+            contentFit="contain"
+          />
+          <View>
+            <Text className="text-[20px] font-black leading-tight tracking-tight text-primary-900">
+              Vaniki
+            </Text>
+            <Text className="text-[14px] font-semibold leading-tight tracking-tight text-primary-700">
+              Crop
+            </Text>
+          </View>
         </Pressable>
 
         <View className="shrink-0 flex-row items-center gap-2">
