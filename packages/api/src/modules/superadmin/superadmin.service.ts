@@ -960,6 +960,7 @@ export async function listOrders(query: Record<string, any>) {
   }
 
   applyDateRangeFilter(filter, query.startDate, query.endDate);
+  orderService.applyVisibleOrderFilter(filter);
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
@@ -975,7 +976,10 @@ export async function listOrders(query: Record<string, any>) {
 }
 
 export async function getOrderDetail(orderId: string) {
-  const order = await Order.findById(orderId)
+  const filter: Record<string, any> = { _id: orderId };
+  orderService.applyVisibleOrderFilter(filter);
+
+  const order = await Order.findOne(filter)
     .populate('userId', 'name mobile email savedAddress')
     .populate('storeId', 'name address phone email');
 

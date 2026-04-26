@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { Feather } from '@expo/vector-icons';
 import { Screen } from '../../src/components/Screen';
 import { storefrontApi } from '../../src/lib/api';
@@ -9,17 +8,30 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
 import { useFocusAwareScroll } from '../../src/hooks/useFocusAwareScroll';
+import type { AuthUser } from '../../src/types/storefront';
 
 export default function LoginScreen() {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { setSession, setUser, token, enableBiometrics } = useAuthStore();
+  const { setSession, setUser } = useAuthStore();
   const setMode = useServiceModeStore((state) => state.setMode);
   const setAddress = useServiceModeStore((state) => state.setAddress);
   const setStore = useStoreStore((state) => state.setStore);
   const { scrollRef, onInputFocus } = useFocusAwareScroll(110);
+
+  const applySessionPreferences = (session: AuthUser) => {
+    setMode(session.serviceMode);
+    setAddress(session.savedAddress || null);
+    if (session.serviceMode === 'pickup' && session.selectedStore && typeof session.selectedStore !== 'string') {
+      setStore(session.selectedStore);
+      return;
+    }
+    if (session.serviceMode === 'delivery' || !session.selectedStore) {
+      setStore(null);
+    }
+  };
 
   return (
     <Screen withServiceBar={false} scroll={false} keyboardAware={false}>
@@ -86,16 +98,14 @@ export default function LoginScreen() {
                   try {
                     const response = await storefrontApi.login({ mobile, password });
                     setSession({ user: response.user, token: response.accessToken });
-                    const session = await storefrontApi.me();
-                    setUser(session);
-                    setMode(session.serviceMode);
-                    setAddress(session.savedAddress || null);
-                    if (session.serviceMode === 'pickup' && session.selectedStore && typeof session.selectedStore !== 'string') {
-                      setStore(session.selectedStore);
-                    } else {
-                      setStore(null);
-                    }
-                    await enableBiometrics();
+                    applySessionPreferences(response.user);
+                    void storefrontApi
+                      .me()
+                      .then((session) => {
+                        setUser(session);
+                        applySessionPreferences(session);
+                      })
+                      .catch(() => undefined);
                     router.replace('/(tabs)');
                   } catch (caughtError) {
                     Alert.alert('Login failed', caughtError instanceof Error ? caughtError.message : 'Try again.');
@@ -110,24 +120,6 @@ export default function LoginScreen() {
                 </Text>
               </Pressable>
             </View>
-
-            {token ? (
-              <Pressable
-                onPress={async () => {
-                  const result = await LocalAuthentication.authenticateAsync({
-                    promptMessage: 'Unlock Vaniki Crop',
-                  });
-                  if (result.success) {
-                    router.replace('/(tabs)');
-                  }
-                }}
-                className="mt-4 rounded-full bg-primary-50 px-5 py-4"
-              >
-                <Text className="text-center text-xs font-black uppercase tracking-[2px] text-primary-500">
-                  Use Biometrics
-                </Text>
-              </Pressable>
-            ) : null}
 
             <Pressable onPress={() => router.push('/(auth)/signup')} className="mt-6 py-2">
               <Text className="text-center text-xs font-black uppercase tracking-[2px] text-primary-500">

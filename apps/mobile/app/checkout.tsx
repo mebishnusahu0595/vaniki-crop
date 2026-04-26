@@ -14,6 +14,22 @@ import { useStoreStore } from '../src/store/useStoreStore';
 import { storefrontApi } from '../src/lib/api';
 import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
 
+function getCheckoutErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === 'object') {
+    const record = error as Record<string, unknown>;
+    const nestedError = record.error as Record<string, unknown> | undefined;
+    const code = record.code || nestedError?.code;
+    const message = record.description || record.message || nestedError?.description || nestedError?.message;
+    if (code === 0 || (typeof message === 'string' && /cancel/i.test(message))) {
+      return 'Payment cancelled. Your cart is unchanged.';
+    }
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+
+  return 'Unable to complete payment.';
+}
+
 export default function CheckoutScreen() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -56,7 +72,18 @@ export default function CheckoutScreen() {
     enabled: Boolean(token),
   });
 
-  const pickupStores = pickupStoresQuery.data || [];
+  const pickupStores = useMemo(() => {
+    const raw = pickupStoresQuery.data || [];
+    return raw.filter((store) => {
+      const city = (store.address.city || '').trim().toLowerCase();
+      const state = (store.address.state || '').trim().toLowerCase();
+      const street = (store.address.street || '').trim().toLowerCase();
+      const placeholders = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
+      if (!street || !city || !state) return false;
+      if (placeholders.has(city) || placeholders.has(state)) return false;
+      return true;
+    });
+  }, [pickupStoresQuery.data]);
 
   useEffect(() => {
     if (mode !== 'delivery' || !address) return;
@@ -70,10 +97,9 @@ export default function CheckoutScreen() {
     setPickupStoreId(selectedStore?.id || '');
   }, [selectedStore?.id]);
 
-  useEffect(() => {
-    if (mode !== 'delivery') return;
-    setAddress(addressDraft);
-  }, [mode, addressDraft, setAddress]);
+  // Removed circular useEffect that synced addressDraft back to setAddress automatically
+  // This was causing infinite loops between local state and global store.
+  // Address should be saved explicitly or only on debounce.
 
   useEffect(() => {
     if (mode !== 'delivery' || !token || !user?.id) return;
@@ -120,7 +146,7 @@ export default function CheckoutScreen() {
           ref={scrollRef}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+          keyboardDismissMode="none"
           contentContainerStyle={{ paddingBottom: 24 }}
         >
       <View className="mb-4 mt-6 flex-row items-center">
@@ -278,6 +304,12 @@ export default function CheckoutScreen() {
             return;
           }
 
+          if (!items.length) {
+            Alert.alert('Cart is empty', 'Add products to cart before checkout.');
+            router.replace('/(tabs)');
+            return;
+          }
+
           setPaying(true);
           try {
             const effectiveStoreId = mode === 'pickup' ? selectedStore?.id : selectedStore?.id || undefined;
@@ -301,6 +333,10 @@ export default function CheckoutScreen() {
             }
 
             const initiated = await storefrontApi.initiateOrder(orderPayload);
+            if (!initiated.razorpayKeyId || !initiated.razorpayOrderId) {
+              throw new Error('Razorpay is not configured for this store. Please contact support.');
+            }
+
             const confirmedStoreId = (initiated as { storeId?: string }).storeId || effectiveStoreId;
             const payment = await RazorpayCheckout.open({
               key: initiated.razorpayKeyId,
@@ -339,7 +375,7 @@ export default function CheckoutScreen() {
 
             Alert.alert(
               'Checkout failed',
-              caughtError instanceof Error ? caughtError.message : 'Unable to complete payment.',
+              getCheckoutErrorMessage(caughtError),
             );
           } finally {
             setPaying(false);

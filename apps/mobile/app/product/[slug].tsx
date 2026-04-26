@@ -14,10 +14,11 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { useCompareStore } from '../../src/store/useCompareStore';
 import { currencyFormatter, getDiscountPercent, getPrimaryImage } from '../../src/utils/format';
 import { stripHtml } from '../../src/utils/html';
+import { resolveMediaUrl } from '../../src/utils/media';
 
 export default function ProductDetailScreen() {
   const { t } = useTranslation();
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug, image: routeImage } = useLocalSearchParams<{ slug: string; image?: string }>();
   const { width } = useWindowDimensions();
   const addItem = useCartStore((state) => state.addItem);
   const increaseQty = useCartStore((state) => state.increaseQty);
@@ -56,7 +57,10 @@ export default function ProductDetailScreen() {
     [product?.slug, relatedQuery.data?.data],
   );
   const galleryImages = useMemo(
-    () => (product?.images || []).filter((image) => Boolean(image.url?.trim())),
+    () =>
+      [...(product?.images || [])]
+        .filter((image) => Boolean(image.url?.trim()))
+        .sort((left, right) => Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))),
     [product?.images],
   );
   const galleryImageWidth = Math.max(width - 32, 240);
@@ -102,17 +106,20 @@ export default function ProductDetailScreen() {
     <Screen>
       <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} className="mb-5">
         {galleryImages.length ? (
-          galleryImages.map((image) => (
-            <Image
-              key={image.url}
-              source={{ uri: image.url }}
-              style={{ width: galleryImageWidth, height: 280, borderRadius: 28 }}
-              contentFit="cover"
-            />
-          ))
+          galleryImages.map((image) => {
+            const imageUrl = resolveMediaUrl(image.url, image.publicId);
+            return (
+              <Image
+                key={image.url}
+                source={{ uri: imageUrl }}
+                style={{ width: galleryImageWidth, height: 280, borderRadius: 28 }}
+                contentFit="cover"
+              />
+            );
+          })
         ) : (
           <Image
-            source={{ uri: getPrimaryImage(product) }}
+            source={{ uri: getPrimaryImage(product, routeImage) }}
             style={{ width: galleryImageWidth, height: 280, borderRadius: 28 }}
             contentFit="cover"
           />

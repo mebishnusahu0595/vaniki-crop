@@ -20,5 +20,16 @@
     "turbo": "^2.5.4",
     "typescript": "~5.9.3"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@9.0.0",
+  "pnpm": {
+    "overrides": {
+      "react": "18.3.1",
+      "react-dom": "18.3.1",
+      "react-native": "0.76.9",
+      "react-native-reanimated": "~3.16.1"
+    }
+  },
+  "dependencies": {
+    "react-native-worklets": "0.5.1"
+  }
 }

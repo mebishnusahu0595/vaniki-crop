@@ -3,6 +3,16 @@
     "version": ">= 13.0.0"
   },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://vanikicrop.com/api"
+      }
+    },
     "preview": {
       "distribution": "internal",
       "android": {
@@ -14,7 +24,7 @@
     },
     "production": {
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "apk"
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://vanikicrop.com/api"

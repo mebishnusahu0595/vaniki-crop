@@ -1,5 +1,5 @@
 import type { Address, Product } from '../types/storefront';
-import { API_BASE_URL } from '../config/api';
+import { resolveMediaUrl } from './media';
 
 const PLACEHOLDER_ADDRESS_VALUES = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
 
@@ -20,16 +20,16 @@ export function formatStoreAddress(address?: Partial<Address> | null) {
     .join(', ');
 }
 
-export function getPrimaryImage(product?: Product | null) {
-  const url = product?.images?.[0]?.url;
-  if (!url) return 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80';
-  if (url.startsWith('http')) return url;
-  const baseUrl = API_BASE_URL.replace(/\/api$/, '');
-  return `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+export function getPrimaryImage(product?: Product | null, fallbackUrl?: string) {
+  const primary = product?.images?.find((image) => image.isPrimary) || product?.images?.[0];
+  if (primary?.url) return resolveMediaUrl(primary.url, primary.publicId);
+  if (fallbackUrl) return resolveMediaUrl(fallbackUrl);
+  return 'https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=800&q=80';
 }
 
 export function getDefaultVariant(product?: Product | null) {
-  return product?.variants?.[0] || null;
+  if (!product?.variants || product.variants.length === 0) return null;
+  return product.variants[0];
 }
 
 export function getDiscountPercent(price?: number, mrp?: number) {

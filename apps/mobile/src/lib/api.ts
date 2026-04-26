@@ -1,6 +1,7 @@
 import { useAuthStore } from '../store/useAuthStore';
 import { useStoreStore } from '../store/useStoreStore';
 import { API_BASE_URL } from '../config/api';
+import { resolveMediaUrl } from '../utils/media';
 import type {
   AuthUser,
   Category,
@@ -20,6 +21,8 @@ import type {
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | undefined>;
 }
+
+const REQUEST_TIMEOUT_MS = 25_000;
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -41,6 +44,7 @@ type ProductLike = Product & {
   _id?: string;
   variants?: VariantLike[];
   reviews?: ReviewLike[];
+  category?: CategoryLike;
 };
 
 type AuthUserLike = AuthUser & {
@@ -48,10 +52,30 @@ type AuthUserLike = AuthUser & {
   wishlist?: Array<string | ProductLike>;
 };
 
+type CategoryLike = Category & {
+  _id?: string;
+};
+
 const normalizeVariant = (variant: VariantLike, index: number): Product['variants'][number] => ({
   ...variant,
   id: variant.id || variant._id || variant.sku || `${variant.label || 'variant'}-${index}`,
 });
+
+const normalizeImageAsset = <T extends { url: string; publicId?: string; mobileUrl?: string }>(image: T): T => ({
+  ...image,
+  url: resolveMediaUrl(image.url, image.publicId),
+  mobileUrl: image.mobileUrl ? resolveMediaUrl(image.mobileUrl, image.publicId) : image.mobileUrl,
+});
+
+const normalizeCategory = <T extends CategoryLike | null | undefined>(category: T): T => {
+  if (!category) return category;
+
+  return {
+    ...category,
+    id: category.id || category._id || category.slug,
+    image: category.image ? normalizeImageAsset(category.image) : category.image,
+  } as T;
+};
 
 const normalizeProduct = <T extends ProductLike | null | undefined>(product: T): T => {
   if (!product) return product;
@@ -64,10 +88,14 @@ const normalizeProduct = <T extends ProductLike | null | undefined>(product: T):
     };
   });
 
+  const variants = (product.variants || []).map((variant, index) => normalizeVariant(variant, index));
+
   return {
     ...product,
     id: product.id || product._id || product.slug,
-    variants: (product.variants || []).map((variant, index) => normalizeVariant(variant, index)),
+    images: (product.images || []).map((image) => normalizeImageAsset(image)),
+    category: normalizeCategory(product.category),
+    variants,
     reviews: normalizedReviews,
   } as T;
 };
@@ -86,12 +114,20 @@ const normalizeHomepageData = (homepage: HomepageData): HomepageData => ({
   ...homepage,
   saleProducts: normalizeProducts(homepage.saleProducts as ProductLike[]),
   bestSellers: normalizeProducts(homepage.bestSellers as ProductLike[]),
+  featuredCategories: (homepage.featuredCategories || []).map((category) =>
+    normalizeCategory(category as CategoryLike)!,
+  ),
   banners: (homepage.banners || []).map((banner) => ({
     ...banner,
+    image: normalizeImageAsset(banner.image),
     linkedProducts: (banner.linkedProducts || []).map((entry) => ({
       ...entry,
       productId: normalizeProduct(entry.productId as ProductLike)!,
     })),
+  })),
+  testimonials: (homepage.testimonials || []).map((testimonial) => ({
+    ...testimonial,
+    avatar: testimonial.avatar ? normalizeImageAsset(testimonial.avatar) : testimonial.avatar,
   })),
 });
 
@@ -99,6 +135,8 @@ async function request<T>(path: string, options: RequestOptions = {}) {
   const token = useAuthStore.getState().token;
   const storeId = useStoreStore.getState().selectedStore?.id;
   const url = new URL(`${API_BASE_URL}${path}`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   if (options.params) {
     Object.entries(options.params).forEach(([key, value]) => {
@@ -108,26 +146,36 @@ async function request<T>(path: string, options: RequestOptions = {}) {
     });
   }
 
-  const response = await fetch(url.toString(), {
-    ...options,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(storeId ? { 'X-Store-Id': storeId } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  try {
+    const response = await fetch(url.toString(), {
+      ...options,
+      signal: options.signal || controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(storeId ? { 'X-Store-Id': storeId } : {}),
+        ...(options.headers || {}),
+      },
+    });
 
-  const json = (await response.json().catch(() => ({}))) as ApiResponse<T> & { error?: string };
-  if (!response.ok) {
-    if (response.status === 401) {
-      useAuthStore.getState().logout();
+    const json = (await response.json().catch(() => ({}))) as ApiResponse<T> & { error?: string };
+    if (!response.ok) {
+      if (response.status === 401) {
+        useAuthStore.getState().logout();
+      }
+      throw new Error(json.error || json.message || 'Something went wrong.');
     }
-    throw new Error(json.error || json.message || 'Something went wrong.');
-  }
 
-  return json;
+    return json;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection and try again.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export const storefrontApi = {
@@ -139,7 +187,7 @@ export const storefrontApi = {
   },
   categories: async () => {
     const response = await request<Category[]>('/categories');
-    return response.data;
+    return (response.data || []).map((category) => normalizeCategory(category as CategoryLike)!);
   },
   products: async (params?: Record<string, string | number | undefined>) => {
     const response = await request<Product[]>('/products', { params });

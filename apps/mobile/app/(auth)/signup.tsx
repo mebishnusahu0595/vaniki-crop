@@ -8,6 +8,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
 import { useFocusAwareScroll } from '../../src/hooks/useFocusAwareScroll';
+import type { AuthUser } from '../../src/types/storefront';
 
 export default function SignupScreen() {
   const setSession = useAuthStore((state) => state.setSession);
@@ -26,6 +27,18 @@ export default function SignupScreen() {
     referralCode: typeof params.ref === 'string' ? params.ref : '',
   });
   const { scrollRef, onInputFocus } = useFocusAwareScroll(110);
+
+  const applySessionPreferences = (session: AuthUser) => {
+    setMode(session.serviceMode);
+    setAddress(session.savedAddress || null);
+    if (session.serviceMode === 'pickup' && session.selectedStore && typeof session.selectedStore !== 'string') {
+      setStore(session.selectedStore);
+      return;
+    }
+    if (session.serviceMode === 'delivery' || !session.selectedStore) {
+      setStore(null);
+    }
+  };
 
   return (
     <Screen withServiceBar={false} scroll={false} keyboardAware={false}>
@@ -104,15 +117,14 @@ export default function SignupScreen() {
                   });
 
                   setSession({ user: response.user, token: response.accessToken });
-                  const session = await storefrontApi.me();
-                  setUser(session);
-                  setMode(session.serviceMode);
-                  setAddress(session.savedAddress || null);
-                  if (session.serviceMode === 'pickup' && session.selectedStore && typeof session.selectedStore !== 'string') {
-                    setStore(session.selectedStore);
-                  } else {
-                    setStore(null);
-                  }
+                  applySessionPreferences(response.user);
+                  void storefrontApi
+                    .me()
+                    .then((session) => {
+                      setUser(session);
+                      applySessionPreferences(session);
+                    })
+                    .catch(() => undefined);
                   router.replace('/(tabs)/account');
                 } catch (caughtError) {
                   Alert.alert('Signup failed', caughtError instanceof Error ? caughtError.message : 'Try again.');

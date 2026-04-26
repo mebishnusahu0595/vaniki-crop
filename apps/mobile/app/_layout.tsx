@@ -11,6 +11,7 @@ import { useAuthStore } from '../src/store/useAuthStore';
 import { OfflineBanner } from '../src/components/OfflineBanner';
 import { StoreSelectorSheet } from '../src/components/StoreSelectorSheet';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
+import { LoadingScreen } from '../src/components/LoadingScreen';
 import { hydrateAppLanguage } from '../src/i18n';
 
 bindOnlineManager();
@@ -22,7 +23,7 @@ function RootNavigation() {
   useBootstrapSession();
   usePushNotifications(Boolean(user));
 
-  if (!hydrated) return null;
+  if (!hydrated) return <LoadingScreen />;
 
   return (
     <>

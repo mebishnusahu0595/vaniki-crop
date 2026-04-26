@@ -168,7 +168,7 @@ export function StoreSelectorSheet() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
         >
-          <View className="max-h-[88%] rounded-t-[32px] bg-offwhite px-5 pb-8 pt-5">
+          <View className="min-h-[60%] max-h-[88%] rounded-t-[32px] bg-offwhite px-5 pb-8 pt-5">
             <View className="mb-5 h-1.5 w-14 self-center rounded-full bg-primary-100" />
             <View className="mb-5 flex-row rounded-full bg-primary-50 p-1">
               {(['delivery', 'pickup'] as const).map((item) => (
@@ -211,6 +211,7 @@ export function StoreSelectorSheet() {
             <ScrollView
               ref={scrollRef}
               className="flex-1"
+              contentContainerStyle={{ flexGrow: 1, minHeight: 300 }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"

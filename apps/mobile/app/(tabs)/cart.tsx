@@ -7,6 +7,7 @@ import { useCartStore } from '../../src/store/useCartStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
 import { storefrontApi } from '../../src/lib/api';
 import { currencyFormatter } from '../../src/utils/format';
+import { resolveMediaUrl } from '../../src/utils/media';
 
 export default function CartScreen() {
   const selectedStore = useStoreStore((state) => state.selectedStore);
@@ -42,7 +43,7 @@ export default function CartScreen() {
           <View key={item.variantId} className="rounded-[28px] bg-white p-4">
             <View className="flex-row gap-4">
               <Image
-                source={{ uri: item.image }}
+                source={{ uri: resolveMediaUrl(item.image) }}
                 style={{ width: 92, height: 92, borderRadius: 20 }}
                 contentFit="cover"
               />

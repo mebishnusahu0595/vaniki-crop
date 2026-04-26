@@ -93,9 +93,6 @@ export const WhatsAppFab = memo(function WhatsAppFab() {
       >
         <FontAwesome name="whatsapp" size={30} color="#FFFFFF" />
       </Pressable>
-      <Text className="mt-1 text-center text-[10px] font-black uppercase tracking-[1.3px] text-primary-500">
-        WA
-      </Text>
     </Animated.View>
   );
 });

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -28,19 +28,24 @@ export default function CategoriesScreen() {
 
   return (
     <Screen scroll={false}>
-      <SectionHeader title="Categories" kicker="Shop by crop need" />
-      <TextInput
-        value={search}
-        onChangeText={setSearch}
-        placeholder="Search category"
-        className="mb-5 rounded-[22px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
-        placeholderTextColor="#7a978b"
-      />
-      <View className="flex-1 mt-2">
+      <View className="flex-1">
         <FlashList
           data={filtered}
           numColumns={3}
           showsVerticalScrollIndicator={false}
+          estimatedItemSize={120}
+          ListHeaderComponent={
+            <View>
+              <SectionHeader title="Categories" kicker="Shop by crop need" />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search category"
+                className="mb-5 rounded-[22px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
+                placeholderTextColor="#7a978b"
+              />
+            </View>
+          }
           renderItem={({ item }) => (
             <View className="mb-5 flex-1 items-center">
               <CategoryCard
@@ -49,6 +54,17 @@ export default function CategoriesScreen() {
               />
             </View>
           )}
+          ListEmptyComponent={
+            <View className="rounded-[24px] bg-white px-4 py-8">
+              {categoriesQuery.isLoading ? (
+                <ActivityIndicator color="#2D6A4F" />
+              ) : (
+                <Text className="text-center text-sm font-semibold text-primary-900/65">
+                  No categories found.
+                </Text>
+              )}
+            </View>
+          }
           ListFooterComponent={
             <Pressable
               onPress={() => router.push('/products')}

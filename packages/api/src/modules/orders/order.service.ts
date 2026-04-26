@@ -124,6 +124,21 @@ async function resolveStoreIdForOrder(items: any[], serviceMode: 'delivery' | 'p
   throw new AppError('Items are currently unavailable in stock for delivery. Please choose another store or update cart.', 400);
 }
 
+export function applyVisibleOrderFilter(filter: Record<string, any>) {
+  const visibilityFilter = {
+    $or: [
+      { paymentMethod: 'cod' },
+      { paymentStatus: 'paid' },
+    ],
+  };
+
+  filter.$and = Array.isArray(filter.$and)
+    ? [...filter.$and, visibilityFilter]
+    : [visibilityFilter];
+
+  return filter;
+}
+
 // ─── Customer Services ───────────────────────────────────────────────────
 
 /**
@@ -447,13 +462,15 @@ export async function confirmOrder(userId: string, input: any) {
  */
 export async function getMyOrders(userId: string, query: any) {
   const { page, limit, skip } = parsePagination(query);
+  const filter: Record<string, any> = { userId };
+  applyVisibleOrderFilter(filter);
 
   const [orders, total] = await Promise.all([
-    Order.find({ userId })
+    Order.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
-    Order.countDocuments({ userId }),
+    Order.countDocuments(filter),
   ]);
 
   return createPaginationResponse(orders, total, page, limit);
@@ -463,7 +480,10 @@ export async function getMyOrders(userId: string, query: any) {
  * Returns a single order detail if it belongs to the user.
  */
 export async function getOrderDetail(orderId: string, userId: string) {
-  const order = await Order.findOne({ _id: orderId, userId }).populate('storeId', 'name address phone');
+  const filter: Record<string, any> = { _id: orderId, userId };
+  applyVisibleOrderFilter(filter);
+
+  const order = await Order.findOne(filter).populate('storeId', 'name address phone');
   if (!order) {
     throw new AppError('Order not found', 404);
   }
@@ -506,6 +526,7 @@ export async function getAdminOrders(storeId: string, query: any) {
   const filter: any = { storeId };
 
   if (query.status) filter.status = query.status;
+  if (query.paymentStatus) filter.paymentStatus = query.paymentStatus;
   if (query.paymentMethod) filter.paymentMethod = query.paymentMethod;
   if (query.search) {
     filter.orderNumber = { $regex: query.search, $options: 'i' };
@@ -515,6 +536,7 @@ export async function getAdminOrders(storeId: string, query: any) {
     if (query.startDate) filter.createdAt.$gte = new Date(query.startDate);
     if (query.endDate) filter.createdAt.$lte = new Date(query.endDate);
   }
+  applyVisibleOrderFilter(filter);
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
@@ -529,7 +551,10 @@ export async function getAdminOrders(storeId: string, query: any) {
 }
 
 export async function getAdminOrderDetail(orderId: string, storeId: string) {
-  const order = await Order.findOne({ _id: orderId, storeId })
+  const filter: Record<string, any> = { _id: orderId, storeId };
+  applyVisibleOrderFilter(filter);
+
+  const order = await Order.findOne(filter)
     .populate('userId', 'name mobile email savedAddress')
     .populate('storeId', 'name address phone email');
 
@@ -561,6 +586,7 @@ export async function getSuperAdminOrders(query: any) {
     if (query.startDate) filter.createdAt.$gte = new Date(query.startDate);
     if (query.endDate) filter.createdAt.$lte = new Date(query.endDate);
   }
+  applyVisibleOrderFilter(filter);
 
   const [orders, total] = await Promise.all([
     Order.find(filter)

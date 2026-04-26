@@ -33,12 +33,12 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
   const wishlistIds = (user?.wishlist || []).map((entry) => (typeof entry === 'string' ? entry : entry.id));
   const isWishlisted = wishlistIds.includes(product.id);
   const isCompared = comparedProducts.some((entry) => entry.id === product.id);
+  const primaryImage = getPrimaryImage(product);
 
-  if (!variant) return null;
-
-  const maxStock = Math.max(variant.stock || 0, 0);
-  const isOutOfStock = maxStock === 0;
-  const canIncrease = maxStock > quantityInCart;
+  // We should still render the card even if variant is missing, but with a fallback UI
+  const maxStock = variant ? Math.max(variant.stock || 0, 0) : 0;
+  const isOutOfStock = variant ? maxStock === 0 : true;
+  const canIncrease = variant ? maxStock > quantityInCart : false;
 
   const handleToggleWishlist = async () => {
     if (!user) {
@@ -64,16 +64,21 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
 
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/product/[slug]', params: { slug: product.slug } })}
+      onPress={() =>
+        router.push({
+          pathname: '/product/[slug]',
+          params: { slug: product.slug, image: primaryImage },
+        })
+      }
       className={
         compact
-          ? 'mb-3 flex-1 overflow-hidden rounded-[22px] border border-primary-100 bg-white'
+          ? 'mb-3 min-h-[318px] overflow-hidden rounded-[22px] border border-primary-100 bg-white'
           : 'mb-4 flex-1 overflow-hidden rounded-[26px] border border-primary-100 bg-white'
       }
     >
       <View className="relative">
         <Image
-          source={{ uri: getPrimaryImage(product) }}
+          source={{ uri: primaryImage }}
           placeholder={{ uri: 'https://placehold.co/400x400?text=Vaniki+Crop' }}
           style={{ width: '100%', height: compact ? 118 : 150 }}
           contentFit="cover"
@@ -138,14 +143,20 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
           {product.name}
         </Text>
         <View className="mt-3 flex-row items-center gap-2">
-          <Text className={`${compact ? 'text-base' : 'text-lg'} font-black text-primary-900`}>
-            {currencyFormatter.format(variant.price)}
-          </Text>
-          {variant.mrp > variant.price ? (
-            <Text className="text-xs font-semibold text-primary-900/40 line-through">
-              {currencyFormatter.format(variant.mrp)}
-            </Text>
-          ) : null}
+          {variant ? (
+            <>
+              <Text className={`${compact ? 'text-base' : 'text-lg'} font-black text-primary-900`}>
+                {currencyFormatter.format(variant.price)}
+              </Text>
+              {variant.mrp > variant.price ? (
+                <Text className="text-xs font-semibold text-primary-900/40 line-through">
+                  {currencyFormatter.format(variant.mrp)}
+                </Text>
+              ) : null}
+            </>
+          ) : (
+            <Text className="text-sm font-semibold text-primary-500">Contact for price</Text>
+          )}
         </View>
 
         {quantityInCart > 0 ? (
@@ -153,7 +164,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
             <Pressable
               onPress={(event) => {
                 event.stopPropagation();
-                decreaseQty(variant.id);
+                if (variant) decreaseQty(variant.id);
               }}
               className={`${compact ? 'h-8 w-8' : 'h-9 w-9'} items-center justify-center rounded-full bg-white`}
             >
@@ -163,7 +174,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
             <Pressable
               onPress={(event) => {
                 event.stopPropagation();
-                if (canIncrease) {
+                if (canIncrease && variant) {
                   increaseQty(variant.id);
                 }
               }}
@@ -177,7 +188,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
           <Pressable
             onPress={(event) => {
               event.stopPropagation();
-              if (!isOutOfStock) {
+              if (!isOutOfStock && variant) {
                 addItem(product, variant);
               }
             }}

@@ -1,13 +1,14 @@
 {
   "expo": {
     "name": "Vaniki Crop",
-    "slug": "vaniki-crop",
+    "slug": "vanikicrop",
+    "owner": "mebishnusahu",
     "version": "1.0.0",
     "description": "Vaniki Crop — India's trusted crop protection marketplace. Buy genuine pesticides, insecticides, fungicides & herbicides from local agri stores with delivery or pickup. Secure Razorpay payments, real-time order tracking, and farmer-first support.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "scheme": "vanikicrop",
     "primaryColor": "#2D6A4F",
     "splash": {
@@ -20,8 +21,7 @@
       [
         "expo-secure-store",
         {
-          "configureAndroidBackup": true,
-          "faceIDPermission": "Allow Vaniki Crop to unlock your secure session with biometrics."
+          "configureAndroidBackup": true
         }
       ],
       [
@@ -30,12 +30,6 @@
           "icon": "./assets/adaptive-icon.png",
           "color": "#2D6A4F",
           "defaultChannel": "orders"
-        }
-      ],
-      [
-        "expo-local-authentication",
-        {
-          "faceIDPermission": "Allow Vaniki Crop to use biometrics for quick login."
         }
       ]
     ],
@@ -51,12 +45,6 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2D6A4F"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
-      ],
       "intentFilters": [
         {
           "action": "VIEW",
@@ -73,7 +61,10 @@
               "pathPrefix": "/products"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -86,7 +77,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e2bcd905-d575-4322-8d9b-fe39f40ca242"
+        "projectId": "a914d361-ebeb-4d54-aefd-69d165bf55ca"
       }
     }
   }
