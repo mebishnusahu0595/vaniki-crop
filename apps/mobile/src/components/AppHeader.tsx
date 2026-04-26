@@ -121,7 +121,7 @@ export const AppHeader = memo(function AppHeader() {
       <View className="mt-3 flex-row items-center">
         <Pressable onPress={() => router.push('/(tabs)')} className="mr-2 flex-row items-center gap-2">
           <Image
-            source={require('../../../assets/icon.png')}
+            source={require('../../assets/icon.png')}
             style={{ width: 36, height: 36, borderRadius: 8 }}
             contentFit="contain"
           />
