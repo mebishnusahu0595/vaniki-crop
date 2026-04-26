@@ -250,15 +250,16 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
     <header className="border-b border-primary-100 bg-white/95 backdrop-blur-xl">
       <div className="container mx-auto px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="flex items-center justify-between gap-1.5 sm:gap-3">
-          <Link to="/" className="group flex min-w-0 max-w-[47vw] shrink items-center sm:max-w-none">
-          <div className="flex flex-col">
-            <span className="truncate whitespace-nowrap font-heading text-[clamp(1.55rem,8vw,2rem)] leading-[0.9] tracking-tight text-primary-900 sm:text-[2rem] lg:text-[2.1rem]">
-              Vaniki Crop
-            </span>
-            <span className="mt-0.5 hidden text-[11px] font-semibold tracking-[0.08em] text-primary-500 lg:block">
-              {t('header.brandTagline')}
-            </span>
-          </div>
+          <Link to="/" className="group flex items-center gap-3">
+            <img src="/logo.png" alt="Vaniki Crop" className="h-10 w-auto sm:h-12" />
+            <div className="flex flex-col">
+              <span className="font-heading text-xl leading-none tracking-tight text-primary-900 sm:text-2xl lg:text-3xl">
+                Vaniki Crop
+              </span>
+              <span className="mt-0.5 hidden text-[10px] font-semibold tracking-[0.08em] text-primary-500 lg:block">
+                {t('header.brandTagline')}
+              </span>
+            </div>
           </Link>
 
         <div className="hidden min-w-0 flex-1 items-center gap-4 px-6 lg:flex">
