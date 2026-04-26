@@ -29,6 +29,12 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://vanikicrop.com/api"
       }
+    },
+    "production-apk": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
