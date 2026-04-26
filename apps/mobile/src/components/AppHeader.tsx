@@ -119,12 +119,7 @@ export const AppHeader = memo(function AppHeader() {
       </View>
 
       <View className="mt-3 flex-row items-center">
-        <Pressable onPress={() => router.push('/(tabs)')} className="mr-2 flex-row items-center gap-2">
-          <Image
-            source={require('../../assets/icon.png')}
-            style={{ width: 36, height: 36, borderRadius: 8 }}
-            contentFit="contain"
-          />
+        <Pressable onPress={() => router.push('/(tabs)')} className="mr-2">
           <View>
             <Text className="text-[20px] font-black leading-tight tracking-tight text-primary-900">
               Vaniki
