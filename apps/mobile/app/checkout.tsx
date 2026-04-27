@@ -224,46 +224,65 @@ export default function CheckoutScreen() {
               </Pressable>
             </View>
 
-            {isLoadingStores ? (
-              <View className="flex-1 items-center justify-center">
-                <ActivityIndicator color="#2D6A4F" size="large" />
-                <Text className="mt-4 text-xs font-black uppercase tracking-widest text-primary-900/40">Fetching stores...</Text>
-              </View>
-            ) : (
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-                {storeAvailability.map((store) => {
-                  const isActive = activeStoreId === store.id;
-                  const isAvailable = store.isFullyAvailable;
-                  return (
-                    <Pressable
-                      key={store.id}
-                      disabled={!isAvailable}
-                      onPress={() => handleStoreChange(store)}
-                      className={`mb-3 rounded-[24px] border p-5 ${isActive ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-white'} ${!isAvailable ? 'opacity-40 grayscale' : ''}`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <View className="flex-1">
-                          <View className="flex-row items-center gap-2">
-                            <Text className={`text-base font-black ${isActive ? 'text-primary-900' : 'text-primary-900/70'}`}>
-                              {store.name}
-                            </Text>
-                            {!isAvailable && (
-                              <View className="rounded-full bg-rose-100 px-2 py-0.5">
-                                <Text className="text-[9px] font-black uppercase text-rose-500">No Stock</Text>
+            <View className="flex-1">
+              {isLoadingStores ? (
+                <View className="flex-1 items-center justify-center">
+                  <ActivityIndicator color="#2D6A4F" size="large" />
+                  <Text className="mt-4 text-xs font-black uppercase tracking-widest text-primary-900/40">Fetching stores...</Text>
+                </View>
+              ) : (
+                <ScrollView 
+                  showsVerticalScrollIndicator={false} 
+                  contentContainerStyle={{ paddingBottom: 60 }}
+                  className="flex-1"
+                >
+                  <View className="gap-3">
+                    {storeAvailability.map((store) => {
+                      const isActive = activeStoreId === store.id;
+                      const isAvailable = store.isFullyAvailable;
+                      return (
+                        <Pressable
+                          key={store.id}
+                          disabled={!isAvailable}
+                          onPress={() => handleStoreChange(store)}
+                          className={`rounded-[28px] border-2 p-5 transition-all ${
+                            isActive 
+                              ? 'border-primary-500 bg-primary-50 shadow-md scale-[0.98]' 
+                              : 'border-primary-100 bg-white'
+                          } ${!isAvailable ? 'opacity-30 grayscale' : 'active:scale-[0.96]'}`}
+                        >
+                          <View className="flex-row items-center justify-between">
+                            <View className="flex-1">
+                              <View className="flex-row items-center gap-2">
+                                <Text className={`text-base font-black tracking-tight ${isActive ? 'text-primary-900' : 'text-primary-900/80'}`}>
+                                  {store.name}
+                                </Text>
+                                {!isAvailable && (
+                                  <View className="rounded-full bg-rose-500/10 px-2 py-0.5">
+                                    <Text className="text-[9px] font-black uppercase tracking-wider text-rose-500">Out of Stock</Text>
+                                  </View>
+                                )}
+                              </View>
+                              <View className="mt-2 flex-row items-center gap-1.5">
+                                <Feather name="map-pin" size={12} color={isActive ? "#2D6A4F" : "#94A3B8"} />
+                                <Text className={`text-xs font-medium ${isActive ? 'text-primary-900/60' : 'text-slate-400'}`}>
+                                  {store.address.city}, {store.address.state}
+                                </Text>
+                              </View>
+                            </View>
+                            {isActive && (
+                              <View className="h-6 w-6 items-center justify-center rounded-full bg-primary-500">
+                                <Feather name="check" size={14} color="white" />
                               </View>
                             )}
                           </View>
-                          <Text className="mt-1 text-xs text-primary-900/50">
-                            {store.address.city}, {store.address.state}
-                          </Text>
-                        </View>
-                        {isActive && <Feather name="check-circle" size={20} color="#2D6A4F" />}
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            )}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              )}
+            </View>
           </View>
         </View>
       </Modal>

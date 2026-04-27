@@ -297,51 +297,59 @@ const Checkout: React.FC = () => {
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute left-0 top-full z-50 mt-2 w-full animate-in fade-in slide-in-from-top-2 rounded-2xl bg-white p-2 shadow-2xl ring-1 ring-primary-900/5 overflow-hidden">
-                    <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                      {isLoadingAvailability ? (
-                        <div className="p-8 text-center text-primary-900/40">
-                          <div className="mx-auto mb-2 h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                          <p className="text-xs font-black uppercase tracking-widest">{t('common.loading')}</p>
-                        </div>
-                      ) : storeAvailability.length > 0 ? (
-                        storeAvailability.map((store) => (
-                          <button
-                            key={store.id}
-                            disabled={!store.isFullyAvailable}
-                            onClick={() => {
-                              handleStoreChange(store.id);
-                              setIsDropdownOpen(false);
-                            }}
-                            className={`flex w-full flex-col gap-1 rounded-xl p-4 text-left transition ${
-                              !store.isFullyAvailable 
-                                ? 'opacity-40 grayscale cursor-not-allowed' 
-                                : activeStoreId === store.id 
-                                  ? 'bg-primary text-white' 
-                                  : 'hover:bg-primary-50'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-black">{store.name}</span>
-                              {!store.isFullyAvailable && (
-                                <span className="rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-rose-500">
-                                  {t('checkoutPage.noStock', 'No Stock')}
-                                </span>
-                              )}
-                              {store.isFullyAvailable && activeStoreId === store.id && (
-                                <Check size={16} />
-                              )}
-                            </div>
-                            <span className={`text-[11px] font-medium ${activeStoreId === store.id ? 'text-white/70' : 'text-primary-900/50'}`}>
-                              {store.address.city}, {store.address.state}
-                            </span>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="p-8 text-center text-primary-900/40 italic">
-                          {t('checkoutPage.noStoresAvailable', 'No stores available in your area')}
-                        </div>
-                      )}
+                  <div className="absolute left-0 right-0 top-full z-[100] mt-3 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-300">
+                    <div className="overflow-hidden rounded-3xl border border-primary-100 bg-white shadow-[0_32px_96px_-12px_rgba(8,32,24,0.18)] ring-1 ring-primary-900/5">
+                      <div className="max-h-[320px] overflow-y-auto overscroll-contain p-2 scroll-smooth">
+                        {isLoadingAvailability ? (
+                          <div className="flex flex-col items-center justify-center py-12 px-8 text-center">
+                            <div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-primary-100 border-t-primary" />
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-900/40">{t('common.loading')}</p>
+                          </div>
+                        ) : storeAvailability.length > 0 ? (
+                          <div className="grid gap-1">
+                            {storeAvailability.map((store) => (
+                              <button
+                                key={store.id}
+                                disabled={!store.isFullyAvailable}
+                                onClick={() => {
+                                  handleStoreChange(store.id);
+                                  setIsDropdownOpen(false);
+                                }}
+                                className={`group flex w-full flex-col gap-1.5 rounded-2xl p-4 text-left transition-all duration-300 ${
+                                  !store.isFullyAvailable 
+                                    ? 'opacity-30 grayscale cursor-not-allowed bg-slate-50/50' 
+                                    : activeStoreId === store.id 
+                                      ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[0.98]' 
+                                      : 'hover:bg-primary-50 active:scale-[0.98]'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-sm font-black tracking-tight">{store.name}</span>
+                                  {!store.isFullyAvailable ? (
+                                    <span className="flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-rose-500">
+                                      <span className="h-1 w-1 rounded-full bg-rose-500 animate-pulse" />
+                                      {t('checkoutPage.noStock', 'No Stock')}
+                                    </span>
+                                  ) : activeStoreId === store.id ? (
+                                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20">
+                                      <Check size={12} strokeWidth={4} />
+                                    </div>
+                                  ) : null}
+                                </div>
+                                <div className={`flex items-center gap-1.5 text-[10px] font-semibold ${activeStoreId === store.id ? 'text-white/70' : 'text-primary-900/50'}`}>
+                                  <MapPin size={10} strokeWidth={2.5} />
+                                  <span>{store.address.city}, {store.address.state}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-16 px-8 text-center text-primary-900/40">
+                            <StoreIcon size={32} strokeWidth={1} className="mb-3 opacity-20" />
+                            <p className="text-xs font-bold italic tracking-wide">{t('checkoutPage.noStoresAvailable', 'No stores available in your area')}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

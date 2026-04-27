@@ -12,6 +12,7 @@ import { storefrontApi } from './utils/api';
 import { useAuthStore } from './store/useAuthStore';
 import { useServiceModeStore } from './store/useServiceModeStore';
 import { useStoreStore } from './store/useStoreStore';
+import { useSettingsStore } from './store/useSettingsStore';
 import WhatsAppWidget from './components/WhatsAppWidget';
 
 const Layout = lazy(() => import('./components/layout/Layout'));
@@ -146,6 +147,23 @@ const SessionBootstrap: React.FC = () => {
   return null;
 };
 
+const SettingsBootstrap: React.FC = () => {
+  const setSettings = useSettingsStore((state) => state.setSettings);
+  const settingsQuery = useQuery({
+    queryKey: ['site-settings'],
+    queryFn: () => storefrontApi.homepage().then(res => res.siteSettings),
+    staleTime: 10 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (settingsQuery.data) {
+      setSettings(settingsQuery.data);
+    }
+  }, [settingsQuery.data, setSettings]);
+
+  return null;
+};
+
 const PageFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <motion.div
@@ -202,6 +220,7 @@ const App: React.FC = () => {
     <Router>
       <SmoothScroll />
       <RefreshScrollTriggersOnRouteChange />
+      <SettingsBootstrap />
       <SessionBootstrap />
       <AnimatedRoutes />
       <Toaster

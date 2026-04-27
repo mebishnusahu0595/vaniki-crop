@@ -265,6 +265,11 @@ const resources = {
         securePaymentHint: 'Secure payment, verified order confirmation, and store-aware fulfillment.',
         backToCart: 'Back to cart',
         insufficientStock: 'Only {{count}} units available in this store',
+        checkout: 'Checkout',
+        chooseFulfillmentStore: 'Choose a store for fulfillment',
+        selectStore: 'Fulfillment Store',
+        noStock: 'No Stock',
+        noStoresAvailable: 'No stores available in your area',
       },
       accountPage: {
         myAccount: 'My Account',
@@ -753,6 +758,11 @@ const resources = {
         securePaymentHint: 'सुरक्षित भुगतान, सत्यापित ऑर्डर पुष्टि और स्टोर-आधारित फुलफिलमेंट।',
         backToCart: 'कार्ट पर वापस',
         insufficientStock: 'इस स्टोर में केवल {{count}} यूनिट उपलब्ध हैं',
+        checkout: 'चेकआउट',
+        chooseFulfillmentStore: 'फुलफिलमेंट के लिए स्टोर चुनें',
+        selectStore: 'फुलफिलमेंट स्टोर',
+        noStock: 'स्टॉक नहीं है',
+        noStoresAvailable: 'आपके क्षेत्र में कोई स्टोर उपलब्ध नहीं है',
       },
       accountPage: {
         myAccount: 'मेरा अकाउंट',
