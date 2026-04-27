@@ -1,4 +1,34 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import RazorpayCheckout from 'react-native-razorpay';
+import { useQuery } from '@tanstack/react-query';
+import { Screen } from '../src/components/Screen';
+import { useDebouncedValue } from '../src/hooks/useDebouncedValue';
+import { useFocusAwareScroll } from '../src/hooks/useFocusAwareScroll';
+import { useAuthStore } from '../src/store/useAuthStore';
+import { useCartStore } from '../src/store/useCartStore';
+import { useServiceModeStore } from '../src/store/useServiceModeStore';
+import { useStoreStore } from '../src/store/useStoreStore';
+import { storefrontApi } from '../src/lib/api';
+import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
+
+function getCheckoutErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === 'object') {
+    const record = error as Record<string, unknown>;
+    const nestedError = record.error as Record<string, unknown> | undefined;
+    const code = record.code || nestedError?.code;
+    const message = record.description || record.message || nestedError?.description || nestedError?.message;
+    if (code === 0 || (typeof message === 'string' && /cancel/i.test(message))) {
+      return 'Payment cancelled. Your cart is unchanged.';
+    }
+    if (typeof message === 'string' && message.trim()) return message;
+  }
+
+  return 'Unable to complete payment.';
+}
 
 function AlternativeStoresList({
   productId,
