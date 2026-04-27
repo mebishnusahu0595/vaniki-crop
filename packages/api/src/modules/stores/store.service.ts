@@ -237,7 +237,7 @@ export async function getCartAvailabilityAcrossStores(items: Array<{ productId: 
   const stores = await Store.find({
     isActive: true,
     adminId: { $in: approvedAdminIds },
-  }).select('name address location');
+  }).select('name address location phone email');
 
   const { DealerInventory } = await import('../../models/DealerInventory.model.js');
   const { Product } = await import('../../models/Product.model.js');

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import type { Store } from '../types/storefront';
 import toast from 'react-hot-toast';
 import { useQuery } from '@tanstack/react-query';
 import { CreditCard, MapPin, Store as StoreIcon, ShieldCheck, Wallet, Plus, Minus, Trash2, ChevronDown, Check, ArrowLeft } from 'lucide-react';
@@ -112,9 +113,9 @@ const Checkout: React.FC = () => {
 
     try {
       await storefrontApi.selectStore(nextStoreId);
-      const matchedStore = storeAvailability.find((store) => store.id === nextStoreId) || null;
+      const matchedStore = (storeAvailability as any[]).find((store: any) => store.id === nextStoreId) || null;
       if (matchedStore) {
-        setStore(matchedStore as any);
+        setStore(matchedStore as Store);
       }
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('checkoutPage.chooseStoreFirst')));

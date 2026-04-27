@@ -251,6 +251,8 @@ export const storefrontApi = {
       name: string;
       address: Store['address'];
       location: Store['location'];
+      phone: string;
+      email?: string;
       isFullyAvailable: boolean;
       unavailableItems: Array<{
         productId: string;
