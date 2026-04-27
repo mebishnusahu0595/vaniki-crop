@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import axios from 'axios';
 import { useQuery } from '@tanstack/react-query';
 import { CreditCard, MapPin, Store as StoreIcon, ShieldCheck, Wallet, Plus, Minus, Trash2, ChevronDown, Check, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -50,13 +49,6 @@ const Checkout: React.FC = () => {
   const subtotal = getSubtotal();
   const deliveryCharge = mode === 'delivery' ? (subtotal > 1000 ? 0 : 50) : 0;
   const total = subtotal - couponDiscount + deliveryCharge;
-
-  const { data: allStores = [] } = useQuery({
-    queryKey: ['checkout-stores'],
-    queryFn: storefrontApi.stores,
-    enabled: !!token,
-    staleTime: 300000,
-  });
 
   const { data: storeAvailability = [], isLoading: isLoadingAvailability } = useQuery({
     queryKey: ['cart-availability', items],
