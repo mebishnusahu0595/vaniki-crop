@@ -341,6 +341,22 @@ export const adminApi = {
     const response = await api.delete<{ success: boolean; message: string }>(`/coupons/admin/${id}`);
     return response.data;
   },
+  couponUsage: async (id: string) => {
+    const response = await api.get<ApiResponse<{
+      coupon: Coupon;
+      totalUsageCount: number;
+      uniqueUsersCount: number;
+      userWiseUsage: Array<{
+        userId: string;
+        userName: string;
+        userMobile: string;
+        usageCount: number;
+        totalSavings: number;
+        lastUsed: string;
+      }>;
+    }>>(`/coupons/admin/${id}/usage`);
+    return response.data.data;
+  },
   reviews: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<Review[], ReviewModerationSummary>>('/reviews/admin', { params });
     const fallbackSummary: ReviewModerationSummary = {

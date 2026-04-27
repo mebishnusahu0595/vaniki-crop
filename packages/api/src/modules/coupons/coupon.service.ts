@@ -1,10 +1,12 @@
 import { Coupon, type ICoupon } from '../../models/Coupon.model.js';
+import { Order } from '../../models/Order.model.js';
+import { User } from '../../models/User.model.js';
 import { AppError } from '../../utils/AppError.js';
 
 /**
  * Validates a coupon code against business rules.
  */
-export async function validateCoupon(code: string, storeId: string, cartTotal: number) {
+export async function validateCoupon(code: string, storeId: string, cartTotal: number, userId?: string) {
   const coupon = await Coupon.findOne({ code, isActive: true });
 
   if (!coupon) {
@@ -16,9 +18,27 @@ export async function validateCoupon(code: string, storeId: string, cartTotal: n
     return { valid: false, message: 'Coupon has expired' };
   }
 
-  // 2. Usage limit check
+  // 2. Usage limit check (Global)
   if (coupon.usedCount >= coupon.usageLimit) {
-    return { valid: false, message: 'Coupon usage limit reached' };
+    return { valid: false, message: 'Coupon usage limit reached globally' };
+  }
+
+  // 3. Per-user limit check
+  if (userId && coupon.perUserLimit) {
+    const userUsageCount = await Order.countDocuments({
+      userId,
+      couponCode: code.toUpperCase(),
+      status: { $ne: 'cancelled' },
+    });
+
+    if (userUsageCount >= coupon.perUserLimit) {
+      return { 
+        valid: false, 
+        message: coupon.perUserLimit === 1 
+          ? 'You have already used this coupon' 
+          : `You can only use this coupon ${coupon.perUserLimit} times`
+      };
+    }
   }
 
   // 3. Store applicability check
@@ -112,4 +132,55 @@ export async function deactivateCoupon(id: string) {
     throw new AppError('Coupon not found', 404);
   }
   return coupon;
+}
+/**
+ * Admin: Get coupon usage statistics.
+ */
+export async function getCouponUsageDetails(couponId: string) {
+  const coupon = await Coupon.findById(couponId);
+  if (!coupon) {
+    throw new AppError('Coupon not found', 404);
+  }
+
+  const usageStats = await Order.aggregate([
+    { $match: { couponCode: coupon.code, status: { $ne: 'cancelled' } } },
+    {
+      $group: {
+        _id: '$userId',
+        usageCount: { $sum: 1 },
+        totalSavings: { $sum: '$couponDiscount' },
+        lastUsed: { $max: '$createdAt' },
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'userDetails',
+      },
+    },
+    { $unwind: '$userDetails' },
+    {
+      $project: {
+        userId: '$_id',
+        userName: '$userDetails.name',
+        userMobile: '$userDetails.mobile',
+        usageCount: 1,
+        totalSavings: 1,
+        lastUsed: 1,
+      },
+    },
+    { $sort: { lastUsed: -1 } },
+  ]);
+
+  const uniqueUsersCount = usageStats.length;
+  const totalUsageCount = usageStats.reduce((sum, stat) => sum + stat.usageCount, 0);
+
+  return {
+    coupon,
+    totalUsageCount,
+    uniqueUsersCount,
+    userWiseUsage: usageStats,
+  };
 }

@@ -37,4 +37,7 @@ router.put('/admin/:id', requireAuth, requireStoreAdmin, couponController.update
 /** DELETE /api/admin/coupons/:id — Deactivate coupon */
 router.delete('/admin/:id', requireAuth, requireStoreAdmin, couponController.deactivateCoupon);
 
+/** GET /api/admin/coupons/:id/usage — Get detailed usage stats */
+router.get('/admin/:id/usage', requireAuth, requireStoreAdmin, couponController.getCouponUsage);
+
 export default router;

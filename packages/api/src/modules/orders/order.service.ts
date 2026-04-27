@@ -11,6 +11,7 @@ import { AppError } from '../../utils/AppError.js';
 import { addEmailToQueue } from '../../queues/email.queue.js';
 import { orderPlacedTemplate, orderStatusUpdateTemplate } from '../../utils/emailTemplates.js';
 import { sendExpoPushNotification } from '../../utils/expoPush.js';
+import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -168,15 +169,19 @@ export async function initiateOrder(userId: string, input: any) {
   // 3. Handle Coupon
   let couponDiscount = 0;
   if (couponCode) {
-    const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal);
+    const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal, userId);
     if (!couponResult.valid) {
       throw new AppError(couponResult.message, 400);
     }
     couponDiscount = couponResult.discount!;
   }
 
-  // 4. Delivery Charge (Hardcoded for now, can be dynamic based on distance/pincode)
-  const deliveryCharge = serviceMode === 'delivery' ? (subtotal > 1000 ? 0 : 50) : 0;
+  // 4. Delivery Charge
+  const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
+  const threshold = siteSettings?.freeDeliveryThreshold ?? 1000;
+  const charge = siteSettings?.standardDeliveryCharge ?? 50;
+
+  const deliveryCharge = serviceMode === 'delivery' ? (subtotal >= threshold ? 0 : charge) : 0;
 
   const totalAmount = subtotal - couponDiscount + deliveryCharge;
 
@@ -253,7 +258,7 @@ export async function placeCodOrder(userId: string, input: any) {
   let couponDiscount = 0;
   let validatedCoupon: any = null;
   if (couponCode) {
-    const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal);
+    const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal, userId);
     if (!couponResult.valid) {
       throw new AppError(couponResult.message, 400);
     }
@@ -261,7 +266,11 @@ export async function placeCodOrder(userId: string, input: any) {
     validatedCoupon = couponResult.coupon;
   }
 
-  const deliveryCharge = serviceMode === 'delivery' ? (subtotal > 1000 ? 0 : 50) : 0;
+  const siteSettingsForCOD = await SiteSetting.findOne({ singletonKey: 'default' });
+  const thresholdForCOD = siteSettingsForCOD?.freeDeliveryThreshold ?? 1000;
+  const chargeForCOD = siteSettingsForCOD?.standardDeliveryCharge ?? 50;
+
+  const deliveryCharge = serviceMode === 'delivery' ? (subtotal >= thresholdForCOD ? 0 : chargeForCOD) : 0;
   const totalAmount = subtotal - couponDiscount + deliveryCharge;
 
   const orderNumber = await (Order as any).generateOrderNumber();

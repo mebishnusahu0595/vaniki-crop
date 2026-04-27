@@ -35,6 +35,7 @@ const createCouponSchema = z.object({
     minOrderAmount: z.number().min(0).default(0),
     maxDiscount: z.number().min(0).optional(),
     usageLimit: z.number().int().min(1),
+    perUserLimit: z.number().int().min(1).default(1),
     expiryDate: couponExpiryDateSchema,
     applicableStores: z.array(objectIdSchema).optional().default([]),
   }).refine((data) => {

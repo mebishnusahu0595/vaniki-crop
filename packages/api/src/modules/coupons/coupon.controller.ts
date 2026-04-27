@@ -8,7 +8,7 @@ import * as couponService from './coupon.service.js';
 export async function validateCoupon(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { code, storeId, cartTotal } = req.body;
-    const result = await couponService.validateCoupon(code, storeId, cartTotal);
+    const result = await couponService.validateCoupon(code, storeId, cartTotal, req.userId);
     
     if (!result.valid) {
       res.status(400).json({ success: false, ...result });
@@ -66,6 +66,17 @@ export async function deactivateCoupon(req: Request, res: Response, next: NextFu
   try {
     await couponService.deactivateCoupon(req.params.id as string);
     res.status(200).json({ success: true, message: 'Coupon deactivated successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+/**
+ * GET /api/admin/coupons/:id/usage
+ */
+export async function getCouponUsage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const stats = await couponService.getCouponUsageDetails(req.params.id as string);
+    res.status(200).json({ success: true, data: stats });
   } catch (error) {
     next(error);
   }
