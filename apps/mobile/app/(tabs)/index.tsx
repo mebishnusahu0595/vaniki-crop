@@ -34,9 +34,12 @@ const fallbackTestimonials: Testimonial[] = [
   },
 ];
 
+import { useSettingsStore } from '../../src/store/useSettingsStore';
+
 export default function HomeScreen() {
   const { t } = useTranslation();
   const selectedStore = useStoreStore((state) => state.selectedStore);
+  const setSettings = useSettingsStore((state) => state.setSettings);
   const { width } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState<(typeof bestSellerTabs)[number]>('Insecticides');
   const [activeTestimonialIndex, setActiveTestimonialIndex] = useState(0);
@@ -61,6 +64,12 @@ export default function HomeScreen() {
     queryFn: storefrontApi.categories,
     staleTime: 5 * 60 * 1000,
   });
+
+  useEffect(() => {
+    if (homepageQuery.data?.siteSettings) {
+      setSettings(homepageQuery.data.siteSettings);
+    }
+  }, [homepageQuery.data?.siteSettings, setSettings]);
 
   const testimonialCardWidth = Math.min(Math.max(width - 72, 220), 300);
   const testimonialSnapInterval = testimonialCardWidth + 12;

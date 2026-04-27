@@ -13,6 +13,8 @@ const settingsSchema = z.object({
   supportPhone: z.string().trim().regex(/^\+?[0-9]{10,15}$/, 'Enter valid support phone (10 to 15 digits)').or(z.literal('')),
   homepageHeadline: z.string().max(220, 'Homepage headline can be up to 220 characters').optional(),
   defaultDeliveryRadius: z.coerce.number().min(0, 'Delivery radius cannot be negative'),
+  freeDeliveryThreshold: z.coerce.number().min(0, 'Free delivery threshold cannot be negative'),
+  standardDeliveryCharge: z.coerce.number().min(0, 'Delivery charge cannot be negative'),
   allowGuestCheckout: z.boolean().default(false),
   metaTitle: z.string().max(160, 'Meta title can be up to 160 characters').optional(),
   metaDescription: z.string().max(300, 'Meta description can be up to 300 characters').optional(),
@@ -27,6 +29,8 @@ const settingsDefaultValues: SettingsFormInput = {
   supportPhone: '',
   homepageHeadline: '',
   defaultDeliveryRadius: 10,
+  freeDeliveryThreshold: 200,
+  standardDeliveryCharge: 50,
   allowGuestCheckout: false,
   metaTitle: '',
   metaDescription: '',
@@ -57,6 +61,8 @@ export default function SettingsPage() {
       supportPhone: settingsQuery.data.supportPhone || '',
       homepageHeadline: settingsQuery.data.homepageHeadline || '',
       defaultDeliveryRadius: settingsQuery.data.defaultDeliveryRadius,
+      freeDeliveryThreshold: settingsQuery.data.freeDeliveryThreshold,
+      standardDeliveryCharge: settingsQuery.data.standardDeliveryCharge,
       allowGuestCheckout: settingsQuery.data.allowGuestCheckout,
       metaTitle: settingsQuery.data.metaTitle || '',
       metaDescription: settingsQuery.data.metaDescription || '',
@@ -110,6 +116,18 @@ export default function SettingsPage() {
             <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Homepage Headline</label>
             <input {...register('homepageHeadline')} placeholder="Homepage headline" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.homepageHeadline ? 'border-rose-300' : 'border-primary-100'}`} />
             {errors.homepageHeadline ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.homepageHeadline.message}</p> : null}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Free Delivery Threshold (Rs.)</label>
+            <input type="number" {...register('freeDeliveryThreshold', { valueAsNumber: true })} placeholder="Free delivery above this amount" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.freeDeliveryThreshold ? 'border-rose-300' : 'border-primary-100'}`} />
+            {errors.freeDeliveryThreshold ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.freeDeliveryThreshold.message}</p> : null}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Standard Delivery Charge (Rs.)</label>
+            <input type="number" {...register('standardDeliveryCharge', { valueAsNumber: true })} placeholder="Charge if below threshold" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.standardDeliveryCharge ? 'border-rose-300' : 'border-primary-100'}`} />
+            {errors.standardDeliveryCharge ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.standardDeliveryCharge.message}</p> : null}
           </div>
 
           <div>

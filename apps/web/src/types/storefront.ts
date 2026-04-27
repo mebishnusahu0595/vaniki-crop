@@ -102,12 +102,22 @@ export interface Testimonial {
   rating: number;
 }
 
+export interface SiteSettings {
+  freeDeliveryThreshold: number;
+  standardDeliveryCharge: number;
+  platformName?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  maintenanceMode?: boolean;
+}
+
 export interface HomepageData {
   banners: HomepageBanner[];
   featuredCategories: Category[];
   saleProducts: Product[];
   bestSellers: Product[];
   testimonials: Testimonial[];
+  siteSettings: SiteSettings;
 }
 
 export interface PaginationMeta {

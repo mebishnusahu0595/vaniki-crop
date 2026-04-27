@@ -56,7 +56,7 @@ const resources = {
         saveAmountLabel: 'Save ₹{{amount}} ({{percent}}% off)',
       },
       topNotice: {
-        freeDelivery: 'Free delivery on orders above Rs. 1,000',
+        freeDelivery: 'Free delivery on orders above Rs. {{amount}}',
         call: 'Call',
         workingHoursLabel: 'Mon-Sat',
         workingHours: '9AM - 7PM',
@@ -546,7 +546,7 @@ const resources = {
         saveAmountLabel: '₹{{amount}} बचत ({{percent}}% छूट)',
       },
       topNotice: {
-        freeDelivery: 'Rs. 1,000 से ऊपर के ऑर्डर पर फ्री डिलीवरी',
+        freeDelivery: 'Rs. {{amount}} से ऊपर के ऑर्डर पर फ्री डिलीवरी',
         call: 'कॉल',
         workingHoursLabel: 'सोम-शनि',
         workingHours: '9AM - 7PM',

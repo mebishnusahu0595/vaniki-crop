@@ -26,6 +26,7 @@ declare global {
 const Checkout: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { settings } = useSettingsStore();
   const { items, couponCode, couponDiscount, getSubtotal, clearCart, updateQty, removeItem } = useCartStore();
   const { user, token } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
@@ -48,7 +49,7 @@ const Checkout: React.FC = () => {
   });
 
   const subtotal = getSubtotal();
-  const deliveryCharge = mode === 'delivery' ? (subtotal > 1000 ? 0 : 50) : 0;
+  const deliveryCharge = mode === 'delivery' ? (subtotal >= settings.freeDeliveryThreshold ? 0 : settings.standardDeliveryCharge) : 0;
   const total = subtotal - couponDiscount + deliveryCharge;
 
   const { data: storeAvailability = [], isLoading: isLoadingAvailability } = useQuery({

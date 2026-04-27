@@ -9,14 +9,17 @@ import { storefrontApi } from '../../src/lib/api';
 import { currencyFormatter } from '../../src/utils/format';
 import { resolveMediaUrl } from '../../src/utils/media';
 
+import { useSettingsStore } from '../../src/store/useSettingsStore';
+
 export default function CartScreen() {
+  const { settings } = useSettingsStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const { items, couponCode, couponDiscount, increaseQty, decreaseQty, setCoupon, clearCoupon } = useCartStore();
   const [couponInput, setCouponInput] = useState(couponCode);
   const [couponMessage, setCouponMessage] = useState('');
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.qty, 0), [items]);
-  const deliveryCharge = subtotal > 1000 ? 0 : 50;
+  const deliveryCharge = subtotal >= settings.freeDeliveryThreshold ? 0 : settings.standardDeliveryCharge;
   const total = subtotal - couponDiscount + deliveryCharge;
 
   if (!items.length) {

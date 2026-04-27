@@ -8,6 +8,8 @@ export interface ISiteSetting extends Document {
   maintenanceMode: boolean;
   homepageHeadline?: string;
   defaultDeliveryRadius: number;
+  freeDeliveryThreshold: number;
+  standardDeliveryCharge: number;
   allowGuestCheckout: boolean;
   metaTitle?: string;
   metaDescription?: string;
@@ -51,6 +53,16 @@ const siteSettingSchema = new Schema<ISiteSetting>(
       type: Number,
       min: 0,
       default: 10,
+    },
+    freeDeliveryThreshold: {
+      type: Number,
+      min: 0,
+      default: 200,
+    },
+    standardDeliveryCharge: {
+      type: Number,
+      min: 0,
+      default: 50,
     },
     allowGuestCheckout: {
       type: Boolean,

@@ -3,15 +3,18 @@ import { Truck, Phone, Clock } from 'lucide-react';
 import { siteContent } from '../../content/site';
 import { useTranslation } from 'react-i18next';
 
+import { useSettingsStore } from '../../store/useSettingsStore';
+
 const TopNoticeBar: React.FC = () => {
   const { t } = useTranslation();
+  const { settings } = useSettingsStore();
 
   return (
     <div className="border-b border-primary-800 bg-primary-900 px-4 py-1.5 text-white">
       <div className="container mx-auto flex items-center justify-center text-[10px] font-bold uppercase tracking-[0.18em] sm:justify-between sm:text-xs">
         <div className="flex items-center space-x-1.5">
           <Truck size={14} className="text-primary-400" />
-          <span>{t('topNotice.freeDelivery')}</span>
+          <span>{t('topNotice.freeDelivery', { amount: settings.freeDeliveryThreshold.toLocaleString('en-IN') })}</span>
         </div>
         
         <div className="hidden items-center space-x-6 sm:flex">

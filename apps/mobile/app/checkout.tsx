@@ -30,7 +30,10 @@ function getCheckoutErrorMessage(error: unknown) {
   return 'Unable to complete payment.';
 }
 
+import { useSettingsStore } from '../src/store/useSettingsStore';
+
 export default function CheckoutScreen() {
+  const { settings } = useSettingsStore();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const token = useAuthStore((state) => state.token);
@@ -55,6 +58,11 @@ export default function CheckoutScreen() {
   const lastSavedAddressSignature = useRef('');
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.qty, 0), [items]);
+  const deliveryCharge = useMemo(() => {
+    if (mode !== 'delivery') return 0;
+    return subtotal >= settings.freeDeliveryThreshold ? 0 : settings.standardDeliveryCharge;
+  }, [mode, subtotal, settings.freeDeliveryThreshold, settings.standardDeliveryCharge]);
+  const total = subtotal - couponDiscount + deliveryCharge;
   const addressDraft = useMemo(
     () => ({
       street: street,
@@ -319,12 +327,14 @@ export default function CheckoutScreen() {
             </View>
             <View className="flex-row justify-between">
               <Text className="text-sm font-medium text-white/60">Delivery</Text>
-              <Text className="text-sm font-bold text-white">{subtotal > 1000 ? 'FREE' : currencyFormatter.format(50)}</Text>
+              <Text className="text-sm font-bold text-white">
+                {deliveryCharge === 0 ? 'FREE' : currencyFormatter.format(deliveryCharge)}
+              </Text>
             </View>
             <View className="mt-2 flex-row justify-between items-center">
               <Text className="text-xl font-black text-white">Total</Text>
               <Text className="text-2xl font-black text-white">
-                {currencyFormatter.format(subtotal - couponDiscount + (subtotal > 1000 ? 0 : 50))}
+                {currencyFormatter.format(total)}
               </Text>
             </View>
           </View>

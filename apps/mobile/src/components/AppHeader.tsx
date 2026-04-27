@@ -12,8 +12,11 @@ import { storefrontApi } from '../lib/api';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { getLanguageToggleLabel, toggleAppLanguage } from '../i18n';
 
+import { useSettingsStore } from '../store/useSettingsStore';
+
 export const AppHeader = memo(function AppHeader() {
   const { t } = useTranslation();
+  const { settings } = useSettingsStore();
   const pathname = usePathname();
   const [query, setQuery] = useState('');
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
@@ -106,7 +109,7 @@ export const AppHeader = memo(function AppHeader() {
           <View className="flex-row items-center gap-1.5">
             <Feather name="truck" size={12} color="#52B788" />
             <Text className="text-[9px] font-black uppercase tracking-[1.6px] text-white">
-              {t('mobile.topNotice.freeDelivery')}
+              {t('mobile.topNotice.freeDelivery', { amount: settings.freeDeliveryThreshold.toLocaleString('en-IN') })}
             </Text>
           </View>
           <View className="flex-row items-center gap-1.5">

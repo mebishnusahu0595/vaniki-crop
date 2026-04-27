@@ -10,9 +10,12 @@ import { storefrontApi } from '../utils/api';
 import { resolveMediaUrl } from '../utils/media';
 import OptimizedImage from '../components/common/OptimizedImage';
 
+import { useSettingsStore } from '../store/useSettingsStore';
+
 const Cart: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { settings } = useSettingsStore();
   const {
     items,
     couponCode,
@@ -35,7 +38,7 @@ const Cart: React.FC = () => {
     setCouponInput(couponCode);
   }, [couponCode]);
 
-  const deliveryCharge = subtotal > 1000 || subtotal === 0 ? 0 : 50;
+  const deliveryCharge = subtotal >= settings.freeDeliveryThreshold || subtotal === 0 ? 0 : settings.standardDeliveryCharge;
   const total = subtotal - couponDiscount + deliveryCharge;
 
   const validateCoupon = async () => {

@@ -3,6 +3,7 @@ import { Banner } from '../../models/Banner.model.js';
 import { Category } from '../../models/Category.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Testimonial } from '../../models/Testimonial.model.js';
+import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { redisConnection } from '../../config/redis.js';
 
 const HOMEPAGE_CACHE_TTL = 300; // 5 minutes
@@ -116,12 +117,16 @@ export async function getHomepageData(storeId?: string) {
     .sort({ sortOrder: 1, createdAt: -1 })
     .limit(6);
 
+  // 6. Site Settings (for threshold and platform branding)
+  const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
+
   const result = {
     banners: sanitizedBanners,
     featuredCategories,
     saleProducts,
     bestSellers,
-    testimonials
+    testimonials,
+    siteSettings
   };
 
   await redisConnection.setex(cacheKey, HOMEPAGE_CACHE_TTL, JSON.stringify(result));

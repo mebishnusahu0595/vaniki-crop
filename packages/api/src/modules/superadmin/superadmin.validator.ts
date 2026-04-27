@@ -261,6 +261,8 @@ export const updateSiteSettingsSchema = z.object({
       maintenanceMode: boolish.optional(),
       homepageHeadline: z.string().trim().max(220).optional(),
       defaultDeliveryRadius: numberFromInput(z.number().min(0)).optional(),
+      freeDeliveryThreshold: numberFromInput(z.number().min(0)).optional(),
+      standardDeliveryCharge: numberFromInput(z.number().min(0)).optional(),
       allowGuestCheckout: boolish.optional(),
       metaTitle: z.string().trim().max(160).optional(),
       metaDescription: z.string().trim().max(300).optional(),

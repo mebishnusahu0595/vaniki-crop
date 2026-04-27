@@ -11,7 +11,7 @@ const resources = {
     translation: {
       mobile: {
         topNotice: {
-          freeDelivery: 'Free delivery on orders above Rs. 1,000',
+          freeDelivery: 'Free delivery on orders above Rs. {{amount}}',
           call: 'Call',
         },
         tabs: {
@@ -64,7 +64,7 @@ const resources = {
     translation: {
       mobile: {
         topNotice: {
-          freeDelivery: 'Rs. 1,000 से ऊपर ऑर्डर पर फ्री डिलीवरी',
+          freeDelivery: 'Rs. {{amount}} से ऊपर ऑर्डर पर फ्री डिलीवरी',
           call: 'कॉल',
         },
         tabs: {
