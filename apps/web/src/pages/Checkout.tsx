@@ -95,7 +95,7 @@ const Checkout: React.FC = () => {
   const deliveryCharge = mode === 'delivery' ? (subtotal > 1000 ? 0 : 50) : 0;
   const total = subtotal - couponDiscount + deliveryCharge;
 
-  const { data: allStores = [], isLoading: isLoadingStores } = useQuery({
+  const { data: allStores = [] } = useQuery({
     queryKey: ['checkout-stores'],
     queryFn: storefrontApi.stores,
     enabled: !!token,
