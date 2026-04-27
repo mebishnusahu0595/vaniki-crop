@@ -386,6 +386,8 @@ export interface SiteSettings {
   homepageHeadline?: string;
   defaultDeliveryRadius: number;
   allowGuestCheckout: boolean;
+  freeDeliveryThreshold: number;
+  standardDeliveryCharge: number;
   metaTitle?: string;
   metaDescription?: string;
 }
