@@ -35,7 +35,7 @@ const Checkout: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [activeStoreId, setActiveStoreId] = useState(selectedStore?.id || '');
-  const [checkingAvailabilityFor, setCheckingAvailabilityFor] = useState<{ productId: string; variantId: string } | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const hasPlacedOrderRef = useRef(false);
   const [formData, setFormData] = useState({
@@ -56,6 +56,12 @@ const Checkout: React.FC = () => {
     queryFn: storefrontApi.stores,
     enabled: !!token,
     staleTime: 300000,
+  });
+
+  const { data: storeAvailability = [], isLoading: isLoadingAvailability } = useQuery({
+    queryKey: ['cart-availability', items],
+    queryFn: () => storefrontApi.cartAvailability(items.map(i => ({ productId: i.productId, variantId: i.variantId, qty: i.qty }))),
+    enabled: !!token && items.length > 0,
   });
 
   useEffect(() => {
@@ -93,7 +99,6 @@ const Checkout: React.FC = () => {
       await storefrontApi.updateServiceMode(nextMode);
     } catch (error) {
       setMode(previousMode);
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
       toast.error(getApiErrorMessage(error, t('checkoutPage.couldNotUpdateServiceMode')));
     }
   };
