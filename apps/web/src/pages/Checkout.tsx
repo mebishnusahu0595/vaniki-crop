@@ -65,7 +65,9 @@ const Checkout: React.FC = () => {
   }, [items.length, navigate, token]);
 
   useEffect(() => {
-    setActiveStoreId(selectedStore?.id || '');
+    if (selectedStore?.id) {
+      setActiveStoreId(selectedStore.id);
+    }
   }, [selectedStore?.id]);
 
   const loadRazorpay = async () => {
@@ -98,14 +100,14 @@ const Checkout: React.FC = () => {
 
   const handleStoreChange = async (nextStoreId: string) => {
     if (nextStoreId === activeStoreId) return;
-    setActiveStoreId(nextStoreId);
 
     if (!nextStoreId) {
       setStore(null);
+      setActiveStoreId('');
       return;
     }
 
-    const availability = storeAvailability.find(s => s.id === nextStoreId);
+    const availability = (storeAvailability as any[]).find(s => s.id === nextStoreId);
     if (availability && !availability.isFullyAvailable) {
       toast.error(t('checkoutPage.storeUnavailableItems', 'Some items are not available in the selected store'));
       return;
@@ -113,9 +115,10 @@ const Checkout: React.FC = () => {
 
     try {
       await storefrontApi.selectStore(nextStoreId);
-      const matchedStore = (storeAvailability as any[]).find((store: any) => store.id === nextStoreId) || null;
+      const matchedStore = (storeAvailability as any[]).find((s: any) => s.id === nextStoreId) || null;
       if (matchedStore) {
         setStore(matchedStore as Store);
+        setActiveStoreId(nextStoreId);
       }
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('checkoutPage.chooseStoreFirst')));
@@ -197,7 +200,7 @@ const Checkout: React.FC = () => {
           contact: formData.mobile || user?.mobile,
         },
         theme: { color: '#2D6A4F' },
-        handler: async (response: any) => {
+        handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
           try {
             const confirmed = await storefrontApi.confirmOrder({
               ...orderPayload,
