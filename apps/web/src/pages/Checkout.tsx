@@ -12,6 +12,7 @@ import { useServiceModeStore } from '../store/useServiceModeStore';
 import { storefrontApi } from '../utils/api';
 import { getApiErrorMessage } from '../utils/error';
 import { currencyFormatter, formatStoreAddress } from '../utils/format';
+import { useSettingsStore } from '../store/useSettingsStore';
 
 
 
