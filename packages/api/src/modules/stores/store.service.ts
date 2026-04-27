@@ -224,3 +224,66 @@ export async function getProductAvailabilityAcrossStores(productId: string, vari
 
   return results;
 }
+
+/**
+ * Checks availability of multiple products across all active stores.
+ */
+export async function getCartAvailabilityAcrossStores(items: Array<{ productId: string; variantId: string; qty: number }>) {
+  const approvedAdminIds = await getApprovedActiveStoreAdminIds();
+  if (!approvedAdminIds.length) {
+    return [];
+  }
+
+  const stores = await Store.find({
+    isActive: true,
+    adminId: { $in: approvedAdminIds },
+  }).select('name address location');
+
+  const { DealerInventory } = await import('../../models/DealerInventory.model.js');
+  const { Product } = await import('../../models/Product.model.js');
+
+  const storeAvailability = [];
+
+  for (const store of stores) {
+    let isFullyAvailable = true;
+    const unavailableItems = [];
+
+    for (const item of items) {
+      const product = await Product.findById(item.productId).select('variants');
+      if (!product) continue;
+
+      const variant = (product.variants as any).id(item.variantId);
+      if (!variant) continue;
+
+      const inventory = await DealerInventory.findOne({
+        storeId: store._id,
+        productId: item.productId,
+        variantId: item.variantId,
+      }).select('quantity');
+
+      const stock = inventory ? inventory.quantity : variant.stock;
+
+      if (stock < item.qty) {
+        isFullyAvailable = false;
+        unavailableItems.push({
+          productId: item.productId,
+          variantId: item.variantId,
+          availableStock: stock,
+          requestedQty: item.qty,
+        });
+      }
+    }
+
+    await repairStoreAddressIfNeeded(store);
+    storeAvailability.push({
+      id: store._id,
+      name: store.name,
+      address: store.address,
+      location: store.location,
+      isFullyAvailable,
+      unavailableItems,
+    });
+  }
+
+  return storeAvailability;
+}

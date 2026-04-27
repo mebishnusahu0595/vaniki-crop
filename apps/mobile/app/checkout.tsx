@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
@@ -30,64 +30,6 @@ function getCheckoutErrorMessage(error: unknown) {
   return 'Unable to complete payment.';
 }
 
-function AlternativeStoresList({
-  productId,
-  variantId,
-  onSelect,
-}: {
-  productId: string;
-  variantId: string;
-  onSelect: (store: any) => void;
-}) {
-  const { data: availability = [], isLoading } = useQuery({
-    queryKey: ['mobile-product-availability', productId, variantId],
-    queryFn: () => storefrontApi.productAvailability(productId, variantId),
-  });
-
-  if (isLoading) {
-    return (
-      <View className="py-4 items-center">
-        <ActivityIndicator color="#2D6A4F" size="small" />
-      </View>
-    );
-  }
-
-  if (availability.length === 0) {
-    return (
-      <View className="py-3 items-center">
-        <Text className="text-[10px] font-black text-rose-300 uppercase tracking-widest">Not available in any store</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View className="mt-3 rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-      <View className="max-h-[200px]">
-        {availability.map((store) => (
-          <Pressable
-            key={store.id}
-            onPress={() => onSelect(store)}
-            className="flex-row items-start gap-3 border-b border-white/5 p-3 active:bg-white/10"
-          >
-            <Feather name="home" size={14} color="#A7D7C5" style={{ marginTop: 2 }} />
-            <View className="flex-1">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-[11px] font-black text-white">{store.name}</Text>
-                <View className="rounded-full bg-primary-500/30 px-2 py-0.5">
-                  <Text className="text-[9px] font-black text-primary-200">{store.quantity} units</Text>
-                </View>
-              </View>
-              <Text className="mt-1 text-[9px] font-medium text-white/50" numberOfLines={1}>
-                {formatStoreAddress(store.address)}
-              </Text>
-            </View>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 export default function CheckoutScreen() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -106,8 +48,8 @@ export default function CheckoutScreen() {
   
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [activeStoreId, setActiveStoreId] = useState(selectedStore?.id || '');
-  const [checkingAvailabilityFor, setCheckingAvailabilityFor] = useState<{ productId: string; variantId: string } | null>(null);
   const [paying, setPaying] = useState(false);
+  const [isStorePickerVisible, setIsStorePickerVisible] = useState(false);
   
   const { scrollRef, onInputFocus } = useFocusAwareScroll(120);
   const lastSavedAddressSignature = useRef('');
@@ -128,24 +70,11 @@ export default function CheckoutScreen() {
     700,
   );
 
-  const storesQuery = useQuery({
-    queryKey: ['mobile-checkout-stores'],
-    queryFn: storefrontApi.stores,
-    enabled: Boolean(token),
+  const { data: storeAvailability = [], isLoading: isLoadingStores } = useQuery({
+    queryKey: ['mobile-cart-availability', items],
+    queryFn: () => storefrontApi.cartAvailability(items.map(i => ({ productId: i.productId, variantId: i.variantId, qty: i.qty }))),
+    enabled: Boolean(token) && items.length > 0,
   });
-
-  const allStores = useMemo(() => {
-    const raw = storesQuery.data || [];
-    return raw.filter((store) => {
-      const city = (store.address.city || '').trim().toLowerCase();
-      const state = (store.address.state || '').trim().toLowerCase();
-      const street = (store.address.street || '').trim().toLowerCase();
-      const placeholders = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
-      if (!street || !city || !state) return false;
-      if (placeholders.has(city) || placeholders.has(state)) return false;
-      return true;
-    });
-  }, [storesQuery.data]);
 
   useEffect(() => {
     if (mode !== 'delivery' || !address) return;
@@ -181,11 +110,16 @@ export default function CheckoutScreen() {
   }, [mode, token, user?.id, addressDraft, debouncedAddressSignature, setUser]);
 
   const handleStoreChange = async (store: any) => {
+    if (!store.isFullyAvailable) {
+      Alert.alert('Items unavailable', 'This store does not have enough stock for all items in your cart.');
+      return;
+    }
+
     setActiveStoreId(store.id);
     try {
       await storefrontApi.selectStore(store.id);
       setStore(store);
-      setCheckingAvailabilityFor(null);
+      setIsStorePickerVisible(false);
     } catch (caughtError) {
       Alert.alert('Store selection failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
     }
@@ -240,53 +174,91 @@ export default function CheckoutScreen() {
       <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
         <Text className="text-lg font-black text-primary-900">Fulfillment Store</Text>
         <View className="mt-4 gap-3">
-          {allStores.length > 0 ? (
-            <View className="rounded-[20px] border border-primary-100 bg-primary-50 overflow-hidden">
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ padding: 12, gap: 12 }}
-              >
-                {allStores.map((store) => {
-                  const isActive = activeStoreId === store.id;
-                  return (
-                    <Pressable
-                      key={store.id}
-                      onPress={() => handleStoreChange(store)}
-                      className={`min-w-[200px] rounded-[18px] border p-4 ${isActive ? 'border-primary-500 bg-white' : 'border-primary-100 bg-primary-50'}`}
-                    >
-                      <View className="flex-row items-center justify-between">
-                        <Text className={`text-sm font-black ${isActive ? 'text-primary-900' : 'text-primary-900/60'}`}>{store.name}</Text>
-                        {isActive && <Feather name="check-circle" size={14} color="#2D6A4F" />}
-                      </View>
-                      <Text className="mt-1 text-[11px] text-primary-900/50" numberOfLines={1}>{store.address.city}, {store.address.state}</Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
+          <Pressable 
+            onPress={() => setIsStorePickerVisible(true)}
+            className="flex-row items-center justify-between rounded-[22px] border border-primary-100 bg-primary-50 px-5 py-4 active:bg-primary-100"
+          >
+            <View className="flex-row items-center gap-3">
+              <Feather name="home" size={18} color="#2D6A4F" />
+              <Text className="text-sm font-black text-primary-900">
+                {selectedStore ? selectedStore.name : 'Choose a store'}
+              </Text>
             </View>
-          ) : (
-            <Text className="text-sm text-primary-900/60 italic">Loading stores...</Text>
-          )}
+            <Feather name="chevron-down" size={18} color="#2D6A4F" />
+          </Pressable>
 
-          {selectedStore ? (
-            <View className="mt-2 rounded-[20px] bg-primary-50/50 p-4 border border-primary-100/30">
+          {selectedStore && (
+            <View className="mt-1 rounded-[20px] bg-primary-50/30 p-4 border border-primary-100/30">
               <View className="flex-row items-start gap-3">
                 <Feather name="map-pin" size={16} color="#2D6A4F" style={{ marginTop: 2 }} />
                 <View className="flex-1">
                   <Text className="text-sm font-black text-primary-900">{selectedStore.name}</Text>
                   <Text className="mt-1 text-xs text-primary-900/60 leading-5">{formatStoreAddress(selectedStore.address)}</Text>
-                  {selectedStore.phone && (
-                    <Text className="mt-2 text-xs font-black text-primary-700">{selectedStore.phone}</Text>
-                  )}
                 </View>
               </View>
             </View>
-          ) : (
-            <Text className="text-xs font-bold text-rose-500 italic mt-1">Please select a store to fulfill your order</Text>
           )}
         </View>
       </View>
+
+      <Modal
+        visible={isStorePickerVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsStorePickerVisible(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="h-[70%] rounded-t-[40px] bg-white p-6 shadow-2xl">
+            <View className="mb-6 flex-row items-center justify-between">
+              <Text className="text-xl font-black text-primary-900">Select Store</Text>
+              <Pressable onPress={() => setIsStorePickerVisible(false)} className="h-10 w-10 items-center justify-center rounded-full bg-primary-50">
+                <Feather name="x" size={20} color="#2D6A4F" />
+              </Pressable>
+            </View>
+
+            {isLoadingStores ? (
+              <View className="flex-1 items-center justify-center">
+                <ActivityIndicator color="#2D6A4F" size="large" />
+                <Text className="mt-4 text-xs font-black uppercase tracking-widest text-primary-900/40">Fetching stores...</Text>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                {storeAvailability.map((store) => {
+                  const isActive = activeStoreId === store.id;
+                  const isAvailable = store.isFullyAvailable;
+                  return (
+                    <Pressable
+                      key={store.id}
+                      disabled={!isAvailable}
+                      onPress={() => handleStoreChange(store)}
+                      className={`mb-3 rounded-[24px] border p-5 ${isActive ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-white'} ${!isAvailable ? 'opacity-40 grayscale' : ''}`}
+                    >
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-1">
+                          <View className="flex-row items-center gap-2">
+                            <Text className={`text-base font-black ${isActive ? 'text-primary-900' : 'text-primary-900/70'}`}>
+                              {store.name}
+                            </Text>
+                            {!isAvailable && (
+                              <View className="rounded-full bg-rose-100 px-2 py-0.5">
+                                <Text className="text-[9px] font-black uppercase text-rose-500">No Stock</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text className="mt-1 text-xs text-primary-900/50">
+                            {store.address.city}, {store.address.state}
+                          </Text>
+                        </View>
+                        {isActive && <Feather name="check-circle" size={20} color="#2D6A4F" />}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {mode === 'delivery' && (
         <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
@@ -319,52 +291,22 @@ export default function CheckoutScreen() {
       <View className="mt-5 rounded-[28px] bg-primary-900 p-6 shadow-lg">
         <Text className="text-xl font-black text-white">Order Summary</Text>
         <View className="mt-6 gap-5">
-          {items.map((item) => {
-            const isOutOfStock = item.stock !== undefined && item.stock < item.qty;
-            const isCheckingAlt = checkingAvailabilityFor?.productId === item.productId && checkingAvailabilityFor?.variantId === item.variantId;
-
-            return (
-              <View key={item.variantId} className="border-b border-white/10 pb-5 last:border-0 last:pb-0">
-                <View className="flex-row justify-between items-start">
-                  <View className="flex-1 pr-4">
-                    <Text className="text-base font-bold text-white">{item.productName}</Text>
-                    <Text className="mt-1 text-xs font-black uppercase tracking-widest text-white/40">{item.variantLabel}</Text>
-                  </View>
-                  <Text className="text-base font-black text-white">
-                    {currencyFormatter.format(item.qty * item.price)}
-                  </Text>
+          {items.map((item) => (
+            <View key={item.variantId} className="border-b border-white/10 pb-5 last:border-0 last:pb-0">
+              <View className="flex-row justify-between items-start">
+                <View className="flex-1 pr-4">
+                  <Text className="text-base font-bold text-white">{item.productName}</Text>
+                  <Text className="mt-1 text-xs font-black uppercase tracking-widest text-white/40">{item.variantLabel}</Text>
                 </View>
-                
-                <View className="mt-3 flex-row items-center justify-between">
-                  <Text className="text-xs font-bold text-white/60">{item.qty} units</Text>
-                  {isOutOfStock && (
-                    <Pressable 
-                      onPress={() => setCheckingAvailabilityFor(isCheckingAlt ? null : { productId: item.productId, variantId: item.variantId })}
-                      className="rounded-full bg-rose-500/20 px-3 py-1 border border-rose-500/30"
-                    >
-                      <Text className="text-[10px] font-black text-rose-300 uppercase tracking-widest">
-                        {isCheckingAlt ? 'Hide Stores' : 'Check Other Stores'}
-                      </Text>
-                    </Pressable>
-                  )}
-                </View>
-
-                {isOutOfStock && !isCheckingAlt && (
-                  <Text className="mt-2 text-[10px] font-bold text-rose-300 flex-row items-center">
-                    ⚠️ Only {item.stock || 0} units available in {selectedStore?.name || 'this store'}
-                  </Text>
-                )}
-
-                {isCheckingAlt && (
-                  <AlternativeStoresList
-                    productId={item.productId}
-                    variantId={item.variantId}
-                    onSelect={handleStoreChange}
-                  />
-                )}
+                <Text className="text-base font-black text-white">
+                  {currencyFormatter.format(item.qty * item.price)}
+                </Text>
               </View>
-            );
-          })}
+              <View className="mt-3">
+                <Text className="text-xs font-bold text-white/60">{item.qty} units</Text>
+              </View>
+            </View>
+          ))}
           
           <View className="mt-4 gap-2 border-t border-white/10 pt-5">
             <View className="flex-row justify-between">
@@ -409,42 +351,32 @@ export default function CheckoutScreen() {
             </Text>
           </Pressable>
         </View>
-        <Text className="mt-3 text-sm text-primary-900/70">
-          {paymentMethod === 'razorpay'
-            ? 'Secure online payment.'
-            : 'Pay in cash on delivery/pickup.'}
-        </Text>
       </View>
 
       <Pressable
         disabled={paying || !selectedStore}
         onPress={async () => {
           if (!token) {
-            Alert.alert('Login required', 'Please login again to place your order.');
+            Alert.alert('Login required', 'Please login again to continue.');
             router.replace('/(auth)/login');
             return;
           }
 
           if (!selectedStore) {
             Alert.alert('Select a store', 'Please choose a fulfillment store before checkout.');
+            setIsStorePickerVisible(true);
+            return;
+          }
+
+          const currentStoreAvailability = storeAvailability.find(s => s.id === selectedStore.id);
+          if (!currentStoreAvailability || !currentStoreAvailability.isFullyAvailable) {
+            Alert.alert('Stock unavailable', 'Some items are not available in the selected store. Please choose another store or update your cart.');
+            setIsStorePickerVisible(true);
             return;
           }
 
           if (mode === 'delivery' && (!name || !mobile || !street || !city || !state || !pincode)) {
             Alert.alert('Complete address', 'Please complete the delivery form.');
-            return;
-          }
-
-          const unavailableItem = items.find(item => item.stock !== undefined && item.stock < item.qty);
-          if (unavailableItem) {
-            Alert.alert('Stock unavailable', 'Some items are not available in the selected store. Please update your cart or choose another store.');
-            setCheckingAvailabilityFor({ productId: unavailableItem.productId, variantId: unavailableItem.variantId });
-            return;
-          }
-
-          if (!items.length) {
-            Alert.alert('Cart is empty', 'Add products to cart before checkout.');
-            router.replace('/(tabs)');
             return;
           }
 
@@ -470,22 +402,14 @@ export default function CheckoutScreen() {
             }
 
             const initiated = await storefrontApi.initiateOrder(orderPayload);
-            if (!initiated.razorpayKeyId || !initiated.razorpayOrderId) {
-              throw new Error('Razorpay configuration error. Please contact support.');
-            }
-
             const payment = await RazorpayCheckout.open({
               key: initiated.razorpayKeyId,
               amount: Math.round(initiated.amount * 100),
               currency: initiated.currency,
               name: 'Vaniki Crop',
-              description: 'Crop protection order',
+              description: 'Order Payment',
               order_id: initiated.razorpayOrderId,
-              prefill: {
-                name: user?.name,
-                email: user?.email,
-                contact: user?.mobile,
-              },
+              prefill: { name: user?.name, email: user?.email, contact: user?.mobile },
               theme: { color: '#2D6A4F' },
             });
 
@@ -499,19 +423,7 @@ export default function CheckoutScreen() {
             clearCart();
             router.replace({ pathname: '/order-success/[id]', params: { id: confirmed.orderId } });
           } catch (caughtError) {
-            if (
-              caughtError instanceof Error &&
-              /(access denied|no token|unauthorized|jwt|token)/i.test(caughtError.message)
-            ) {
-              Alert.alert('Session expired', 'Please login again to continue checkout.');
-              router.replace('/(auth)/login');
-              return;
-            }
-
-            Alert.alert(
-              'Checkout failed',
-              getCheckoutErrorMessage(caughtError),
-            );
+            Alert.alert('Checkout failed', getCheckoutErrorMessage(caughtError));
           } finally {
             setPaying(false);
           }
@@ -519,11 +431,7 @@ export default function CheckoutScreen() {
         className={`mb-10 mt-8 rounded-full px-5 py-5 shadow-lg ${!selectedStore || paying ? 'bg-primary-200' : 'bg-primary-500'}`}
       >
         <Text className="text-center text-base font-black uppercase tracking-[2px] text-white">
-          {paying
-            ? 'Processing...'
-            : paymentMethod === 'razorpay'
-              ? 'Pay with Razorpay'
-              : 'Place COD Order'}
+          {paying ? 'Processing...' : paymentMethod === 'razorpay' ? 'Pay with Razorpay' : 'Place COD Order'}
         </Text>
       </Pressable>
         </ScrollView>

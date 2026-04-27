@@ -107,3 +107,19 @@ export async function getProductAvailability(req: Request, res: Response, next: 
     next(error);
   }
 }
+
+/**
+ * POST /api/stores/cart-availability
+ */
+export async function getCartAvailability(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { items } = req.body;
+    if (!items || !Array.isArray(items)) {
+      throw new Error('Items array is required in request body');
+    }
+    const availability = await storeService.getCartAvailabilityAcrossStores(items);
+    res.status(200).json({ success: true, data: availability });
+  } catch (error) {
+    next(error);
+  }
+}

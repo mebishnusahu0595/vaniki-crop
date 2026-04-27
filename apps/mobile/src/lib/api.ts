@@ -219,6 +219,25 @@ export const storefrontApi = {
     });
     return response.data;
   },
+  cartAvailability: async (items: Array<{ productId: string; variantId: string; qty: number }>) => {
+    const response = await request<Array<{
+      id: string;
+      name: string;
+      address: Store['address'];
+      location: Store['location'];
+      isFullyAvailable: boolean;
+      unavailableItems: Array<{
+        productId: string;
+        variantId: string;
+        availableStock: number;
+        requestedQty: number;
+      }>;
+    }>>('/stores/cart-availability', {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    });
+    return response.data;
+  },
   validateCoupon: async (payload: { code: string; storeId: string; cartTotal: number }) => {
     const response = await request<CouponValidation>('/coupons/validate', {
       method: 'POST',

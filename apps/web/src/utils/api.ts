@@ -245,6 +245,22 @@ export const storefrontApi = {
     });
     return response.data.data;
   },
+  cartAvailability: async (items: Array<{ productId: string; variantId: string; qty: number }>) => {
+    const response = await api.post<ApiResponse<Array<{
+      id: string;
+      name: string;
+      address: Store['address'];
+      location: Store['location'];
+      isFullyAvailable: boolean;
+      unavailableItems: Array<{
+        productId: string;
+        variantId: string;
+        availableStock: number;
+        requestedQty: number;
+      }>;
+    }>>>('/stores/cart-availability', { items });
+    return response.data.data;
+  },
   validateCoupon: async (payload: { code: string; storeId: string; cartTotal: number }) => {
     const response = await api.post<ApiResponse<CouponValidation>>('/coupons/validate', payload);
     return response.data.data;
