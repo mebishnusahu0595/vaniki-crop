@@ -38,6 +38,17 @@ const Checkout: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [activeStoreId, setActiveStoreId] = useState(selectedStore?.id || '');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (isDropdownOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isDropdownOpen]);
   
   const hasPlacedOrderRef = useRef(false);
   const [formData, setFormData] = useState({
@@ -297,7 +308,7 @@ const Checkout: React.FC = () => {
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full z-[100] mt-3 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-300">
+                  <div className="absolute left-0 right-0 top-full z-40 mt-3 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-300">
                     <div className="overflow-hidden rounded-3xl border border-primary-100 bg-white shadow-[0_32px_96px_-12px_rgba(8,32,24,0.18)] ring-1 ring-primary-900/5">
                       <div className="max-h-[320px] overflow-y-auto overscroll-contain p-2 scroll-smooth">
                         {isLoadingAvailability ? (

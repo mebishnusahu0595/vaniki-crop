@@ -159,6 +159,7 @@ export default function CheckoutScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="none"
           contentContainerStyle={{ paddingBottom: 40 }}
+          scrollEnabled={!isStorePickerVisible}
         >
       <View className="mb-4 mt-6 flex-row items-center">
         <Pressable onPress={() => router.back()} className="mr-3 h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
