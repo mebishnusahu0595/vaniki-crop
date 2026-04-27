@@ -337,6 +337,18 @@ export async function placeCodOrder(userId: string, input: any) {
     });
   }
 
+  // Notify Superadmins
+  const superadmins = await User.find({ role: 'superadmin', isActive: true }).select('email');
+  for (const admin of superadmins) {
+    if (admin.email) {
+      addEmailToQueue({
+        to: admin.email,
+        subject: `[SYSTEM] New COD Order - ${orderNumber}`,
+        html: `<h3>New COD order received in the system</h3><p>Store: ${populatedStore?.name || 'Unknown'}</p><p>Order Number: ${orderNumber}</p><p>Total: ₹${order.totalAmount}</p>`,
+      });
+    }
+  }
+
   return { orderId: order._id, orderNumber };
 }
 
@@ -422,6 +434,18 @@ export async function finalizeOrder(razorpayOrderId: string, paymentId: string, 
       subject: `New Order Received - ${order.orderNumber}`,
       html: `<h3>New order received for ${store.name}</h3><p>Order Number: ${order.orderNumber}</p><p>Total: ₹${order.totalAmount}</p>`,
     });
+  }
+
+  // Notify Superadmins
+  const superadmins = await User.find({ role: 'superadmin', isActive: true }).select('email');
+  for (const admin of superadmins) {
+    if (admin.email) {
+      addEmailToQueue({
+        to: admin.email,
+        subject: `[SYSTEM] New Order - ${order.orderNumber}`,
+        html: `<h3>New order received in the system</h3><p>Store: ${store?.name || 'Unknown'}</p><p>Order Number: ${order.orderNumber}</p><p>Total: ₹${order.totalAmount}</p>`,
+      });
+    }
   }
 
   return order;

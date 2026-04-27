@@ -65,7 +65,7 @@ export function PersistentBottomNav() {
               className="flex-1 items-center gap-1 rounded-[20px] py-3"
             >
               <View>
-                <Feather name={item.icon} size={18} color={isFocused ? '#2D6A4F' : '#6D8A7D'} />
+                <Feather name={item.icon} size={18} color={isFocused ? '#000000' : '#555555'} />
                 {item.key === 'cart' && itemCount ? (
                   <View className="absolute -right-3 -top-2 min-w-[18px] rounded-full bg-rose-500 px-1.5 py-0.5">
                     <Text className="text-center text-[10px] font-black text-white">{itemCount}</Text>
@@ -74,7 +74,7 @@ export function PersistentBottomNav() {
               </View>
               <Text
                 className={`text-[10px] font-black uppercase tracking-[1px] ${
-                  isFocused ? 'text-primary-500' : 'text-primary-900/45'
+                  isFocused ? 'text-black' : 'text-black/50'
                 }`}
               >
                 {t(item.labelKey)}

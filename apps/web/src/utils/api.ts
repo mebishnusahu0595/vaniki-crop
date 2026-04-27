@@ -239,6 +239,12 @@ export const storefrontApi = {
     const response = await api.get<ApiResponse<Store[]>>('/stores');
     return response.data.data;
   },
+  productAvailability: async (productId: string, variantId: string) => {
+    const response = await api.get<ApiResponse<Array<{ id: string; name: string; address: Store['address']; location: Store['location']; quantity: number }>>>('/stores/availability', {
+      params: { productId, variantId },
+    });
+    return response.data.data;
+  },
   validateCoupon: async (payload: { code: string; storeId: string; cartTotal: number }) => {
     const response = await api.post<ApiResponse<CouponValidation>>('/coupons/validate', payload);
     return response.data.data;

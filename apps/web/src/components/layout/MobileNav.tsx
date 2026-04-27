@@ -26,13 +26,13 @@ const MobileNav: React.FC = () => {
           to={item.path}
           className={({ isActive }) => 
             cn(
-              'flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-1 text-primary-900/45 transition-colors',
-              isActive && 'bg-primary-50 text-primary',
+              'flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-1 text-black/60 transition-colors',
+              isActive && 'bg-black/5 text-black',
             )
           }
         >
           <div className="relative transition-transform group-active:scale-90">
-            <item.icon size={20} strokeWidth={2.4} />
+            <item.icon size={20} strokeWidth={3} />
             {typeof item.badge === 'number' && item.badge > 0 && (
               <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-black w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
                 {item.badge}

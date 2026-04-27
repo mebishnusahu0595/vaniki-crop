@@ -64,7 +64,7 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
                 <Feather
                   name={icons[route.name] || 'circle'}
                   size={18}
-                  color={isFocused ? '#2D6A4F' : '#6D8A7D'}
+                  color={isFocused ? '#000000' : '#555555'}
                 />
                 {route.name === 'cart' && itemCount ? (
                   <View className="absolute -right-3 -top-2 min-w-[18px] rounded-full bg-rose-500 px-1.5 py-0.5">
@@ -75,7 +75,7 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
               <Text
                 numberOfLines={1}
                 className={`text-[9px] font-black uppercase tracking-[0.5px] ${
-                  isFocused ? 'text-primary-500' : 'text-primary-900/45'
+                  isFocused ? 'text-black' : 'text-black/50'
                 }`}
               >
                 {label}

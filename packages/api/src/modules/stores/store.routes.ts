@@ -13,6 +13,9 @@ router.get('/', storeController.listStores);
 /** GET /api/stores/:id — Detailed store info */
 router.get('/:id', storeController.getStoreDetail);
 
+/** GET /api/stores/availability — Check product availability across stores */
+router.get('/availability', storeController.getProductAvailability);
+
 /** POST /api/stores/select — Save selection for authenticated user */
 router.post('/select', requireAuth, storeController.selectStore);
 

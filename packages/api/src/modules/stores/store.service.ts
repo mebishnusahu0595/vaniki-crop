@@ -170,3 +170,57 @@ export async function updateAdminOwnStore(userStoreId: string | undefined, userI
 
   return store;
 }
+
+/**
+ * Checks availability of a specific product variant across all active stores.
+ */
+export async function getProductAvailabilityAcrossStores(productId: string, variantId: string) {
+  const approvedAdminIds = await getApprovedActiveStoreAdminIds();
+  if (!approvedAdminIds.length) {
+    return [];
+  }
+
+  const stores = await Store.find({
+    isActive: true,
+    adminId: { $in: approvedAdminIds },
+  }).select('name address location');
+
+  const { DealerInventory } = await import('../../models/DealerInventory.model.js');
+  const { Product } = await import('../../models/Product.model.js');
+
+  const product = await Product.findById(productId).select('variants');
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  const variant = (product.variants as any).id(variantId);
+  if (!variant) {
+    throw new AppError('Variant not found', 404);
+  }
+
+  const results = [];
+
+  for (const store of stores) {
+    const inventory = await DealerInventory.findOne({
+      storeId: store._id,
+      productId,
+      variantId,
+    }).select('quantity');
+
+    // If dealer has specific inventory, use it; otherwise use product's default stock
+    const quantity = inventory ? inventory.quantity : variant.stock;
+
+    if (quantity > 0) {
+      await repairStoreAddressIfNeeded(store);
+      results.push({
+        id: store._id,
+        name: store.name,
+        address: store.address,
+        location: store.location,
+        quantity,
+      });
+    }
+  }
+
+  return results;
+}

@@ -23,6 +23,50 @@ declare global {
   }
 }
 
+const AlternativeStoresList: React.FC<{
+  productId: string;
+  variantId: string;
+  onSelect: (storeId: string) => void;
+}> = ({ productId, variantId, onSelect }) => {
+  const { t } = useTranslation();
+  const { data: availability = [], isLoading } = useQuery({
+    queryKey: ['product-availability', productId, variantId],
+    queryFn: () => storefrontApi.productAvailability(productId, variantId),
+  });
+
+  if (isLoading) return <div className="animate-pulse py-4 text-center text-xs font-bold text-primary-900/40 uppercase tracking-widest">{t('common.loading')}</div>;
+
+  if (availability.length === 0) return <div className="py-4 text-center text-xs font-bold text-rose-500 uppercase tracking-widest">{t('checkoutPage.notAvailableAnywhere', 'Not available in any store')}</div>;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-2xl border border-primary-100 bg-primary-50/30">
+      <div className="max-h-[160px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary-200">
+        {availability.map((store) => (
+          <button
+            key={store.id}
+            type="button"
+            onClick={() => onSelect(store.id)}
+            className="flex w-full items-start gap-3 border-b border-primary-100/50 p-3 text-left transition hover:bg-primary-50 last:border-0"
+          >
+            <StoreIcon size={14} className="mt-0.5 text-primary" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-black text-primary-900">{store.name}</p>
+                <span className="rounded-full bg-primary-100 px-1.5 py-0.5 text-[9px] font-black text-primary-700">
+                  {store.quantity} {t('common.units', 'units')}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[9px] font-medium text-primary-900/60 line-clamp-1">
+                {formatStoreAddress(store.address)}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Checkout: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -34,7 +78,9 @@ const Checkout: React.FC = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
-  const [pickupStoreId, setPickupStoreId] = useState(selectedStore?.id || '');
+  const [activeStoreId, setActiveStoreId] = useState(selectedStore?.id || '');
+  const [checkingAvailabilityFor, setCheckingAvailabilityFor] = useState<{ productId: string; variantId: string } | null>(null);
+  
   const hasPlacedOrderRef = useRef(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -49,8 +95,8 @@ const Checkout: React.FC = () => {
   const deliveryCharge = mode === 'delivery' ? (subtotal > 1000 ? 0 : 50) : 0;
   const total = subtotal - couponDiscount + deliveryCharge;
 
-  const { data: pickupStores = [], isLoading: isLoadingPickupStores } = useQuery({
-    queryKey: ['checkout-pickup-stores'],
+  const { data: allStores = [], isLoading: isLoadingStores } = useQuery({
+    queryKey: ['checkout-stores'],
     queryFn: storefrontApi.stores,
     enabled: !!token,
     staleTime: 300000,
@@ -64,7 +110,7 @@ const Checkout: React.FC = () => {
   }, [items.length, navigate, token]);
 
   useEffect(() => {
-    setPickupStoreId(selectedStore?.id || '');
+    setActiveStoreId(selectedStore?.id || '');
   }, [selectedStore?.id]);
 
   const loadRazorpay = async () => {
@@ -89,10 +135,6 @@ const Checkout: React.FC = () => {
 
     try {
       await storefrontApi.updateServiceMode(nextMode);
-      if (nextMode === 'delivery') {
-        setStore(null);
-        setPickupStoreId('');
-      }
     } catch (error) {
       setMode(previousMode);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -104,8 +146,8 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const handlePickupStoreChange = async (nextStoreId: string) => {
-    setPickupStoreId(nextStoreId);
+  const handleStoreChange = async (nextStoreId: string) => {
+    setActiveStoreId(nextStoreId);
 
     if (!nextStoreId) {
       setStore(null);
@@ -114,23 +156,32 @@ const Checkout: React.FC = () => {
 
     try {
       await storefrontApi.selectStore(nextStoreId);
-      const matchedStore = pickupStores.find((store) => store.id === nextStoreId) || null;
+      const matchedStore = allStores.find((store) => store.id === nextStoreId) || null;
       if (matchedStore) {
         setStore(matchedStore);
       }
+      setCheckingAvailabilityFor(null);
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('checkoutPage.chooseStoreFirst')));
     }
   };
 
   const handlePayment = async () => {
-    if (mode === 'pickup' && !selectedStore) {
+    if (!selectedStore) {
       toast.error(t('checkoutPage.chooseStoreFirst'));
       return;
     }
 
     if (mode === 'delivery' && (!formData.name || !formData.mobile || !formData.street || !formData.city || !formData.state || !formData.pincode)) {
       toast.error(t('checkoutPage.completeDeliveryAddress'));
+      return;
+    }
+
+    // Double check stock for all items
+    const unavailableItem = items.find(item => item.stock !== undefined && item.stock < item.qty);
+    if (unavailableItem) {
+      toast.error(t('checkoutPage.someItemsUnavailable', 'Some items are unavailable in the selected store'));
+      setCheckingAvailabilityFor({ productId: unavailableItem.productId, variantId: unavailableItem.variantId });
       return;
     }
 
@@ -147,8 +198,6 @@ const Checkout: React.FC = () => {
             }
           : undefined;
 
-      const effectiveStoreId = mode === 'pickup' ? selectedStore?.id : selectedStore?.id || undefined;
-
       const orderPayload = {
         items: items.map((item) => ({
           productId: item.productId,
@@ -157,7 +206,7 @@ const Checkout: React.FC = () => {
         })),
         serviceMode: mode,
         couponCode: couponCode || undefined,
-        ...(effectiveStoreId ? { storeId: effectiveStoreId } : {}),
+        storeId: selectedStore.id,
         shippingAddress,
       };
 
@@ -188,8 +237,6 @@ const Checkout: React.FC = () => {
       }
 
       const initiation = await storefrontApi.initiateOrder(orderPayload);
-      const confirmedStoreId = (initiation as { storeId?: string }).storeId || effectiveStoreId;
-
       const paymentObject = new window.Razorpay({
         key: initiation.razorpayKeyId,
         amount: initiation.amount * 100,
@@ -209,7 +256,6 @@ const Checkout: React.FC = () => {
           try {
             const confirmation = await storefrontApi.confirmOrder({
               ...orderPayload,
-              ...(confirmedStoreId ? { storeId: confirmedStoreId } : {}),
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
@@ -258,7 +304,7 @@ const Checkout: React.FC = () => {
                   <MapPin className="text-primary" size={18} />
                   <div>
                     <p className="text-sm font-black text-primary-900">{t('checkoutPage.delivery')}</p>
-                    <p className="mt-1 text-sm font-medium text-primary-900/60">
+                    <p className="mt-1 text-[11px] font-medium text-primary-900/60 leading-relaxed">
                       {t('checkoutPage.deliveringTo', { address: formatStoreAddress(address || user?.savedAddress || null) })}
                     </p>
                   </div>
@@ -273,7 +319,7 @@ const Checkout: React.FC = () => {
                   <StoreIcon className="text-primary" size={18} />
                   <div>
                     <p className="text-sm font-black text-primary-900">{t('checkoutPage.pickup')}</p>
-                    <p className="mt-1 text-sm font-medium text-primary-900/60">
+                    <p className="mt-1 text-[11px] font-medium text-primary-900/60 leading-relaxed">
                       {selectedStore?.name || t('checkoutPage.selectStoreFromHeader')}
                     </p>
                   </div>
@@ -282,7 +328,47 @@ const Checkout: React.FC = () => {
             </div>
           </section>
 
-          {mode === 'delivery' ? (
+          <section className="surface-card p-6">
+            <p className="section-kicker mb-2">{t('checkoutPage.selectStore', 'Fulfillment Store')}</p>
+            <div className="space-y-4">
+              <select
+                value={activeStoreId}
+                onChange={(event) => handleStoreChange(event.target.value)}
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+              >
+                <option value="">{t('storeSelector.chooseStore', 'Choose a store for fulfillment')}</option>
+                {allStores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name} — {store.address.city}, {store.address.state}
+                  </option>
+                ))}
+              </select>
+              
+              {selectedStore ? (
+                <div className="flex items-start gap-3 rounded-2xl bg-primary-50/50 p-4 border border-primary-100/50">
+                  <MapPin className="text-primary mt-0.5 shrink-0" size={16} />
+                  <div>
+                    <h3 className="text-sm font-black text-primary-900">{selectedStore.name}</h3>
+                    <p className="mt-1 text-xs font-medium text-primary-900/60 leading-relaxed">
+                      {formatStoreAddress(selectedStore.address)}
+                    </p>
+                    {selectedStore.phone && (
+                      <p className="mt-2 text-xs font-black text-primary-700">{selectedStore.phone}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 rounded-2xl border border-dashed border-primary-200 p-4 justify-center">
+                  <StoreIcon className="text-primary-300" size={20} />
+                  <p className="text-sm font-bold text-primary-300 italic">
+                    {t('checkoutPage.mustSelectStore', 'Please select a store to see availability and place order')}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {mode === 'delivery' && (
             <section key="delivery-section" className="surface-card p-6">
               <p className="section-kicker mb-2">{t('checkoutPage.deliveryAddress')}</p>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -290,128 +376,123 @@ const Checkout: React.FC = () => {
                   value={formData.name}
                   onChange={(event) => setFormData((current) => ({ ...current, name: event.target.value }))}
                   placeholder={t('checkoutPage.fullName')}
-                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40"
                 />
                 <input
                   value={formData.mobile}
                   onChange={(event) => setFormData((current) => ({ ...current, mobile: event.target.value }))}
                   placeholder={t('checkoutPage.mobileNumber')}
-                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40"
                 />
                 <input
                   value={formData.street}
                   onChange={(event) => setFormData((current) => ({ ...current, street: event.target.value }))}
                   placeholder={t('checkoutPage.streetVillage')}
-                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 sm:col-span-2"
+                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40 sm:col-span-2"
                 />
                 <input
                   value={formData.city}
                   onChange={(event) => setFormData((current) => ({ ...current, city: event.target.value }))}
                   placeholder={t('checkoutPage.city')}
-                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40"
                 />
                 <input
                   value={formData.state}
                   onChange={(event) => setFormData((current) => ({ ...current, state: event.target.value }))}
                   placeholder={t('checkoutPage.state')}
-                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40"
                 />
                 <input
                   value={formData.pincode}
                   onChange={(event) => setFormData((current) => ({ ...current, pincode: event.target.value }))}
                   placeholder={t('checkoutPage.pincode')}
-                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40"
                 />
-              </div>
-            </section>
-          ) : (
-            <section key="pickup-section" className="surface-card p-6">
-              <p className="section-kicker mb-2">{t('checkoutPage.pickupStore')}</p>
-              <div className="space-y-3">
-                <select
-                  value={pickupStoreId}
-                  onChange={(event) => handlePickupStoreChange(event.target.value)}
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-                >
-                  <option value="">{t('storeSelector.choosePickupStore')}</option>
-                  {pickupStores.map((store) => (
-                    <option key={store.id} value={store.id}>
-                      {store.name}
-                    </option>
-                  ))}
-                </select>
-                <h2 className="text-2xl font-black text-primary-900">{selectedStore?.name || t('checkoutPage.noStoreSelected')}</h2>
-                <p className="text-sm font-medium leading-7 text-primary-900/60">
-                  {isLoadingPickupStores
-                    ? t('common.loading')
-                    : selectedStore
-                      ? formatStoreAddress(selectedStore.address)
-                      : t('checkoutPage.choosePickupHint')}
-                </p>
               </div>
             </section>
           )}
 
           <section className="surface-card p-6">
             <p className="section-kicker mb-2">{t('checkoutPage.orderSummary')}</p>
-            <div className="space-y-4">
+            <div className="space-y-5">
               {items.map((item) => {
                 const isOutOfStock = item.stock !== undefined && item.stock < item.qty;
+                const isCheckingAlt = checkingAvailabilityFor?.productId === item.productId && checkingAvailabilityFor?.variantId === item.variantId;
 
                 return (
-                  <div key={`${item.productId}-${item.variantId}`} className="flex gap-4">
-                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-primary-50">
-                      {item.image ? (
-                        <img src={item.image} alt={item.productName} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-primary-200">
-                          <StoreIcon size={24} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-black text-primary-900 line-clamp-1">{item.productName}</p>
-                          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-primary-500">
-                            {item.variantLabel}
-                          </p>
-                        </div>
-                        <p className="text-sm font-black text-primary-900">{currencyFormatter.format(item.qty * item.price)}</p>
+                  <div key={`${item.productId}-${item.variantId}`} className="group">
+                    <div className="flex gap-4">
+                      <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-primary-50 border border-primary-100/50">
+                        {item.image ? (
+                          <img src={item.image} alt={item.productName} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-primary-200">
+                            <StoreIcon size={24} />
+                          </div>
+                        )}
                       </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-black text-primary-900 line-clamp-1">{item.productName}</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary-500">
+                              {item.variantLabel}
+                            </p>
+                          </div>
+                          <p className="text-sm font-black text-primary-900">{currencyFormatter.format(item.qty * item.price)}</p>
+                        </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 rounded-full bg-primary-50 p-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 rounded-full bg-primary-50 p-1 border border-primary-100/30">
+                            <button
+                              type="button"
+                              onClick={() => updateQty(item.productId, item.variantId, item.qty - 1)}
+                              className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-primary-900 shadow-sm transition hover:bg-primary-100"
+                            >
+                              <Minus size={12} />
+                            </button>
+                            <span className="min-w-[20px] text-center text-xs font-black text-primary-900">{item.qty}</span>
+                            <button
+                              type="button"
+                              onClick={() => updateQty(item.productId, item.variantId, item.qty + 1)}
+                              className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-sm transition hover:bg-primary-600"
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </div>
                           <button
                             type="button"
-                            onClick={() => updateQty(item.productId, item.variantId, item.qty - 1)}
-                            className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-primary-900 shadow-sm transition hover:bg-primary-100"
+                            onClick={() => removeItem(item.productId, item.variantId)}
+                            className="text-primary-300 transition hover:text-rose-500"
                           >
-                            <Minus size={12} />
-                          </button>
-                          <span className="min-w-[20px] text-center text-xs font-black text-primary-900">{item.qty}</span>
-                          <button
-                            type="button"
-                            onClick={() => updateQty(item.productId, item.variantId, item.qty + 1)}
-                            className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-white shadow-sm transition hover:bg-primary-600"
-                          >
-                            <Plus size={12} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.productId, item.variantId)}
-                          className="text-primary-300 transition hover:text-rose-500"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
 
-                      {isOutOfStock && (
-                        <p className="mt-1 text-[10px] font-bold text-rose-500">
-                          {t('checkoutPage.insufficientStock', 'Only {{count}} units available in this store', { count: item.stock })}
-                        </p>
-                      )}
+                        {isOutOfStock && (
+                          <div className="mt-2 space-y-2">
+                            <p className="text-[10px] font-black text-rose-500 uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                              {t('checkoutPage.insufficientStock', 'Only {{count}} units available in this store', { count: item.stock || 0 })}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setCheckingAvailabilityFor(isCheckingAlt ? null : { productId: item.productId, variantId: item.variantId })}
+                              className="text-[10px] font-black text-primary uppercase tracking-widest underline decoration-primary/30 underline-offset-4 hover:decoration-primary"
+                            >
+                              {isCheckingAlt ? t('checkoutPage.hideOtherStores', 'Hide Alternative Stores') : t('checkoutPage.checkOtherStores', 'Check Availability in Other Stores')}
+                            </button>
+                          </div>
+                        )}
+                        
+                        {isCheckingAlt && (
+                          <AlternativeStoresList
+                            productId={item.productId}
+                            variantId={item.variantId}
+                            onSelect={handleStoreChange}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -420,7 +501,7 @@ const Checkout: React.FC = () => {
           </section>
         </div>
 
-        <aside className="surface-card h-fit p-6">
+        <aside className="surface-card h-fit p-6 sticky top-8">
           <p className="section-kicker mb-2">{t('checkoutPage.payment')}</p>
           <h2 className="text-2xl font-black text-primary-900">{t('checkoutPage.choosePaymentMethod')}</h2>
 
@@ -480,7 +561,7 @@ const Checkout: React.FC = () => {
 
           <button
             onClick={handlePayment}
-            disabled={isProcessing}
+            disabled={isProcessing || !selectedStore}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-100"
           >
             {paymentMethod === 'razorpay' ? <CreditCard size={18} /> : <Wallet size={18} />}

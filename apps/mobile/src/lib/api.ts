@@ -213,6 +213,12 @@ export const storefrontApi = {
     const response = await request<Store[]>('/stores');
     return response.data;
   },
+  productAvailability: async (productId: string, variantId: string) => {
+    const response = await request<Array<{ id: string; name: string; address: Store['address']; location: Store['location']; quantity: number }>>('/stores/availability', {
+      params: { productId, variantId },
+    });
+    return response.data;
+  },
   validateCoupon: async (payload: { code: string; storeId: string; cartTotal: number }) => {
     const response = await request<CouponValidation>('/coupons/validate', {
       method: 'POST',

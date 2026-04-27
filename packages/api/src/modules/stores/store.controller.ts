@@ -91,3 +91,19 @@ export async function deleteStore(req: Request, res: Response, next: NextFunctio
     next(error);
   }
 }
+
+/**
+ * GET /api/stores/availability?productId=...&variantId=...
+ */
+export async function getProductAvailability(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { productId, variantId } = req.query;
+    if (!productId || !variantId) {
+      throw new Error('productId and variantId are required');
+    }
+    const availability = await storeService.getProductAvailabilityAcrossStores(productId as string, variantId as string);
+    res.status(200).json({ success: true, data: availability });
+  } catch (error) {
+    next(error);
+  }
+}
