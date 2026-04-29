@@ -79,7 +79,7 @@ export default function SettingsPage() {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
-  const [gstVerification, setGstVerification] = useState<{ loading: boolean; error: string; data: any | null }>({
+  const [gstVerification, setGstVerification] = useState<{ loading: boolean; error: string; data: GstVerificationData | null }>({
     loading: false,
     error: '',
     data: null,

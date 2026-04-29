@@ -274,3 +274,15 @@ export interface PaginationMeta {
   hasNextPage?: boolean;
   hasPrevPage?: boolean;
 }
+
+export interface GstVerificationData {
+  status: string;
+  tradeName: string;
+  message?: string;
+  legalName?: string;
+  registrationDate?: string;
+  centerJurisdiction?: string;
+  stateJurisdiction?: string;
+  taxpayerType?: string;
+  address?: string;
+}

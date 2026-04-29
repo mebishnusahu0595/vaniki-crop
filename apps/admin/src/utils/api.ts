@@ -17,6 +17,7 @@ import type {
   Product,
   Review,
   StoreSettings,
+  GstVerificationData,
 } from '../types/admin';
 
 export interface ApiResponse<T> {
@@ -257,7 +258,7 @@ export const adminApi = {
     return response.data.data;
   },
   verifyGst: async (gstin: string) => {
-    const response = await api.get<ApiResponse<any>>(`/stores/admin/verify-gst/${gstin}`);
+    const response = await api.get<ApiResponse<GstVerificationData>>(`/stores/admin/verify-gst/${gstin}`);
     return response.data.data;
   },
   inventoryProducts: async () => {
