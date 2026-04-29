@@ -47,13 +47,14 @@ const Account: React.FC = () => {
     () => [
       { id: 'orders', label: t('accountPage.tabOrders'), icon: Package },
       { id: 'wishlist', label: t('accountPage.tabWishlist'), icon: Heart },
+      { id: 'loyalty', label: 'Loyalty', icon: Gift },
       { id: 'profile', label: t('accountPage.tabProfile'), icon: User },
       { id: 'password', label: t('accountPage.tabPassword'), icon: KeyRound },
     ] as const,
     [t],
   );
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'profile' | 'password'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'wishlist' | 'loyalty' | 'profile' | 'password'>('orders');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
@@ -522,6 +523,74 @@ const Account: React.FC = () => {
                 {isChangingPassword ? t('accountPage.updating') : t('accountPage.updatePassword')}
               </button>
             </form>
+          )}
+
+          {activeTab === 'loyalty' && (
+            <div className="space-y-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="section-kicker mb-2">Rewards Program</p>
+                  <h2 className="text-2xl font-black text-primary-900">Your Loyalty Points</h2>
+                </div>
+                <div className="flex items-center gap-3 rounded-[1.5rem] bg-amber-50 px-6 py-4 border border-amber-100">
+                  <img src="/coin.png" alt="Points" className="h-8 w-8" />
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Total Balance</p>
+                    <p className="text-2xl font-black text-amber-900">{user?.loyaltyPoints || 0}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-primary-100 bg-primary-50/50 p-6">
+                <div className="mb-6">
+                  <h3 className="text-lg font-black text-primary-900">Check-in History</h3>
+                  <p className="text-sm font-medium text-primary-900/60">Maintain your streak to earn more!</p>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-[1fr_300px]">
+                  <div className="rounded-2xl bg-white p-4 shadow-sm">
+                    {/* Simplified Calendar Display */}
+                    <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d}>{d}</div>)}
+                    </div>
+                    <div className="grid grid-cols-7 gap-2">
+                      {[...Array(31)].map((_, i) => {
+                        const day = i + 1;
+                        const dateStr = `2026-04-${String(day).padStart(2, '0')}`;
+                        const isCheckedIn = user?.checkInHistory?.includes(dateStr);
+                        return (
+                          <div
+                            key={i}
+                            className={cn(
+                              "flex aspect-square items-center justify-center rounded-xl text-sm font-bold transition",
+                              isCheckedIn 
+                                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
+                                : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                            )}
+                          >
+                            {day}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="rounded-2xl bg-white p-5 border border-primary-100">
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">Current Streak</p>
+                      <h4 className="mt-2 text-3xl font-black text-primary-900">0 Days</h4>
+                      <p className="mt-2 text-sm font-medium text-primary-900/60">Check in tomorrow to start your streak!</p>
+                    </div>
+                    
+                    <div className="rounded-2xl bg-gradient-to-br from-primary-600 to-primary-800 p-5 text-white">
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-white/70">Point Value</p>
+                      <p className="mt-2 text-lg font-black">1 Point = ₹1.00</p>
+                      <p className="mt-2 text-xs font-medium text-white/60">Points can be used to get instant discounts on eligible products.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </section>
       </div>

@@ -90,11 +90,6 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
     setIsSearchFocused(false);
   };
 
-  const focusMobileSearchInput = () => {
-    setIsSearchFocused(true);
-    mobileSearchInputRef.current?.focus();
-  };
-
   const renderSearchDropdown = () => {
     if (!shouldShowSearchDropdown) return null;
 
@@ -339,18 +334,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
             <span className="sm:hidden">{compactLanguageLabel}</span>
             <span className="hidden sm:inline">{languageToggleLabel}</span>
           </button>
-          <button
-            onClick={() => {
-              if (searchTerm.trim()) {
-                submitSearch();
-                return;
-              }
-              focusMobileSearchInput();
-            }}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-50 text-primary-900 transition hover:bg-primary-100 lg:hidden"
-          >
-            <Search size={18} />
-          </button>
+
+          {/* Loyalty Points Display */}
+          <div className="flex h-10 items-center gap-2 rounded-2xl bg-amber-50 px-3 py-1 border border-amber-100 shadow-sm shadow-amber-900/5">
+            <img src="/coin.png" alt="Points" className="h-5 w-5 animate-pulse" />
+            <span className="text-sm font-black text-amber-900">{useAuthStore((state) => state.user)?.loyaltyPoints || 0}</span>
+          </div>
+
           <motion.button
             onClick={onOpenCart}
             ref={cartButtonRef}

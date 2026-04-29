@@ -110,6 +110,7 @@ export interface SiteSettings {
   platformName?: string;
   supportEmail?: string;
   supportPhone?: string;
+  loyaltyPointRupeeValue?: number;
 }
 
 export interface HomepageData {
@@ -181,6 +182,9 @@ export interface AuthUser {
   referralCode?: string;
   referredBy?: string | null;
   referralCount?: number;
+  loyaltyPoints?: number;
+  checkInHistory?: string[];
+  lastCheckIn?: string;
 }
 
 export interface CouponValidation {

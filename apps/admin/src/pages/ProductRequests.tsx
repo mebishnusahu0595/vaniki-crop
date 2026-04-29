@@ -133,6 +133,50 @@ export default function ProductRequestsPage() {
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition"
                 />
               </div>
+
+              {selectedProductId && (
+                <div className="md:col-span-2">
+                  <label htmlFor="request-pack" className="mb-2 block text-sm font-bold text-slate-700">
+                    Select Pack Size (Variant)
+                  </label>
+                  <select
+                    id="request-pack"
+                    value={requestedPack}
+                    onChange={(e) => setRequestedPack(e.target.value)}
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition"
+                  >
+                    <option value="">Choose pack</option>
+                    {inventoryQuery.data?.find(p => p.id === selectedProductId)?.variants.map(v => (
+                      <option key={v.id} value={v.label}>{v.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {selectedProductId && (
+                <div className="md:col-span-2 rounded-2xl bg-slate-900 p-4 border border-slate-800 shadow-xl">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400 mb-3">Product Pricing Information</p>
+                  <div className="grid gap-3">
+                    {inventoryQuery.data?.find(p => p.id === selectedProductId)?.variants.map(v => (
+                      <div key={v.id} className="flex items-center justify-between border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                        <span className="text-xs font-bold text-slate-300">{v.label}</span>
+                        <div className="flex gap-4">
+                          <div className="text-right">
+                            <p className="text-[8px] font-black uppercase text-slate-500">User Price</p>
+                            <p className="text-xs font-black text-white">₹{v.price}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[8px] font-black uppercase text-primary-500">Admin Price</p>
+                            <p className="text-xs font-black text-primary-400">
+                              {v.adminPrice ? `₹${v.adminPrice}` : <span className="text-slate-600">Not set</span>}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="rounded-2xl bg-primary-50/50 p-4 border border-primary-100">

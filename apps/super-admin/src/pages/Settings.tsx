@@ -18,6 +18,7 @@ const settingsSchema = z.object({
   allowGuestCheckout: z.boolean().default(false),
   metaTitle: z.string().max(160, 'Meta title can be up to 160 characters').optional(),
   metaDescription: z.string().max(300, 'Meta description can be up to 300 characters').optional(),
+  loyaltyPointRupeeValue: z.coerce.number().min(0, 'Point value cannot be negative'),
 });
 
 type SettingsFormInput = z.input<typeof settingsSchema>;
@@ -34,6 +35,7 @@ const settingsDefaultValues: SettingsFormInput = {
   allowGuestCheckout: false,
   metaTitle: '',
   metaDescription: '',
+  loyaltyPointRupeeValue: 1,
 };
 
 export default function SettingsPage() {
@@ -66,6 +68,7 @@ export default function SettingsPage() {
       allowGuestCheckout: settingsQuery.data.allowGuestCheckout,
       metaTitle: settingsQuery.data.metaTitle || '',
       metaDescription: settingsQuery.data.metaDescription || '',
+      loyaltyPointRupeeValue: settingsQuery.data.loyaltyPointRupeeValue || 1,
     });
   }, [reset, settingsQuery.data]);
 
@@ -148,6 +151,16 @@ export default function SettingsPage() {
             {errors.metaDescription ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.metaDescription.message}</p> : null}
           </div>
 
+          <div className="md:col-span-2 mt-4">
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary-600 border-b border-primary-100 pb-2">Loyalty Points</h3>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Loyalty Point Value (Rupees)</label>
+            <input type="number" step="0.01" {...register('loyaltyPointRupeeValue', { valueAsNumber: true })} placeholder="Rupee value of 1 point" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.loyaltyPointRupeeValue ? 'border-rose-300' : 'border-primary-100'}`} />
+            <p className="mt-1 text-[10px] font-bold text-slate-400">Value of 1 loyalty point in INR. (e.g. 1 point = 1 Rupee)</p>
+            {errors.loyaltyPointRupeeValue ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.loyaltyPointRupeeValue.message}</p> : null}
+          </div>
         </div>
 
         {saveError ? <p className="mt-4 text-sm font-semibold text-rose-600">{saveError}</p> : null}

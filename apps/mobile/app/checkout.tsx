@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import RazorpayCheckout from 'react-native-razorpay';
@@ -37,10 +38,15 @@ export default function CheckoutScreen() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const token = useAuthStore((state) => state.token);
-  const { items, couponCode, couponDiscount, clearCart } = useCartStore();
+  const { items, couponCode, couponDiscount, clearCart, setCouponCode } = useCartStore();
   const { mode, address, openSelector, setAddress } = useServiceModeStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const setStore = useStoreStore((state) => state.setStore);
+  
+  const [couponInput, setCouponInput] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [loyaltyPointsInput, setLoyaltyPointsInput] = useState(0);
+  const [appliedLoyaltyPoints, setAppliedLoyaltyPoints] = useState(0);
   
   const [name, setName] = useState(user?.name || '');
   const [mobile, setMobile] = useState(user?.mobile || '');
@@ -62,7 +68,8 @@ export default function CheckoutScreen() {
     if (mode !== 'delivery') return 0;
     return subtotal >= settings.freeDeliveryThreshold ? 0 : settings.standardDeliveryCharge;
   }, [mode, subtotal, settings.freeDeliveryThreshold, settings.standardDeliveryCharge]);
-  const total = subtotal - couponDiscount + deliveryCharge;
+  const loyaltyDiscount = appliedLoyaltyPoints * (settings.loyaltyPointRupeeValue || 1);
+  const total = Math.max(0, subtotal - couponDiscount - loyaltyDiscount + deliveryCharge);
   const addressDraft = useMemo(
     () => ({
       street: street,
@@ -316,6 +323,103 @@ export default function CheckoutScreen() {
         </View>
       )}
 
+      <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
+        <Text className="text-lg font-black text-primary-900">Offers & Rewards</Text>
+        
+        {/* Coupon Section */}
+        <View className="mt-4 rounded-[22px] border border-primary-100 bg-primary-50 p-4">
+          <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500 mb-3">Apply Coupon</Text>
+          <View className="flex-row gap-2">
+            <TextInput
+              value={couponInput}
+              onChangeText={(v) => setCouponInput(v.toUpperCase())}
+              placeholder="Enter code"
+              className="flex-1 rounded-xl border border-primary-200 bg-white px-4 py-2 text-sm font-bold uppercase"
+              placeholderTextColor="#94A3B8"
+            />
+            <Pressable
+              onPress={async () => {
+                if (!couponInput || !selectedStore) {
+                  Alert.alert('Store required', 'Please choose a store first.');
+                  return;
+                }
+                setIsApplyingCoupon(true);
+                try {
+                  const result = await storefrontApi.validateCoupon({
+                    code: couponInput,
+                    storeId: selectedStore.id,
+                    cartTotal: subtotal,
+                  });
+                  if (result.valid) {
+                    setCouponCode(couponInput, result.discount || 0);
+                    Alert.alert('Success', 'Coupon applied!');
+                  } else {
+                    Alert.alert('Invalid Coupon', result.message);
+                  }
+                } catch (e) {
+                  Alert.alert('Error', 'Failed to apply coupon.');
+                } finally {
+                  setIsApplyingCoupon(false);
+                }
+              }}
+              disabled={isApplyingCoupon || !couponInput}
+              className="rounded-xl bg-primary-900 px-5 py-2 justify-center"
+            >
+              <Text className="text-xs font-black text-white uppercase tracking-wider">
+                {isApplyingCoupon ? '...' : 'Apply'}
+              </Text>
+            </Pressable>
+          </View>
+          {couponCode ? (
+            <View className="mt-3 flex-row items-center justify-between rounded-xl bg-emerald-50 px-3 py-2">
+              <Text className="text-xs font-bold text-emerald-700">Applied: {couponCode}</Text>
+              <Pressable onPress={() => setCouponCode('', 0)}>
+                <Text className="text-[10px] font-black text-emerald-700 uppercase underline">Remove</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Loyalty Points Section */}
+        {user && (user.loyaltyPoints || 0) > 0 && (
+          <View className="mt-4 rounded-[22px] border border-amber-100 bg-amber-50 p-4">
+            <Text className="text-[10px] font-black uppercase tracking-[2px] text-amber-600 mb-3">Loyalty Points</Text>
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center gap-2">
+                <Image source={require('../assets/coin.png')} style={{ width: 16, height: 16 }} />
+                <Text className="text-sm font-bold text-amber-900">{user.loyaltyPoints} points available</Text>
+              </View>
+            </View>
+            <View className="flex-row gap-2">
+              <TextInput
+                keyboardType="numeric"
+                value={loyaltyPointsInput.toString()}
+                onChangeText={(v) => setLoyaltyPointsInput(Math.min(user.loyaltyPoints || 0, parseInt(v) || 0))}
+                placeholder="Points to use"
+                className="flex-1 rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-bold"
+                placeholderTextColor="#94A3B8"
+              />
+              <Pressable
+                onPress={() => setAppliedLoyaltyPoints(loyaltyPointsInput)}
+                className="rounded-xl bg-amber-600 px-5 py-2 justify-center"
+              >
+                <Text className="text-xs font-black text-white uppercase tracking-wider">Apply</Text>
+              </Pressable>
+            </View>
+            {appliedLoyaltyPoints > 0 ? (
+              <View className="mt-3 flex-row items-center justify-between rounded-xl bg-amber-100 px-3 py-2">
+                <Text className="text-xs font-bold text-amber-800">
+                  Using {appliedLoyaltyPoints} points (-{currencyFormatter.format(loyaltyDiscount)})
+                </Text>
+                <Pressable onPress={() => {setAppliedLoyaltyPoints(0); setLoyaltyPointsInput(0);}}>
+                  <Text className="text-[10px] font-black text-amber-800 uppercase underline">Remove</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </View>
+        )}
+      </View>
+
       <View className="mt-5 rounded-[28px] bg-primary-900 p-6 shadow-lg">
         <Text className="text-xl font-black text-white">Order Summary</Text>
         <View className="mt-6 gap-5">
@@ -342,8 +446,12 @@ export default function CheckoutScreen() {
               <Text className="text-sm font-bold text-white">{currencyFormatter.format(subtotal)}</Text>
             </View>
             <View className="flex-row justify-between">
-              <Text className="text-sm font-medium text-white/60">Discount</Text>
+              <Text className="text-sm font-medium text-white/60">Coupon Discount</Text>
               <Text className="text-sm font-bold text-white">-{currencyFormatter.format(couponDiscount)}</Text>
+            </View>
+            <View className="flex-row justify-between">
+              <Text className="text-sm font-medium text-white/60">Loyalty Discount</Text>
+              <Text className="text-sm font-bold text-white">-{currencyFormatter.format(loyaltyDiscount)}</Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-sm font-medium text-white/60">Delivery</Text>
@@ -415,6 +523,7 @@ export default function CheckoutScreen() {
             const orderPayload = {
               serviceMode: mode,
               couponCode: couponCode || undefined,
+              loyaltyPoints: appliedLoyaltyPoints,
               items: items.map((item) => ({
                 productId: item.productId,
                 variantId: item.variantId,

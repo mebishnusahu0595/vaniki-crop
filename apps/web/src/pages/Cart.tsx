@@ -23,7 +23,7 @@ const Cart: React.FC = () => {
     removeItem,
     updateQty,
     clearCart,
-    setCoupon,
+    setCouponCode,
     clearCoupon,
     getSubtotal,
   } = useCartStore();
@@ -54,7 +54,7 @@ const Cart: React.FC = () => {
         storeId: selectedStore.id,
         cartTotal: subtotal,
       });
-      setCoupon(couponInput.toUpperCase(), response.discount || 0);
+      setCouponCode(couponInput.toUpperCase(), response.discount || 0);
       setCouponMessage(response.message);
       toast.success(response.message);
     } catch {

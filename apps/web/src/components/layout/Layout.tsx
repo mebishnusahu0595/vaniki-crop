@@ -9,6 +9,7 @@ import Footer from './Footer';
 import ServiceModeBar from './ServiceModeBar';
 import type { ServiceMode } from '../../types/storefront';
 import { useAuthStore } from '../../store/useAuthStore';
+import { CheckInModal } from '../loyalty/CheckInModal';
 
 const authRoutes = ['/login', '/signup'];
 
@@ -50,6 +51,7 @@ const Layout: React.FC = () => {
       />
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       {!hideChrome && <MobileNav />}
+      {!hideChrome && <CheckInModal />}
     </div>
   );
 };

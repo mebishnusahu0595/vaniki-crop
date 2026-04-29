@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, Share, Text, TextInput, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Screen } from '../../src/components/Screen';
@@ -11,7 +13,7 @@ import { storefrontApi } from '../../src/lib/api';
 import { currencyFormatter, formatStoreAddress } from '../../src/utils/format';
 import type { Product, ServiceMode } from '../../src/types/storefront';
 
-const tabs = ['orders', 'wishlist', 'profile', 'password'] as const;
+const tabs = ['orders', 'loyalty', 'wishlist', 'profile', 'password'] as const;
 
 export default function AccountScreen() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('orders');
@@ -234,6 +236,53 @@ export default function AccountScreen() {
               </View>
             </View>
           ) : null}
+        </View>
+      ) : null}
+
+      {activeTab === 'loyalty' ? (
+        <View className="mt-5 gap-4">
+          <View className="rounded-[28px] bg-amber-500 p-6">
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="text-[10px] font-black uppercase tracking-[2px] text-white/70">Point Balance</Text>
+                <Text className="mt-1 text-3xl font-black text-white">{user.loyaltyPoints || 0}</Text>
+              </View>
+              <Image source={require('../../assets/coin.png')} style={{ width: 48, height: 48 }} />
+            </View>
+            <Text className="mt-4 text-sm font-semibold text-white/80">
+              1 point = {currencyFormatter.format(1)} discount
+            </Text>
+          </View>
+
+          <View className="rounded-[28px] bg-white p-6">
+            <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Check-in History</Text>
+            <Text className="mt-2 text-lg font-black text-primary-900">May 2026</Text>
+            
+            <View className="mt-6 flex-row flex-wrap gap-2">
+              {Array.from({ length: 31 }, (_, i) => {
+                const day = i + 1;
+                const dateStr = `2026-05-${day.toString().padStart(2, '0')}`;
+                const isCheckedIn = (user.checkInHistory || []).some((d: string) => d.split('T')[0] === dateStr);
+                const isToday = new Date().getDate() === day && new Date().getMonth() === 4;
+
+                return (
+                  <View 
+                    key={day} 
+                    className={`h-10 w-10 items-center justify-center rounded-xl border ${
+                      isCheckedIn ? 'border-emerald-500 bg-emerald-50' : 
+                      isToday ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-primary-50/30'
+                    }`}
+                  >
+                    {isCheckedIn ? (
+                      <Feather name="check" size={16} color="#10B981" />
+                    ) : (
+                      <Text className={`text-xs font-black ${isToday ? 'text-primary-900' : 'text-primary-900/30'}`}>{day}</Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
         </View>
       ) : null}
 

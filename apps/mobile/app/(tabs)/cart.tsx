@@ -14,7 +14,7 @@ import { useSettingsStore } from '../../src/store/useSettingsStore';
 export default function CartScreen() {
   const { settings } = useSettingsStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
-  const { items, couponCode, couponDiscount, increaseQty, decreaseQty, setCoupon, clearCoupon } = useCartStore();
+  const { items, couponCode, couponDiscount, increaseQty, decreaseQty, setCouponCode, clearCoupon } = useCartStore();
   const [couponInput, setCouponInput] = useState(couponCode);
   const [couponMessage, setCouponMessage] = useState('');
 
@@ -95,7 +95,7 @@ export default function CartScreen() {
                   cartTotal: subtotal,
                 });
                 if (response.valid) {
-                  setCoupon(couponInput, response.discount || 0);
+                  setCouponCode(couponInput, response.discount || 0);
                 } else {
                   clearCoupon();
                 }

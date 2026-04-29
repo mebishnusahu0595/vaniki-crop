@@ -379,4 +379,9 @@ export const storefrontApi = {
       method: 'POST',
     });
   },
+  dailyCheckIn: async () => {
+    return request<{ loyaltyPoints: number; checkInHistory: string[] }>('/auth/check-in', {
+      method: 'POST',
+    });
+  },
 };

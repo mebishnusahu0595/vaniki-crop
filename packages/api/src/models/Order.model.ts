@@ -61,6 +61,8 @@ export interface IOrder extends Document {
   discount: number;
   couponCode?: string;
   couponDiscount: number;
+  loyaltyPointsApplied: number;
+  loyaltyDiscount: number;
   deliveryCharge: number;
   totalAmount: number;
   shippingAddress?: IShippingAddress;
@@ -159,6 +161,8 @@ const orderSchema = new Schema<IOrder, IOrderModel>(
     discount: { type: Number, default: 0, min: 0 },
     couponCode: { type: String, uppercase: true, trim: true },
     couponDiscount: { type: Number, default: 0, min: 0 },
+    loyaltyPointsApplied: { type: Number, default: 0, min: 0 },
+    loyaltyDiscount: { type: Number, default: 0, min: 0 },
     deliveryCharge: { type: Number, default: 0, min: 0 },
     totalAmount: { type: Number, required: true, min: 0 },
     shippingAddress: shippingAddressSchema,

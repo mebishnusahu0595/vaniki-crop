@@ -26,6 +26,7 @@ export interface ProductVariant {
   id?: string;
   label: string;
   price: number;
+  adminPrice?: number;
   mrp: number;
   stock: number;
   sku: string;
@@ -48,6 +49,8 @@ export interface Product {
   totalSold?: number;
   averageRating?: number;
   reviewCount?: number;
+  loyaltyPointEligible?: boolean;
+  maxLoyaltyPoints?: number;
   storeId?: Array<{ id: string; name: string }> | string[];
   createdAt?: string;
   updatedAt?: string;
@@ -71,6 +74,7 @@ export interface DealerInventoryVariant {
   id: string;
   label: string;
   price: number;
+  adminPrice?: number;
   mrp: number;
   quantity: number;
 }
@@ -208,6 +212,11 @@ export interface StoreSettings {
   location: { type: 'Point'; coordinates: [number, number] };
   openHours?: Record<string, string>;
   deliveryRadius: number;
+  gstNumber?: string;
+  cgst?: number;
+  sgst?: number;
+  igst?: number;
+  loyaltyPointRupeeValue?: number;
 }
 
 export interface Customer {

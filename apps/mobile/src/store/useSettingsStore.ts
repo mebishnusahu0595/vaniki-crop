@@ -8,6 +8,7 @@ interface SiteSettings {
   platformName?: string;
   supportEmail?: string;
   supportPhone?: string;
+  loyaltyPointRupeeValue?: number;
 }
 
 interface SettingsState {

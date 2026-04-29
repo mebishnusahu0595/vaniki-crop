@@ -25,6 +25,11 @@ const settingsSchema = z.object({
   friday: z.string().optional(),
   saturday: z.string().optional(),
   sunday: z.string().optional(),
+  gstNumber: z.string().trim().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Invalid GSTIN format').optional().or(z.literal('')),
+  cgst: z.coerce.number().min(0).max(100).optional(),
+  sgst: z.coerce.number().min(0).max(100).optional(),
+  igst: z.coerce.number().min(0).max(100).optional(),
+  loyaltyPointRupeeValue: z.coerce.number().min(0).optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -49,6 +54,11 @@ const settingsDefaultValues: SettingsFormInput = {
   friday: '',
   saturday: '',
   sunday: '',
+  gstNumber: '',
+  cgst: 0,
+  sgst: 0,
+  igst: 0,
+  loyaltyPointRupeeValue: 1,
 };
 
 function buildAddressText(values: Pick<SettingsFormInput, 'street' | 'city' | 'state' | 'pincode'>): string {
@@ -69,6 +79,11 @@ export default function SettingsPage() {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
+  const [gstVerification, setGstVerification] = useState<{ loading: boolean; error: string; data: any | null }>({
+    loading: false,
+    error: '',
+    data: null,
+  });
   const settingsQuery = useQuery({ queryKey: ['admin-store-settings'], queryFn: adminApi.storeSettings });
   const { register, handleSubmit, reset, setValue, watch, formState: { isSubmitting, isDirty, errors } } = useForm<
     SettingsFormInput,
@@ -133,6 +148,11 @@ export default function SettingsPage() {
       friday: settingsQuery.data.openHours?.friday || '',
       saturday: settingsQuery.data.openHours?.saturday || '',
       sunday: settingsQuery.data.openHours?.sunday || '',
+      gstNumber: settingsQuery.data.gstNumber || '',
+      cgst: settingsQuery.data.cgst || 0,
+      sgst: settingsQuery.data.sgst || 0,
+      igst: settingsQuery.data.igst || 0,
+      loyaltyPointRupeeValue: settingsQuery.data.loyaltyPointRupeeValue || 1,
     });
   }, [reset, settingsQuery.data]);
 
@@ -162,6 +182,11 @@ export default function SettingsPage() {
           saturday: values.saturday,
           sunday: values.sunday,
         },
+        gstNumber: values.gstNumber,
+        cgst: values.cgst,
+        sgst: values.sgst,
+        igst: values.igst,
+        loyaltyPointRupeeValue: values.loyaltyPointRupeeValue,
       }),
     onMutate: () => {
       setSaveError('');
@@ -200,6 +225,17 @@ export default function SettingsPage() {
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
+  };
+  const gstNumberValue = watch('gstNumber');
+  const handleVerifyGst = async () => {
+    if (!gstNumberValue) return;
+    setGstVerification({ loading: true, error: '', data: null });
+    try {
+      const data = await adminApi.verifyGst(gstNumberValue);
+      setGstVerification({ loading: false, error: '', data });
+    } catch (error) {
+      setGstVerification({ loading: false, error: error instanceof Error ? error.message : 'Verification failed', data: null });
+    }
   };
 
   const resolveCoordinatesFromAddress = async () => {
@@ -333,6 +369,67 @@ export default function SettingsPage() {
           <div className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm text-slate-700 md:col-span-2">
             <p className="font-black uppercase tracking-[0.14em] text-primary-600">Map Coordinates</p>
             <p className="mt-1">{coordinatesText || 'Coordinates will be filled from address map lookup.'}</p>
+          </div>
+
+          <div className="md:col-span-2 mt-4">
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary-600 border-b border-primary-100 pb-2">Taxation & Legal</h3>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">GST Number (GSTIN)</label>
+            <div className="flex gap-2">
+              <input {...register('gstNumber')} placeholder="e.g. 22AAAAA0000A1Z5" className={`flex-1 rounded-2xl border bg-primary-50 px-4 py-3 uppercase ${errors.gstNumber ? 'border-rose-300' : 'border-primary-100'}`} />
+              <button
+                type="button"
+                onClick={handleVerifyGst}
+                disabled={gstVerification.loading || !gstNumberValue}
+                className="rounded-2xl bg-primary-600 px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-white disabled:opacity-50"
+              >
+                {gstVerification.loading ? 'Verifying...' : 'Verify'}
+              </button>
+            </div>
+            {errors.gstNumber ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.gstNumber.message}</p> : null}
+            {gstVerification.error ? <p className="mt-1 text-xs font-semibold text-rose-600">{gstVerification.error}</p> : null}
+            {gstVerification.data ? (
+              <div className="mt-2 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-100">
+                <p><strong>Status:</strong> {gstVerification.data.status}</p>
+                <p><strong>Trade Name:</strong> {gstVerification.data.tradeName}</p>
+                <p className="mt-1 opacity-75">{gstVerification.data.message}</p>
+              </div>
+            ) : null}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">SGST (%)</label>
+            <input type="number" step="0.01" {...register('sgst', { valueAsNumber: true })} placeholder="SGST %" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.sgst ? 'border-rose-300' : 'border-primary-100'}`} />
+            {errors.sgst ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.sgst.message}</p> : null}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">CGST (%)</label>
+            <input type="number" step="0.01" {...register('cgst', { valueAsNumber: true })} placeholder="CGST %" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.cgst ? 'border-rose-300' : 'border-primary-100'}`} />
+            {errors.cgst ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.cgst.message}</p> : null}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">IGST (%)</label>
+            <input type="number" step="0.01" {...register('igst', { valueAsNumber: true })} placeholder="IGST %" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.igst ? 'border-rose-300' : 'border-primary-100'}`} />
+            {errors.igst ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.igst.message}</p> : null}
+          </div>
+
+          <div className="md:col-span-2 mt-4">
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary-600 border-b border-primary-100 pb-2">Loyalty Points System</h3>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Point Value (₹ per 1 point)</label>
+            <input type="number" step="0.01" {...register('loyaltyPointRupeeValue', { valueAsNumber: true })} placeholder="e.g. 1.00" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.loyaltyPointRupeeValue ? 'border-rose-300' : 'border-primary-100'}`} />
+            {errors.loyaltyPointRupeeValue ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.loyaltyPointRupeeValue.message}</p> : null}
+            <p className="mt-1 text-[10px] text-slate-400">Value of 1 loyalty point in rupees during checkout discount.</p>
+          </div>
+
+          <div className="md:col-span-2 mt-4">
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary-600 border-b border-primary-100 pb-2">Business Hours</h3>
           </div>
           {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
             const dayError = (errors as Record<string, { message?: string }>)[day];

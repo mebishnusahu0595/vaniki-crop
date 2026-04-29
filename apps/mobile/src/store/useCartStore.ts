@@ -25,7 +25,7 @@ interface CartState {
   decreaseQty: (variantId: string) => void;
   removeItem: (variantId: string) => void;
   clearCart: () => void;
-  setCoupon: (code: string, discount: number) => void;
+  setCouponCode: (code: string, discount: number) => void;
   clearCoupon: () => void;
 }
 
@@ -83,7 +83,7 @@ export const useCartStore = create<CartState>()(
           items: state.items.filter((item) => item.variantId !== variantId),
         })),
       clearCart: () => set({ items: [], couponCode: '', couponDiscount: 0 }),
-      setCoupon: (couponCode, couponDiscount) => set({ couponCode, couponDiscount }),
+      setCouponCode: (couponCode, couponDiscount) => set({ couponCode, couponDiscount }),
       clearCoupon: () => set({ couponCode: '', couponDiscount: 0 }),
     }),
     {

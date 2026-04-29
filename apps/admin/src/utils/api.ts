@@ -256,6 +256,10 @@ export const adminApi = {
     const response = await api.patch<ApiResponse<StoreSettings>>('/stores/admin/me', payload);
     return response.data.data;
   },
+  verifyGst: async (gstin: string) => {
+    const response = await api.get<ApiResponse<any>>(`/stores/admin/verify-gst/${gstin}`);
+    return response.data.data;
+  },
   inventoryProducts: async () => {
     const response = await api.get<ApiResponse<DealerInventoryProduct[]>>('/admin/inventory');
     return response.data.data;

@@ -59,6 +59,9 @@ export interface IUser extends Document {
   otpExpiry?: Date;
   refreshToken?: string;
   expoPushToken?: string;
+  loyaltyPoints: number;
+  lastCheckIn?: Date;
+  checkInHistory: string[];
   createdAt: Date;
   updatedAt: Date;
 
@@ -186,6 +189,9 @@ const userSchema = new Schema<IUser>(
     otpExpiry: { type: Date, select: false },
     refreshToken: { type: String, select: false },
     expoPushToken: { type: String, trim: true },
+    loyaltyPoints: { type: Number, default: 0 },
+    lastCheckIn: { type: Date },
+    checkInHistory: [{ type: String }],
   },
   {
     timestamps: true,

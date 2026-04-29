@@ -147,12 +147,10 @@ export const AppHeader = memo(function AppHeader() {
             </Text>
           </Pressable>
 
-          <Pressable
-            onPress={submitSearch}
-            className="h-10 w-10 items-center justify-center rounded-2xl border border-primary-100 bg-white"
-          >
-            <Feather name="search" size={18} color="#082018" />
-          </Pressable>
+          <View className="h-10 flex-row items-center gap-1.5 rounded-2xl border border-amber-100 bg-amber-50 px-2.5">
+            <Image source={require('../../assets/coin.png')} style={{ width: 16, height: 16 }} />
+            <Text className="text-xs font-black text-amber-900">{user?.loyaltyPoints || 0}</Text>
+          </View>
 
           <Pressable
             onPress={openCart}

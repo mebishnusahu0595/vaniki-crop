@@ -344,6 +344,14 @@ export const storefrontApi = {
     const response = await api.post<{ success: boolean; message: string }>('/auth/logout');
     return response.data;
   },
+  dailyCheckIn: async () => {
+    const response = await api.post<ApiResponse<{ loyaltyPoints: number; checkInHistory: string[] }>>('/loyalty/checkin');
+    return response.data;
+  },
+  loyaltyData: async () => {
+    const response = await api.get<ApiResponse<{ loyaltyPoints: number; checkInHistory: string[]; lastCheckIn?: string }>>('/loyalty/data');
+    return response.data.data;
+  },
 };
 
 export default api;

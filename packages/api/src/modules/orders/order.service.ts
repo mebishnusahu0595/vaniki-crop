@@ -63,6 +63,8 @@ async function calculateCart(items: any[], storeId: string) {
       mrp: variant.mrp,
       qty: item.qty,
       image: product.images.length > 0 ? product.images[0].url : undefined,
+      loyaltyPointEligible: product.loyaltyPointEligible,
+      maxLoyaltyPoints: product.maxLoyaltyPoints,
     });
   }
 
@@ -149,7 +151,7 @@ export function applyVisibleOrderFilter(filter: Record<string, any>) {
  * @param input - Order data from frontend
  */
 export async function initiateOrder(userId: string, input: any) {
-  const { storeId, items, serviceMode, couponCode, shippingAddress } = input;
+  const { storeId, items, serviceMode, couponCode, shippingAddress, loyaltyPoints } = input;
 
   // 1. Basic validation
   if (serviceMode === 'delivery' && !shippingAddress) {
@@ -183,7 +185,21 @@ export async function initiateOrder(userId: string, input: any) {
 
   const deliveryCharge = serviceMode === 'delivery' ? (subtotal >= threshold ? 0 : charge) : 0;
 
-  const totalAmount = subtotal - couponDiscount + deliveryCharge;
+  // 4.5 Loyalty Points
+  let loyaltyDiscount = 0;
+  let loyaltyPointsApplied = 0;
+  if (loyaltyPoints > 0) {
+    const user = await User.findById(userId);
+    if (!user || user.loyaltyPoints < loyaltyPoints) {
+      throw new AppError('Insufficient loyalty points', 400);
+    }
+
+    const pointValue = siteSettings?.loyaltyPointRupeeValue ?? 1;
+    loyaltyPointsApplied = loyaltyPoints;
+    loyaltyDiscount = loyaltyPointsApplied * pointValue;
+  }
+
+  const totalAmount = subtotal - couponDiscount - loyaltyDiscount + deliveryCharge;
 
   // 5. Create Razorpay Order
   const rpOrder = await razorpay.orders.create({
@@ -207,6 +223,8 @@ export async function initiateOrder(userId: string, input: any) {
     subtotal,
     couponCode,
     couponDiscount,
+    loyaltyPointsApplied,
+    loyaltyDiscount,
     deliveryCharge,
     totalAmount,
     shippingAddress,
@@ -225,6 +243,8 @@ export async function initiateOrder(userId: string, input: any) {
     orderSummary: {
       subtotal,
       couponDiscount,
+      loyaltyPointsApplied,
+      loyaltyDiscount,
       deliveryCharge,
       totalAmount,
       items: validatedItems,
@@ -240,7 +260,7 @@ export async function initiateOrder(userId: string, input: any) {
  * @param input - Order data from frontend
  */
 export async function placeCodOrder(userId: string, input: any) {
-  const { storeId, items, serviceMode, couponCode, shippingAddress } = input;
+  const { storeId, items, serviceMode, couponCode, shippingAddress, loyaltyPoints } = input;
 
   if (serviceMode === 'delivery' && !shippingAddress) {
     throw new AppError('Shipping address is required for delivery orders', 400);
@@ -271,7 +291,20 @@ export async function placeCodOrder(userId: string, input: any) {
   const chargeForCOD = siteSettingsForCOD?.standardDeliveryCharge ?? 50;
 
   const deliveryCharge = serviceMode === 'delivery' ? (subtotal >= thresholdForCOD ? 0 : chargeForCOD) : 0;
-  const totalAmount = subtotal - couponDiscount + deliveryCharge;
+  
+  let loyaltyDiscount = 0;
+  let loyaltyPointsApplied = 0;
+  if (loyaltyPoints > 0) {
+    const user = await User.findById(userId);
+    if (!user || user.loyaltyPoints < loyaltyPoints) {
+      throw new AppError('Insufficient loyalty points', 400);
+    }
+    const pointValue = siteSettingsForCOD?.loyaltyPointRupeeValue ?? 1;
+    loyaltyPointsApplied = loyaltyPoints;
+    loyaltyDiscount = loyaltyPointsApplied * pointValue;
+  }
+
+  const totalAmount = subtotal - couponDiscount - loyaltyDiscount + deliveryCharge;
 
   const orderNumber = await (Order as any).generateOrderNumber();
   const order = await Order.create({
@@ -283,6 +316,8 @@ export async function placeCodOrder(userId: string, input: any) {
     subtotal,
     couponCode,
     couponDiscount,
+    loyaltyPointsApplied,
+    loyaltyDiscount,
     deliveryCharge,
     totalAmount,
     shippingAddress,
@@ -325,6 +360,10 @@ export async function placeCodOrder(userId: string, input: any) {
         },
       },
     );
+  }
+
+  if (loyaltyPointsApplied > 0) {
+    await User.findByIdAndUpdate(userId, { $inc: { loyaltyPoints: -loyaltyPointsApplied } });
   }
 
   const user = await User.findById(userId);
@@ -414,6 +453,11 @@ export async function finalizeOrder(razorpayOrderId: string, paymentId: string, 
         },
       },
     );
+  }
+
+  // 2.5 Deduct Loyalty Points
+  if (order.loyaltyPointsApplied > 0) {
+    await User.findByIdAndUpdate(order.userId, { $inc: { loyaltyPoints: -order.loyaltyPointsApplied } });
   }
 
   // 3. Update Coupon

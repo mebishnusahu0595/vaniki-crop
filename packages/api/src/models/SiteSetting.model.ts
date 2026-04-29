@@ -13,6 +13,7 @@ export interface ISiteSetting extends Document {
   allowGuestCheckout: boolean;
   metaTitle?: string;
   metaDescription?: string;
+  loyaltyPointRupeeValue: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,6 +78,11 @@ const siteSettingSchema = new Schema<ISiteSetting>(
       type: String,
       trim: true,
       maxlength: 300,
+    },
+    loyaltyPointRupeeValue: {
+      type: Number,
+      default: 1,
+      min: 0,
     },
   },
   {

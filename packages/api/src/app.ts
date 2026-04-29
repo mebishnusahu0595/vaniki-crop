@@ -26,6 +26,7 @@ import reviewRoutes from './modules/reviews/review.routes.js';
 import contactRoutes from './modules/contact/contact.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import superAdminRoutes from './modules/superadmin/superadmin.routes.js';
+import loyaltyRoutes from './modules/loyalty/loyalty.routes.js';
 import { Product } from './models/Product.model.js';
 import { Category } from './models/Category.model.js';
 
@@ -203,6 +204,7 @@ app.use('/api/banners', bannerRoutes);
 app.use('/api/homepage', homepageRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/loyalty', loyaltyRoutes);
 
 // ─── Admin API Routes ────────────────────────────────────────────────────
 app.use('/api/admin/categories', categoryAdminRoutes);

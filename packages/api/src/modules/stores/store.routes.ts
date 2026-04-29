@@ -28,6 +28,9 @@ router.get('/admin/me', requireAuth, requireStoreAdmin, storeController.getAdmin
 /** PATCH /api/stores/admin/me — Store admin updates own store settings */
 router.patch('/admin/me', requireAuth, requireStoreAdmin, validate(updateOwnStoreSchema), storeController.updateAdminOwnStore);
 
+/** GET /api/stores/admin/verify-gst/:gstin — Verify GSTIN */
+router.get('/admin/verify-gst/:gstin', requireAuth, requireStoreAdmin, storeController.verifyGst);
+
 // ─── Super Admin Routes ──────────────────────────────────────────────────
 
 /** POST /api/superadmin/stores — Create new store */

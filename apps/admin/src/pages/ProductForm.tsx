@@ -36,6 +36,7 @@ const variantSchema = z.object({
   quantity: z.string().min(1, 'Qty is required'),
   unit: z.enum(units),
   price: requiredNumber('Price'),
+  adminPrice: requiredNumber('Admin Price').optional(),
   mrp: requiredNumber('MRP'),
   stock: requiredNumber('Stock'),
 });
@@ -50,6 +51,8 @@ const productSchema = z.object({
   isActive: z.boolean().default(true),
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
+  loyaltyPointEligible: z.boolean().default(false),
+  maxLoyaltyPoints: requiredNumber('Max Loyalty Points'),
   variants: z.array(variantSchema).min(1),
 });
 
@@ -77,7 +80,9 @@ const productDefaultValues: ProductFormInput = {
   isActive: true,
   metaTitle: '',
   metaDescription: '',
-  variants: [{ quantity: '', unit: 'Liter', price: '', mrp: '', stock: '' }],
+  loyaltyPointEligible: false,
+  maxLoyaltyPoints: 0,
+  variants: [{ quantity: '', unit: 'Liter', price: '', adminPrice: '', mrp: '', stock: '' }],
 };
 
 function getProductDefaultValues(product?: Product): ProductFormInput {
@@ -95,9 +100,12 @@ function getProductDefaultValues(product?: Product): ProductFormInput {
     isActive: product.isActive,
     metaTitle: product.metaTitle || '',
     metaDescription: product.metaDescription || '',
+    loyaltyPointEligible: product.loyaltyPointEligible || false,
+    maxLoyaltyPoints: product.maxLoyaltyPoints || 0,
     variants: product.variants.map((variant) => ({
       ...(parseVariantLabel(variant.label) as { quantity: string; unit: (typeof units)[number] }),
       price: variant.price,
+      adminPrice: variant.adminPrice || '',
       mrp: variant.mrp,
       stock: variant.stock,
     })),
@@ -402,12 +410,15 @@ function ProductEditor({
           payload.append('isActive', String(values.isActive));
           payload.append('metaTitle', values.metaTitle || '');
           payload.append('metaDescription', values.metaDescription || '');
+          payload.append('loyaltyPointEligible', String(values.loyaltyPointEligible));
+          payload.append('maxLoyaltyPoints', String(values.maxLoyaltyPoints));
           payload.append(
             'variants',
             JSON.stringify(
               values.variants.map((variant: ProductFormOutput['variants'][number], index: number) => ({
                 label: buildVariantLabel(variant.quantity, variant.unit),
                 price: variant.price,
+                adminPrice: variant.adminPrice || undefined,
                 mrp: variant.mrp,
                 stock: variant.stock,
                 sku: `${slugify(productName || 'product').toUpperCase()}-${String(index + 1).padStart(2, '0')}`,
@@ -505,7 +516,7 @@ function ProductEditor({
           </div>
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 md:grid-cols-5">
+              <div key={field.id} className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 md:grid-cols-6">
                 <div>
                   <input {...register(`variants.${index}.quantity`)} placeholder="Qty" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
                   {errors.variants?.[index]?.quantity ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.quantity?.message}</p> : null}
@@ -521,8 +532,12 @@ function ProductEditor({
                   {errors.variants?.[index]?.unit ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.unit?.message}</p> : null}
                 </div>
                 <div>
-                  <input type="number" {...register(`variants.${index}.price`)} placeholder="Price" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                  <input type="number" {...register(`variants.${index}.price`)} placeholder="User Price" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
                   {errors.variants?.[index]?.price ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.price?.message}</p> : null}
+                </div>
+                <div>
+                  <input type="number" {...register(`variants.${index}.adminPrice`)} placeholder="Admin Price" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                  {errors.variants?.[index]?.adminPrice ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.adminPrice?.message}</p> : null}
                 </div>
                 <div>
                   <input type="number" {...register(`variants.${index}.mrp`)} placeholder="MRP" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
@@ -734,6 +749,17 @@ function ProductEditor({
               <span className="text-sm font-semibold text-slate-700">Active product</span>
               <input type="checkbox" {...register('isActive')} className="h-4 w-4 accent-primary-600" />
             </label>
+            <div className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
+              <label className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-slate-700">Loyalty Point Eligible</span>
+                <input type="checkbox" {...register('loyaltyPointEligible')} className="h-4 w-4 accent-primary-600" />
+              </label>
+              <div className="mt-3">
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Max Points Allowed</label>
+                <input type="number" {...register('maxLoyaltyPoints')} className="w-full rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm" />
+                <p className="mt-1 text-[10px] font-bold text-slate-400">Maximum points a user can apply to this product.</p>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -22,7 +22,7 @@ interface CartState {
   removeItem: (productId: string, variantId: string) => void;
   updateQty: (productId: string, variantId: string, qty: number) => void;
   clearCart: () => void;
-  setCoupon: (couponCode: string, couponDiscount: number) => void;
+  setCouponCode: (couponCode: string, couponDiscount: number) => void;
   clearCoupon: () => void;
   getTotalItems: () => number;
   getSubtotal: () => number;
@@ -69,7 +69,7 @@ export const useCartStore = create<CartState>()(
         });
       },
       clearCart: () => set({ items: [], couponCode: '', couponDiscount: 0 }),
-      setCoupon: (couponCode, couponDiscount) => set({ couponCode, couponDiscount }),
+      setCouponCode: (couponCode, couponDiscount) => set({ couponCode, couponDiscount }),
       clearCoupon: () => set({ couponCode: '', couponDiscount: 0 }),
       getTotalItems: () => get().items.reduce((acc, item) => acc + item.qty, 0),
       getSubtotal: () => get().items.reduce((acc, item) => acc + item.price * item.qty, 0),

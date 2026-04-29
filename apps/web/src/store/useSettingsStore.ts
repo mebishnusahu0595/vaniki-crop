@@ -7,6 +7,7 @@ interface SiteSettings {
   platformName?: string;
   supportEmail?: string;
   supportPhone?: string;
+  loyaltyPointRupeeValue?: number;
 }
 
 interface SettingsState {
@@ -20,6 +21,7 @@ export const useSettingsStore = create<SettingsState>()(
       settings: {
         freeDeliveryThreshold: 200, // New default per user request
         standardDeliveryCharge: 50,
+        loyaltyPointRupeeValue: 1,
       },
       setSettings: (settings) => set({ settings }),
     }),

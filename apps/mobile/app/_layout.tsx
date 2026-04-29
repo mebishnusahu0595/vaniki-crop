@@ -13,6 +13,7 @@ import { StoreSelectorSheet } from '../src/components/StoreSelectorSheet';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
 import { LoadingScreen } from '../src/components/LoadingScreen';
 import { hydrateAppLanguage } from '../src/i18n';
+import { CheckInModal } from '../src/components/CheckInModal';
 
 bindOnlineManager();
 
@@ -41,6 +42,7 @@ function RootNavigation() {
         <Stack.Screen name="privacy-policy" />
       </Stack>
       <StoreSelectorSheet />
+      <CheckInModal />
     </>
   );
 }

@@ -28,7 +28,7 @@ const Checkout: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { settings } = useSettingsStore();
-  const { items, couponCode, couponDiscount, getSubtotal, clearCart, updateQty, removeItem } = useCartStore();
+  const { items, couponCode, couponDiscount, getSubtotal, clearCart, updateQty, removeItem, setCouponCode } = useCartStore();
   const { user, token } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const setStore = useStoreStore((state) => state.setStore);
@@ -38,6 +38,10 @@ const Checkout: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [activeStoreId, setActiveStoreId] = useState(selectedStore?.id || '');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [loyaltyPointsInput, setLoyaltyPointsInput] = useState(0);
+  const [appliedLoyaltyPoints, setAppliedLoyaltyPoints] = useState(0);
 
   useEffect(() => {
     if (isDropdownOpen) {
@@ -62,7 +66,8 @@ const Checkout: React.FC = () => {
 
   const subtotal = getSubtotal();
   const deliveryCharge = mode === 'delivery' ? (subtotal >= settings.freeDeliveryThreshold ? 0 : settings.standardDeliveryCharge) : 0;
-  const total = subtotal - couponDiscount + deliveryCharge;
+  const loyaltyDiscount = appliedLoyaltyPoints * (settings.loyaltyPointRupeeValue || 1);
+  const total = Math.max(0, subtotal - couponDiscount - loyaltyDiscount + deliveryCharge);
 
   const { data: storeAvailability = [], isLoading: isLoadingAvailability } = useQuery({
     queryKey: ['cart-availability', items],
@@ -138,6 +143,31 @@ const Checkout: React.FC = () => {
     }
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponInput || !selectedStore) {
+      toast.error(t('checkoutPage.chooseStoreFirst'));
+      return;
+    }
+    setIsApplyingCoupon(true);
+    try {
+      const result = await storefrontApi.validateCoupon({
+        code: couponInput,
+        storeId: selectedStore.id,
+        cartTotal: subtotal,
+      });
+      if (result.valid) {
+        setCouponCode(couponInput, result.discount || 0);
+        toast.success(t('checkoutPage.couponApplied'));
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to apply coupon'));
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
   const handlePayment = async () => {
     if (!selectedStore) {
       toast.error(t('checkoutPage.chooseStoreFirst'));
@@ -173,6 +203,7 @@ const Checkout: React.FC = () => {
         })),
         serviceMode: mode,
         couponCode: couponCode || undefined,
+        loyaltyPoints: appliedLoyaltyPoints,
         storeId: selectedStore.id,
         shippingAddress,
       };
@@ -403,6 +434,73 @@ const Checkout: React.FC = () => {
           )}
 
           <section className="surface-card p-6">
+            <p className="section-kicker mb-2">Offers & Rewards</p>
+            <div className="space-y-4">
+              {/* Coupon Section */}
+              <div className="rounded-2xl border border-primary-100 bg-primary-50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-500 mb-3">Apply Coupon</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    placeholder="Enter code"
+                    className="flex-1 rounded-xl border border-primary-200 bg-white px-4 py-2 text-sm font-bold uppercase"
+                  />
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={isApplyingCoupon || !couponInput}
+                    className="rounded-xl bg-primary-900 px-6 py-2 text-xs font-black uppercase tracking-wider text-white transition hover:bg-primary"
+                  >
+                    {isApplyingCoupon ? '...' : 'Apply'}
+                  </button>
+                </div>
+                {couponCode && (
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2 text-emerald-700">
+                    <span className="text-xs font-bold tracking-wide">Applied: {couponCode}</span>
+                    <button onClick={() => setCouponCode('', 0)} className="text-[10px] font-black uppercase underline">Remove</button>
+                  </div>
+                )}
+              </div>
+
+              {/* Loyalty Points Section */}
+              {user && (user.loyaltyPoints || 0) > 0 && (
+                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 mb-3">Loyalty Points</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <img src="/coin.png" alt="Points" className="h-5 w-5" />
+                      <span className="text-sm font-bold text-amber-900">{user.loyaltyPoints} points available</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      max={user.loyaltyPoints}
+                      value={loyaltyPointsInput}
+                      onChange={(e) => setLoyaltyPointsInput(Math.min(user.loyaltyPoints || 0, parseInt(e.target.value) || 0))}
+                      placeholder="Points to use"
+                      className="flex-1 rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-bold"
+                    />
+                    <button
+                      onClick={() => setAppliedLoyaltyPoints(loyaltyPointsInput)}
+                      className="rounded-xl bg-amber-600 px-6 py-2 text-xs font-black uppercase tracking-wider text-white transition hover:bg-amber-700"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  {appliedLoyaltyPoints > 0 && (
+                    <div className="mt-3 flex items-center justify-between rounded-xl bg-amber-100 px-3 py-2 text-amber-800">
+                      <span className="text-xs font-bold tracking-wide">Using {appliedLoyaltyPoints} points (-{currencyFormatter.format(appliedLoyaltyPoints)})</span>
+                      <button onClick={() => {setAppliedLoyaltyPoints(0); setLoyaltyPointsInput(0);}} className="text-[10px] font-black uppercase underline">Remove</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="surface-card p-6">
             <p className="section-kicker mb-2">{t('checkoutPage.orderSummary')}</p>
             <div className="space-y-5">
               {items.map((item) => (
@@ -456,6 +554,7 @@ const Checkout: React.FC = () => {
           <div className="mt-6 space-y-3 text-sm font-semibold text-primary-900/65">
             <div className="flex justify-between"><span>{t('common.subtotal')}</span><span>{currencyFormatter.format(subtotal)}</span></div>
             <div className="flex justify-between"><span>{t('common.couponDiscount')}</span><span>{couponDiscount ? `-${currencyFormatter.format(couponDiscount)}` : currencyFormatter.format(0)}</span></div>
+            <div className="flex justify-between"><span>Loyalty Discount</span><span>{appliedLoyaltyPoints ? `-${currencyFormatter.format(loyaltyDiscount)}` : currencyFormatter.format(0)}</span></div>
             <div className="flex justify-between"><span>{t('common.delivery')}</span><span>{deliveryCharge === 0 ? t('common.free') : currencyFormatter.format(deliveryCharge)}</span></div>
           </div>
           <div className="mt-6 border-t border-primary-100 pt-5">

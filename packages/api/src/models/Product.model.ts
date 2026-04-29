@@ -39,6 +39,7 @@ export interface IProductImage {
 export interface IProductVariant {
   label: string;
   price: number;
+  adminPrice?: number;
   mrp: number;
   stock: number;
   sku: string;
@@ -62,6 +63,8 @@ export interface IProduct extends Document {
   totalSold: number;
   averageRating: number;
   reviewCount: number;
+  loyaltyPointEligible: boolean;
+  maxLoyaltyPoints: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +91,10 @@ const productVariantSchema = new Schema<IProductVariant>(
       type: Number,
       required: [true, 'Variant price is required'],
       min: [0, 'Price cannot be negative'],
+    },
+    adminPrice: {
+      type: Number,
+      min: [0, 'Admin price cannot be negative'],
     },
     mrp: {
       type: Number,
@@ -168,6 +175,8 @@ const productSchema = new Schema<IProduct>(
     totalSold: { type: Number, default: 0, min: 0 },
     averageRating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0, min: 0 },
+    loyaltyPointEligible: { type: Boolean, default: false },
+    maxLoyaltyPoints: { type: Number, default: 0 },
   },
   {
     timestamps: true,

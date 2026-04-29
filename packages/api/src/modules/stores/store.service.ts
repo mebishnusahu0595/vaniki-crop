@@ -287,3 +287,26 @@ export async function getCartAvailabilityAcrossStores(items: Array<{ productId: 
 
   return storeAvailability;
 }
+
+/**
+ * Verifies a GSTIN format and provides mock verification details.
+ */
+export async function verifyGst(gstin: string) {
+  const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+  if (!gstinRegex.test(gstin)) {
+    throw new AppError('Invalid GSTIN format', 400);
+  }
+
+  // Mock verification response
+  // In a real implementation, this would call Razorpay, Sandbox.co.in, or another GST API.
+  return {
+    gstin,
+    status: 'Active',
+    tradeName: 'Trade Name (Verified)',
+    legalName: 'Legal Entity Name (Verified)',
+    registrationDate: new Date().toISOString().split('T')[0],
+    address: 'Registered Office Address',
+    type: 'Regular',
+    message: 'GSTIN format is valid. (Real-time verification requires API integration)',
+  };
+}

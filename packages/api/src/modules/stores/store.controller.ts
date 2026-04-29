@@ -123,3 +123,16 @@ export async function getCartAvailability(req: Request, res: Response, next: Nex
     next(error);
   }
 }
+
+export async function verifyGst(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { gstin } = req.params;
+    if (!gstin) {
+      throw new Error('GSTIN is required');
+    }
+    const result = await storeService.verifyGst(gstin as string);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
