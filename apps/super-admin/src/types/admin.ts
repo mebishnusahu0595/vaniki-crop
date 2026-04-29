@@ -394,6 +394,7 @@ export interface SiteSettings {
   standardDeliveryCharge: number;
   metaTitle?: string;
   metaDescription?: string;
+  loyaltyPointRupeeValue?: number;
 }
 
 export interface StoreSecretsResponse {
