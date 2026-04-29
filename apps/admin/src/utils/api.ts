@@ -120,6 +120,14 @@ export const adminApi = {
     const response = await api.patch<{ success: boolean; message: string }>('/auth/change-password', payload);
     return response.data;
   },
+  forgotPassword: async (payload: { mobile?: string; email?: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/forgot-password', payload);
+    return response.data;
+  },
+  resetPassword: async (payload: { mobile?: string; email?: string; otp: string; newPassword: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
+    return response.data;
+  },
   analytics: async (range: '7d' | '30d') => {
     const response = await api.get<ApiResponse<DashboardAnalytics>>('/analytics/admin', { params: { range } });
     return response.data.data;
@@ -265,6 +273,10 @@ export const adminApi = {
     productName?: string;
     requestedQuantity: number;
     requestedPack?: string;
+    garageName: string;
+    petiQuantity: number;
+    petiSize: number;
+    petiUnit: 'Liter' | 'Kg';
     notes?: string;
   }) => {
     const response = await api.post<ApiResponse<DealerProductRequest>>('/admin/product-requests', payload);

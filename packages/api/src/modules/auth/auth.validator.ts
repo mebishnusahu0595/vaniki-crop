@@ -19,8 +19,8 @@ const passwordSchema = z
 
 const otpSchema = z
   .string()
-  .length(6, 'OTP must be exactly 6 digits')
-  .regex(/^\d{6}$/, 'OTP must contain only digits');
+  .length(4, 'OTP must be exactly 4 digits')
+  .regex(/^\d{4}$/, 'OTP must contain only digits');
 
 const referralCodeSchema = z
   .string()
@@ -115,7 +115,10 @@ export const loginOtpSchema = z.object({
  */
 export const forgotPasswordSchema = z.object({
   body: z.object({
-    mobile: mobileSchema,
+    mobile: mobileSchema.optional(),
+    email: z.string().trim().email('Please provide a valid email address').optional(),
+  }).refine(data => data.mobile || data.email, {
+    message: 'Either mobile or email is required',
   }),
 });
 
@@ -124,9 +127,12 @@ export const forgotPasswordSchema = z.object({
  */
 export const resetPasswordSchema = z.object({
   body: z.object({
-    mobile: mobileSchema,
+    mobile: mobileSchema.optional(),
+    email: z.string().trim().email('Please provide a valid email address').optional(),
     otp: otpSchema,
     newPassword: passwordSchema,
+  }).refine(data => data.mobile || data.email, {
+    message: 'Either mobile or email is required',
   }),
 });
 

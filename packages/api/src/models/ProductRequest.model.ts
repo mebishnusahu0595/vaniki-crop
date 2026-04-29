@@ -9,6 +9,10 @@ export interface IProductRequest extends Document {
   productName: string;
   requestedQuantity: number;
   requestedPack?: string;
+  garageName: string;
+  petiQuantity: number;
+  petiSize: number;
+  petiUnit: 'Liter' | 'Kg';
   notes?: string;
   status: ProductRequestStatus;
   superAdminNote?: string;
@@ -50,6 +54,27 @@ const productRequestSchema = new Schema<IProductRequest>(
       type: String,
       trim: true,
       maxlength: [80, 'Requested pack cannot exceed 80 characters'],
+    },
+    garageName: {
+      type: String,
+      required: [true, 'Garage name is required'],
+      trim: true,
+      maxlength: [180, 'Garage name cannot exceed 180 characters'],
+    },
+    petiQuantity: {
+      type: Number,
+      default: 1,
+      min: [1, 'Peti quantity must be at least 1'],
+    },
+    petiSize: {
+      type: Number,
+      required: [true, 'Peti size is required'],
+      min: [0.1, 'Peti size must be at least 0.1'],
+    },
+    petiUnit: {
+      type: String,
+      enum: ['Liter', 'Kg'],
+      default: 'Liter',
     },
     notes: {
       type: String,

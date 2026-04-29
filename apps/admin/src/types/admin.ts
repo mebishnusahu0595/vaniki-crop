@@ -88,6 +88,10 @@ export interface DealerProductRequest {
   productName: string;
   requestedQuantity: number;
   requestedPack?: string;
+  garageName?: string;
+  petiQuantity?: number;
+  petiSize?: number;
+  petiUnit?: 'Liter' | 'Kg';
   notes?: string;
   status: 'pending' | 'contacted' | 'fulfilled' | 'rejected';
   superAdminNote?: string;

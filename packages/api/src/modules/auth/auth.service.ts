@@ -7,6 +7,8 @@ import { Store } from '../../models/Store.model.js';
 import { AppError } from '../../utils/AppError.js';
 import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 import { buildStoreAddressFromCoordinates } from '../../utils/storeAddress.js';
+import { addEmailToQueue } from '../../queues/email.queue.js';
+import { passwordResetOtpTemplate } from '../../utils/emailTemplates.js';
 import type {
   ChangePasswordInput,
   DealerSignupInput,
@@ -45,11 +47,11 @@ export interface JwtAccessPayload {
 // ─── OTP ─────────────────────────────────────────────────────────────────
 
 /**
- * Generates a cryptographically random 6-digit OTP.
- * @returns 6-digit OTP string
+ * Generates a cryptographically random 4-digit OTP.
+ * @returns 4-digit OTP string
  */
 function generateOtp(): string {
-  return crypto.randomInt(100000, 999999).toString();
+  return crypto.randomInt(1000, 9999).toString();
 }
 
 function buildReferralCode(name: string, mobile: string): string {
@@ -143,6 +145,15 @@ export async function sendOtp(input: SendOtpInput): Promise<void> {
   }
 
   await sendOtpViaMSG91(mobile, otp);
+  
+  // If user has an email, send OTP via email as well
+  if (existingUser && existingUser.email) {
+    addEmailToQueue({
+      to: existingUser.email,
+      subject: 'Your Vaniki Crop OTP',
+      html: passwordResetOtpTemplate(existingUser, otp),
+    });
+  }
 }
 
 /**
@@ -446,15 +457,20 @@ export async function logout(userId: string): Promise<void> {
 }
 
 /**
- * Initiates a forgot-password flow by sending an OTP to the mobile number.
- * @param input - { mobile }
+ * Initiates a forgot-password flow by sending an OTP to the mobile number or email.
+ * @param input - { mobile, email }
  */
-export async function forgotPassword(input: SendOtpInput): Promise<void> {
-  const { mobile } = input;
+export async function forgotPassword(input: any): Promise<void> {
+  const { mobile, email } = input;
 
-  const user = await User.findOne({ mobile });
+  const query: any = {};
+  if (mobile) query.mobile = mobile;
+  else if (email) query.email = email;
+  else return;
+
+  const user = await User.findOne(query);
   if (!user) {
-    // Don't reveal whether the mobile exists — silently return
+    // Don't reveal whether the user exists — silently return
     return;
   }
 
@@ -465,19 +481,36 @@ export async function forgotPassword(input: SendOtpInput): Promise<void> {
   user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
   await user.save({ validateBeforeSave: false });
 
-  await sendOtpViaMSG91(mobile, otp);
+  // Send via SMS if mobile is provided
+  if (user.mobile) {
+    await sendOtpViaMSG91(user.mobile, otp);
+  }
+
+  // Send via Email if user has an email
+  if (user.email) {
+    addEmailToQueue({
+      to: user.email,
+      subject: 'Password Reset OTP - Vaniki Crop',
+      html: passwordResetOtpTemplate(user, otp),
+    });
+  }
 }
 
 /**
  * Resets a user's password after verifying the OTP.
- * @param input - { mobile, otp, newPassword }
+ * @param input - { mobile, email, otp, newPassword }
  */
-export async function resetPassword(input: ResetPasswordInput): Promise<void> {
-  const { mobile, otp, newPassword } = input;
+export async function resetPassword(input: any): Promise<void> {
+  const { mobile, email, otp, newPassword } = input;
 
-  const user = await User.findOne({ mobile }).select('+otp +otpExpiry +password');
+  const query: any = {};
+  if (mobile) query.mobile = mobile;
+  else if (email) query.email = email;
+  else throw new AppError('Mobile or email is required', 400);
+
+  const user = await User.findOne(query).select('+otp +otpExpiry +password');
   if (!user) {
-    throw new AppError('No account found with this mobile number', 404);
+    throw new AppError('No account found with this identifier', 404);
   }
 
   if (!user.otp || !user.otpExpiry) {

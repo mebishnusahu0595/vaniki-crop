@@ -328,6 +328,10 @@ export interface ProductRequest {
   productName: string;
   requestedQuantity: number;
   requestedPack?: string;
+  garageName?: string;
+  petiQuantity?: number;
+  petiSize?: number;
+  petiUnit?: 'Liter' | 'Kg';
   notes?: string;
   superAdminNote?: string;
   createdAt: string;

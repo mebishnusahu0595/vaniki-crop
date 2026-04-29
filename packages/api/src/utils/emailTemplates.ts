@@ -94,3 +94,30 @@ export const orderStatusUpdateTemplate = (order: any, user: any, newStatus: stri
 </body>
 </html>
 `;
+/**
+ * HTML template for password reset OTP.
+ */
+export const passwordResetOtpTemplate = (user: any, otp: string) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; text-align: center; }
+    .otp-code { display: inline-block; padding: 15px 30px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2D6A4F; background-color: #f0fdf4; border: 2px dashed #52B788; border-radius: 10px; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 style="color: #2D6A4F;">Password Reset OTP</h2>
+    <p>Hi ${user.name || 'there'},</p>
+    <p>You requested a password reset for your Vaniki Crop account. Use the OTP below to proceed:</p>
+    <div class="otp-code">${otp}</div>
+    <p>This OTP is valid for 10 minutes. If you didn't request this, please ignore this email.</p>
+    <div style="font-size: 12px; color: #777; margin-top: 30px;">
+      <p>&copy; ${new Date().getFullYear()} Vaniki Crop. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;

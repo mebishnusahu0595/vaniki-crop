@@ -176,10 +176,10 @@ export async function forgotPassword(req: Request, res: Response, next: NextFunc
   try {
     await authService.forgotPassword(req.body);
 
-    // Always return success to prevent mobile enumeration
+    // Always return success to prevent enumeration
     res.status(200).json({
       success: true,
-      message: 'If an account exists with this number, an OTP has been sent.',
+      message: 'If an account exists, an OTP has been sent to the registered mobile and/or email.',
     });
   } catch (error) {
     next(error);

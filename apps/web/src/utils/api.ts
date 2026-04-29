@@ -320,6 +320,14 @@ export const storefrontApi = {
     const response = await api.patch<{ success: boolean; message: string }>('/auth/change-password', payload);
     return response.data;
   },
+  forgotPassword: async (payload: { mobile?: string; email?: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/forgot-password', payload);
+    return response.data;
+  },
+  resetPassword: async (payload: { mobile?: string; email?: string; otp: string; newPassword: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
+    return response.data;
+  },
   updateServiceMode: async (serviceMode: ServiceMode) => {
     const response = await api.patch<ApiResponse<AuthUser>>('/auth/service-mode', { serviceMode });
     return response.data.data;

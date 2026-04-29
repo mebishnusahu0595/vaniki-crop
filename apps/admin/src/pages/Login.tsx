@@ -131,12 +131,41 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const setSession = useAdminAuthStore((state) => state.setSession);
   const requestedMode = searchParams.get('mode') === 'login' ? 'login' : 'signup';
-  const [mode, setMode] = useState<'signup' | 'login'>(requestedMode);
+  const [mode, setMode] = useState<'signup' | 'login' | 'forgot'>(requestedMode as any);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [signupMessage, setSignupMessage] = useState('');
   const [signupImageFile, setSignupImageFile] = useState<File | null>(null);
   const [signupImagePreview, setSignupImagePreview] = useState('');
+  const [forgotStep, setForgotStep] = useState<'request' | 'reset'>('request');
+  const [forgotIdentifier, setForgotIdentifier] = useState<{ mobile?: string; email?: string }>({});
+
+  const forgotSchema = z.object({
+    identifier: z.string().trim().min(1, 'Email or Mobile is required'),
+  });
+
+  const resetSchema = z.object({
+    otp: z.string().length(4, 'OTP must be 4 digits'),
+    newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+  });
+
+  const {
+    register: registerForgot,
+    handleSubmit: handleForgotSubmit,
+    formState: { errors: forgotErrors, isSubmitting: isForgotSubmitting },
+  } = useForm<{ identifier: string }>({
+    resolver: zodResolver(forgotSchema),
+  });
+
+  const {
+    register: registerReset,
+    handleSubmit: handleResetSubmit,
+    setError: setResetError,
+    formState: { errors: resetErrors, isSubmitting: isResetSubmitting },
+  } = useForm<{ otp: string; newPassword: string }>({
+    resolver: zodResolver(resetSchema),
+  });
 
   useEffect(() => {
     return () => {
@@ -156,7 +185,7 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    setMode(requestedMode);
+    setMode(requestedMode as any);
   }, [requestedMode]);
 
   const {
@@ -231,32 +260,61 @@ export default function LoginPage() {
         </div>
 
         <div className="p-6 sm:p-10">
-          <button
-            type="button"
-            onClick={handleHome}
-            className="inline-flex items-center gap-2 rounded-full border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.15em] text-primary-900 transition hover:bg-primary-100"
-          >
-            <Home size={14} />
-            Home
-          </button>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-primary-500">Dealer Onboarding</p>
-          <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">Register your dealer account</h2>
-          <p className="mt-3 text-sm leading-7 text-slate-500">
-            Fill dealer details to request account activation. After super-admin approval, you can sign in.
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-            <p className="text-xs font-black uppercase tracking-[0.15em] text-primary-700">
-              {mode === 'signup' ? 'Dealer Signup Active' : 'Dealer Login Active'}
-            </p>
+          <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() => setMode((current) => (current === 'signup' ? 'login' : 'signup'))}
-              className="text-xs font-black uppercase tracking-[0.14em] text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline"
+              onClick={handleHome}
+              className="inline-flex items-center gap-2 rounded-full border border-primary-100 bg-primary-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.15em] text-primary-900 transition hover:bg-primary-100"
             >
-              {mode === 'signup' ? 'Already approved? Switch to login' : 'Need an account? Switch to signup'}
+              <Home size={14} />
+              Home
             </button>
+            {mode !== 'login' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setForgotStep('request');
+                }}
+                className="text-xs font-black uppercase tracking-[0.15em] text-primary-600 hover:text-primary-800"
+              >
+                Back to Login
+              </button>
+            )}
           </div>
+          
+          <p className="mt-4 text-xs font-black uppercase tracking-[0.22em] text-primary-500">
+            {mode === 'signup' ? 'Dealer Onboarding' : mode === 'forgot' ? 'Security' : 'Login'}
+          </p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
+            {mode === 'signup' 
+              ? 'Register your dealer account' 
+              : mode === 'forgot' 
+                ? 'Reset your password' 
+                : 'Welcome back'}
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-500">
+            {mode === 'signup' 
+              ? 'Fill dealer details to request account activation.' 
+              : mode === 'forgot' 
+                ? 'We will send a 4-digit OTP to your registered email or mobile.' 
+                : 'Sign in to manage your store operations.'}
+          </p>
+
+          {mode !== 'forgot' && (
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
+              <p className="text-xs font-black uppercase tracking-[0.15em] text-primary-700">
+                {mode === 'signup' ? 'Dealer Signup Active' : 'Dealer Login Active'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setMode((current) => (current === 'signup' ? 'login' : 'signup'))}
+                className="text-xs font-black uppercase tracking-[0.14em] text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline"
+              >
+                {mode === 'signup' ? 'Already approved? Switch to login' : 'Need an account? Switch to signup'}
+              </button>
+            </div>
+          )}
 
           {mode === 'signup' ? (
             <form
@@ -478,6 +536,104 @@ export default function LoginPage() {
                 {isSignupSubmitting ? 'Submitting...' : 'Submit Signup'}
               </button>
             </form>
+          ) : mode === 'forgot' ? (
+            <div className="mt-8">
+              {forgotStep === 'request' ? (
+                <form
+                  onSubmit={handleForgotSubmit(async (values) => {
+                    try {
+                      const isEmail = values.identifier.includes('@');
+                      const payload = isEmail ? { email: values.identifier } : { mobile: values.identifier };
+                      await adminApi.forgotPassword(payload);
+                      setForgotIdentifier(payload);
+                      setForgotStep('reset');
+                    } catch (error) {
+                      // Handled by message below
+                    }
+                  })}
+                  className="space-y-5"
+                >
+                  <div>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Email or Mobile</label>
+                    <input
+                      {...registerForgot('identifier')}
+                      placeholder="Enter registered email or mobile"
+                      className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300"
+                    />
+                    {forgotErrors.identifier ? <p className="mt-2 text-sm font-semibold text-rose-600">{forgotErrors.identifier.message}</p> : null}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isForgotSubmitting}
+                    className="w-full rounded-2xl bg-primary-500 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-200"
+                  >
+                    {isForgotSubmitting ? 'Sending OTP...' : 'Send OTP'}
+                  </button>
+                </form>
+              ) : (
+                <form
+                  onSubmit={handleResetSubmit(async (values) => {
+                    try {
+                      await adminApi.resetPassword({ ...forgotIdentifier, ...values });
+                      setSignupMessage('Password reset successfully. Please login.');
+                      setMode('login');
+                      setForgotStep('request');
+                    } catch (error) {
+                      setResetError('root', { message: error instanceof Error ? error.message : 'Unable to reset password.' });
+                    }
+                  })}
+                  className="space-y-5"
+                >
+                  <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-700">
+                    OTP sent to {forgotIdentifier.email || forgotIdentifier.mobile}. Enter it below to reset your password.
+                  </p>
+                  <div>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">4-Digit OTP</label>
+                    <input
+                      {...registerReset('otp')}
+                      inputMode="numeric"
+                      maxLength={4}
+                      placeholder="0000"
+                      className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-center text-2xl font-black tracking-[0.5em] text-slate-900 outline-none transition focus:border-primary-300"
+                    />
+                    {resetErrors.otp ? <p className="mt-2 text-sm font-semibold text-rose-600">{resetErrors.otp.message}</p> : null}
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showResetPassword ? 'text' : 'password'}
+                        {...registerReset('newPassword')}
+                        placeholder="Min 6 characters"
+                        className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowResetPassword((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700"
+                      >
+                        {showResetPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    {resetErrors.newPassword ? <p className="mt-2 text-sm font-semibold text-rose-600">{resetErrors.newPassword.message}</p> : null}
+                  </div>
+
+                  {resetErrors.root ? (
+                    <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
+                      {resetErrors.root.message}
+                    </p>
+                  ) : null}
+
+                  <button
+                    type="submit"
+                    disabled={isResetSubmitting}
+                    className="w-full rounded-2xl bg-primary-500 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-200"
+                  >
+                    {isResetSubmitting ? 'Resetting...' : 'Reset Password'}
+                  </button>
+                </form>
+              )}
+            </div>
           ) : (
             <form
               onSubmit={handleLoginSubmit(async (values) => {
@@ -512,7 +668,16 @@ export default function LoginPage() {
                 {loginErrors.mobile ? <p className="mt-2 text-sm font-semibold text-rose-600">{loginErrors.mobile.message}</p> : null}
               </div>
               <div>
-                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Password</label>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setMode('forgot')}
+                    className="text-xs font-black uppercase tracking-[0.15em] text-primary-600 hover:text-primary-800"
+                  >
+                    Forgot?
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type={showLoginPassword ? 'text' : 'password'}
@@ -535,6 +700,12 @@ export default function LoginPage() {
               {loginErrors.root ? (
                 <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600">
                   {loginErrors.root.message}
+                </p>
+              ) : null}
+
+              {signupMessage ? (
+                <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                  {signupMessage}
                 </p>
               ) : null}
 

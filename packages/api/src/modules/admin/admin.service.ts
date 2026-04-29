@@ -265,6 +265,10 @@ export async function createDealerProductRequest(
     productName,
     requestedQuantity,
     requestedPack,
+    garageName: typeof input.garageName === 'string' ? input.garageName.trim() : 'Unknown Garage',
+    petiQuantity: Number(input.petiQuantity) || 1,
+    petiSize: Number(input.petiSize) || 12,
+    petiUnit: ['Liter', 'Kg'].includes(input.petiUnit) ? input.petiUnit : 'Liter',
     notes,
     status: 'pending',
   });

@@ -3,6 +3,7 @@ import {
   PackageSearch,
   UserRound,
   ShoppingCart,
+  ClipboardList,
   X,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ interface SidebarNavItem {
 
 const navItems: SidebarNavItem[] = [
   { to: '/orders', label: 'Orders', icon: ShoppingCart },
+  { to: '/product-requests', label: 'Product Requests', icon: ClipboardList },
   { to: '/settings', label: 'Profile', icon: UserRound },
 ];
 
@@ -45,7 +47,13 @@ export function Sidebar({
     ...liveBadgeQueryOptions,
   });
 
-  const ordersBadgeCount = (newOrdersQuery.data?.pagination?.total ?? 0) + (pendingProductRequestsQuery.data?.pagination?.total ?? 0);
+  const ordersBadgeCount = newOrdersQuery.data?.pagination?.total ?? 0;
+  const requestsBadgeCount = pendingProductRequestsQuery.data?.pagination?.total ?? 0;
+
+  const routeBadgeCount: Record<string, number> = {
+    '/orders': ordersBadgeCount,
+    '/product-requests': requestsBadgeCount,
+  };
 
   return (
     <>
@@ -79,7 +87,7 @@ export function Sidebar({
 
         <nav className="mt-8 space-y-1">
           {navItems.map((item) => {
-            const badgeCount = item.to === '/orders' ? ordersBadgeCount : 0;
+            const badgeCount = routeBadgeCount[item.to] ?? 0;
             const shouldShowBadge = badgeCount > 0;
 
             return (

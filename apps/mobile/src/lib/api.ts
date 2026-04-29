@@ -328,6 +328,18 @@ export const storefrontApi = {
       body: JSON.stringify(payload),
     });
   },
+  forgotPassword: async (payload: { mobile?: string; email?: string }) => {
+    return request<{ success: boolean; message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  resetPassword: async (payload: { mobile?: string; email?: string; otp: string; newPassword: string }) => {
+    return request<{ success: boolean; message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
   updateServiceMode: async (serviceMode: ServiceMode) => {
     const response = await request<AuthUser>('/auth/service-mode', {
       method: 'PATCH',

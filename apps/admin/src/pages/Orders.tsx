@@ -28,11 +28,6 @@ export default function OrdersPage() {
 
 
 
-  const [selectedProductId, setSelectedProductId] = useState('');
-  const [requestedProductName, setRequestedProductName] = useState('');
-  const [requestedQuantity, setRequestedQuantity] = useState(1);
-  const [requestedPack, setRequestedPack] = useState('');
-  const [requestNotes, setRequestNotes] = useState('');
   const [inventoryDraft, setInventoryDraft] = useState<Record<string, number>>({});
   const [prevInventoryData, setPrevInventoryData] = useState<DealerInventoryProduct[] | null>(null);
 
@@ -63,10 +58,7 @@ export default function OrdersPage() {
     queryFn: adminApi.inventoryProducts,
   });
 
-  const requestQuery = useQuery({
-    queryKey: ['admin-product-requests'],
-    queryFn: () => adminApi.productRequests({ limit: 30 }),
-  });
+
 
   // Sync state with URL params during render to avoid useEffect cascading renders
   if (searchParams.get('inventory') !== prevInventoryParam) {
@@ -145,29 +137,12 @@ export default function OrdersPage() {
     },
   });
 
-  const createRequestMutation = useMutation({
-    mutationFn: () =>
-      adminApi.createProductRequest({
-        productId: selectedProductId || undefined,
-        productName: requestedProductName || undefined,
-        requestedQuantity,
-        requestedPack,
-        notes: requestNotes,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-requests'] });
-      setSelectedProductId('');
-      setRequestedProductName('');
-      setRequestedQuantity(1);
-      setRequestedPack('');
-      setRequestNotes('');
-    },
-  });
+
 
   const detail = orderDetailQuery.data;
   const isOrderModalOpen = Boolean(selectedOrderId);
 
-  if ((ordersQuery.isLoading && !ordersQuery.data) || inventoryQuery.isLoading || requestQuery.isLoading) {
+  if ((ordersQuery.isLoading && !ordersQuery.data) || inventoryQuery.isLoading) {
     return <LoadingBlock label="Loading dealer workspace..." />;
   }
 
@@ -281,144 +256,7 @@ export default function OrdersPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-primary-500">Request Product</p>
-          <h3 className="mt-1 text-xl font-black text-slate-900">Ask Super Admin for New Stock</h3>
 
-          <div className="mt-4 space-y-3">
-            <div>
-              <label
-                htmlFor="request-existing-product"
-                className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
-              >
-                Existing Product (Optional)
-              </label>
-              <select
-                id="request-existing-product"
-                value={selectedProductId}
-                onChange={(event) => {
-                  const nextId = event.target.value;
-                  setSelectedProductId(nextId);
-                  const selectedProduct = inventoryQuery.data?.find((product) => product.id === nextId);
-                  if (selectedProduct) {
-                    setRequestedProductName(selectedProduct.name);
-                  }
-                }}
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-              >
-                <option value="">Select existing product (optional)</option>
-                {inventoryQuery.data?.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label
-                htmlFor="request-product-name"
-                className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
-              >
-                Product Name
-              </label>
-              <input
-                id="request-product-name"
-                value={requestedProductName}
-                onChange={(event) => setRequestedProductName(event.target.value)}
-                placeholder="Product name"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-              />
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="request-quantity"
-                  className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
-                >
-                  Quantity
-                </label>
-                <input
-                  id="request-quantity"
-                  type="number"
-                  min={1}
-                  value={requestedQuantity}
-                  onChange={(event) => setRequestedQuantity(Math.max(1, Number(event.target.value) || 1))}
-                  placeholder="Quantity"
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="request-pack"
-                  className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
-                >
-                  Pack Size
-                </label>
-                <input
-                  id="request-pack"
-                  value={requestedPack}
-                  onChange={(event) => setRequestedPack(event.target.value)}
-                  placeholder="Pack size (Liter/Gram)"
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="request-notes"
-                className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700"
-              >
-                Extra Details
-              </label>
-              <textarea
-                id="request-notes"
-                value={requestNotes}
-                onChange={(event) => setRequestNotes(event.target.value)}
-                placeholder="Extra details"
-                className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-              />
-            </div>
-
-            <button
-              type="button"
-              disabled={createRequestMutation.isPending}
-              onClick={() => createRequestMutation.mutate()}
-              className="w-full rounded-2xl bg-primary-500 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white"
-            >
-              {createRequestMutation.isPending ? 'Sending...' : 'Send Product Request'}
-            </button>
-          </div>
-        </div>
-
-        <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-primary-500">Requested Items</p>
-          <h3 className="mt-1 text-xl font-black text-slate-900">Latest Product Requests</h3>
-
-          <div className="mt-4 space-y-3">
-            {requestQuery.data?.data.map((request) => (
-              <div key={request.id} className="rounded-xl border border-primary-100 bg-primary-50/40 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-black text-slate-900">{request.productName}</p>
-                    <p className="text-xs text-slate-500">
-                      Qty: {request.requestedQuantity} {request.requestedPack || ''}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-primary-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.13em] text-primary-700">
-                    {request.status}
-                  </span>
-                </div>
-                <p className="mt-2 text-xs text-slate-500">{request.notes || 'No note provided'}</p>
-                <p className="mt-1 text-[11px] text-slate-400">{formatDateTime(request.createdAt)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       <div className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-white p-4 lg:grid-cols-5">
         <div>
