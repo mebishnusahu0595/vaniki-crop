@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
-import { GstVerificationData } from '../types/admin';
+import type { GstVerificationData } from '../types/admin';
 
 const settingsSchema = z.object({
   name: z.string().trim().min(3, 'Store name must be at least 3 characters'),
