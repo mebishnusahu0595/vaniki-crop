@@ -32,6 +32,7 @@ const requiredNumber = (label: string) =>
 const variantSchema = z.object({
   label: z.string().trim().min(1, 'Variant label is required'),
   price: requiredNumber('Price').pipe(z.number().min(0, 'Price must be non-negative')),
+  adminPrice: z.coerce.number().min(0, 'Admin price must be non-negative').optional(),
   mrp: requiredNumber('MRP').pipe(z.number().min(0, 'MRP must be non-negative')),
   stock: requiredNumber('Stock').pipe(z.number().int().min(0, 'Stock must be non-negative')),
   sku: z.string().trim().min(1, 'SKU is required').toUpperCase(),
@@ -99,6 +100,8 @@ export const createProductSchema = z.object({
     ]).optional(),
     imageUrls: imageUrlsSchema,
     isFeatured: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
+    loyaltyPointEligible: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
+    maxLoyaltyPoints: z.coerce.number().min(0).optional(),
     metaTitle: z.string().trim().max(70).optional(),
     metaDescription: z.string().trim().max(160).optional(),
   }),
@@ -128,6 +131,8 @@ export const updateProductSchema = z.object({
     imageUrls: imageUrlsSchema,
     isActive: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
     isFeatured: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
+    loyaltyPointEligible: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
+    maxLoyaltyPoints: z.coerce.number().min(0).optional(),
     existingImages: z.union([
       z.string().transform((val) => parseJsonField(val, 'existingImages')),
       z.array(existingImageSchema),

@@ -409,6 +409,8 @@ export async function createProduct(
     isFeatured: input.isFeatured || false,
     metaTitle: input.metaTitle,
     metaDescription: input.metaDescription,
+    loyaltyPointEligible: input.loyaltyPointEligible || false,
+    maxLoyaltyPoints: input.maxLoyaltyPoints || 0,
     images,
   });
 
@@ -517,6 +519,8 @@ export async function updateProduct(
   if (input.isFeatured !== undefined) product.isFeatured = input.isFeatured;
   if (input.metaTitle !== undefined) product.metaTitle = input.metaTitle;
   if (input.metaDescription !== undefined) product.metaDescription = input.metaDescription;
+  if (input.loyaltyPointEligible !== undefined) product.loyaltyPointEligible = input.loyaltyPointEligible;
+  if (input.maxLoyaltyPoints !== undefined) product.maxLoyaltyPoints = input.maxLoyaltyPoints;
 
   // Store assignment (only super admin can change stores)
   if (userRole === 'superAdmin') {
