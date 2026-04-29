@@ -103,18 +103,34 @@ export const CheckInModal: React.FC = () => {
 
             <div className="grid grid-cols-7 gap-2">
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
-                const isToday = i === (new Date().getDay() + 6) % 7; // Adjusted for Monday start
+                const now = new Date();
+                const dayOfWeek = (now.getDay() + 6) % 7; // 0=Mon, 6=Sun
+                const isToday = i === dayOfWeek;
+                
+                // Calculate date for this day of the current week
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(now.getDate() - dayOfWeek);
+                const dayDate = new Date(startOfWeek);
+                dayDate.setDate(startOfWeek.getDate() + i);
+                const dateStr = dayDate.toISOString().split('T')[0];
+                
+                const isChecked = user?.checkInHistory?.some(d => d.split('T')[0] === dateStr);
+
                 return (
                   <div key={i} className="flex flex-col items-center gap-2">
                     <div
                       className={cn(
                         "flex h-10 w-10 items-center justify-center rounded-xl border-2 transition",
                         isToday 
-                          ? "border-primary bg-primary-50 text-primary animate-pulse" 
-                          : "border-slate-100 bg-slate-50 text-slate-400"
+                          ? isChecked 
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-600"
+                            : "border-primary bg-primary-50 text-primary animate-pulse" 
+                          : isChecked
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-600"
+                            : "border-slate-100 bg-slate-50 text-slate-400"
                       )}
                     >
-                      {i < 3 ? <CheckCircle2 size={16} className="text-emerald-500" /> : <span className="text-xs font-black">{day}</span>}
+                      {isChecked ? <CheckCircle2 size={16} className="text-emerald-500" /> : <span className="text-xs font-black">{day}</span>}
                     </div>
                   </div>
                 );

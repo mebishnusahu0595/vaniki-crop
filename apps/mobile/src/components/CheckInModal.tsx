@@ -68,10 +68,29 @@ export const CheckInModal = () => {
 
             <View style={styles.streakContainer}>
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
-                const isToday = i === (new Date().getDay() + 6) % 7;
+                const now = new Date();
+                const dayOfWeek = (now.getDay() + 6) % 7;
+                const isToday = i === dayOfWeek;
+                
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(now.getDate() - dayOfWeek);
+                const dayDate = new Date(startOfWeek);
+                dayDate.setDate(startOfWeek.getDate() + i);
+                const dateStr = dayDate.toISOString().split('T')[0];
+                
+                const isChecked = (user?.checkInHistory || []).some((d: string) => d.split('T')[0] === dateStr);
+
                 return (
-                  <View key={i} style={[styles.dayCircle, isToday && styles.todayCircle]}>
-                    <Text style={[styles.dayText, isToday && styles.todayText]}>{day}</Text>
+                  <View key={i} style={[
+                    styles.dayCircle, 
+                    isToday && styles.todayCircle,
+                    isChecked && styles.checkedCircle
+                  ]}>
+                    {isChecked ? (
+                      <Feather name="check" size={14} color="#10B981" />
+                    ) : (
+                      <Text style={[styles.dayText, isToday && styles.todayText]}>{day}</Text>
+                    )}
                   </View>
                 );
               })}
@@ -190,6 +209,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   todayCircle: {
+    backgroundColor: '#ECFDF5',
+    borderColor: '#10B981',
+  },
+  checkedCircle: {
     backgroundColor: '#ECFDF5',
     borderColor: '#10B981',
   },
