@@ -14,13 +14,27 @@ function resolveMediaUrl(url?: string): string {
   if (!url) return '/placeholder.png';
   if (url.startsWith('http')) return url;
   
-  const apiOrigin = API_BASE_URL.startsWith('http') 
-    ? new URL(API_BASE_URL).origin 
-    : (typeof window !== 'undefined' ? window.location.origin : '');
+  let base = '';
+  if (API_BASE_URL.startsWith('http')) {
+    try {
+      base = new URL(API_BASE_URL).origin;
+    } catch {
+      base = '';
+    }
+  }
+  
+  if (!base && typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('vanikicrop.com')) {
+      base = 'https://vanikicrop.com';
+    } else {
+      base = window.location.origin;
+    }
+  }
     
   const cleaned = url.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
   const path = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
-  return `${apiOrigin}${path}`;
+  return `${base}${path}`;
 }
 
 const loyaltySchema = z.object({
