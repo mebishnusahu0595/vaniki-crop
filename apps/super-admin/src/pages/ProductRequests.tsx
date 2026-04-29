@@ -83,6 +83,14 @@ export default function ProductRequestsPage() {
                     <span className="flex items-center gap-1.5"><Warehouse size={14} className="text-primary-500" /> {request.store?.name || 'Unassigned'}</span>
                     <span className="flex items-center gap-1.5"><Box size={14} className="text-primary-500" /> {request.petiQuantity} Peti ({request.petiSize} {request.petiUnit})</span>
                   </div>
+                  {request.productId && request.requestedPack && (
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-1.5 border border-amber-100">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">Admin Price:</span>
+                      <span className="text-sm font-black text-amber-900">
+                        ₹{request.productId.variants.find(v => v.label === request.requestedPack)?.adminPrice || 'N/A'}
+                      </span>
+                    </div>
+                  )}
                   <p className="mt-2 text-xs text-slate-400 font-medium tracking-wide uppercase">
                     Garage: <span className="text-slate-600">{request.garageName || 'N/A'}</span> · Requested {formatDateTime(request.createdAt)}
                   </p>
@@ -182,8 +190,10 @@ export default function ProductRequestsPage() {
                     <p className="text-3xl font-black">{selectedRequest.petiQuantity} <span className="text-sm font-bold text-slate-400 uppercase">Peti</span></p>
                   </div>
                   <div className="text-right border-l border-white/10 pl-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400 mb-2">Total Volume</p>
-                    <p className="text-3xl font-black">{Number(selectedRequest.petiQuantity || 0) * Number(selectedRequest.petiSize || 0)} <span className="text-sm font-bold text-slate-400 uppercase">{selectedRequest.petiUnit}</span></p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400 mb-2">Admin Price</p>
+                    <p className="text-3xl font-black">
+                      ₹{selectedRequest.productId?.variants.find(v => v.label === selectedRequest.requestedPack)?.adminPrice || 'N/A'}
+                    </p>
                   </div>
                 </div>
               </div>

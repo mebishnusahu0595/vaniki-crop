@@ -1116,7 +1116,7 @@ export async function listProductRequests(query: Record<string, any>) {
     ProductRequest.find(filter)
       .populate('storeId', 'name phone')
       .populate('adminId', 'name mobile email')
-      .populate('productId', 'name slug')
+      .populate('productId', 'name slug variants')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -1130,7 +1130,7 @@ export async function updateProductRequestStatus(productRequestId: string, input
   const request = await ProductRequest.findById(productRequestId)
     .populate('storeId', 'name phone')
     .populate('adminId', 'name mobile email')
-    .populate('productId', 'name slug');
+    .populate('productId', 'name slug variants');
 
   if (!request) {
     throw new AppError('Product request not found', 404);

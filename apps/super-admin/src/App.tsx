@@ -17,6 +17,7 @@ import StoresPage from './pages/Stores';
 import AdminsPage from './pages/Admins';
 import TestimonialsPage from './pages/Testimonials';
 import ProductRequestsPage from './pages/ProductRequests';
+import LoyaltyPage from './pages/Loyalty';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
           <Route path="/banners" element={<BannersPage />} />
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/testimonials" element={<TestimonialsPage />} />
+          <Route path="/loyalty" element={<LoyaltyPage />} />
           <Route path="/site-settings" element={<SettingsPage />} />
           <Route path="/settings" element={<ProfileSettingsPage />} />
         </Route>

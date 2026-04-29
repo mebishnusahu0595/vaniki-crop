@@ -26,6 +26,7 @@ export interface ProductVariant {
   id?: string;
   label: string;
   price: number;
+  adminPrice?: number;
   mrp: number;
   stock: number;
   sku: string;
@@ -43,6 +44,8 @@ export interface Product {
   tags: string[];
   isActive: boolean;
   isFeatured: boolean;
+  loyaltyPointEligible?: boolean;
+  maxLoyaltyPoints?: number;
   metaTitle?: string;
   metaDescription?: string;
   totalSold?: number;
@@ -324,7 +327,13 @@ export interface AdminAccount {
 
 export interface ProductRequest {
   id: string;
-  status: 'pending' | 'approved' | 'rejected' | 'fulfilled';
+  status: 'pending' | 'approved' | 'rejected' | 'fulfilled' | 'contacted';
+  productId?: {
+    id: string;
+    name: string;
+    slug: string;
+    variants: ProductVariant[];
+  };
   productName: string;
   requestedQuantity: number;
   requestedPack?: string;

@@ -36,6 +36,7 @@ const variantSchema = z.object({
   quantity: z.string().min(1, 'Qty is required'),
   unit: z.enum(units),
   price: requiredNumber('Price'),
+  adminPrice: requiredNumber('Admin Price').optional(),
   mrp: requiredNumber('MRP'),
   stock: requiredNumber('Stock'),
 });
@@ -51,6 +52,8 @@ const productSchema = z.object({
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
   variants: z.array(variantSchema).min(1),
+  loyaltyPointEligible: z.boolean().default(true),
+  maxLoyaltyPoints: requiredNumber('Max Loyalty Points').default(0),
 });
 
 type ProductFormInput = z.input<typeof productSchema>;
@@ -77,7 +80,9 @@ const productDefaultValues: ProductFormInput = {
   isActive: true,
   metaTitle: '',
   metaDescription: '',
-  variants: [{ quantity: '', unit: 'Liter', price: '', mrp: '', stock: '' }],
+  variants: [{ quantity: '', unit: 'Liter', price: '', adminPrice: '', mrp: '', stock: '' }],
+  loyaltyPointEligible: true,
+  maxLoyaltyPoints: 0,
 };
 
 function getProductDefaultValues(product?: Product): ProductFormInput {
@@ -98,9 +103,12 @@ function getProductDefaultValues(product?: Product): ProductFormInput {
     variants: product.variants.map((variant) => ({
       ...(parseVariantLabel(variant.label) as { quantity: string; unit: (typeof units)[number] }),
       price: variant.price,
+      adminPrice: variant.adminPrice || '',
       mrp: variant.mrp,
       stock: variant.stock,
     })),
+    loyaltyPointEligible: product.loyaltyPointEligible ?? true,
+    maxLoyaltyPoints: product.maxLoyaltyPoints ?? 0,
   };
 }
 
@@ -407,12 +415,15 @@ function ProductEditor({
             values.variants.map((variant: ProductFormOutput['variants'][number], index: number) => ({
               label: buildVariantLabel(variant.quantity, variant.unit),
               price: variant.price,
+              adminPrice: variant.adminPrice,
               mrp: variant.mrp,
               stock: variant.stock,
               sku: `${slugify(productName || 'product').toUpperCase()}-${String(index + 1).padStart(2, '0')}`,
             })),
           ),
         );
+        payload.append('loyaltyPointEligible', String(values.loyaltyPointEligible));
+        payload.append('maxLoyaltyPoints', String(values.maxLoyaltyPoints));
 
         if (isEdit) {
           payload.append('existingImages', JSON.stringify(existingImages));
@@ -496,21 +507,34 @@ function ProductEditor({
             </div>
             <button
               type="button"
-              onClick={() => append({ quantity: '', unit: 'Liter', price: '', mrp: '', stock: '' })}
+              onClick={() => append({ quantity: '', unit: 'Liter', price: '', adminPrice: '', mrp: '', stock: '' })}
               className="inline-flex items-center gap-2 rounded-2xl border border-primary-100 px-4 py-2 text-sm font-bold text-primary-700"
             >
               <PlusCircle size={16} />
               Add Variant
             </button>
           </div>
+
+          <div className="hidden grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_40px] gap-3 px-4 mb-2 md:grid">
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Qty</label>
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Unit</label>
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">User Price</label>
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Admin Price</label>
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">MRP</label>
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Stock</label>
+            <div />
+          </div>
+
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 md:grid-cols-5">
+              <div key={field.id} className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 md:grid-cols-[1fr_1fr_1fr_1fr_1fr_1fr_40px]">
                 <div>
+                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Qty</div>
                   <input {...register(`variants.${index}.quantity`)} placeholder="Qty" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
                   {errors.variants?.[index]?.quantity ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.quantity?.message}</p> : null}
                 </div>
                 <div>
+                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Unit</div>
                   <select {...register(`variants.${index}.unit`)} className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3">
                     {units.map((unit) => (
                       <option key={unit} value={unit}>
@@ -521,23 +545,31 @@ function ProductEditor({
                   {errors.variants?.[index]?.unit ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.unit?.message}</p> : null}
                 </div>
                 <div>
+                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">User Price</div>
                   <input type="number" {...register(`variants.${index}.price`)} placeholder="Price" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
                   {errors.variants?.[index]?.price ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.price?.message}</p> : null}
                 </div>
                 <div>
+                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Admin Price</div>
+                  <input type="number" {...register(`variants.${index}.adminPrice`)} placeholder="Admin Price" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                  {errors.variants?.[index]?.adminPrice ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.adminPrice?.message}</p> : null}
+                </div>
+                <div>
+                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">MRP</div>
                   <input type="number" {...register(`variants.${index}.mrp`)} placeholder="MRP" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
                   {errors.variants?.[index]?.mrp ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.mrp?.message}</p> : null}
                 </div>
-                <div className="flex gap-2">
-                  <div className="min-w-0 flex-1">
-                    <input type="number" {...register(`variants.${index}.stock`)} placeholder="Stock" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
-                    {errors.variants?.[index]?.stock ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.stock?.message}</p> : null}
-                  </div>
+                <div>
+                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Stock</div>
+                  <input type="number" {...register(`variants.${index}.stock`)} placeholder="Stock" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
+                  {errors.variants?.[index]?.stock ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.stock?.message}</p> : null}
+                </div>
+                <div className="flex items-center justify-center">
                   {fields.length > 1 ? (
-                    <button type="button" onClick={() => remove(index)} className="rounded-2xl border border-rose-100 px-3 text-rose-600">
+                    <button type="button" onClick={() => remove(index)} className="rounded-2xl border border-rose-100 p-3 text-rose-600 hover:bg-rose-50">
                       <MinusCircle size={16} />
                     </button>
-                  ) : null}
+                  ) : <div className="w-10" />}
                 </div>
               </div>
             ))}
@@ -734,6 +766,21 @@ function ProductEditor({
               <span className="text-sm font-semibold text-slate-700">Active product</span>
               <input type="checkbox" {...register('isActive')} className="h-4 w-4 accent-primary-600" />
             </label>
+          </div>
+        </div>
+
+        <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-primary-500">Loyalty Settings</p>
+          <div className="mt-4 space-y-4">
+            <label className="flex items-center justify-between rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
+              <span className="text-sm font-semibold text-slate-700">Eligible for Loyalty Points</span>
+              <input type="checkbox" {...register('loyaltyPointEligible')} className="h-4 w-4 accent-primary-600" />
+            </label>
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Max Points Redeemable</label>
+              <input type="number" {...register('maxLoyaltyPoints')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              <p className="mt-1 text-[10px] font-bold text-slate-500">Maximum points a user can apply to this product during checkout.</p>
+            </div>
           </div>
         </div>
 
