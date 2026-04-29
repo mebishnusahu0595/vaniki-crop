@@ -14,6 +14,8 @@ import {
   updateMeSchema,
   changePasswordSchema,
   toggleWishlistSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from './auth.validator.js';
 
 const router: Router = Router();
@@ -48,6 +50,12 @@ router.post('/login', loginRateLimiter, validate(loginSchema), authController.lo
 
 /** POST /api/auth/refresh — Refresh access token using httpOnly cookie */
 router.post('/refresh', authController.refresh);
+
+/** POST /api/auth/forgot-password — Send OTP for password reset */
+router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
+
+/** POST /api/auth/reset-password — Reset password after OTP verification */
+router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 
 // ─── Protected Routes ────────────────────────────────────────────────────
 
