@@ -6,7 +6,7 @@ export const orderPlacedTemplate = (order: any, user: any) => `
 <html>
 <head>
   <style>
-    body { font-family: sans-serif; line-height: 1.6; color: #333; }
+    body { font-family: sans-serif; line-height: 1.6; color: #332e2eff; }
     .container { max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; }
     .header { text-align: center; margin-bottom: 20px; }
     .footer { font-size: 12px; color: #777; margin-top: 30px; text-align: center; }
