@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { useAuthStore } from '../store/useAuthStore';
 import { storefrontApi } from '../lib/api';
 
@@ -96,7 +97,22 @@ export const CheckInModal = () => {
               })}
             </View>
 
-            {!claimed ? (
+            {!token ? (
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ textAlign: 'center', color: '#64748B', fontSize: 13, marginBottom: 20, fontWeight: '600' }}>
+                  Please log in to your account to claim daily reward points and track your progress!
+                </Text>
+                <Pressable 
+                  onPress={() => {
+                    setShowCheckInModal(false);
+                    router.push('/(auth)/login');
+                  }} 
+                  style={styles.button}
+                >
+                  <Text style={styles.buttonText}>LOGIN TO CLAIM</Text>
+                </Pressable>
+              </View>
+            ) : !claimed ? (
               <Pressable 
                 onPress={handleClaim} 
                 disabled={claiming}

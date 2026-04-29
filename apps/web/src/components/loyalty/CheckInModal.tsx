@@ -138,7 +138,22 @@ export const CheckInModal: React.FC = () => {
             </div>
 
             <div className="mt-8">
-              {!isClaimed ? (
+              {!isAuthenticated ? (
+                <div className="text-center">
+                  <p className="mb-4 text-sm font-medium text-slate-600">
+                    Please log in to your account to claim daily reward points and track your progress!
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowLoyaltyModal(false);
+                      window.location.href = '/login?redirect=' + window.location.pathname;
+                    }}
+                    className="w-full rounded-[1.5rem] bg-primary-900 py-4 text-sm font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary-900/20 transition hover:-translate-y-1 hover:bg-primary"
+                  >
+                    Login to Claim
+                  </button>
+                </div>
+              ) : !isClaimed ? (
                 <button
                   onClick={handleClaim}
                   disabled={isClaiming}
