@@ -287,6 +287,7 @@ function buildDirectionsUrl(latitude?: number, longitude?: number): string {
 
 export default function AdminsPage() {
   const queryClient = useQueryClient();
+  const [zoomedImage, setZoomedImage] = useState<{ url: string; publicId?: string; alt: string } | null>(null);
   const [editing, setEditing] = useState<AdminAccount | null>(null);
   const [selectedAdmin, setSelectedAdmin] = useState<AdminAccount | null>(null);
   const [formError, setFormError] = useState('');
@@ -824,12 +825,46 @@ export default function AdminsPage() {
             className="cursor-pointer rounded-[1.5rem] border border-primary-100 bg-white p-4 transition hover:bg-primary-50/40"
           >
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-lg font-black text-slate-900">{admin.name}</p>
-                <p className="mt-1 text-sm text-slate-500">{admin.mobile} · {admin.email || 'No email'}</p>
-                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary-600">
-                  Assigned Store: {admin.assignedStore?.name || 'Unassigned'}
-                </p>
+              <div className="flex items-start gap-4">
+                {admin.profileImage?.url ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setZoomedImage({
+                        url: admin.profileImage!.url,
+                        publicId: admin.profileImage!.publicId,
+                        alt: admin.name,
+                      });
+                    }}
+                    className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-primary-100 bg-primary-50 transition-transform active:scale-95"
+                  >
+                    <FallbackImage
+                      rawUrl={admin.profileImage.url}
+                      publicId={admin.profileImage.publicId}
+                      alt={admin.name}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-slate-900/10 opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="rounded-full bg-white/80 p-1">
+                        <svg className="h-3 w-3 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
+                      </span>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary-100 bg-primary-50 text-xs font-black text-primary-300">
+                    NO PIC
+                  </div>
+                )}
+                <div>
+                  <p className="text-lg font-black text-slate-900">{admin.name}</p>
+                  <p className="mt-1 text-sm text-slate-500">{admin.mobile} · {admin.email || 'No email'}</p>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary-600">
+                    Assigned Store: {admin.assignedStore?.name || 'Unassigned'}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={(event) => {
@@ -1033,6 +1068,35 @@ export default function AdminsPage() {
               >
                 Delete Admin
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {zoomedImage ? (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm transition-all"
+          onClick={() => setZoomedImage(null)}
+        >
+          <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setZoomedImage(null)}
+              className="absolute -right-4 -top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-900 shadow-xl transition-transform hover:scale-110 active:scale-95"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="overflow-hidden rounded-[2.5rem] bg-white p-2 shadow-2xl">
+              <FallbackImage
+                rawUrl={zoomedImage.url}
+                publicId={zoomedImage.publicId}
+                alt={zoomedImage.alt}
+                className="max-h-[80vh] w-full rounded-[2rem] object-contain"
+              />
+              <div className="px-6 py-4">
+                <p className="text-center text-sm font-black uppercase tracking-[0.2em] text-slate-900">{zoomedImage.alt}</p>
+              </div>
             </div>
           </div>
         </div>
