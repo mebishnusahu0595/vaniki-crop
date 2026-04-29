@@ -40,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const totalItems = useCartStore((state) => state.getTotalItems());
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { user, isAuthenticated, setShowLoyaltyModal } = useAuthStore();
   const { selectedStore } = useStoreStore();
   const { mode, address } = useServiceModeStore();
   const cartButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -336,10 +336,13 @@ const Header: React.FC<HeaderProps> = ({ onOpenCart, onOpenStoreSelector }) => {
           </button>
 
           {/* Loyalty Points Display */}
-          <div className="flex h-10 items-center gap-2 rounded-2xl bg-amber-50 px-3 py-1 border border-amber-100 shadow-sm shadow-amber-900/5">
+          <button
+            onClick={() => setShowLoyaltyModal(true)}
+            className="flex h-10 items-center gap-2 rounded-2xl bg-amber-50 px-3 py-1 border border-amber-100 shadow-sm shadow-amber-900/5 transition hover:bg-amber-100 active:scale-95"
+          >
             <img src="/coin.png" alt="Points" className="h-5 w-5 animate-pulse" />
-            <span className="text-sm font-black text-amber-900">{useAuthStore((state) => state.user)?.loyaltyPoints || 0}</span>
-          </div>
+            <span className="text-sm font-black text-amber-900">{user?.loyaltyPoints || 0}</span>
+          </button>
 
           <motion.button
             onClick={onOpenCart}

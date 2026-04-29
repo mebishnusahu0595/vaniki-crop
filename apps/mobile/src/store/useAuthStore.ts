@@ -11,6 +11,8 @@ interface AuthState {
   setUser: (user: AuthUser | null) => void;
   logout: () => void;
   setHydrated: (value: boolean) => void;
+  showCheckInModal: boolean;
+  setShowCheckInModal: (show: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,6 +25,8 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user }),
       logout: () => set({ user: null, token: null }),
       setHydrated: (value) => set({ hydrated: value }),
+      showCheckInModal: false,
+      setShowCheckInModal: (show) => set({ showCheckInModal: show }),
     }),
     {
       name: 'vaniki-auth',

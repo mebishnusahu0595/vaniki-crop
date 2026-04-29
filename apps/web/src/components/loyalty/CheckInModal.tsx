@@ -6,8 +6,7 @@ import { storefrontApi } from '../../utils/api';
 import { cn } from '../../utils/cn';
 
 export const CheckInModal: React.FC = () => {
-  const { user, isAuthenticated, updateUser } = useAuthStore();
-  const [isOpen, setIsOpen] = useState(false);
+  const { user, isAuthenticated, updateUser, showLoyaltyModal, setShowLoyaltyModal } = useAuthStore();
   const [isClaiming, setIsClaiming] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
 
@@ -19,10 +18,10 @@ export const CheckInModal: React.FC = () => {
 
     if (lastCheckIn !== today) {
       // Small delay to ensure layout is ready
-      const timer = setTimeout(() => setIsOpen(true), 1500);
+      const timer = setTimeout(() => setShowLoyaltyModal(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, setShowLoyaltyModal]);
 
   const handleClaim = async () => {
     setIsClaiming(true);
@@ -36,7 +35,7 @@ export const CheckInModal: React.FC = () => {
         });
         setIsClaimed(true);
         setTimeout(() => {
-          setIsOpen(false);
+          setShowLoyaltyModal(false);
         }, 2000);
       }
     } catch (error) {
@@ -46,7 +45,7 @@ export const CheckInModal: React.FC = () => {
     }
   };
 
-  if (!isOpen) return null;
+  if (!showLoyaltyModal) return null;
 
   return (
     <AnimatePresence>
@@ -55,7 +54,7 @@ export const CheckInModal: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => setIsOpen(false)}
+          onClick={() => setShowLoyaltyModal(false)}
           className="absolute inset-0 bg-primary-900/40 backdrop-blur-md"
         />
 
@@ -72,7 +71,7 @@ export const CheckInModal: React.FC = () => {
             </div>
             
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={() => setShowLoyaltyModal(false)}
               className="absolute right-4 top-4 rounded-full bg-white/20 p-2 text-white transition hover:bg-white/30"
             >
               <X size={20} />

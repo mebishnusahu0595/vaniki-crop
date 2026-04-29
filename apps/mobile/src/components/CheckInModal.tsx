@@ -8,8 +8,7 @@ import { storefrontApi } from '../lib/api';
 const { width } = Dimensions.get('window');
 
 export const CheckInModal = () => {
-  const { user, token, setUser } = useAuthStore();
-  const [visible, setVisible] = useState(false);
+  const { user, token, setUser, showCheckInModal, setShowCheckInModal } = useAuthStore();
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
 
@@ -20,10 +19,10 @@ export const CheckInModal = () => {
     const lastCheckIn = user.lastCheckIn ? user.lastCheckIn.split('T')[0] : '';
 
     if (lastCheckIn !== today) {
-      const timer = setTimeout(() => setVisible(true), 1500);
+      const timer = setTimeout(() => setShowCheckInModal(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, [token, user]);
+  }, [token, user, setShowCheckInModal]);
 
   const handleClaim = async () => {
     setClaiming(true);
@@ -37,7 +36,7 @@ export const CheckInModal = () => {
           lastCheckIn: new Date().toISOString(),
         });
         setClaimed(true);
-        setTimeout(() => setVisible(false), 2000);
+        setTimeout(() => setShowCheckInModal(false), 2000);
       }
     } catch (error) {
       console.error('Check-in error:', error);
@@ -46,12 +45,12 @@ export const CheckInModal = () => {
     }
   };
 
-  if (!visible) return null;
+  if (!showCheckInModal) return null;
 
   return (
-    <Modal transparent visible={visible} animationType="fade">
+    <Modal transparent visible={showCheckInModal} animationType="fade">
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={() => setVisible(false)} />
+        <Pressable style={styles.backdrop} onPress={() => setShowCheckInModal(false)} />
         <View style={styles.container}>
           <View style={styles.header}>
             <View style={styles.coinContainer}>
@@ -94,7 +93,7 @@ export const CheckInModal = () => {
             )}
           </View>
 
-          <Pressable onPress={() => setVisible(false)} style={styles.closeButton}>
+          <Pressable onPress={() => setShowCheckInModal(false)} style={styles.closeButton}>
             <Feather name="x" size={20} color="#94A3B8" />
           </Pressable>
         </View>

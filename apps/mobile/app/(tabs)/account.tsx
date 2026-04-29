@@ -18,7 +18,7 @@ const tabs = ['orders', 'loyalty', 'wishlist', 'profile', 'password'] as const;
 export default function AccountScreen() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('orders');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const { user, logout, setUser } = useAuthStore();
+  const { user, logout, setUser, setShowCheckInModal } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const setStore = useStoreStore((state) => state.setStore);
   const mode = useServiceModeStore((state) => state.mode);
@@ -255,32 +255,54 @@ export default function AccountScreen() {
           </View>
 
           <View className="rounded-[28px] bg-white p-6">
-            <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Check-in History</Text>
-            <Text className="mt-2 text-lg font-black text-primary-900">May 2026</Text>
+            <View className="flex-row items-center justify-between">
+              <View>
+                <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Check-in History</Text>
+                <Text className="mt-2 text-lg font-black text-primary-900">
+                  {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+                </Text>
+              </View>
+              {user.lastCheckIn?.split('T')[0] !== new Date().toISOString().split('T')[0] && (
+                <Pressable
+                  onPress={() => setShowCheckInModal(true)}
+                  className="rounded-xl bg-primary-900 px-4 py-2"
+                >
+                  <Text className="text-[10px] font-black uppercase tracking-[1px] text-white">Claim Today</Text>
+                </Pressable>
+              )}
+            </View>
             
             <View className="mt-6 flex-row flex-wrap gap-2">
-              {Array.from({ length: 31 }, (_, i) => {
-                const day = i + 1;
-                const dateStr = `2026-05-${day.toString().padStart(2, '0')}`;
-                const isCheckedIn = (user.checkInHistory || []).some((d: string) => d.split('T')[0] === dateStr);
-                const isToday = new Date().getDate() === day && new Date().getMonth() === 4;
+              {(() => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const todayStr = now.toISOString().split('T')[0];
 
-                return (
-                  <View 
-                    key={day} 
-                    className={`h-10 w-10 items-center justify-center rounded-xl border ${
-                      isCheckedIn ? 'border-emerald-500 bg-emerald-50' : 
-                      isToday ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-primary-50/30'
-                    }`}
-                  >
-                    {isCheckedIn ? (
-                      <Feather name="check" size={16} color="#10B981" />
-                    ) : (
-                      <Text className={`text-xs font-black ${isToday ? 'text-primary-900' : 'text-primary-900/30'}`}>{day}</Text>
-                    )}
-                  </View>
-                );
-              })}
+                return Array.from({ length: daysInMonth }, (_, i) => {
+                  const day = i + 1;
+                  const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                  const isCheckedIn = (user.checkInHistory || []).some((d: string) => d.split('T')[0] === dateStr);
+                  const isToday = todayStr === dateStr;
+
+                  return (
+                    <View 
+                      key={day} 
+                      className={`h-10 w-10 items-center justify-center rounded-xl border ${
+                        isCheckedIn ? 'border-emerald-500 bg-emerald-50' : 
+                        isToday ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-primary-50/30'
+                      }`}
+                    >
+                      {isCheckedIn ? (
+                        <Feather name="check" size={16} color="#10B981" />
+                      ) : (
+                        <Text className={`text-xs font-black ${isToday ? 'text-primary-900' : 'text-primary-900/30'}`}>{day}</Text>
+                      )}
+                    </View>
+                  );
+                });
+              })()}
             </View>
           </View>
         </View>

@@ -21,7 +21,7 @@ export const AppHeader = memo(function AppHeader() {
   const [query, setQuery] = useState('');
   const [switchingLanguage, setSwitchingLanguage] = useState(false);
   const cartCount = useCartStore((state) => state.items.reduce((sum, item) => sum + item.qty, 0));
-  const user = useAuthStore((state) => state.user);
+  const { user, setShowCheckInModal } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const debouncedQuery = useDebouncedValue(query.trim(), 160);
   const isHomepageSearch = pathname === '/(tabs)' || pathname === '/(tabs)/index' || pathname === '/';
@@ -147,10 +147,13 @@ export const AppHeader = memo(function AppHeader() {
             </Text>
           </Pressable>
 
-          <View className="h-10 flex-row items-center gap-1.5 rounded-2xl border border-amber-100 bg-amber-50 px-2.5">
+          <Pressable
+            onPress={() => setShowCheckInModal(true)}
+            className="h-10 flex-row items-center gap-1.5 rounded-2xl border border-amber-100 bg-amber-50 px-2.5 active:scale-95"
+          >
             <Image source={require('../../assets/coin.png')} style={{ width: 16, height: 16 }} />
             <Text className="text-xs font-black text-amber-900">{user?.loyaltyPoints || 0}</Text>
-          </View>
+          </Pressable>
 
           <Pressable
             onPress={openCart}

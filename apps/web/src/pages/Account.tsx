@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Package, User, KeyRound, X, Heart, Copy, Gift } from 'lucide-react';
+import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
@@ -24,7 +24,7 @@ const statusSequence: OrderStatusHistoryEntry['status'][] = [
 const Account: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, token, logout, updateUser } = useAuthStore();
+  const { user, token, logout, updateUser, setShowLoyaltyModal } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const setStore = useStoreStore((state) => state.setStore);
   const mode = useServiceModeStore((state) => state.mode);
@@ -549,37 +549,81 @@ const Account: React.FC = () => {
 
                 <div className="grid gap-6 md:grid-cols-[1fr_300px]">
                   <div className="rounded-2xl bg-white p-4 shadow-sm">
-                    {/* Simplified Calendar Display */}
+                    <div className="mb-4 flex items-center justify-between">
+                      <h4 className="text-sm font-black text-primary-900">
+                        {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+                      </h4>
+                      <div className="flex gap-2">
+                        <div className="flex items-center gap-1">
+                          <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                          <span className="text-[10px] font-bold text-slate-400">Claimed</span>
+                        </div>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">
                       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d}>{d}</div>)}
                     </div>
                     <div className="grid grid-cols-7 gap-2">
-                      {[...Array(31)].map((_, i) => {
-                        const day = i + 1;
-                        const dateStr = `2026-04-${String(day).padStart(2, '0')}`;
-                        const isCheckedIn = user?.checkInHistory?.includes(dateStr);
-                        return (
-                          <div
-                            key={i}
-                            className={cn(
-                              "flex aspect-square items-center justify-center rounded-xl text-sm font-bold transition",
-                              isCheckedIn 
-                                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" 
-                                : "bg-slate-50 text-slate-400 hover:bg-slate-100"
-                            )}
-                          >
-                            {day}
-                          </div>
-                        );
-                      })}
+                      {(() => {
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const month = now.getMonth();
+                        const firstDay = new Date(year, month, 1).getDay();
+                        const daysInMonth = new Date(year, month + 1, 0).getDate();
+                        const todayStr = now.toISOString().split('T')[0];
+
+                        return [
+                          ...Array(firstDay).fill(null).map((_, i) => <div key={`empty-${i}`} />),
+                          ...Array(daysInMonth).fill(null).map((_, i) => {
+                            const day = i + 1;
+                            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            const isCheckedIn = user?.checkInHistory?.some(d => d.split('T')[0] === dateStr);
+                            const isToday = todayStr === dateStr;
+
+                            return (
+                              <div
+                                key={day}
+                                className={cn(
+                                  "relative flex aspect-square items-center justify-center rounded-xl text-xs font-bold transition",
+                                  isCheckedIn 
+                                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" 
+                                    : isToday
+                                      ? "border-2 border-primary-500 bg-primary-50 text-primary-900"
+                                      : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                                )}
+                              >
+                                {day}
+                                {isCheckedIn && (
+                                  <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-emerald-500 shadow-sm">
+                                    <CheckCircle2 size={10} />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        ];
+                      })()}
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div className="rounded-2xl bg-white p-5 border border-primary-100">
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">Current Streak</p>
-                      <h4 className="mt-2 text-3xl font-black text-primary-900">0 Days</h4>
-                      <p className="mt-2 text-sm font-medium text-primary-900/60">Check in tomorrow to start your streak!</p>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">Today's Status</p>
+                      {user?.lastCheckIn?.split('T')[0] === new Date().toISOString().split('T')[0] ? (
+                        <div className="mt-3">
+                          <div className="flex items-center gap-2 text-emerald-600">
+                            <CheckCircle2 size={20} />
+                            <span className="text-sm font-black uppercase">Already Claimed</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowLoyaltyModal(true)}
+                          className="mt-3 w-full rounded-xl bg-primary-900 py-3 text-xs font-black uppercase tracking-[0.15em] text-white transition hover:bg-primary"
+                        >
+                          Claim Today's Point
+                        </button>
+                      )}
                     </div>
                     
                     <div className="rounded-2xl bg-gradient-to-br from-primary-600 to-primary-800 p-5 text-white">

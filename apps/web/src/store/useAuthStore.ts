@@ -11,6 +11,8 @@ interface AuthState {
   setUser: (user: AuthUser | null) => void;
   logout: () => void;
   updateUser: (user: Partial<AuthUser>) => void;
+  showLoyaltyModal: boolean;
+  setShowLoyaltyModal: (show: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,11 +25,13 @@ export const useAuthStore = create<AuthState>()(
       setToken: (token) => set((state) => ({ token, isAuthenticated: !!token || !!state.user })),
       setUser: (user) => set((state) => ({ user, isAuthenticated: !!user || !!state.token })),
       logout: () => set({ user: null, token: null, isAuthenticated: false }),
-      updateUser: (updatedUser) => 
-        set((state) => ({ 
-          user: state.user ? { ...state.user, ...updatedUser } : null 
-        })),
-    }),
+        updateUser: (updatedUser) => 
+          set((state) => ({ 
+            user: state.user ? { ...state.user, ...updatedUser } : null 
+          })),
+        showLoyaltyModal: false,
+        setShowLoyaltyModal: (show) => set({ showLoyaltyModal: show }),
+      }),
     {
       name: 'vaniki-auth',
     }
