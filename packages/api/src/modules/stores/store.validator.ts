@@ -30,6 +30,7 @@ const storeSchema = z.object({
   }).optional(),
   deliveryRadius: z.number().min(0).optional(),
   gstNumber: z.string().trim().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Invalid GSTIN format').optional().or(z.literal('')),
+  sgstNumber: z.string().trim().min(5).max(30).optional().or(z.literal('')),
   cgst: z.number().min(0).max(100).optional(),
   sgst: z.number().min(0).max(100).optional(),
   igst: z.number().min(0).max(100).optional(),

@@ -213,6 +213,7 @@ export interface StoreSettings {
   openHours?: Record<string, string>;
   deliveryRadius: number;
   gstNumber?: string;
+  sgstNumber?: string;
   cgst?: number;
   sgst?: number;
   igst?: number;

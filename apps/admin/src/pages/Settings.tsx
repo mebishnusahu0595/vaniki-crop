@@ -27,6 +27,7 @@ const settingsSchema = z.object({
   saturday: z.string().optional(),
   sunday: z.string().optional(),
   gstNumber: z.string().trim().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, 'Invalid GSTIN format').optional().or(z.literal('')),
+  sgstNumber: z.string().trim().min(5).max(30).optional().or(z.literal('')),
   cgst: z.coerce.number().min(0).max(100).optional(),
   sgst: z.coerce.number().min(0).max(100).optional(),
   igst: z.coerce.number().min(0).max(100).optional(),
@@ -56,6 +57,7 @@ const settingsDefaultValues: SettingsFormInput = {
   saturday: '',
   sunday: '',
   gstNumber: '',
+  sgstNumber: '',
   cgst: 0,
   sgst: 0,
   igst: 0,
@@ -150,6 +152,7 @@ export default function SettingsPage() {
       saturday: settingsQuery.data.openHours?.saturday || '',
       sunday: settingsQuery.data.openHours?.sunday || '',
       gstNumber: settingsQuery.data.gstNumber || '',
+      sgstNumber: settingsQuery.data.sgstNumber || '',
       cgst: settingsQuery.data.cgst || 0,
       sgst: settingsQuery.data.sgst || 0,
       igst: settingsQuery.data.igst || 0,
@@ -184,6 +187,7 @@ export default function SettingsPage() {
           sunday: values.sunday,
         },
         gstNumber: values.gstNumber,
+        sgstNumber: values.sgstNumber,
         cgst: values.cgst,
         sgst: values.sgst,
         igst: values.igst,
@@ -398,6 +402,12 @@ export default function SettingsPage() {
                 <p className="mt-1 opacity-75">{gstVerification.data.message}</p>
               </div>
             ) : null}
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">SGST Number</label>
+            <input {...register('sgstNumber')} placeholder="SGST Registration Number" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 uppercase ${errors.sgstNumber ? 'border-rose-300' : 'border-primary-100'}`} />
+            {errors.sgstNumber ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.sgstNumber.message}</p> : null}
           </div>
 
           <div>

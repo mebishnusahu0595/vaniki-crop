@@ -39,6 +39,7 @@ export interface IStore extends Document {
   openHours?: IOpenHours;
   deliveryRadius: number;
   gstNumber?: string;
+  sgstNumber?: string;
   cgst?: number;
   sgst?: number;
   igst?: number;
@@ -122,6 +123,11 @@ const storeSchema = new Schema<IStore>(
       comment: 'Delivery radius in kilometers',
     },
     gstNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+    },
+    sgstNumber: {
       type: String,
       trim: true,
       uppercase: true,
