@@ -163,7 +163,7 @@ export default function ProductRequestsPage() {
                         <div className="text-right">
                           <p className="text-[8px] font-black uppercase text-primary-500">Price</p>
                           <p className="text-xs font-black text-primary-400">
-                            ₹{v.adminPrice || v.price}
+                            {v.adminPrice ? `₹${v.adminPrice}` : <span className="text-slate-600">N/A</span>}
                           </p>
                         </div>
                       </div>
