@@ -130,8 +130,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const setSession = useAdminAuthStore((state) => state.setSession);
-  const requestedMode = searchParams.get('mode') === 'login' ? 'login' : 'signup';
-  const [mode, setMode] = useState<'signup' | 'login' | 'forgot'>(requestedMode as any);
+  const requestedMode = (searchParams.get('mode') === 'login' ? 'login' : 'signup') as 'signup' | 'login' | 'forgot';
+  const [mode, setMode] = useState<'signup' | 'login' | 'forgot'>(requestedMode);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -185,8 +185,8 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    setMode(requestedMode as any);
-  }, [requestedMode]);
+    setMode(requestedMode);
+  }, [requestedMode, setMode]);
 
   const {
     register: registerSignup,
@@ -547,7 +547,7 @@ export default function LoginPage() {
                       await adminApi.forgotPassword(payload);
                       setForgotIdentifier(payload);
                       setForgotStep('reset');
-                    } catch (error) {
+                    } catch {
                       // Handled by message below
                     }
                   })}
