@@ -160,17 +160,11 @@ export default function ProductRequestsPage() {
                     {inventoryQuery.data?.find(p => p.id === selectedProductId)?.variants.map(v => (
                       <div key={v.id} className="flex items-center justify-between border-b border-white/5 pb-2 last:border-0 last:pb-0">
                         <span className="text-xs font-bold text-slate-300">{v.label}</span>
-                        <div className="flex gap-4">
-                          <div className="text-right">
-                            <p className="text-[8px] font-black uppercase text-slate-500">User Price</p>
-                            <p className="text-xs font-black text-white">₹{v.price}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[8px] font-black uppercase text-primary-500">Admin Price</p>
-                            <p className="text-xs font-black text-primary-400">
-                              {v.adminPrice ? `₹${v.adminPrice}` : <span className="text-slate-600">Not set</span>}
-                            </p>
-                          </div>
+                        <div className="text-right">
+                          <p className="text-[8px] font-black uppercase text-primary-500">Price</p>
+                          <p className="text-xs font-black text-primary-400">
+                            ₹{v.adminPrice || v.price}
+                          </p>
                         </div>
                       </div>
                     ))}
