@@ -10,29 +10,30 @@ import { Coins, Search, CheckCircle2, XCircle, Save, CheckSquare, Square } from 
 import { cn } from '../utils/cn';
 import { API_BASE_URL } from '../config/api';
 
-function resolveMediaUrl(url?: string): string {
-  if (!url) return '/placeholder.png';
-  if (url.startsWith('http')) return url;
-  
-  let base = '';
+function getApiOrigin(): string {
   if (API_BASE_URL.startsWith('http')) {
     try {
-      base = new URL(API_BASE_URL).origin;
+      const parsed = new URL(API_BASE_URL);
+      return `${parsed.protocol}//${parsed.host}`;
     } catch {
-      base = '';
+      return '';
     }
+  }
+  return typeof window !== 'undefined' ? window.location.origin.replace(/\/+$/, '') : '';
+}
+
+function resolveMediaUrl(url?: string, publicId?: string): string {
+  if (!url && !publicId) return '/placeholder.png';
+  
+  if (publicId?.startsWith('local:')) {
+    const apiOrigin = getApiOrigin();
+    return `${apiOrigin}/api/media?publicId=${encodeURIComponent(publicId)}`;
   }
   
-  if (!base && typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname.includes('vanikicrop.com')) {
-      base = 'https://vanikicrop.com';
-    } else {
-      base = window.location.origin;
-    }
-  }
-    
-  const cleaned = url.replace(/\\/g, '/').replace(/\/{2,}/g, '/');
+  if (url?.startsWith('http')) return url;
+  
+  const base = getApiOrigin();
+  const cleaned = (url || '').replace(/\\/g, '/').replace(/\/{2,}/g, '/');
   const path = cleaned.startsWith('/') ? cleaned : `/${cleaned}`;
   return `${base}${path}`;
 }
@@ -285,7 +286,7 @@ export default function LoyaltyPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <img 
-                            src={resolveMediaUrl(product.images?.[0]?.url)} 
+                            src={resolveMediaUrl(product.images?.[0]?.url, product.images?.[0]?.publicId)} 
                             className="h-10 w-10 rounded-lg object-cover bg-slate-100" 
                           />
                           <span className="text-sm font-bold text-slate-900">{product.name}</span>
