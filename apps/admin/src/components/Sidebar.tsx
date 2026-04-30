@@ -19,6 +19,7 @@ interface SidebarNavItem {
 
 const navItems: SidebarNavItem[] = [
   { to: '/orders', label: 'Orders', icon: ShoppingCart },
+  { to: '/inventory', label: 'Inventory', icon: PackageSearch },
   { to: '/product-requests', label: 'Product Requests', icon: ClipboardList },
   { to: '/settings', label: 'Profile', icon: UserRound },
 ];
