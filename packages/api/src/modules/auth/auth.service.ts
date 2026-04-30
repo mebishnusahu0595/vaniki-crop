@@ -245,7 +245,13 @@ export async function signup(
   }
 
   if (shouldIncrementReferrer && referredById) {
-    await User.findByIdAndUpdate(referredById, { $inc: { referralCount: 1 } });
+    const randomReward = crypto.randomInt(1, 11); // 1-10 points
+    await User.findByIdAndUpdate(referredById, { 
+      $inc: { 
+        referralCount: 1,
+        loyaltyPoints: randomReward
+      } 
+    });
   }
 
   const tokens = await generateTokenPair(user);
@@ -539,16 +545,24 @@ export async function resetPassword(input: any): Promise<void> {
  * @returns User document (without sensitive fields)
  */
 export async function getMe(userId: string): Promise<IUser> {
-  const user = await User.findById(userId)
+  let user = await User.findById(userId)
     .populate('selectedStore', 'name address')
     .populate({
       path: 'wishlist',
       select: 'name slug shortDescription images variants category averageRating reviewCount',
       populate: { path: 'category', select: 'name slug' },
     });
+
   if (!user) {
     throw new AppError('User not found', 404);
   }
+
+  // Ensure user has a referral code (fixes "Generating..." on frontend for older users)
+  if (!user.referralCode) {
+    user.referralCode = await generateUniqueReferralCode(user.name, user.mobile);
+    await user.save();
+  }
+
   return user;
 }
 
