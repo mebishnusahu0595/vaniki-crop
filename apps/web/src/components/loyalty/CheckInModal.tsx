@@ -13,8 +13,8 @@ export const CheckInModal: React.FC = () => {
   useEffect(() => {
     if (!isAuthenticated || !user) return;
 
-    const today = new Date().toISOString().split('T')[0];
-    const lastCheckIn = user.lastCheckIn ? user.lastCheckIn.split('T')[0] : '';
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+    const lastCheckIn = user.lastCheckIn ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(user.lastCheckIn)) : '';
 
     if (lastCheckIn !== today) {
       // Small delay to ensure layout is ready
@@ -112,7 +112,7 @@ export const CheckInModal: React.FC = () => {
                 startOfWeek.setDate(now.getDate() - dayOfWeek);
                 const dayDate = new Date(startOfWeek);
                 dayDate.setDate(startOfWeek.getDate() + i);
-                const dateStr = dayDate.toISOString().split('T')[0];
+                const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(dayDate);
                 
                 const isChecked = user?.checkInHistory?.some(d => d.split('T')[0] === dateStr);
 

@@ -14,8 +14,10 @@ router.post('/checkin', requireAuth, async (req, res, next) => {
     const user = await User.findById(req.userId);
     if (!user) throw new AppError('User not found', 404);
 
-    const today = new Date().toISOString().split('T')[0];
-    const lastCheckInStr = user.lastCheckIn ? user.lastCheckIn.toISOString().split('T')[0] : '';
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+    const lastCheckInStr = user.lastCheckIn 
+      ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(user.lastCheckIn)
+      : '';
 
     if (lastCheckInStr === today) {
       return res.status(400).json({ success: false, message: 'Already checked in today' });

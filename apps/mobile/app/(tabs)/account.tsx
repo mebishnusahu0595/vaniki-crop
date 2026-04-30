@@ -148,8 +148,21 @@ export default function AccountScreen() {
 
   return (
     <Screen>
-      <Text className="text-3xl font-black text-primary-900">{user.name}</Text>
-      <Text className="mt-2 text-sm text-primary-900/60">{user.mobile}</Text>
+      <View className="flex-row items-center justify-between">
+        <View>
+          <Text className="text-3xl font-black text-primary-900">{user.name}</Text>
+          <Text className="mt-2 text-sm text-primary-900/60">{user.mobile}</Text>
+        </View>
+        <Pressable
+          onPress={async () => {
+            await storefrontApi.logout().catch(() => undefined);
+            logout();
+          }}
+          className="h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm"
+        >
+          <Feather name="log-out" size={20} color="#DC2626" />
+        </Pressable>
+      </View>
 
       <View className="mt-5 rounded-[28px] bg-white p-5">
         <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Service Mode</Text>
@@ -262,7 +275,7 @@ export default function AccountScreen() {
                   {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
                 </Text>
               </View>
-              {user.lastCheckIn?.split('T')[0] !== new Date().toISOString().split('T')[0] && (
+              {user.lastCheckIn && new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(user.lastCheckIn)) !== new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()) && (
                 <Pressable
                   onPress={() => setShowCheckInModal(true)}
                   className="rounded-xl bg-primary-900 px-4 py-2"
@@ -278,7 +291,7 @@ export default function AccountScreen() {
                 const year = now.getFullYear();
                 const month = now.getMonth();
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
-                const todayStr = now.toISOString().split('T')[0];
+                const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(now);
 
                 return Array.from({ length: daysInMonth }, (_, i) => {
                   const day = i + 1;

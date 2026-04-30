@@ -16,8 +16,8 @@ export const CheckInModal = () => {
   useEffect(() => {
     if (!token || !user) return;
 
-    const today = new Date().toISOString().split('T')[0];
-    const lastCheckIn = user.lastCheckIn ? user.lastCheckIn.split('T')[0] : '';
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+    const lastCheckIn = user.lastCheckIn ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(user.lastCheckIn)) : '';
 
     if (lastCheckIn !== today) {
       const timer = setTimeout(() => setShowCheckInModal(true), 1500);
@@ -77,7 +77,7 @@ export const CheckInModal = () => {
                 startOfWeek.setDate(now.getDate() - dayOfWeek);
                 const dayDate = new Date(startOfWeek);
                 dayDate.setDate(startOfWeek.getDate() + i);
-                const dateStr = dayDate.toISOString().split('T')[0];
+                const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(dayDate);
                 
                 const isChecked = (user?.checkInHistory || []).some((d: string) => d.split('T')[0] === dateStr);
 

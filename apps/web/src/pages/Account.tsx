@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2 } from 'lucide-react';
+import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
@@ -336,6 +336,19 @@ const Account: React.FC = () => {
                 <span>{tab.label}</span>
               </button>
             ))}
+            <div className="pt-4 mt-4 border-t border-primary-50">
+              <button
+                onClick={() => {
+                  storefrontApi.logout().catch(() => {});
+                  logout();
+                  navigate('/login');
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black uppercase tracking-[0.16em] text-red-600 hover:bg-red-50"
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
         </aside>
 
@@ -570,7 +583,7 @@ const Account: React.FC = () => {
                         const month = now.getMonth();
                         const firstDay = new Date(year, month, 1).getDay();
                         const daysInMonth = new Date(year, month + 1, 0).getDate();
-                        const todayStr = now.toISOString().split('T')[0];
+                        const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(now);
 
                         return [
                           ...Array(firstDay).fill(null).map((_, i) => <div key={`empty-${i}`} />),
@@ -609,7 +622,7 @@ const Account: React.FC = () => {
                   <div className="space-y-4">
                     <div className="rounded-2xl bg-white p-5 border border-primary-100">
                       <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">Today's Status</p>
-                      {user?.lastCheckIn?.split('T')[0] === new Date().toISOString().split('T')[0] ? (
+                      {user?.lastCheckIn && new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(user.lastCheckIn)) === new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()) ? (
                         <div className="mt-3">
                           <div className="flex items-center gap-2 text-emerald-600">
                             <CheckCircle2 size={20} />

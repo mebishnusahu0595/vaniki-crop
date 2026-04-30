@@ -48,7 +48,7 @@
     },
     "android": {
       "package": "com.vanikicrop.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "targetSdkVersion": 35,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
