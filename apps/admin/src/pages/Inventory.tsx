@@ -141,8 +141,13 @@ export default function InventoryPage() {
                     </div>
                   )}
                   <div>
-                    <p className="font-black text-slate-900">{product.name}</p>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{product.slug}</p>
+                    <p className="font-black text-slate-900 leading-tight">{product.name}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 mt-0.5">{product.slug}</p>
+                    {product.shortDescription && (
+                      <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-500 line-clamp-2 max-w-lg">
+                        {product.shortDescription}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
