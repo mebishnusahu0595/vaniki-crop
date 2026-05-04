@@ -175,7 +175,7 @@ export default function ProductRequestsPage() {
                   <option value="">Choose product</option>
                   {inventoryQuery.data?.map((product) => (
                     <option key={product.id} value={product.id}>
-                      {product.name}
+                      {product.name} {product.shortDescription ? `(${product.shortDescription})` : ''}
                     </option>
                   ))}
                 </select>
@@ -244,7 +244,7 @@ export default function ProductRequestsPage() {
 
               {selectedProductId && (
                 <div className="md:col-span-2 rounded-2xl bg-primary-50/50 p-5 border border-primary-100 shadow-inner">
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <div>
                       <label className="mb-2 block text-xs font-bold text-slate-500">Peti Quantity</label>
                       <input
@@ -259,12 +259,6 @@ export default function ProductRequestsPage() {
                       <label className="mb-2 block text-xs font-bold text-slate-500">Peti Size</label>
                       <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-3 text-base font-black text-slate-500">
                         {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-xs font-bold text-slate-500">Offer Price</label>
-                      <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-3 text-base font-black text-emerald-600">
-                        {offerPrice ? `₹${offerPrice}` : 'N/A'}
                       </div>
                     </div>
                     <div>

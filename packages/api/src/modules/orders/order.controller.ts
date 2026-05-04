@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as orderService from './order.service.js';
-import { generateOrderInvoice, generateB2BInvoice } from './invoice.service.js';
+import { generateInvoicePdf, generateB2BInvoicePdf } from './invoice.service.js';
 import { Order } from '../../models/Order.model.js';
 import { User } from '../../models/User.model.js';
 import { Store } from '../../models/Store.model.js';
@@ -118,7 +118,7 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
     const store = await Store.findById(order.storeId);
     if (!user || !store) throw new AppError('Incomplete order data', 400);
 
-    const pdfBuffer = await generateOrderInvoice(order as any, user as any, store as any);
+    const pdfBuffer = await generateInvoicePdf(order);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${order.orderNumber}.pdf`);
@@ -273,11 +273,11 @@ export async function downloadB2BInvoice(req: Request, res: Response, next: Next
     const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
     if (!siteSettings) throw new AppError('Site settings missing', 404);
 
-    const pdfBuffer = await generateB2BInvoice(
+    const pdfBuffer = await generateB2BInvoicePdf({
       invoice,
       siteSettings,
-      store as any
-    );
+      store
+    });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.invoiceNumber}.pdf`);

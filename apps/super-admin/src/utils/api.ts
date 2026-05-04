@@ -571,4 +571,24 @@ export const adminApi = {
     });
     return response.data;
   },
+  getStaffList: async () => {
+    const response = await api.get<ApiResponse<any[]>>('/staff');
+    return response.data.data;
+  },
+  createStaff: async (payload: { name: string; mobile: string; email?: string }) => {
+    const response = await api.post<ApiResponse<any>>('/staff', payload);
+    return response.data.data;
+  },
+  updateStaffStatus: async (id: string, isActive: boolean) => {
+    const response = await api.patch<ApiResponse<any>>(`/staff/${id}/status`, { isActive });
+    return response.data.data;
+  },
+  deleteStaff: async (id: string) => {
+    const response = await api.delete<ApiResponse<any>>(`/staff/${id}`);
+    return response.data;
+  },
+  getStaffReferrals: async (id: string) => {
+    const response = await api.get<ApiResponse<any[]>>(`/staff/${id}/referrals`);
+    return response.data.data;
+  },
 };

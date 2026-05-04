@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, type IUser } from '../../models/User.model.js';
+import { Staff } from '../../models/Staff.model.js';
 import { firebaseAdmin } from '../../config/firebase.js';
 import { Product } from '../../models/Product.model.js';
 import { Store } from '../../models/Store.model.js';
@@ -206,12 +207,24 @@ export async function signup(
   }
 
   let referredById: IUser['_id'] | undefined;
+  let referredByStaffId: any | undefined;
+
   if (referralCode) {
-    const referrer = await User.findOne({ referralCode: referralCode.trim().toUpperCase() }).select('_id');
-    if (!referrer) {
-      throw new AppError('Invalid referral code', 400);
+    const code = referralCode.trim().toUpperCase();
+    
+    // First check if it's a User referral
+    const referrer = await User.findOne({ referralCode: code }).select('_id');
+    if (referrer) {
+      referredById = referrer._id;
+    } else {
+      // Then check if it's a Staff referral
+      const staff = await Staff.findOne({ referralCode: code, isActive: true }).select('_id');
+      if (staff) {
+        referredByStaffId = staff._id;
+      } else {
+        throw new AppError('Invalid referral code', 400);
+      }
     }
-    referredById = referrer._id;
   }
 
   const ownReferralCode = await generateUniqueReferralCode(name, mobile);
@@ -228,6 +241,9 @@ export async function signup(
       existingUser.referredBy = referredById;
       shouldIncrementReferrer = true;
     }
+    if (referredByStaffId && !existingUser.referredByStaff) {
+      existingUser.referredByStaff = referredByStaffId;
+    }
     existingUser.isActive = true;
     existingUser.otp = undefined;
     existingUser.otpExpiry = undefined;
@@ -240,6 +256,7 @@ export async function signup(
       password,
       referralCode: ownReferralCode,
       ...(referredById ? { referredBy: referredById } : {}),
+      ...(referredByStaffId ? { referredByStaff: referredByStaffId } : {}),
       isActive: true,
     });
     shouldIncrementReferrer = Boolean(referredById);

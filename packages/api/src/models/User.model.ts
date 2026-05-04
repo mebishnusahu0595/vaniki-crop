@@ -53,6 +53,7 @@ export interface IUser extends Document {
   wishlist: mongoose.Types.ObjectId[];
   referralCode: string;
   referredBy?: mongoose.Types.ObjectId | null;
+  referredByStaff?: mongoose.Types.ObjectId | null;
   referralCount: number;
   isActive: boolean;
   otp?: string;
@@ -177,6 +178,11 @@ const userSchema = new Schema<IUser>(
     referredBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      default: null,
+    },
+    referredByStaff: {
+      type: Schema.Types.ObjectId,
+      ref: 'Staff',
       default: null,
     },
     referralCount: {
