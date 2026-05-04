@@ -273,6 +273,10 @@ export const adminApi = {
     const response = await api.get<ApiResponse<DealerProductRequest[]>>('/admin/product-requests', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
   },
+  garages: async () => {
+    const response = await api.get<ApiResponse<string[]>>('/admin/garages');
+    return response.data.data;
+  },
   createProductRequest: async (payload: {
     productId?: string;
     productName?: string;
@@ -280,8 +284,6 @@ export const adminApi = {
     requestedPack?: string;
     garageName: string;
     petiQuantity: number;
-    petiSize: number;
-    petiUnit: 'Liter' | 'Kg';
     notes?: string;
   }) => {
     const response = await api.post<ApiResponse<DealerProductRequest>>('/admin/product-requests', payload);

@@ -267,6 +267,7 @@ export const updateSiteSettingsSchema = z.object({
       metaTitle: z.string().trim().max(160).optional(),
       metaDescription: z.string().trim().max(300).optional(),
       loyaltyPointRupeeValue: numberFromInput(z.number().min(0)).optional(),
+      garageNames: z.array(z.string()).optional(),
     })
     .refine((value) => Object.keys(value).length > 0, {
       message: 'At least one setting is required',

@@ -14,6 +14,7 @@ export interface ISiteSetting extends Document {
   metaTitle?: string;
   metaDescription?: string;
   loyaltyPointRupeeValue: number;
+  garageNames?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,6 +84,10 @@ const siteSettingSchema = new Schema<ISiteSetting>(
       type: Number,
       default: 1,
       min: 0,
+    },
+    garageNames: {
+      type: [String],
+      default: [],
     },
   },
   {

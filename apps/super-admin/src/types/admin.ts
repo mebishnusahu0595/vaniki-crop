@@ -46,6 +46,8 @@ export interface Product {
   isFeatured: boolean;
   loyaltyPointEligible?: boolean;
   maxLoyaltyPoints?: number;
+  petiSize?: number;
+  petiUnit?: 'Liter' | 'Kg';
   metaTitle?: string;
   metaDescription?: string;
   totalSold?: number;
@@ -404,6 +406,7 @@ export interface SiteSettings {
   metaTitle?: string;
   metaDescription?: string;
   loyaltyPointRupeeValue?: number;
+  garageNames?: string[];
 }
 
 export interface StoreSecretsResponse {

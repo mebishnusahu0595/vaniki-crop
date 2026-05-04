@@ -84,6 +84,9 @@ export interface DealerInventoryProduct {
   name: string;
   slug: string;
   image?: string;
+  shortDescription?: string;
+  petiSize?: number;
+  petiUnit?: 'Liter' | 'Kg';
   variants: DealerInventoryVariant[];
 }
 

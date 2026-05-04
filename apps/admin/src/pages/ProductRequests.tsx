@@ -10,13 +10,10 @@ import type { DealerProductRequest } from '../types/admin';
 export default function ProductRequestsPage() {
   const queryClient = useQueryClient();
   const [selectedProductId, setSelectedProductId] = useState('');
-  const [requestedProductName, setRequestedProductName] = useState('');
   const [requestedQuantity, setRequestedQuantity] = useState(1);
   const [requestedPack, setRequestedPack] = useState('');
   const [garageName, setGarageName] = useState('');
   const [petiQuantity, setPetiQuantity] = useState(1);
-  const [petiSize, setPetiSize] = useState(12);
-  const [petiUnit, setPetiUnit] = useState<'Liter' | 'Kg'>('Liter');
   const [requestNotes, setRequestNotes] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<DealerProductRequest | null>(null);
 
@@ -30,29 +27,28 @@ export default function ProductRequestsPage() {
     queryFn: () => adminApi.productRequests({ limit: 50 }),
   });
 
+  const garagesQuery = useQuery({
+    queryKey: ['admin-garages'],
+    queryFn: adminApi.garages,
+  });
+
   const createRequestMutation = useMutation({
     mutationFn: () =>
       adminApi.createProductRequest({
         productId: selectedProductId || undefined,
-        productName: requestedProductName || undefined,
         requestedQuantity,
         requestedPack,
         garageName,
         petiQuantity,
-        petiSize,
-        petiUnit,
         notes: requestNotes,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-product-requests'] });
       setSelectedProductId('');
-      setRequestedProductName('');
       setRequestedQuantity(1);
       setRequestedPack('');
       setGarageName('');
       setPetiQuantity(1);
-      setPetiSize(12);
-      setPetiUnit('Liter');
       setRequestNotes('');
     },
   });
@@ -81,20 +77,26 @@ export default function ProductRequestsPage() {
           </div>
 
           <div className="space-y-4">
-            <div>
-              <label htmlFor="garage-name" className="mb-2 block text-sm font-bold text-slate-700">
-                Garage Name (Kahan se aaye material)
-              </label>
-              <input
-                id="garage-name"
-                value={garageName}
-                onChange={(e) => setGarageName(e.target.value)}
-                placeholder="Enter garage name"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 focus:ring-2 focus:ring-primary-500 outline-none transition"
-              />
-            </div>
-
             <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label htmlFor="garage-name" className="mb-2 block text-sm font-bold text-slate-700">
+                  Garage Name (Kahan se aaye material)
+                </label>
+                <select
+                  id="garage-name"
+                  value={garageName}
+                  onChange={(e) => setGarageName(e.target.value)}
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 focus:ring-2 focus:ring-primary-500 outline-none transition"
+                >
+                  <option value="">Select a garage</option>
+                  {garagesQuery.data?.map((garage) => (
+                    <option key={garage} value={garage}>
+                      {garage}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label htmlFor="request-existing-product" className="mb-2 block text-sm font-bold text-slate-700">
                   Select Product
@@ -103,12 +105,7 @@ export default function ProductRequestsPage() {
                   id="request-existing-product"
                   value={selectedProductId}
                   onChange={(event) => {
-                    const nextId = event.target.value;
-                    setSelectedProductId(nextId);
-                    const selectedProduct = inventoryQuery.data?.find((product) => product.id === nextId);
-                    if (selectedProduct) {
-                      setRequestedProductName(selectedProduct.name);
-                    }
+                    setSelectedProductId(event.target.value);
                   }}
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition"
                 >
@@ -119,19 +116,11 @@ export default function ProductRequestsPage() {
                     </option>
                   ))}
                 </select>
-              </div>
-
-              <div>
-                <label htmlFor="request-product-name" className="mb-2 block text-sm font-bold text-slate-700">
-                  Product Name (Manual)
-                </label>
-                <input
-                  id="request-product-name"
-                  value={requestedProductName}
-                  onChange={(event) => setRequestedProductName(event.target.value)}
-                  placeholder="Or enter name manually"
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition"
-                />
+                {selectedProductId && (
+                  <p className="mt-2 text-xs text-slate-500 italic">
+                    {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.shortDescription}
+                  </p>
+                )}
               </div>
 
               {selectedProductId && (
@@ -173,45 +162,38 @@ export default function ProductRequestsPage() {
               )}
             </div>
 
-            <div className="rounded-2xl bg-primary-50/50 p-4 border border-primary-100">
-              <p className="text-xs font-black uppercase tracking-[0.1em] text-primary-600 mb-4">Peti Details (Box/Case)</p>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <label className="mb-2 block text-xs font-bold text-slate-500">Peti Quantity</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={petiQuantity}
-                    onChange={(e) => setPetiQuantity(Math.max(1, Number(e.target.value) || 1))}
-                    className="w-full rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm font-bold"
-                  />
+            {selectedProductId ? (
+              <div className="rounded-2xl bg-primary-50/50 p-4 border border-primary-100">
+                <p className="text-xs font-black uppercase tracking-[0.1em] text-primary-600 mb-4">Peti Details (Box/Case)</p>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label className="mb-2 block text-xs font-bold text-slate-500">Peti Quantity</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={petiQuantity}
+                      onChange={(e) => setPetiQuantity(Math.max(1, Number(e.target.value) || 1))}
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-bold text-slate-500">Peti Size</label>
+                    <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-2 text-sm font-bold text-slate-500">
+                      {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-bold text-slate-500">Unit</label>
+                    <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-2 text-sm font-bold text-slate-500">
+                      {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiUnit || 'Liter'}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-2 block text-xs font-bold text-slate-500">Peti Size</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={petiSize}
-                    onChange={(e) => setPetiSize(Math.max(1, Number(e.target.value) || 1))}
-                    className="w-full rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-xs font-bold text-slate-500">Unit</label>
-                  <select
-                    value={petiUnit}
-                    onChange={(e) => setPetiUnit(e.target.value as 'Liter' | 'Kg')}
-                    className="w-full rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm font-bold"
-                  >
-                    <option value="Liter">Liter</option>
-                    <option value="Kg">Kg</option>
-                  </select>
-                </div>
+                <p className="mt-3 text-xs font-semibold text-primary-700">
+                  Total Request: {petiQuantity * (inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12)} {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiUnit || 'Liter'}s ({petiQuantity} Peti × {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12} {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiUnit || 'Liter'})
+                </p>
               </div>
-              <p className="mt-3 text-xs font-semibold text-primary-700">
-                Total Request: {petiQuantity * petiSize} {petiUnit}s ({petiQuantity} Peti × {petiSize} {petiUnit})
-              </p>
-            </div>
+            ) : null}
 
             <div>
               <label htmlFor="request-notes" className="mb-2 block text-sm font-bold text-slate-700">
@@ -228,7 +210,7 @@ export default function ProductRequestsPage() {
 
             <button
               type="button"
-              disabled={createRequestMutation.isPending || !garageName || !requestedProductName}
+              disabled={createRequestMutation.isPending || !garageName || !selectedProductId}
               onClick={() => createRequestMutation.mutate()}
               className="w-full rounded-2xl bg-primary-500 py-4 text-sm font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary-500/20 hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >

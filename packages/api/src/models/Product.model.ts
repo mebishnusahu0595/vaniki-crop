@@ -65,6 +65,8 @@ export interface IProduct extends Document {
   reviewCount: number;
   loyaltyPointEligible: boolean;
   maxLoyaltyPoints: number;
+  petiSize: number;
+  petiUnit: 'Liter' | 'Kg';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -177,6 +179,8 @@ const productSchema = new Schema<IProduct>(
     reviewCount: { type: Number, default: 0, min: 0 },
     loyaltyPointEligible: { type: Boolean, default: false },
     maxLoyaltyPoints: { type: Number, default: 0 },
+    petiSize: { type: Number, default: 12 },
+    petiUnit: { type: String, enum: ['Liter', 'Kg'], default: 'Liter' },
   },
   {
     timestamps: true,

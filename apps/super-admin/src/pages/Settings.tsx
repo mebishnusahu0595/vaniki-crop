@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
+import { Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
@@ -19,6 +20,7 @@ const settingsSchema = z.object({
   metaTitle: z.string().max(160, 'Meta title can be up to 160 characters').optional(),
   metaDescription: z.string().max(300, 'Meta description can be up to 300 characters').optional(),
   loyaltyPointRupeeValue: z.coerce.number().min(0, 'Point value cannot be negative'),
+  garageNames: z.array(z.string().trim().min(1, 'Garage name is required')).default([]),
 });
 
 type SettingsFormInput = z.input<typeof settingsSchema>;
@@ -36,6 +38,7 @@ const settingsDefaultValues: SettingsFormInput = {
   metaTitle: '',
   metaDescription: '',
   loyaltyPointRupeeValue: 1,
+  garageNames: [],
 };
 
 export default function SettingsPage() {
@@ -45,13 +48,18 @@ export default function SettingsPage() {
 
   const settingsQuery = useQuery({ queryKey: ['super-admin-site-settings'], queryFn: adminApi.siteSettings });
 
-  const { register, handleSubmit, reset, formState: { isSubmitting, errors, isDirty } } = useForm<
+  const { register, handleSubmit, reset, control, formState: { isSubmitting, errors, isDirty } } = useForm<
     SettingsFormInput,
     undefined,
     SettingsFormOutput
   >({
     resolver: zodResolver(settingsSchema),
     defaultValues: settingsDefaultValues,
+  });
+
+  const { fields: garageFields, append: appendGarage, remove: removeGarage } = useFieldArray({
+    control,
+    name: 'garageNames' as never,
   });
 
   useEffect(() => {
@@ -69,6 +77,7 @@ export default function SettingsPage() {
       metaTitle: settingsQuery.data.metaTitle || '',
       metaDescription: settingsQuery.data.metaDescription || '',
       loyaltyPointRupeeValue: settingsQuery.data.loyaltyPointRupeeValue || 1,
+      garageNames: settingsQuery.data.garageNames || [],
     });
   }, [reset, settingsQuery.data]);
 
@@ -160,6 +169,43 @@ export default function SettingsPage() {
             <input type="number" step="0.01" {...register('loyaltyPointRupeeValue', { valueAsNumber: true })} placeholder="Rupee value of 1 point" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.loyaltyPointRupeeValue ? 'border-rose-300' : 'border-primary-100'}`} />
             <p className="mt-1 text-[10px] font-bold text-slate-400">Value of 1 loyalty point in INR. (e.g. 1 point = 1 Rupee)</p>
             {errors.loyaltyPointRupeeValue ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.loyaltyPointRupeeValue.message}</p> : null}
+          </div>
+
+          <div className="md:col-span-2 mt-4">
+            <div className="flex items-center justify-between border-b border-primary-100 pb-2 mb-4">
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary-600">Garages</h3>
+              <button
+                type="button"
+                onClick={() => appendGarage('')}
+                className="flex items-center gap-1.5 rounded-xl bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-600 hover:bg-primary-100 transition"
+              >
+                <Plus size={14} />
+                Add Garage
+              </button>
+            </div>
+            
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {garageFields.map((field, index) => (
+                <div key={field.id} className="relative flex items-center">
+                  <input
+                    {...register(`garageNames.${index}` as never)}
+                    placeholder="Garage Name"
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 pr-10 text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGarage(index)}
+                    className="absolute right-3 text-slate-400 hover:text-rose-500 transition"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+              {garageFields.length === 0 && (
+                <p className="col-span-full text-sm italic text-slate-400">No garages added yet.</p>
+              )}
+            </div>
+            {errors.garageNames && <p className="mt-2 text-xs font-semibold text-rose-600">Please enter valid garage names</p>}
           </div>
         </div>
 

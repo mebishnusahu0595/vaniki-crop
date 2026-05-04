@@ -4,6 +4,7 @@ import { DealerInventory } from '../../models/DealerInventory.model.js';
 import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
 import { ProductRequest } from '../../models/ProductRequest.model.js';
+import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { User } from '../../models/User.model.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
 
@@ -129,7 +130,7 @@ export async function listStoreCustomers(storeId: string, query: Record<string, 
 
 export async function listDealerInventory(storeId: string) {
   const products = await Product.find({ isActive: true })
-    .select('name slug images category variants isActive')
+    .select('name slug images category variants isActive shortDescription petiSize petiUnit')
     .populate('category', 'name')
     .sort({ updatedAt: -1 });
 
@@ -149,6 +150,9 @@ export async function listDealerInventory(storeId: string) {
     slug: product.slug,
     image: product.images?.[0]?.url,
     category: product.category,
+    shortDescription: product.shortDescription,
+    petiSize: product.petiSize,
+    petiUnit: product.petiUnit,
     variants: product.variants.map((variant: any) => {
       const variantId = variant._id.toString();
       const key = `${(product._id as mongoose.Types.ObjectId).toString()}:${variantId}`;
@@ -242,16 +246,21 @@ export async function createDealerProductRequest(
 
   let productId: mongoose.Types.ObjectId | undefined;
   let productName = typeof input.productName === 'string' ? input.productName.trim() : '';
+  let petiSize = 12;
+  let petiUnit = 'Liter';
 
   if (typeof input.productId === 'string' && mongoose.Types.ObjectId.isValid(input.productId)) {
-    const product = await Product.findById(input.productId).select('name');
+    const product = await Product.findById(input.productId).select('name petiSize petiUnit shortDescription');
     if (!product) {
       throw new AppError('Selected product not found', 404);
     }
     productId = product._id as mongoose.Types.ObjectId;
     if (!productName) {
-      productName = product.name;
+      // Use shortDescription as productName for requests if available, otherwise fallback to name
+      productName = product.shortDescription || product.name;
     }
+    if (product.petiSize) petiSize = product.petiSize;
+    if (product.petiUnit) petiUnit = product.petiUnit;
   }
 
   if (!productName) {
@@ -267,8 +276,8 @@ export async function createDealerProductRequest(
     requestedPack,
     garageName: typeof input.garageName === 'string' ? input.garageName.trim() : 'Unknown Garage',
     petiQuantity: Number(input.petiQuantity) || 1,
-    petiSize: Number(input.petiSize) || 12,
-    petiUnit: ['Liter', 'Kg'].includes(input.petiUnit) ? input.petiUnit : 'Liter',
+    petiSize: petiSize,
+    petiUnit: petiUnit,
     notes,
     status: 'pending',
   });
@@ -295,4 +304,9 @@ export async function listDealerProductRequests(storeId: string, query: Record<s
   ]);
 
   return createPaginationResponse(rows, total, page, limit);
+}
+
+export async function getGarages(): Promise<string[]> {
+  const settings = await SiteSetting.findOne({ singletonKey: 'default' }).select('garageNames');
+  return settings?.garageNames || [];
 }

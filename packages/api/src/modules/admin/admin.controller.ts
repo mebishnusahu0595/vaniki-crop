@@ -65,3 +65,12 @@ export async function listProductRequests(req: Request, res: Response, next: Nex
     next(error);
   }
 }
+
+export async function getGarages(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const garages = await adminService.getGarages();
+    res.status(200).json({ success: true, data: garages });
+  } catch (error) {
+    next(error);
+  }
+}
