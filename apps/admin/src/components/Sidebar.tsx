@@ -1,4 +1,5 @@
 import {
+  Boxes,
   PackageSearch,
   UserRound,
   ShoppingCart,

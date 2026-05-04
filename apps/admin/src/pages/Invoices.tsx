@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../utils/api';
-import { FileText, Download, Calendar, ArrowRight, Loader2 } from 'lucide-react';
+import { FileText, Download, Calendar, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function InvoicesPage() {
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['admin-b2b-invoices'],
     queryFn: () => adminApi.getB2BInvoices({ limit: 50 }),
   });

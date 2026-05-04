@@ -101,7 +101,7 @@ app.use(globalLimiter);
 // ─── Body Parsing, Cookies & Logging ─────────────────────────────────────
 app.use(
   express.json({
-    limit: '10mb',
+    limit: '50mb',
     verify: (req: Request, _res: Response, buf: Buffer) => {
       if (req.originalUrl && req.originalUrl.includes('/api/payments/webhook')) {
         (req as any).rawBody = buf.toString('utf8');
@@ -109,7 +109,7 @@ app.use(
     },
   }),
 );
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 app.use(morgan('dev'));
 app.use('/uploads', express.static(uploadsDirectory));
