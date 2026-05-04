@@ -16,6 +16,7 @@ import authRoutes from './modules/auth/auth.routes.js';
 import { categoryPublicRoutes, categoryAdminRoutes } from './modules/categories/category.routes.js';
 import { productPublicRoutes, productAdminRoutes } from './modules/products/product.routes.js';
 import orderRoutes from './modules/orders/order.routes.js';
+import b2bInvoiceRoutes from './modules/orders/b2b-invoice.routes.js'; // NEW
 import paymentRoutes from './modules/payments/payment.routes.js';
 import couponRoutes from './modules/coupons/coupon.routes.js';
 import storeRoutes from './modules/stores/store.routes.js';
@@ -196,6 +197,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryPublicRoutes);
 app.use('/api/products', extractStoreId, productPublicRoutes);
 app.use('/api/orders', extractStoreId, orderRoutes);
+app.use('/api/b2b-invoices', b2bInvoiceRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/coupons', extractStoreId, couponRoutes);
 app.use('/api/stores', storeRoutes);

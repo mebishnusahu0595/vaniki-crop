@@ -562,7 +562,11 @@ export const adminApi = {
     invoiceNumber?: string;
     invoiceDate?: string;
   }) => {
-    const response = await api.post('/superadmin/invoices/create', payload, {
+    const response = await api.post<ApiResponse<any>>('/b2b-invoices/super-admin/create', payload);
+    return response.data.data;
+  },
+  downloadB2BInvoice: async (id: string) => {
+    const response = await api.get(`/b2b-invoices/download/${id}`, {
       responseType: 'blob',
     });
     return response.data;

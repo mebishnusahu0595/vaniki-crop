@@ -51,7 +51,4 @@ router.patch('/admin/:id/status', requireAuth, requireStoreAdmin, validate(updat
 /** GET /api/super-admin/orders — Global order list */
 router.get('/super-admin/list', requireAuth, requireSuperAdmin, orderController.getSuperAdminOrders);
 
-/** POST /api/super-admin/invoices/create — Create B2B invoice */
-router.post('/super-admin/invoices/create', requireAuth, requireSuperAdmin, validate(generateB2BInvoiceSchema), orderController.createB2BInvoice);
-
 export default router;

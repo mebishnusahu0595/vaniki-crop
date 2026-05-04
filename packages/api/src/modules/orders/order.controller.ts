@@ -5,7 +5,9 @@ import { Order } from '../../models/Order.model.js';
 import { User } from '../../models/User.model.js';
 import { Store } from '../../models/Store.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
+import { B2BInvoice } from '../../models/B2BInvoice.model.js';
 import { AppError } from '../../utils/AppError.js';
+import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
 
 // ─── Customer Controllers ────────────────────────────────────────────────
 
@@ -186,8 +188,8 @@ export async function updateOrderStatus(req: Request, res: Response, next: NextF
 }
 
 /**
- * POST /api/super-admin/invoices/create
- * Generates a B2B invoice from platform to store.
+ * POST /api/b2b-invoices/super-admin/create
+ * Generates and persists a B2B invoice from platform to store.
  */
 export async function createB2BInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -199,14 +201,86 @@ export async function createB2BInvoice(req: Request, res: Response, next: NextFu
     const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
     if (!siteSettings) throw new AppError('Site settings not found', 404);
 
+    // Calculate totals for persistence
+    let subtotal = 0;
+    let totalTaxAmount = 0;
+    const processedItems = items.map((item: any) => {
+      const taxAmount = (item.price * item.qty * item.taxRate) / 100;
+      const total = (item.price * item.qty) + taxAmount;
+      subtotal += item.price * item.qty;
+      totalTaxAmount += taxAmount;
+      return { ...item, taxAmount, total };
+    });
+
+    const finalInvoiceNumber = invoiceNumber || `B2B-${Date.now()}`;
+    const finalInvoiceDate = invoiceDate ? new Date(invoiceDate) : new Date();
+
+    const invoice = await B2BInvoice.create({
+      storeId,
+      invoiceNumber: finalInvoiceNumber,
+      invoiceDate: finalInvoiceDate,
+      items: processedItems,
+      subtotal,
+      totalTaxAmount,
+      totalAmount: subtotal + totalTaxAmount,
+    });
+
+    res.status(201).json({ success: true, data: invoice });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/b2b-invoices/admin/list
+ */
+export async function getAdminB2BInvoices(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const storeId = req.userStoreId;
+    if (!storeId) throw new AppError('Store context not found', 400);
+
+    const { page, limit, skip } = parsePagination(req.query);
+    const filter = { storeId };
+
+    const [invoices, total] = await Promise.all([
+      B2BInvoice.find(filter).sort({ invoiceDate: -1 }).skip(skip).limit(limit),
+      B2BInvoice.countDocuments(filter),
+    ]);
+
+    res.status(200).json(createPaginationResponse(invoices, total, page, limit));
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/b2b-invoices/download/:id
+ */
+export async function downloadB2BInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const invoice = await B2BInvoice.findById(id);
+    if (!invoice) throw new AppError('Invoice not found', 404);
+
+    // Check permissions
+    if (req.userRole !== 'superAdmin' && invoice.storeId.toString() !== req.userStoreId) {
+      throw new AppError('Unauthorized access to invoice', 403);
+    }
+
+    const store = await Store.findById(invoice.storeId);
+    if (!store) throw new AppError('Store data missing', 404);
+
+    const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
+    if (!siteSettings) throw new AppError('Site settings missing', 404);
+
     const pdfBuffer = await generateB2BInvoice(
-      { items, invoiceNumber, invoiceDate },
+      invoice,
       siteSettings,
       store as any
     );
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=b2b-invoice-${store.name.replace(/\s+/g, '-')}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.invoiceNumber}.pdf`);
     res.send(pdfBuffer);
   } catch (error) {
     next(error);

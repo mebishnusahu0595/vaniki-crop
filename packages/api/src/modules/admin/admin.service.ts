@@ -283,6 +283,8 @@ export async function createDealerProductRequest(
       petiUnit: petiUnit,
       notes: notes || input.notes,
       status: 'pending',
+      // Add price and HSN if provided (extending model implicitly or just notes)
+      superAdminNote: item.price ? `Dealer Price: ₹${item.price}${item.hsnCode ? ' | HSN: ' + item.hsnCode : ''}` : undefined,
     });
 
     results.push(request);

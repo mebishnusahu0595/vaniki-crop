@@ -1,9 +1,8 @@
-import {
-  Boxes,
   PackageSearch,
   UserRound,
   ShoppingCart,
   ClipboardList,
+  FileText,
   X,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -20,6 +19,7 @@ interface SidebarNavItem {
 const navItems: SidebarNavItem[] = [
   { to: '/orders', label: 'Orders', icon: ShoppingCart },
   { to: '/inventory', label: 'Inventory', icon: PackageSearch },
+  { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/product-requests', label: 'Product Requests', icon: ClipboardList },
   { to: '/request-history', label: 'Request History', icon: ClipboardList },
   { to: '/settings', label: 'Profile', icon: UserRound },

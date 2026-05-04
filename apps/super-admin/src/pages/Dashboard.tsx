@@ -242,8 +242,12 @@ function B2BInvoiceCreator({ stores }: { stores: any[] }) {
     if (items.some(i => !i.productName || i.price <= 0)) return alert('Please fill item details correctly');
 
     setIsGenerating(true);
+    setIsGenerating(true);
     try {
-      const blob = await adminApi.createB2BInvoice({ storeId, items, invoiceNumber });
+      const response = await adminApi.createB2BInvoice({ storeId, items, invoiceNumber });
+      alert(`B2B Invoice ${response.invoiceNumber} has been generated and saved successfully. The dealer can now view it in their portal.`);
+      // Optionally download as well
+      const blob = await adminApi.downloadB2BInvoice(response.id || response._id);
       const url = window.URL.createObjectURL(blob as any);
       const a = document.createElement('a');
       a.href = url;
@@ -251,6 +255,10 @@ function B2BInvoiceCreator({ stores }: { stores: any[] }) {
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
+      
+      // Reset form
+      setItems([{ productName: '', hsnCode: '', qty: 1, price: 0, taxRate: 18 }]);
+      setInvoiceNumber(`B2B-${Date.now().toString().slice(-6)}`);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to generate invoice');
     } finally {
@@ -338,7 +346,7 @@ function B2BInvoiceCreator({ stores }: { stores: any[] }) {
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-600 px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-white hover:bg-primary-700 disabled:opacity-50"
       >
         <FileText size={18} />
-        {isGenerating ? 'Generating PDF...' : 'Generate & Download B2B Invoice'}
+        {isGenerating ? 'Saving & Generating...' : 'Save & Generate B2B Invoice'}
       </button>
     </div>
   );

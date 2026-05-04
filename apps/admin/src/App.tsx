@@ -5,6 +5,7 @@ import OrdersPage from './pages/Orders';
 import InventoryPage from './pages/Inventory';
 import ProductRequestsPage from './pages/ProductRequests';
 import SettingsPage from './pages/Profile';
+import InvoicesPage from './pages/Invoices';
 
 import RequestHistoryPage from './pages/RequestHistory';
 
@@ -18,6 +19,7 @@ function App() {
           <Route path="/" element={<Navigate to="/orders" replace />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/product-requests" element={<ProductRequestsPage />} />
           <Route path="/request-history" element={<RequestHistoryPage />} />
           <Route path="/settings" element={<SettingsPage />} />

@@ -15,6 +15,8 @@ interface CartItem {
   petiUnit: string;
   variantLabel: string;
   variantId: string;
+  price?: number;
+  hsnCode?: string;
 }
 
 export default function ProductRequestsPage() {
@@ -25,6 +27,8 @@ export default function ProductRequestsPage() {
   const [garageName, setGarageName] = useState('');
   const [petiQuantity, setPetiQuantity] = useState(1);
   const [requestNotes, setRequestNotes] = useState('');
+  const [price, setPrice] = useState<number>(0);
+  const [hsnCode, setHsnCode] = useState('');
 
   const inventoryQuery = useQuery({
     queryKey: ['admin-dealer-inventory'],
@@ -64,12 +68,16 @@ export default function ProductRequestsPage() {
       petiUnit: product.petiUnit || 'Liter',
       variantLabel: variant.label,
       variantId: variant.id,
+      price: price > 0 ? price : undefined,
+      hsnCode: hsnCode.trim() || undefined,
     };
 
     setCart([...cart, newItem]);
     setSelectedProductId('');
     setRequestedPack('');
     setPetiQuantity(1);
+    setPrice(0);
+    setHsnCode('');
   };
 
   const removeFromCart = (id: string) => {
@@ -85,6 +93,8 @@ export default function ProductRequestsPage() {
           productId: item.productId,
           petiQuantity: item.petiQuantity,
           requestedPack: item.variantLabel,
+          price: item.price,
+          hsnCode: item.hsnCode,
         })),
       }),
     onSuccess: () => {
@@ -196,7 +206,7 @@ export default function ProductRequestsPage() {
 
               {selectedProductId && (
                 <div className="md:col-span-2 rounded-2xl bg-primary-50/50 p-5 border border-primary-100 shadow-inner">
-                  <div className="grid gap-4 md:grid-cols-3">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div>
                       <label className="mb-2 block text-xs font-bold text-slate-500">Peti Quantity</label>
                       <input
@@ -214,10 +224,24 @@ export default function ProductRequestsPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="mb-2 block text-xs font-bold text-slate-500">Unit</label>
-                      <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-3 text-base font-black text-slate-500">
-                        {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiUnit || 'Liter'}
-                      </div>
+                      <label className="mb-2 block text-xs font-bold text-slate-500">Your Price (Optional)</label>
+                      <input
+                        type="number"
+                        placeholder="₹"
+                        value={price || ''}
+                        onChange={(e) => setPrice(Number(e.target.value))}
+                        className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-base font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-bold text-slate-500">HSN (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="HSN Code"
+                        value={hsnCode}
+                        onChange={(e) => setHsnCode(e.target.value)}
+                        className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-base font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
+                      />
                     </div>
                   </div>
                 </div>
@@ -283,9 +307,9 @@ export default function ProductRequestsPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-black text-slate-900 leading-tight">{item.productName}</p>
-                    <p className="text-[10px] font-bold text-primary-600 mt-0.5">{item.variantLabel}</p>
+                    <p className="text-[10px] font-bold text-primary-600 mt-0.5">{item.variantLabel} {item.price ? `• ₹${item.price}` : ''}</p>
                     <p className="mt-1 text-[10px] text-slate-500 italic line-clamp-1">
-                      {item.shortDescription}
+                      {item.hsnCode ? `HSN: ${item.hsnCode} • ` : ''}{item.shortDescription}
                     </p>
                   </div>
                   <div className="text-right">

@@ -302,4 +302,14 @@ export const adminApi = {
     const response = await api.post<ApiResponse<DealerProductRequest | DealerProductRequest[]>>('/admin/product-requests', payload);
     return response.data.data;
   },
+  getB2BInvoices: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<any[]>>('/b2b-invoices/admin/list', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
+  downloadB2BInvoice: async (id: string) => {
+    const response = await api.get(`/b2b-invoices/download/${id}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };
