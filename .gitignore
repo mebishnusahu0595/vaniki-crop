@@ -21,3 +21,4 @@ pnpm-debug.log*
 
 # OS files
 .DS_Store
+vanikicropweb-firebase-adminsdk-*.json
