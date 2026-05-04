@@ -28,6 +28,7 @@ export interface ProductVariant {
   price: number;
   adminPrice?: number;
   offerPrice?: number;
+  hsnCode?: string;
   mrp: number;
   stock: number;
   sku: string;
