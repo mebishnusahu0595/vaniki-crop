@@ -32,6 +32,18 @@ export default function ProductRequestsPage() {
     queryFn: adminApi.garages,
   });
 
+  // Auto-select first garage when data loads
+  useState(() => {
+    if (garagesQuery.data?.length && !garageName) {
+      setGarageName(garagesQuery.data[0]);
+    }
+  });
+
+  // Update garageName if it's empty and data becomes available
+  if (garagesQuery.data?.length && !garageName) {
+    setGarageName(garagesQuery.data[0]);
+  }
+
   const createRequestMutation = useMutation({
     mutationFn: () =>
       adminApi.createProductRequest({
@@ -47,7 +59,7 @@ export default function ProductRequestsPage() {
       setSelectedProductId('');
       setRequestedQuantity(1);
       setRequestedPack('');
-      setGarageName('');
+      // Keep garage selection
       setPetiQuantity(1);
       setRequestNotes('');
     },
@@ -88,7 +100,7 @@ export default function ProductRequestsPage() {
                   onChange={(e) => setGarageName(e.target.value)}
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 focus:ring-2 focus:ring-primary-500 outline-none transition"
                 >
-                  <option value="">Select a garage</option>
+                  {!garagesQuery.data?.length && <option value="">Select a garage</option>}
                   {garagesQuery.data?.map((garage) => (
                     <option key={garage} value={garage}>
                       {garage}
@@ -117,7 +129,7 @@ export default function ProductRequestsPage() {
                   ))}
                 </select>
                 {selectedProductId && (
-                  <p className="mt-2 text-xs text-slate-500 italic">
+                  <p className="mt-2 text-sm font-medium text-slate-600 bg-primary-50/50 p-2 rounded-lg border border-primary-100/50">
                     {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.shortDescription}
                   </p>
                 )}
@@ -163,7 +175,7 @@ export default function ProductRequestsPage() {
             </div>
 
             {selectedProductId ? (
-              <div className="rounded-2xl bg-primary-50/50 p-4 border border-primary-100">
+              <div className="rounded-2xl bg-primary-50/50 p-5 border border-primary-100 shadow-inner">
                 <p className="text-xs font-black uppercase tracking-[0.1em] text-primary-600 mb-4">Peti Details (Box/Case)</p>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div>
@@ -173,25 +185,32 @@ export default function ProductRequestsPage() {
                       min={1}
                       value={petiQuantity}
                       onChange={(e) => setPetiQuantity(Math.max(1, Number(e.target.value) || 1))}
-                      className="w-full rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm font-bold"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-base font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
                     />
                   </div>
                   <div>
                     <label className="mb-2 block text-xs font-bold text-slate-500">Peti Size</label>
-                    <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-2 text-sm font-bold text-slate-500">
+                    <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-3 text-base font-black text-slate-500">
                       {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12}
                     </div>
                   </div>
                   <div>
                     <label className="mb-2 block text-xs font-bold text-slate-500">Unit</label>
-                    <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-2 text-sm font-bold text-slate-500">
+                    <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-3 text-base font-black text-slate-500">
                       {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiUnit || 'Liter'}
                     </div>
                   </div>
                 </div>
-                <p className="mt-3 text-xs font-semibold text-primary-700">
-                  Total Request: {petiQuantity * (inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12)} {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiUnit || 'Liter'}s ({petiQuantity} Peti × {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12} {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiUnit || 'Liter'})
-                </p>
+                
+                <div className="mt-6 rounded-xl bg-primary-500 p-4 text-white shadow-lg shadow-primary-500/20">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-100 mb-1">Total Volume Summary</p>
+                  <p className="text-2xl font-black">
+                    Total Request: {petiQuantity * (inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12)} {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiUnit || 'Liter'}s
+                  </p>
+                  <p className="mt-1 text-xs font-bold text-primary-100 opacity-80">
+                    ({petiQuantity} Peti × {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12} {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiUnit || 'Liter'})
+                  </p>
+                </div>
               </div>
             ) : null}
 
