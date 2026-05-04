@@ -172,6 +172,9 @@ export async function initiateOrder(userId: string, input: any) {
 
   // 3. Handle Coupon
   let couponDiscount = 0;
+  let loyaltyDiscount = 0;
+  let loyaltyPointsApplied = 0;
+
   if (couponCode) {
     const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal, userId);
     if (!couponResult.valid) {
@@ -289,6 +292,8 @@ export async function placeCodOrder(userId: string, input: any) {
   const { subtotal, validatedItems } = await calculateCart(items, resolvedStoreId);
 
   let couponDiscount = 0;
+  let loyaltyDiscount = 0;
+  let loyaltyPointsApplied = 0;
   let validatedCoupon: any = null;
   if (couponCode) {
     const couponResult = await validateCoupon(couponCode, resolvedStoreId, subtotal, userId);
