@@ -9,9 +9,9 @@ import {
   CheckCircle, 
   XCircle,
   Copy,
-  ExternalLink,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  Package
 } from 'lucide-react';
 import { adminApi } from '../utils/api';
 import { cn } from '../utils/cn';
@@ -28,6 +28,20 @@ interface Staff {
   isActive: boolean;
 }
 
+interface OrderItem {
+  productName: string;
+  variantLabel: string;
+  qty: number;
+  price: number;
+}
+
+interface Order {
+  orderNumber: string;
+  totalAmount: number;
+  createdAt: string;
+  items: OrderItem[];
+}
+
 interface ReferralUser {
   _id: string;
   name: string;
@@ -38,6 +52,7 @@ interface ReferralUser {
     city?: string;
     state?: string;
   };
+  orders?: Order[];
 }
 
 export default function ReferralPage() {
@@ -98,7 +113,17 @@ export default function ReferralPage() {
   });
 
   const exportToExcel = (data: any[], filename: string) => {
-    const ws = XLSX.utils.json_to_sheet(data);
+    const flattenedData = data.map(user => ({
+      Name: user.name,
+      Mobile: user.mobile,
+      Email: user.email || 'N/A',
+      City: user.savedAddress?.city || 'N/A',
+      State: user.savedAddress?.state || 'N/A',
+      SignupDate: new Date(user.createdAt).toLocaleDateString('en-IN'),
+      TotalOrders: user.orders?.length || 0,
+      TotalSpent: user.orders?.reduce((sum: number, o: any) => sum + o.totalAmount, 0) || 0
+    }));
+    const ws = XLSX.utils.json_to_sheet(flattenedData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
     XLSX.writeFile(wb, `${filename}.xlsx`);
@@ -168,7 +193,7 @@ export default function ReferralPage() {
                     </div>
                     <div>
                       <p className="font-bold text-slate-900">{staff.name}</p>
-                      <p className="text-xs font-medium text-slate-500">{staff.mobile}</p>
+                      <p className="text-xs font-medium text-slate-500">{staff.mobile} | <span className="font-black text-primary-600">{staff.referralCode}</span></p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -241,18 +266,18 @@ export default function ReferralPage() {
               {/* Referral List */}
               <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="mb-6 flex items-center justify-between">
-                  <h3 className="text-lg font-black text-slate-900">Referred Users</h3>
+                  <h3 className="text-lg font-black text-slate-900">Referred Users & Purchases</h3>
                   <button 
                     onClick={() => exportToExcel(referralsQuery.data || [], `referrals_${selectedStaffId}`)}
                     className="flex items-center gap-2 text-sm font-bold text-primary-600 hover:underline"
                   >
                     <Download size={16} />
-                    Export List
+                    Export Detailed Report
                   </button>
                 </div>
 
                 {referralsQuery.isLoading ? (
-                  <div className="py-12 text-center text-slate-400">Loading users...</div>
+                  <div className="py-12 text-center text-slate-400">Loading details...</div>
                 ) : (referralsQuery.data?.length || 0) === 0 ? (
                   <div className="py-12 text-center">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-300">
@@ -261,43 +286,56 @@ export default function ReferralPage() {
                     <p className="mt-4 font-bold text-slate-500">No users referred yet</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="border-b border-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                          <th className="pb-4 pl-2">User Info</th>
-                          <th className="pb-4">Location</th>
-                          <th className="pb-4">Signup Date</th>
-                          <th className="pb-4 text-right">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {referralsQuery.data?.map((user: ReferralUser) => (
-                          <tr key={user._id} className="group transition hover:bg-slate-50/50">
-                            <td className="py-4 pl-2">
-                              <p className="font-bold text-slate-900">{user.name}</p>
-                              <p className="text-xs font-medium text-slate-500">{user.mobile}</p>
-                            </td>
-                            <td className="py-4">
-                              <p className="text-sm font-medium text-slate-600">
-                                {user.savedAddress?.city || 'N/A'}, {user.savedAddress?.state || ''}
-                              </p>
-                            </td>
-                            <td className="py-4 text-sm font-medium text-slate-500">
-                              {new Date(user.createdAt).toLocaleDateString('en-IN')}
-                              <span className="ml-2 text-xs text-slate-400">
-                                {new Date(user.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </td>
-                            <td className="py-4 text-right">
-                              <button className="rounded-lg p-2 text-slate-400 hover:bg-primary-50 hover:text-primary-600">
-                                <ExternalLink size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="space-y-6">
+                    {referralsQuery.data?.map((user: ReferralUser) => (
+                      <div key={user._id} className="rounded-2xl border border-slate-100 bg-slate-50/30 p-4 transition hover:bg-slate-50">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary-600 shadow-sm">
+                              <Users size={18} />
+                            </div>
+                            <div>
+                              <p className="font-black text-slate-900">{user.name}</p>
+                              <p className="text-xs font-bold text-slate-500">{user.mobile} | Joined {new Date(user.createdAt).toLocaleDateString('en-IN')}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             <div className="rounded-lg bg-primary-100 px-3 py-1 text-xs font-black text-primary-700">
+                               {(user.orders?.length || 0)} Orders
+                             </div>
+                             <div className="rounded-lg bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
+                               ₹{(user.orders?.reduce((sum, o) => sum + o.totalAmount, 0) || 0).toLocaleString()} Spent
+                             </div>
+                          </div>
+                        </div>
+
+                        {/* Order Items */}
+                        {user.orders && user.orders.length > 0 && (
+                          <div className="mt-4 space-y-3 pl-2 sm:pl-10">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Purchase History</p>
+                            {user.orders.map((order) => (
+                              <div key={order.orderNumber} className="rounded-xl bg-white p-3 shadow-sm">
+                                <div className="flex items-center justify-between border-b border-slate-50 pb-2 mb-2">
+                                  <p className="text-xs font-black text-slate-700">{order.orderNumber}</p>
+                                  <p className="text-[10px] font-bold text-slate-400">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
+                                </div>
+                                <div className="space-y-1">
+                                  {order.items.map((item, idx) => (
+                                    <div key={idx} className="flex items-center justify-between text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <Package size={12} className="text-slate-400" />
+                                        <p className="font-bold text-slate-600">{item.productName} ({item.variantLabel})</p>
+                                      </div>
+                                      <p className="font-black text-slate-900">x{item.qty}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

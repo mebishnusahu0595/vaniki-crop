@@ -22,10 +22,13 @@ const staffSchema = new Schema<IStaff>(
 );
 
 // Auto-generate unique referral code if not provided
-staffSchema.pre('validate', function (next) {
+staffSchema.pre('validate', async function (next) {
   const staff = this as any;
   if (!staff.referralCode) {
-    staff.referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const count = await mongoose.model('Staff').countDocuments();
+    const nextNumber = 111 + count;
+    const initial = staff.name.charAt(0).toUpperCase();
+    staff.referralCode = `${initial}${nextNumber}`;
   }
   (next as any)?.();
 });
