@@ -8,7 +8,9 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
 import { useFocusAwareScroll } from '../../src/hooks/useFocusAwareScroll';
+import { auth } from '../../src/config/firebase';
 import type { AuthUser } from '../../src/types/storefront';
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 export default function LoginScreen() {
   const [mode, setModeState] = useState<'login' | 'forgot' | 'reset'>('login');
@@ -16,10 +18,19 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [forgotIdentifier, setForgotIdentifier] = useState('');
-  const [otp, setOtp] = useState('');
+
+  // OTP Login state
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
+  const [confirmationResult, setConfirmationResult] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+
+  // Forgot Password (Firebase OTP) state
+  const [forgotMobile, setForgotMobile] = useState('');
+  const [forgotConfirmation, setForgotConfirmation] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
+  const [forgotOtp, setForgotOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [actualForgotIdentifier, setActualForgotIdentifier] = useState<{ mobile?: string; email?: string }>({});
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const { setSession, setUser } = useAuthStore();
   const setMode = useServiceModeStore((state) => state.setMode);
@@ -39,44 +50,101 @@ export default function LoginScreen() {
     }
   };
 
-  const handleForgotSubmit = async () => {
-    if (!forgotIdentifier) {
-      Alert.alert('Required', 'Please enter your mobile or email.');
+  // --- OTP Login Handlers ---
+
+  const handleSendLoginOtp = async () => {
+    if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
+      Alert.alert('Invalid', 'Enter a valid 10-digit mobile number.');
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      const result = await auth().signInWithPhoneNumber(`+91${mobile}`);
+      setConfirmationResult(result);
+      Alert.alert('OTP Sent', 'A 6-digit OTP has been sent to your mobile.');
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send OTP.');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyLoginOtp = async () => {
+    if (!confirmationResult) {
+      Alert.alert('Error', 'Please send OTP first.');
+      return;
+    }
+    if (otpCode.length !== 6) {
+      Alert.alert('Invalid', 'Enter the 6-digit OTP.');
       return;
     }
     setLoading(true);
     try {
-      const isEmail = forgotIdentifier.includes('@');
-      const payload = isEmail ? { email: forgotIdentifier } : { mobile: forgotIdentifier };
-      await storefrontApi.forgotPassword(payload);
-      setActualForgotIdentifier(payload);
-      setModeState('reset');
-      Alert.alert('OTP Sent', 'Please check your mobile/email for the 4-digit OTP.');
+      const userCredential = await confirmationResult.confirm(otpCode);
+      if (!userCredential?.user) throw new Error('Verification failed.');
+      const idToken = await userCredential.user.getIdToken();
+      const response = await storefrontApi.firebaseLogin(idToken);
+      setSession({ user: response.user, token: response.accessToken });
+      applySessionPreferences(response.user);
+      void storefrontApi
+        .me()
+        .then((session) => {
+          setUser(session);
+          applySessionPreferences(session);
+        })
+        .catch(() => undefined);
+      router.replace('/(tabs)');
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Could not send OTP.');
+      Alert.alert('Login Failed', error instanceof Error ? error.message : 'Invalid OTP or session expired.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetSubmit = async () => {
-    if (!otp || !newPassword) {
-      Alert.alert('Required', 'Please enter OTP and new password.');
+  // --- Forgot Password Handlers (Firebase OTP) ---
+
+  const handleSendForgotOtp = async () => {
+    if (!forgotMobile || !/^[6-9]\d{9}$/.test(forgotMobile)) {
+      Alert.alert('Invalid', 'Enter a valid 10-digit registered mobile number.');
       return;
     }
-    if (otp.length !== 4) {
-      Alert.alert('Invalid OTP', 'OTP must be 4 digits.');
+    setIsSendingOtp(true);
+    try {
+      const result = await auth().signInWithPhoneNumber(`+91${forgotMobile}`);
+      setForgotConfirmation(result);
+      setModeState('reset');
+      Alert.alert('OTP Sent', 'Enter the 6-digit OTP to verify your identity.');
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send OTP.');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleResetSubmit = async () => {
+    if (!forgotOtp || forgotOtp.length !== 6) {
+      Alert.alert('Invalid OTP', 'Enter the 6-digit OTP.');
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      Alert.alert('Invalid Password', 'Password must be at least 6 characters.');
+      return;
+    }
+    if (!forgotConfirmation) {
+      Alert.alert('Error', 'Session expired. Please request OTP again.');
       return;
     }
     setLoading(true);
     try {
-      await storefrontApi.resetPassword({
-        ...actualForgotIdentifier,
-        otp,
-        newPassword,
-      });
+      const userCredential = await forgotConfirmation.confirm(forgotOtp);
+      if (!userCredential?.user) throw new Error('Verification failed.');
+      const idToken = await userCredential.user.getIdToken();
+      await storefrontApi.firebaseResetPassword({ idToken, newPassword });
       Alert.alert('Success', 'Password reset successfully. Please login.');
       setModeState('login');
+      setForgotConfirmation(null);
+      setForgotOtp('');
+      setNewPassword('');
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Could not reset password.');
     } finally {
@@ -106,112 +174,180 @@ export default function LoginScreen() {
               {mode === 'login' ? 'Welcome back to Vaniki Crop.' : mode === 'forgot' ? 'Forgot Password?' : 'Reset Password'}
             </Text>
             <Text className="mt-4 text-sm leading-7 text-primary-900/70">
-              {mode === 'login' 
-                ? 'Login with your mobile number and password.' 
-                : mode === 'forgot' 
-                  ? 'Enter your registered mobile or email to receive a 4-digit OTP.' 
+              {mode === 'login'
+                ? loginMethod === 'password'
+                  ? 'Login with your mobile number and password.'
+                  : confirmationResult
+                    ? 'Enter the 6-digit OTP sent to your mobile.'
+                    : 'Enter your mobile number to receive an OTP.'
+                : mode === 'forgot'
+                  ? 'Enter your registered mobile to receive a 6-digit OTP.'
                   : 'Enter the OTP and your new password.'}
             </Text>
 
+            {/* ==================== LOGIN MODE ==================== */}
             {mode === 'login' && (
               <View className="mt-6">
+                {/* Mobile Number Input */}
                 <View>
                   <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Mobile Number</Text>
                   <TextInput
                     value={mobile}
-                    onChangeText={setMobile}
+                    onChangeText={(val) => setMobile(val.replace(/\D/g, '').slice(0, 10))}
                     onFocus={onInputFocus}
                     placeholder="9876543210"
                     keyboardType="number-pad"
+                    maxLength={10}
+                    editable={!confirmationResult}
                     className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
                     placeholderTextColor="#7a978b"
                   />
                 </View>
 
-                <View className="mt-5">
-                  <View className="mb-2 flex-row items-center justify-between px-1">
-                    <Text className="text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Password</Text>
-                    <Pressable onPress={() => setModeState('forgot')}>
-                      <Text className="text-[11px] font-black uppercase tracking-[1px] text-primary-500">Forgot?</Text>
-                    </Pressable>
+                {/* Password Input (password mode) */}
+                {loginMethod === 'password' && (
+                  <View className="mt-5">
+                    <View className="mb-2 flex-row items-center justify-between px-1">
+                      <Text className="text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Password</Text>
+                      <Pressable onPress={() => setModeState('forgot')}>
+                        <Text className="text-[11px] font-black uppercase tracking-[1px] text-primary-500">Forgot?</Text>
+                      </Pressable>
+                    </View>
+                    <View className="relative">
+                      <TextInput
+                        value={password}
+                        onChangeText={setPassword}
+                        onFocus={onInputFocus}
+                        secureTextEntry={!showPassword}
+                        placeholder="Password"
+                        className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"
+                        placeholderTextColor="#7a978b"
+                      />
+                      <Pressable
+                        onPress={() => setShowPassword((current) => !current)}
+                        className="absolute right-4 top-1/2 -mt-3 h-6 w-6 items-center justify-center"
+                        hitSlop={8}
+                      >
+                        <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#527164" />
+                      </Pressable>
+                    </View>
                   </View>
-                  <View className="relative">
+                )}
+
+                {/* OTP Input (otp mode, after OTP sent) */}
+                {loginMethod === 'otp' && confirmationResult && (
+                  <View className="mt-5">
+                    <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">6-Digit OTP</Text>
                     <TextInput
-                      value={password}
-                      onChangeText={setPassword}
+                      value={otpCode}
+                      onChangeText={(val) => setOtpCode(val.replace(/\D/g, '').slice(0, 6))}
                       onFocus={onInputFocus}
-                      secureTextEntry={!showPassword}
-                      placeholder="Password"
-                      className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"
+                      placeholder="000000"
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-center text-2xl font-black tracking-[10px] text-primary-900"
                       placeholderTextColor="#7a978b"
                     />
-                    <Pressable
-                      onPress={() => setShowPassword((current) => !current)}
-                      className="absolute right-4 top-1/2 -mt-3 h-6 w-6 items-center justify-center"
-                      hitSlop={8}
-                    >
-                      <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#527164" />
-                    </Pressable>
                   </View>
-                </View>
+                )}
 
+                {/* Send OTP Button (otp mode, before OTP sent) */}
+                {loginMethod === 'otp' && !confirmationResult && (
+                  <Pressable
+                    disabled={isSendingOtp}
+                    onPress={handleSendLoginOtp}
+                    className="mt-6 rounded-full bg-primary-500 px-5 py-4"
+                  >
+                    <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
+                      {isSendingOtp ? 'Sending OTP...' : 'Send OTP'}
+                    </Text>
+                  </Pressable>
+                )}
+
+                {/* Login / Verify OTP Button */}
+                {(loginMethod === 'password' || (loginMethod === 'otp' && confirmationResult)) && (
+                  <Pressable
+                    disabled={loading}
+                    onPress={async () => {
+                      if (loginMethod === 'otp') {
+                        handleVerifyLoginOtp();
+                      } else {
+                        if (!mobile || !password) {
+                          Alert.alert('Missing details', 'Enter mobile number and password to continue.');
+                          return;
+                        }
+                        setLoading(true);
+                        try {
+                          const response = await storefrontApi.login({ mobile, password });
+                          setSession({ user: response.user, token: response.accessToken });
+                          applySessionPreferences(response.user);
+                          void storefrontApi
+                            .me()
+                            .then((session) => {
+                              setUser(session);
+                              applySessionPreferences(session);
+                            })
+                            .catch(() => undefined);
+                          router.replace('/(tabs)');
+                        } catch (caughtError) {
+                          Alert.alert('Login failed', caughtError instanceof Error ? caughtError.message : 'Try again.');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }
+                    }}
+                    className="mt-6 rounded-full bg-primary-900 px-5 py-4"
+                  >
+                    <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
+                      {loading
+                        ? 'Signing In...'
+                        : loginMethod === 'otp'
+                          ? 'Verify & Login'
+                          : 'Login'}
+                    </Text>
+                  </Pressable>
+                )}
+
+                {/* Toggle Login Method */}
                 <Pressable
-                  disabled={loading}
-                  onPress={async () => {
-                    if (!mobile || !password) {
-                      Alert.alert('Missing details', 'Enter mobile number and password to continue.');
-                      return;
-                    }
-                    setLoading(true);
-                    try {
-                      const response = await storefrontApi.login({ mobile, password });
-                      setSession({ user: response.user, token: response.accessToken });
-                      applySessionPreferences(response.user);
-                      void storefrontApi
-                        .me()
-                        .then((session) => {
-                          setUser(session);
-                          applySessionPreferences(session);
-                        })
-                        .catch(() => undefined);
-                      router.replace('/(tabs)');
-                    } catch (caughtError) {
-                      Alert.alert('Login failed', caughtError instanceof Error ? caughtError.message : 'Try again.');
-                    } finally {
-                      setLoading(false);
-                    }
+                  onPress={() => {
+                    setLoginMethod((prev) => (prev === 'password' ? 'otp' : 'password'));
+                    setConfirmationResult(null);
+                    setOtpCode('');
                   }}
-                  className="mt-6 rounded-full bg-primary-900 px-5 py-4"
+                  className="mt-4 py-2"
                 >
-                  <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
-                    {loading ? 'Signing In...' : 'Login'}
+                  <Text className="text-center text-[11px] font-black uppercase tracking-[2px] text-primary-500">
+                    {loginMethod === 'password' ? 'Login with OTP Instead' : 'Login with Password Instead'}
                   </Text>
                 </Pressable>
               </View>
             )}
 
+            {/* ==================== FORGOT MODE ==================== */}
             {mode === 'forgot' && (
               <View className="mt-6">
                 <View>
-                  <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Mobile or Email</Text>
+                  <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Registered Mobile</Text>
                   <TextInput
-                    value={forgotIdentifier}
-                    onChangeText={setForgotIdentifier}
+                    value={forgotMobile}
+                    onChangeText={(val) => setForgotMobile(val.replace(/\D/g, '').slice(0, 10))}
                     onFocus={onInputFocus}
-                    placeholder="Enter mobile or email"
-                    autoCapitalize="none"
+                    placeholder="9876543210"
+                    keyboardType="number-pad"
+                    maxLength={10}
                     className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
                     placeholderTextColor="#7a978b"
                   />
                 </View>
 
                 <Pressable
-                  disabled={loading}
-                  onPress={handleForgotSubmit}
+                  disabled={isSendingOtp}
+                  onPress={handleSendForgotOtp}
                   className="mt-6 rounded-full bg-primary-900 px-5 py-4"
                 >
                   <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
-                    {loading ? 'Sending OTP...' : 'Send OTP'}
+                    {isSendingOtp ? 'Sending OTP...' : 'Send OTP'}
                   </Text>
                 </Pressable>
 
@@ -223,17 +359,18 @@ export default function LoginScreen() {
               </View>
             )}
 
+            {/* ==================== RESET MODE ==================== */}
             {mode === 'reset' && (
               <View className="mt-6">
                 <View>
-                  <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">4-Digit OTP</Text>
+                  <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">6-Digit OTP</Text>
                   <TextInput
-                    value={otp}
-                    onChangeText={(val) => setOtp(val.replace(/\D/g, ''))}
+                    value={forgotOtp}
+                    onChangeText={(val) => setForgotOtp(val.replace(/\D/g, '').slice(0, 6))}
                     onFocus={onInputFocus}
-                    placeholder="0000"
+                    placeholder="000000"
                     keyboardType="number-pad"
-                    maxLength={4}
+                    maxLength={6}
                     className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-center text-2xl font-black tracking-[10px] text-primary-900"
                     placeholderTextColor="#7a978b"
                   />
@@ -246,17 +383,17 @@ export default function LoginScreen() {
                       value={newPassword}
                       onChangeText={setNewPassword}
                       onFocus={onInputFocus}
-                      secureTextEntry={!showPassword}
-                      placeholder="New Password"
+                      secureTextEntry={!showNewPassword}
+                      placeholder="Min 6 characters"
                       className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"
                       placeholderTextColor="#7a978b"
                     />
                     <Pressable
-                      onPress={() => setShowPassword((current) => !current)}
+                      onPress={() => setShowNewPassword((current) => !current)}
                       className="absolute right-4 top-1/2 -mt-3 h-6 w-6 items-center justify-center"
                       hitSlop={8}
                     >
-                      <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#527164" />
+                      <Feather name={showNewPassword ? 'eye-off' : 'eye'} size={18} color="#527164" />
                     </Pressable>
                   </View>
                 </View>

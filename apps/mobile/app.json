@@ -40,13 +40,16 @@
             "buildToolsVersion": "35.0.0"
           }
         }
-      ]
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vanikicrop.app"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "package": "com.vanikicrop.app",
       "versionCode": 4,
       "targetSdkVersion": 35,

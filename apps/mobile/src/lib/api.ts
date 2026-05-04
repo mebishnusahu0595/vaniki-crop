@@ -384,4 +384,20 @@ export const storefrontApi = {
       method: 'POST',
     });
   },
+  firebaseLogin: async (idToken: string) => {
+    const response = await request<{ user: AuthUser; accessToken: string }>('/auth/firebase-login', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+    return {
+      ...response.data,
+      user: normalizeAuthUser(response.data.user as AuthUserLike),
+    };
+  },
+  firebaseResetPassword: async (payload: { idToken: string; newPassword: string }) => {
+    return request<{ success: boolean; message: string }>('/auth/firebase-reset-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };
