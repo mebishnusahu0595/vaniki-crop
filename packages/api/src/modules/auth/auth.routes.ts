@@ -57,6 +57,12 @@ router.post('/forgot-password', validate(forgotPasswordSchema), authController.f
 /** POST /api/auth/reset-password — Reset password after OTP verification */
 router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 
+/** POST /api/auth/firebase-login — Login with Firebase Phone Auth Token */
+router.post('/firebase-login', loginRateLimiter, authController.firebaseLogin);
+
+/** POST /api/auth/firebase-reset-password — Reset password with Firebase verification */
+router.post('/firebase-reset-password', authController.firebaseResetPassword);
+
 // ─── Protected Routes ────────────────────────────────────────────────────
 
 /** POST /api/auth/logout — Clear refresh token */

@@ -129,6 +129,14 @@ export const adminApi = {
     const response = await api.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
     return response.data;
   },
+  firebaseLogin: async (idToken: string) => {
+    const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/firebase-login', { idToken });
+    return response.data.data;
+  },
+  firebaseResetPassword: async (payload: { idToken: string; newPassword: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/firebase-reset-password', payload);
+    return response.data;
+  },
   analytics: async (range: '7d' | '30d') => {
     const response = await api.get<ApiResponse<DashboardAnalytics>>('/analytics/admin', { params: { range } });
     return response.data.data;

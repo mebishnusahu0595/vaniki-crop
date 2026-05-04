@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { adminApi } from '../utils/api';
 import { useAdminAuthStore } from '../store/useAdminAuthStore';
+import { auth } from '../config/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 
 const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 const MAX_SIGNUP_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -141,21 +143,32 @@ export default function LoginPage() {
   const [forgotStep, setForgotStep] = useState<'request' | 'reset'>('request');
   const [forgotIdentifier, setForgotIdentifier] = useState<{ mobile?: string; email?: string }>({});
 
-  const forgotSchema = z.object({
-    identifier: z.string().trim().min(1, 'Email or Mobile is required'),
-  });
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
+  const setupRecaptcha = (elementId: string) => {
+    if (recaptchaVerifier) return recaptchaVerifier;
+    try {
+      const verifier = new RecaptchaVerifier(auth, elementId, {
+        size: 'invisible',
+        callback: () => {
+          console.log('Recaptcha resolved');
+        },
+      });
+      setRecaptchaVerifier(verifier);
+      return verifier;
+    } catch (error) {
+      console.error('Recaptcha init failed:', error);
+      return null;
+    }
+  };
 
   const resetSchema = z.object({
-    otp: z.string().length(4, 'OTP must be 4 digits'),
     newPassword: z.string().min(6, 'Password must be at least 6 characters'),
-  });
-
-  const {
-    register: registerForgot,
-    handleSubmit: handleForgotSubmit,
-    formState: { errors: forgotErrors, isSubmitting: isForgotSubmitting },
-  } = useForm<{ identifier: string }>({
-    resolver: zodResolver(forgotSchema),
   });
 
   const {
@@ -163,10 +176,9 @@ export default function LoginPage() {
     handleSubmit: handleResetSubmit,
     setError: setResetError,
     formState: { errors: resetErrors, isSubmitting: isResetSubmitting },
-  } = useForm<{ otp: string; newPassword: string }>({
+  } = useForm<{ newPassword: string }>({
     resolver: zodResolver(resetSchema),
   });
-
   useEffect(() => {
     return () => {
       if (signupImagePreview) {
@@ -214,6 +226,7 @@ export default function LoginPage() {
   const {
     register: registerLogin,
     handleSubmit: handleLoginSubmit,
+    getValues: getLoginValues,
     setError: setLoginError,
     formState: { errors: loginErrors, isSubmitting: isLoginSubmitting },
   } = useForm<LoginFormValues>({
@@ -539,45 +552,59 @@ export default function LoginPage() {
           ) : mode === 'forgot' ? (
             <div className="mt-8">
               {forgotStep === 'request' ? (
-                <form
-                  onSubmit={handleForgotSubmit(async (values) => {
-                    try {
-                      const isEmail = values.identifier.includes('@');
-                      const payload = isEmail ? { email: values.identifier } : { mobile: values.identifier };
-                      await adminApi.forgotPassword(payload);
-                      setForgotIdentifier(payload);
-                      setForgotStep('reset');
-                    } catch {
-                      // Handled by message below
-                    }
-                  })}
-                  className="space-y-5"
-                >
+                <div className="space-y-5">
+                  <div id="forgot-recaptcha-container"></div>
                   <div>
-                    <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Email or Mobile</label>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Mobile Number</label>
                     <input
-                      {...registerForgot('identifier')}
-                      placeholder="Enter registered email or mobile"
+                      value={forgotIdentifier.mobile || ''}
+                      onChange={(e) => setForgotIdentifier({ mobile: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      placeholder="Enter registered mobile number"
                       className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300"
                     />
-                    {forgotErrors.identifier ? <p className="mt-2 text-sm font-semibold text-rose-600">{forgotErrors.identifier.message}</p> : null}
                   </div>
                   <button
-                    type="submit"
-                    disabled={isForgotSubmitting}
+                    type="button"
+                    disabled={isSendingOtp}
+                    onClick={async () => {
+                      if (!forgotIdentifier.mobile || !/^[6-9]\d{9}$/.test(forgotIdentifier.mobile)) {
+                        setSignupError('root', { message: 'Enter a valid 10-digit mobile number' });
+                        return;
+                      }
+                      setIsSendingOtp(true);
+                      try {
+                        const verifier = setupRecaptcha('forgot-recaptcha-container');
+                        if (!verifier) throw new Error('Failed to initialize reCAPTCHA');
+                        const result = await signInWithPhoneNumber(auth, `+91${forgotIdentifier.mobile}`, verifier);
+                        setConfirmationResult(result);
+                        setForgotStep('reset');
+                      } catch (error) {
+                        setSignupError('root', { message: error instanceof Error ? error.message : 'Failed to send OTP' });
+                      } finally {
+                        setIsSendingOtp(false);
+                      }
+                    }}
                     className="w-full rounded-2xl bg-primary-500 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-200"
                   >
-                    {isForgotSubmitting ? 'Sending OTP...' : 'Send OTP'}
+                    {isSendingOtp ? 'Sending OTP...' : 'Send OTP'}
                   </button>
-                </form>
+                  {signupErrors.root && (
+                    <p className="mt-2 text-sm font-semibold text-rose-600">{signupErrors.root.message}</p>
+                  )}
+                </div>
               ) : (
                 <form
                   onSubmit={handleResetSubmit(async (values) => {
                     try {
-                      await adminApi.resetPassword({ ...forgotIdentifier, ...values });
+                      if (!confirmationResult) throw new Error('Session expired. Please request OTP again.');
+                      const userCredential = await confirmationResult.confirm(otpCode);
+                      const idToken = await userCredential.user.getIdToken();
+                      await adminApi.firebaseResetPassword({ idToken, newPassword: values.newPassword });
                       setSignupMessage('Password reset successfully. Please login.');
                       setMode('login');
                       setForgotStep('request');
+                      setConfirmationResult(null);
+                      setOtpCode('');
                     } catch (error) {
                       setResetError('root', { message: error instanceof Error ? error.message : 'Unable to reset password.' });
                     }
@@ -585,18 +612,19 @@ export default function LoginPage() {
                   className="space-y-5"
                 >
                   <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-700">
-                    OTP sent to {forgotIdentifier.email || forgotIdentifier.mobile}. Enter it below to reset your password.
+                    OTP sent to {forgotIdentifier.mobile}. Enter it below to reset your password.
                   </p>
                   <div>
-                    <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">4-Digit OTP</label>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">6-Digit OTP</label>
                     <input
-                      {...registerReset('otp')}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                       inputMode="numeric"
-                      maxLength={4}
-                      placeholder="0000"
+                      maxLength={6}
+                      placeholder="000000"
                       className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-center text-2xl font-black tracking-[0.5em] text-slate-900 outline-none transition focus:border-primary-300"
                     />
-                    {resetErrors.otp ? <p className="mt-2 text-sm font-semibold text-rose-600">{resetErrors.otp.message}</p> : null}
+
                   </div>
                   <div>
                     <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">New Password</label>
@@ -637,64 +665,135 @@ export default function LoginPage() {
           ) : (
             <form
               onSubmit={handleLoginSubmit(async (values) => {
-                try {
-                  const loginData = await adminApi.login(values);
-                  if (loginData.user.role !== 'storeAdmin') {
-                    setLoginError('root', { message: 'This account does not have dealer access.' });
-                    return;
+                if (loginMethod === 'password') {
+                  try {
+                    const loginData = await adminApi.login(values);
+                    if (loginData.user.role !== 'storeAdmin') {
+                      setLoginError('root', { message: 'This account does not have dealer access.' });
+                      return;
+                    }
+                    setSession(loginData.user, loginData.accessToken);
+                    navigate('/orders');
+                  } catch (error) {
+                    setLoginError('root', {
+                      message: error instanceof Error ? error.message : 'Unable to sign in.',
+                    });
                   }
-                  setSession(loginData.user, loginData.accessToken);
-                  navigate('/orders');
-                } catch (error) {
-                  setLoginError('root', {
-                    message: error instanceof Error ? error.message : 'Unable to sign in.',
-                  });
+                } else {
+                  // OTP logic handled by sendOtp button and verifyOtp submit
                 }
               })}
               className="mt-6 space-y-5"
             >
+              <div id="recaptcha-container"></div>
               <div>
                 <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Mobile Number</label>
-                <input
-                  {...registerLogin('mobile')}
-                  inputMode="numeric"
-                  maxLength={10}
-                  onInput={(event) => {
-                    event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
-                  }}
-                  placeholder="9876543210"
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300"
-                />
+                <div className="flex gap-2">
+                  <input
+                    {...registerLogin('mobile')}
+                    inputMode="numeric"
+                    maxLength={10}
+                    disabled={!!confirmationResult}
+                    onInput={(event) => {
+                      event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
+                    }}
+                    placeholder="9876543210"
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300 disabled:opacity-50"
+                  />
+                  {loginMethod === 'otp' && !confirmationResult && (
+                    <button
+                      type="button"
+                      disabled={isSendingOtp}
+                      onClick={async () => {
+                        const mobile = getLoginValues('mobile');
+                        if (!/^[6-9]\d{9}$/.test(mobile)) {
+                          setLoginError('mobile', { message: 'Enter a valid 10-digit mobile number' });
+                          return;
+                        }
+                        setIsSendingOtp(true);
+                        try {
+                          const verifier = setupRecaptcha('recaptcha-container');
+                          if (!verifier) throw new Error('Failed to initialize reCAPTCHA');
+                          const result = await signInWithPhoneNumber(auth, `+91${mobile}`, verifier);
+                          setConfirmationResult(result);
+                        } catch (error) {
+                          setLoginError('root', { message: error instanceof Error ? error.message : 'Failed to send OTP' });
+                          if (recaptchaVerifier) {
+                            recaptchaVerifier.clear();
+                            setRecaptchaVerifier(null);
+                          }
+                        } finally {
+                          setIsSendingOtp(false);
+                        }
+                      }}
+                      className="whitespace-nowrap rounded-2xl bg-primary-100 px-4 text-xs font-black uppercase tracking-[0.1em] text-primary-700 transition hover:bg-primary-200"
+                    >
+                      {isSendingOtp ? 'Sending...' : 'Send OTP'}
+                    </button>
+                  )}
+                </div>
                 {loginErrors.mobile ? <p className="mt-2 text-sm font-semibold text-rose-600">{loginErrors.mobile.message}</p> : null}
               </div>
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Password</label>
-                  <button
-                    type="button"
-                    onClick={() => setMode('forgot')}
-                    className="text-xs font-black uppercase tracking-[0.15em] text-primary-600 hover:text-primary-800"
-                  >
-                    Forgot?
-                  </button>
+
+              {loginMethod === 'password' ? (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => setMode('forgot')}
+                      className="text-xs font-black uppercase tracking-[0.15em] text-primary-600 hover:text-primary-800"
+                    >
+                      Forgot?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showLoginPassword ? 'text' : 'password'}
+                      {...registerLogin('password')}
+                      placeholder="Enter password"
+                      className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword((current) => !current)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700"
+                      aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {loginErrors.password ? <p className="mt-2 text-sm font-semibold text-rose-600">{loginErrors.password.message}</p> : null}
                 </div>
-                <div className="relative">
-                  <input
-                    type={showLoginPassword ? 'text' : 'password'}
-                    {...registerLogin('password')}
-                    placeholder="Enter password"
-                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginPassword((current) => !current)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700"
-                    aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {loginErrors.password ? <p className="mt-2 text-sm font-semibold text-rose-600">{loginErrors.password.message}</p> : null}
+              ) : (
+                confirmationResult && (
+                  <div>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">6-Digit OTP</label>
+                    <input
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      inputMode="numeric"
+                      maxLength={6}
+                      placeholder="000000"
+                      className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-center text-2xl font-black tracking-[0.5em] text-slate-900 outline-none transition focus:border-primary-300"
+                    />
+                  </div>
+                )
+              )}
+
+              <div className="flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMethod(loginMethod === 'password' ? 'otp' : 'password');
+                    setConfirmationResult(null);
+                    setOtpCode('');
+                    setLoginError('root', { message: '' });
+                  }}
+                  className="text-xs font-black uppercase tracking-[0.12em] text-primary-600 hover:underline"
+                >
+                  {loginMethod === 'password' ? 'Login with OTP instead' : 'Login with Password instead'}
+                </button>
               </div>
 
               {loginErrors.root ? (
@@ -710,11 +809,40 @@ export default function LoginPage() {
               ) : null}
 
               <button
-                type="submit"
-                disabled={isLoginSubmitting}
+                type={loginMethod === 'password' ? 'submit' : 'button'}
+                onClick={async () => {
+                  if (loginMethod === 'otp') {
+                    if (!confirmationResult) {
+                      setLoginError('root', { message: 'Please send OTP first' });
+                      return;
+                    }
+                    if (otpCode.length !== 6) {
+                      setLoginError('root', { message: 'Enter 6-digit OTP' });
+                      return;
+                    }
+                    setIsVerifyingOtp(true);
+                    try {
+                      const userCredential = await confirmationResult.confirm(otpCode);
+                      const idToken = await userCredential.user.getIdToken();
+                      const loginData = await adminApi.firebaseLogin(idToken);
+                      if (loginData.user.role !== 'storeAdmin') {
+                        setLoginError('root', { message: 'This account does not have dealer access.' });
+                        return;
+                      }
+                      setSession(loginData.user, loginData.accessToken);
+                      navigate('/orders');
+                    } catch (error) {
+                      setLoginError('root', { message: 'Invalid OTP or session expired.' });
+                      console.error(error);
+                    } finally {
+                      setIsVerifyingOtp(false);
+                    }
+                  }
+                }}
+                disabled={isLoginSubmitting || isVerifyingOtp || (loginMethod === 'otp' && !confirmationResult)}
                 className="w-full rounded-2xl bg-primary-500 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-200"
               >
-                {isLoginSubmitting ? 'Signing in...' : 'Login'}
+                {isLoginSubmitting || isVerifyingOtp ? 'Signing in...' : 'Login'}
               </button>
             </form>
           )}

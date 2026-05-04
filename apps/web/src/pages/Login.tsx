@@ -10,6 +10,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
 import type { AuthUser } from '../types/storefront';
+import { auth } from '../config/firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -29,10 +31,31 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+
+  const setupRecaptcha = (elementId: string) => {
+    if (recaptchaVerifier) return recaptchaVerifier;
+    try {
+      const verifier = new RecaptchaVerifier(auth, elementId, {
+        size: 'invisible',
+        callback: () => {},
+      });
+      setRecaptchaVerifier(verifier);
+      return verifier;
+    } catch (error) {
+      console.error('Recaptcha init failed:', error);
+      return null;
+    }
+  };
+
   const [forgotIdentifier, setForgotIdentifier] = useState('');
-  const [otp, setOtp] = useState('');
+
   const [newPassword, setNewPassword] = useState('');
-  const [actualForgotIdentifier, setActualForgotIdentifier] = useState<{ mobile?: string; email?: string }>({});
+
 
   useEffect(() => {
     if (isAuthenticated) navigate(redirect, { replace: true });
@@ -66,40 +89,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleForgotSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const isEmail = forgotIdentifier.includes('@');
-      const payload = isEmail ? { email: forgotIdentifier } : { mobile: forgotIdentifier };
-      await storefrontApi.forgotPassword(payload);
-      setActualForgotIdentifier(payload);
-      setAuthMode('reset');
-      toast.success(t('authPages.sendingOtp'));
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, t('authPages.forgotFailed')));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-  const handleResetSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setIsSubmitting(true);
-    try {
-      await storefrontApi.resetPassword({
-        ...actualForgotIdentifier,
-        otp,
-        newPassword,
-      });
-      toast.success(t('authPages.resetSuccess') || 'Password reset successfully.');
-      setAuthMode('login');
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, t('authPages.resetFailed')));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const getShellProps = () => {
     switch (authMode) {
@@ -146,44 +136,127 @@ const Login: React.FC = () => {
       }
     >
       {authMode === 'login' && (
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            required
-            value={mobile}
-            onChange={(event) => setMobile(event.target.value)}
-            placeholder={t('authPages.mobileNumber')}
-            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 font-semibold text-primary-900"
-          />
-          <div className="relative">
+        <form 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (loginMethod === 'password') {
+              handleSubmit(e);
+            } else {
+              if (!confirmationResult) {
+                toast.error('Please send OTP first');
+                return;
+              }
+              setIsSubmitting(true);
+              try {
+                const userCredential = await confirmationResult.confirm(otpCode);
+                const idToken = await userCredential.user.getIdToken();
+                const loginResult = await storefrontApi.firebaseLogin(idToken);
+                await applySession(loginResult.user, loginResult.accessToken);
+                toast.success(t('authPages.welcomeBack'));
+              } catch (error) {
+                toast.error('Invalid OTP or session expired.');
+              } finally {
+                setIsSubmitting(false);
+              }
+            }
+          }} 
+          className="space-y-3"
+        >
+          <div id="recaptcha-container"></div>
+          <div className="flex gap-2">
             <input
               required
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder={t('authPages.password')}
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 pr-11 font-semibold text-primary-900"
+              value={mobile}
+              onChange={(event) => setMobile(event.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder={t('authPages.mobileNumber')}
+              disabled={!!confirmationResult}
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 font-semibold text-primary-900 disabled:opacity-50"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword((current) => !current)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
-              aria-label={showPassword ? t('authPages.hidePassword') : t('authPages.showPassword')}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+            {loginMethod === 'otp' && !confirmationResult && (
+              <button
+                type="button"
+                disabled={isSendingOtp}
+                onClick={async () => {
+                  if (!/^[6-9]\d{9}$/.test(mobile)) {
+                    toast.error('Enter a valid 10-digit mobile number');
+                    return;
+                  }
+                  setIsSendingOtp(true);
+                  try {
+                    const verifier = setupRecaptcha('recaptcha-container');
+                    if (!verifier) throw new Error('Failed to initialize reCAPTCHA');
+                    const result = await signInWithPhoneNumber(auth, `+91${mobile}`, verifier);
+                    setConfirmationResult(result);
+                    toast.success('OTP sent successfully');
+                  } catch (error) {
+                    toast.error('Failed to send OTP');
+                  } finally {
+                    setIsSendingOtp(false);
+                  }
+                }}
+                className="whitespace-nowrap rounded-2xl bg-primary-100 px-4 text-xs font-black uppercase tracking-wider text-primary"
+              >
+                {isSendingOtp ? 'Sending...' : 'Send OTP'}
+              </button>
+            )}
           </div>
-          <div className="flex justify-end px-1">
+
+          {loginMethod === 'password' ? (
+            <div className="relative">
+              <input
+                required
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder={t('authPages.password')}
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 pr-11 font-semibold text-primary-900"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
+                aria-label={showPassword ? t('authPages.hidePassword') : t('authPages.showPassword')}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          ) : (
+            confirmationResult && (
+              <input
+                required
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="6-Digit OTP"
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-center text-2xl font-black tracking-[0.5em] text-primary-900"
+              />
+            )
+          )}
+
+          <div className="flex items-center justify-between px-1">
             <button
               type="button"
-              onClick={() => setAuthMode('forgot')}
+              onClick={() => {
+                setLoginMethod(loginMethod === 'password' ? 'otp' : 'password');
+                setConfirmationResult(null);
+                setOtpCode('');
+              }}
               className="text-xs font-black uppercase tracking-wider text-primary/60 hover:text-primary"
             >
-              {t('authPages.forgotPassword')}
+              {loginMethod === 'password' ? 'OTP Login' : 'Password Login'}
             </button>
+            {loginMethod === 'password' && (
+              <button
+                type="button"
+                onClick={() => setAuthMode('forgot')}
+                className="text-xs font-black uppercase tracking-wider text-primary/60 hover:text-primary"
+              >
+                {t('authPages.forgotPassword')}
+              </button>
+            )}
           </div>
           <button
-            disabled={isSubmitting}
-            className="w-full rounded-full bg-primary px-6 py-2.5 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary-600"
+            disabled={isSubmitting || (loginMethod === 'otp' && !confirmationResult)}
+            className="w-full rounded-full bg-primary px-6 py-2.5 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary-600 disabled:opacity-50"
           >
             {isSubmitting ? t('authPages.signingIn') : t('authPages.login')}
           </button>
@@ -196,12 +269,35 @@ const Login: React.FC = () => {
       )}
 
       {authMode === 'forgot' && (
-        <form onSubmit={handleForgotSubmit} className="space-y-4">
+        <form 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!/^[6-9]\d{9}$/.test(forgotIdentifier)) {
+              toast.error('Enter a valid 10-digit mobile number');
+              return;
+            }
+            setIsSubmitting(true);
+            try {
+              const verifier = setupRecaptcha('forgot-recaptcha-container');
+              if (!verifier) throw new Error('Failed to initialize reCAPTCHA');
+              const result = await signInWithPhoneNumber(auth, `+91${forgotIdentifier}`, verifier);
+              setConfirmationResult(result);
+              setAuthMode('reset');
+              toast.success('OTP sent successfully');
+            } catch (error) {
+              toast.error('Failed to send OTP');
+            } finally {
+              setIsSubmitting(false);
+            }
+          }} 
+          className="space-y-4"
+        >
+          <div id="forgot-recaptcha-container"></div>
           <input
             required
             value={forgotIdentifier}
-            onChange={(event) => setForgotIdentifier(event.target.value)}
-            placeholder={t('authPages.registeredIdentifier')}
+            onChange={(event) => setForgotIdentifier(event.target.value.replace(/\D/g, '').slice(0, 10))}
+            placeholder={t('authPages.mobileNumber')}
             className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
           />
           <button
@@ -214,16 +310,39 @@ const Login: React.FC = () => {
       )}
 
       {authMode === 'reset' && (
-        <form onSubmit={handleResetSubmit} className="space-y-4">
+        <form 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!confirmationResult) {
+              toast.error('Session expired. Please request OTP again.');
+              return;
+            }
+            setIsSubmitting(true);
+            try {
+              const userCredential = await confirmationResult.confirm(otpCode);
+              const idToken = await userCredential.user.getIdToken();
+              await storefrontApi.firebaseResetPassword({ idToken, newPassword });
+              toast.success(t('authPages.resetSuccess') || 'Password reset successfully.');
+              setAuthMode('login');
+              setConfirmationResult(null);
+              setOtpCode('');
+            } catch (error) {
+              toast.error(t('authPages.resetFailed'));
+            } finally {
+              setIsSubmitting(false);
+            }
+          }} 
+          className="space-y-4"
+        >
           <p className="px-1 text-xs font-semibold text-primary/60">
             {t('authPages.otpSentTo')} {forgotIdentifier}
           </p>
           <input
             required
-            maxLength={4}
-            value={otp}
-            onChange={(event) => setOtp(event.target.value.replace(/\D/g, ''))}
-            placeholder={t('authPages.otp')}
+            maxLength={6}
+            value={otpCode}
+            onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="6-Digit OTP"
             className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-center text-2xl font-black tracking-[0.5em] text-primary-900"
           />
           <div className="relative">

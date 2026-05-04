@@ -328,6 +328,14 @@ export const storefrontApi = {
     const response = await api.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
     return response.data;
   },
+  firebaseLogin: async (idToken: string) => {
+    const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/firebase-login', { idToken });
+    return response.data.data;
+  },
+  firebaseResetPassword: async (payload: { idToken: string; newPassword: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/firebase-reset-password', payload);
+    return response.data;
+  },
   updateServiceMode: async (serviceMode: ServiceMode) => {
     const response = await api.patch<ApiResponse<AuthUser>>('/auth/service-mode', { serviceMode });
     return response.data.data;

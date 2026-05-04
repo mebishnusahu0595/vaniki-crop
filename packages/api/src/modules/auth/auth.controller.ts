@@ -187,6 +187,53 @@ export async function forgotPassword(req: Request, res: Response, next: NextFunc
 }
 
 /**
+ * POST /api/auth/firebase-login
+ * Authenticates user via Firebase Phone Auth ID Token.
+ */
+export async function firebaseLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) throw new AppError('Firebase ID Token is required', 400);
+
+    const { user, tokens } = await authService.firebaseLogin(idToken);
+
+    res.cookie(REFRESH_TOKEN_COOKIE, tokens.refreshToken, cookieOptions);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: user.toJSON(),
+        accessToken: tokens.accessToken,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/auth/firebase-reset-password
+ * Resets password using Firebase token verification.
+ */
+export async function firebaseResetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { idToken, newPassword } = req.body;
+    if (!idToken || !newPassword) throw new AppError('ID Token and new password are required', 400);
+
+    await authService.firebaseResetPassword({ idToken, newPassword });
+
+    res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully via Firebase verification.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * POST /api/auth/reset-password
  * Resets user's password after OTP verification.
  */

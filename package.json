@@ -30,6 +30,8 @@
     }
   },
   "dependencies": {
+    "firebase": "^12.12.1",
+    "firebase-admin": "^13.8.0",
     "react-native-worklets": "0.5.1"
   }
 }

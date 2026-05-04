@@ -257,6 +257,14 @@ export const adminApi = {
     const response = await api.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
     return response.data;
   },
+  firebaseLogin: async (idToken: string) => {
+    const response = await api.post<ApiResponse<LoginPayloadWithUser | LoginPayloadWithRole>>('/auth/firebase-login', { idToken });
+    return parseLoginResponse(response.data?.data ?? {});
+  },
+  firebaseResetPassword: async (payload: { idToken: string; newPassword: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/firebase-reset-password', payload);
+    return response.data;
+  },
   logout: async () => {
     const response = await api.post<{ success: boolean; message: string }>('/auth/logout');
     return response.data;

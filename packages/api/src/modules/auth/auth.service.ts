@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, type IUser } from '../../models/User.model.js';
+import { firebaseAdmin } from '../../config/firebase.js';
 import { Product } from '../../models/Product.model.js';
 import { Store } from '../../models/Store.model.js';
 import { AppError } from '../../utils/AppError.js';
@@ -419,6 +420,69 @@ export async function loginWithOtp(
 
   const tokens = await generateTokenPair(user);
   return { user, tokens };
+}
+
+/**
+ * Verifies a Firebase ID Token and returns the verified phone number.
+ * @param idToken - The token from frontend
+ */
+async function verifyFirebasePhoneToken(idToken: string): Promise<string> {
+  try {
+    const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
+    const phoneNumber = decodedToken.phone_number;
+    if (!phoneNumber) {
+      throw new AppError('Phone number not verified in Firebase token', 400);
+    }
+    // Convert +919876543210 to 9876543210 for internal compatibility
+    return phoneNumber.replace('+91', '').slice(-10);
+  } catch (error) {
+    console.error('Firebase verification failed:', error);
+    throw new AppError('Invalid or expired Firebase token', 401);
+  }
+}
+
+/**
+ * Authenticates a user using a Firebase ID Token (Phone Auth).
+ */
+export async function firebaseLogin(idToken: string): Promise<{ user: IUser; tokens: TokenPair }> {
+  const mobile = await verifyFirebasePhoneToken(idToken);
+
+  const user = await User.findOne({ mobile });
+  if (!user) {
+    throw new AppError('No account found with this mobile number. Please sign up first.', 404);
+  }
+
+  if (!user.isActive) {
+    throw new AppError('Your account has been deactivated. Contact support.', 403);
+  }
+
+  if (user.role === 'storeAdmin' && user.approvalStatus !== 'approved') {
+    if (user.approvalStatus === 'rejected') {
+      throw new AppError('Your dealer account has been rejected. Please contact support.', 403);
+    }
+    throw new AppError('Your dealer account is pending super admin approval.', 403);
+  }
+
+  const tokens = await generateTokenPair(user);
+  return { user, tokens };
+}
+
+/**
+ * Resets password using Firebase token verification instead of custom OTP.
+ */
+export async function firebaseResetPassword(input: { idToken: string; newPassword: string }): Promise<void> {
+  const mobile = await verifyFirebasePhoneToken(input.idToken);
+
+  const user = await User.findOne({ mobile }).select('+password');
+  if (!user) {
+    throw new AppError('No account found with this mobile number', 404);
+  }
+
+  user.password = input.newPassword;
+  user.otp = undefined;
+  user.otpExpiry = undefined;
+  user.refreshToken = undefined;
+  await user.save();
 }
 
 /**
