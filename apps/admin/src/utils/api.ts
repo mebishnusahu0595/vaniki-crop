@@ -280,13 +280,18 @@ export const adminApi = {
   createProductRequest: async (payload: {
     productId?: string;
     productName?: string;
-    requestedQuantity: number;
+    requestedQuantity?: number;
     requestedPack?: string;
     garageName: string;
-    petiQuantity: number;
+    petiQuantity?: number;
     notes?: string;
+    items?: Array<{
+      productId: string;
+      petiQuantity: number;
+      requestedPack: string;
+    }>;
   }) => {
-    const response = await api.post<ApiResponse<DealerProductRequest>>('/admin/product-requests', payload);
+    const response = await api.post<ApiResponse<DealerProductRequest | DealerProductRequest[]>>('/admin/product-requests', payload);
     return response.data.data;
   },
 };

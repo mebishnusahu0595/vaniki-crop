@@ -6,6 +6,8 @@ import InventoryPage from './pages/Inventory';
 import ProductRequestsPage from './pages/ProductRequests';
 import SettingsPage from './pages/Profile';
 
+import RequestHistoryPage from './pages/RequestHistory';
+
 function App() {
   return (
     <BrowserRouter>
@@ -17,6 +19,7 @@ function App() {
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/product-requests" element={<ProductRequestsPage />} />
+          <Route path="/request-history" element={<RequestHistoryPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<Navigate to="/settings" replace />} />
         </Route>

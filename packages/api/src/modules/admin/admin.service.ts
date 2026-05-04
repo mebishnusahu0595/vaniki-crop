@@ -229,61 +229,66 @@ export async function upsertDealerInventory(
 export async function createDealerProductRequest(
   storeId: string,
   adminId: string,
-  input: Record<string, any>,
+  input: any,
 ) {
-  const requestedQuantity = Number(input.requestedQuantity || input.quantity || 0);
-  if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
-    throw new AppError('Requested quantity must be greater than 0', 400);
-  }
+  const items = Array.isArray(input.items) ? input.items : [input];
+  const results = [];
 
-  const requestedPack = typeof input.requestedPack === 'string'
-    ? input.requestedPack.trim()
-    : typeof input.packSize === 'string'
-      ? input.packSize.trim()
-      : undefined;
-
-  const notes = typeof input.notes === 'string' ? input.notes.trim() : undefined;
-
-  let productId: mongoose.Types.ObjectId | undefined;
-  let productName = typeof input.productName === 'string' ? input.productName.trim() : '';
-  let petiSize = 12;
-  let petiUnit = 'Liter';
-
-  if (typeof input.productId === 'string' && mongoose.Types.ObjectId.isValid(input.productId)) {
-    const product = await Product.findById(input.productId).select('name petiSize petiUnit shortDescription');
-    if (!product) {
-      throw new AppError('Selected product not found', 404);
+  for (const item of items) {
+    const requestedQuantity = Number(item.requestedQuantity || item.quantity || 0);
+    if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
+      throw new AppError('Requested quantity must be greater than 0', 400);
     }
-    productId = product._id as mongoose.Types.ObjectId;
+
+    const requestedPack = typeof item.requestedPack === 'string'
+      ? item.requestedPack.trim()
+      : typeof item.packSize === 'string'
+        ? item.packSize.trim()
+        : undefined;
+
+    const notes = typeof item.notes === 'string' ? item.notes.trim() : undefined;
+
+    let productId: mongoose.Types.ObjectId | undefined;
+    let productName = typeof item.productName === 'string' ? item.productName.trim() : '';
+    let petiSize = 12;
+    let petiUnit = 'Liter';
+
+    if (typeof item.productId === 'string' && mongoose.Types.ObjectId.isValid(item.productId)) {
+      const product = await Product.findById(item.productId).select('name petiSize petiUnit shortDescription');
+      if (!product) {
+        throw new AppError('Selected product not found', 404);
+      }
+      productId = product._id as mongoose.Types.ObjectId;
+      if (!productName) {
+        productName = product.shortDescription || product.name;
+      }
+      if (product.petiSize) petiSize = product.petiSize;
+      if (product.petiUnit) petiUnit = product.petiUnit;
+    }
+
     if (!productName) {
-      // Use shortDescription as productName for requests if available, otherwise fallback to name
-      productName = product.shortDescription || product.name;
+      throw new AppError('Product name is required for request', 400);
     }
-    if (product.petiSize) petiSize = product.petiSize;
-    if (product.petiUnit) petiUnit = product.petiUnit;
+
+    const request = await ProductRequest.create({
+      storeId,
+      adminId,
+      productId,
+      productName,
+      requestedQuantity,
+      requestedPack,
+      garageName: typeof item.garageName === 'string' ? item.garageName.trim() : input.garageName || 'Unknown Garage',
+      petiQuantity: Number(item.petiQuantity) || 1,
+      petiSize: petiSize,
+      petiUnit: petiUnit,
+      notes: notes || input.notes,
+      status: 'pending',
+    });
+
+    results.push(request);
   }
 
-  if (!productName) {
-    throw new AppError('Product name is required for request', 400);
-  }
-
-  const request = await ProductRequest.create({
-    storeId,
-    adminId,
-    productId,
-    productName,
-    requestedQuantity,
-    requestedPack,
-    garageName: typeof input.garageName === 'string' ? input.garageName.trim() : 'Unknown Garage',
-    petiQuantity: Number(input.petiQuantity) || 1,
-    petiSize: petiSize,
-    petiUnit: petiUnit,
-    notes,
-    status: 'pending',
-  });
-
-  await request.populate('productId', 'name slug');
-  return request;
+  return results;
 }
 
 export async function listDealerProductRequests(storeId: string, query: Record<string, any>) {

@@ -128,9 +128,22 @@ export default function InventoryPage() {
           {filteredInventory.map((product) => (
             <div key={product.id} className="rounded-2xl border border-primary-100 bg-primary-50/40 p-4">
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-black text-slate-900">{product.name}</p>
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{product.slug}</p>
+                <div className="flex items-center gap-4">
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="h-12 w-12 rounded-xl object-cover border border-primary-100"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-xl bg-primary-100 flex items-center justify-center">
+                      <span className="text-[10px] font-black text-primary-400">N/A</span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-black text-slate-900">{product.name}</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{product.slug}</p>
+                  </div>
                 </div>
               </div>
 
