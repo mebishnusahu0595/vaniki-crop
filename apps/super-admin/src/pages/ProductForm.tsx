@@ -493,18 +493,6 @@ function ProductEditor({
               {errors.category ? <p className="mt-2 text-sm text-rose-600">{errors.category.message}</p> : null}
             </div>
             <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Tags</label>
-              <input {...register('tags')} placeholder="insecticide, premium" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            </div>
-            <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Meta Title</label>
-              <input {...register('metaTitle')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            </div>
-            <div>
-              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Meta Description</label>
-              <input {...register('metaDescription')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-            </div>
-            <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Peti Size</label>
               <input type="number" step="0.01" {...register('petiSize')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
               {errors.petiSize ? <p className="mt-2 text-sm text-rose-600">{errors.petiSize.message}</p> : null}
@@ -516,6 +504,18 @@ function ProductEditor({
                 <option value="Kg">Kg</option>
               </select>
               {errors.petiUnit ? <p className="mt-2 text-sm text-rose-600">{errors.petiUnit.message}</p> : null}
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Tags</label>
+              <input {...register('tags')} placeholder="insecticide, premium" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Meta Title</label>
+              <input {...register('metaTitle')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Meta Description</label>
+              <input {...register('metaDescription')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
             </div>
           </div>
         </div>
