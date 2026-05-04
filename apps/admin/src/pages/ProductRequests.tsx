@@ -262,14 +262,10 @@ export default function ProductRequestsPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="mb-2 block text-xs font-bold text-slate-500">Offer Price (Optional)</label>
-                      <input
-                        type="number"
-                        placeholder="₹"
-                        value={offerPrice || ''}
-                        onChange={(e) => setOfferPrice(Number(e.target.value))}
-                        className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-base font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
-                      />
+                      <label className="mb-2 block text-xs font-bold text-slate-500">Offer Price</label>
+                      <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-3 text-base font-black text-emerald-600">
+                        {offerPrice ? `₹${offerPrice}` : 'N/A'}
+                      </div>
                     </div>
                     <div>
                       <label className="mb-2 block text-xs font-bold text-slate-500">HSN (Optional)</label>
