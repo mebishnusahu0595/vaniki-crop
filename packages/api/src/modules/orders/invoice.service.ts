@@ -221,63 +221,80 @@ export async function generateB2BInvoice(data: any, siteSettings: any, store: IS
 
       // ─── Invoice Details ───────────────────────────────────────────────────
       const invTop = 260;
+      
+      // Table Header with Pack Column
+      const tableTop = 330;
+      doc.font('Helvetica-Bold').fontSize(9);
+      doc.text('Sl. No', 50, tableTop);
+      doc.text('Description', 90, tableTop);
+      doc.text('Pack', 220, tableTop);
+      doc.text('Unit Price', 270, tableTop, { width: 60, align: 'right' });
+      doc.text('Qty', 335, tableTop, { width: 30, align: 'right' });
+      doc.text('Net Amt', 370, tableTop, { width: 60, align: 'right' });
+      doc.text('Tax %', 435, tableTop, { width: 40, align: 'right' });
+      doc.text('Tax Amt', 480, tableTop, { width: 50, align: 'right' });
+      doc.text('Total', 535, tableTop, { width: 50, align: 'right' });
+
+      doc.moveTo(50, tableTop + 15).lineTo(585, tableTop + 15).stroke();
+
+      let currentTop = tableTop + 25;
+      doc.font('Helvetica').fontSize(8);
+
+      data.items.forEach((item: any, index: number) => {
+        // Force 18% if tax is not set or 0
+        const effectiveTaxRate = (item.taxRate && item.taxRate > 0) ? item.taxRate : 18;
+        const totalPrice = item.price * item.qty;
+        
+        // Backward calculation from inclusive price
+        const netAmount = totalPrice / (1 + effectiveTaxRate / 100);
+        const taxAmount = totalPrice - netAmount;
+        const unitPriceNet = netAmount / item.qty;
+
+        const cgst = taxAmount / 2;
+        const sgst = taxAmount / 2;
+
+        // Clean name (remove pack size from name if it exists)
+        const cleanName = item.productName.replace(/\(.*\)/, '').trim();
+        const packSize = item.variantLabel || '';
+
+        doc.text(`${index + 1}`, 50, currentTop);
+        doc.text(cleanName, 90, currentTop, { width: 120 });
+        doc.text(packSize, 220, currentTop, { width: 45 });
+        doc.text(`${unitPriceNet.toFixed(2)}`, 270, currentTop, { width: 60, align: 'right' });
+        doc.text(`${item.qty}`, 335, currentTop, { width: 30, align: 'right' });
+        doc.text(`${netAmount.toFixed(2)}`, 370, currentTop, { width: 60, align: 'right' });
+        doc.text(`${effectiveTaxRate}%`, 435, currentTop, { width: 40, align: 'right' });
+        doc.text(`${taxAmount.toFixed(2)}`, 480, currentTop, { width: 50, align: 'right' });
+        doc.text(`${totalPrice.toFixed(2)}`, 535, currentTop, { width: 50, align: 'right' });
+
+        // Small tax break-up below name
+        currentTop += 15;
+        doc.fontSize(7).fillColor('#666666');
+        doc.text(`CGST ${(effectiveTaxRate / 2).toFixed(1)}%: ${cgst.toFixed(2)} | SGST ${(effectiveTaxRate / 2).toFixed(1)}%: ${sgst.toFixed(2)}`, 90, currentTop);
+        doc.fillColor('#000000').fontSize(8);
+
+        currentTop += 20;
+      });
+
       doc.font('Helvetica-Bold').text('Invoice Number:', 50, invTop);
       doc.font('Helvetica').text(data.invoiceNumber || `B2B-${Date.now()}`, 130, invTop);
       
       doc.font('Helvetica-Bold').text('Invoice Date:', 350, invTop);
       doc.font('Helvetica').text(data.invoiceDate || new Date().toLocaleDateString('en-IN'), 440, invTop);
 
-      // ─── Table ─────────────────────────────────────────────────────────────
-      let i;
-      const tableTop = 310;
+      const totalNetAmount = data.items.reduce((sum: number, item: any) => {
+        const effectiveTaxRate = (item.taxRate && item.taxRate > 0) ? item.taxRate : 18;
+        return sum + (item.price * item.qty) / (1 + effectiveTaxRate / 100);
+      }, 0);
+      const totalTaxAmount = data.items.reduce((sum: number, item: any) => {
+        const effectiveTaxRate = (item.taxRate && item.taxRate > 0) ? item.taxRate : 18;
+        const total = item.price * item.qty;
+        return sum + (total - total / (1 + effectiveTaxRate / 100));
+      }, 0);
+      const totalFinalAmount = data.items.reduce((sum: number, item: any) => sum + (item.price * item.qty), 0);
 
-      doc.font('Helvetica-Bold');
-      generateTableRow(doc, tableTop, 'Sl. No', 'Description', 'Unit Price', 'Qty', 'Net Amount', 'Tax Rate', 'Tax Amount', 'Total');
-      generateHr(doc, tableTop + 20);
-      doc.font('Helvetica');
-
-      let totalNetAmount = 0;
-      let totalTaxAmount = 0;
-      let totalFinalAmount = 0;
-
-      for (i = 0; i < data.items.length; i++) {
-        const item = data.items[i];
-        const position = tableTop + (i + 1) * 35;
-        
-        // Backward tax calculation: price is inclusive of tax
-        const taxRate = item.taxRate || 0;
-        const netUnitPrice = item.price / (1 + taxRate / 100);
-        const itemNetAmount = netUnitPrice * item.qty;
-        const itemTaxAmount = (item.price * item.qty) - itemNetAmount;
-        const cgst = itemTaxAmount / 2;
-        const sgst = itemTaxAmount / 2;
-        const itemTotal = item.price * item.qty;
-        
-        totalNetAmount += itemNetAmount;
-        totalTaxAmount += itemTaxAmount;
-        totalFinalAmount += itemTotal;
-
-        generateTableRow(
-          doc,
-          position,
-          (i + 1).toString(),
-          `${item.productName}${item.hsnCode ? '\nHSN: ' + item.hsnCode : ''}\nCGST 9%: ₹${cgst.toFixed(2)} | SGST 9%: ₹${sgst.toFixed(2)}`,
-          `₹${netUnitPrice.toFixed(2)}`,
-          item.qty.toString(),
-          `₹${itemNetAmount.toFixed(2)}`,
-          `${taxRate}%`,
-          `₹${itemTaxAmount.toFixed(2)}`,
-          `₹${itemTotal.toFixed(2)}`
-        );
-
-        generateHr(doc, position + 30);
-      }
-
-      const totalPosition = tableTop + (i + 1) * 35;
-      
-      doc.font('Helvetica-Bold');
       const summaryX = 350;
-      let currentY = totalPosition + 10;
+      let currentY = currentTop + 30;
 
       doc.text('SUBTOTAL:', summaryX, currentY);
       doc.text(`₹${totalNetAmount.toFixed(2)}`, 500, currentY, { width: 50, align: 'right' });
