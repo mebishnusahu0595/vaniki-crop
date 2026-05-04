@@ -426,6 +426,7 @@ export async function loginWithOtp(
  * Verifies a Firebase ID Token and returns the verified phone number.
  * @param idToken - The token from frontend
  */
+/*
 async function verifyFirebasePhoneToken(idToken: string): Promise<string> {
   try {
     const decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
@@ -440,11 +441,14 @@ async function verifyFirebasePhoneToken(idToken: string): Promise<string> {
     throw new AppError('Invalid or expired Firebase token', 401);
   }
 }
+*/
 
 /**
  * Authenticates a user using a Firebase ID Token (Phone Auth).
  */
 export async function firebaseLogin(idToken: string): Promise<{ user: IUser; tokens: TokenPair }> {
+  throw new AppError('Firebase authentication is disabled.', 503);
+  /*
   const mobile = await verifyFirebasePhoneToken(idToken);
 
   const user = await User.findOne({ mobile });
@@ -465,12 +469,15 @@ export async function firebaseLogin(idToken: string): Promise<{ user: IUser; tok
 
   const tokens = await generateTokenPair(user);
   return { user, tokens };
+  */
 }
 
 /**
  * Resets password using Firebase token verification instead of custom OTP.
  */
 export async function firebaseResetPassword(input: { idToken: string; newPassword: string }): Promise<void> {
+  throw new AppError('Firebase password reset is disabled.', 503);
+  /*
   const mobile = await verifyFirebasePhoneToken(input.idToken);
 
   const user = await User.findOne({ mobile }).select('+password');
@@ -483,6 +490,7 @@ export async function firebaseResetPassword(input: { idToken: string; newPasswor
   user.otpExpiry = undefined;
   user.refreshToken = undefined;
   await user.save();
+  */
 }
 
 /**

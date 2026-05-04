@@ -27,6 +27,7 @@ export interface ProductVariant {
   label: string;
   price: number;
   adminPrice?: number;
+  offerPrice?: number;
   mrp: number;
   stock: number;
   sku: string;
@@ -344,6 +345,9 @@ export interface ProductRequest {
   petiSize?: number;
   petiUnit?: 'Liter' | 'Kg';
   notes?: string;
+  dealerPrice?: number;
+  offerPrice?: number;
+  hsnCode?: string;
   superAdminNote?: string;
   createdAt: string;
   storeId?:

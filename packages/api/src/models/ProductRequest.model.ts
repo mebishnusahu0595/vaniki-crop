@@ -15,6 +15,9 @@ export interface IProductRequest extends Document {
   petiUnit: 'Liter' | 'Kg';
   notes?: string;
   status: ProductRequestStatus;
+  dealerPrice?: number;
+  offerPrice?: number;
+  hsnCode?: string;
   superAdminNote?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -87,6 +90,9 @@ const productRequestSchema = new Schema<IProductRequest>(
       default: 'pending',
       index: true,
     },
+    dealerPrice: { type: Number },
+    offerPrice: { type: Number },
+    hsnCode: { type: String, trim: true },
     superAdminNote: {
       type: String,
       trim: true,

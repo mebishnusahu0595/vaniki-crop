@@ -192,6 +192,8 @@ export async function forgotPassword(req: Request, res: Response, next: NextFunc
  */
 export async function firebaseLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    throw new AppError('Firebase authentication is currently disabled.', 503);
+    /*
     const { idToken } = req.body;
     if (!idToken) throw new AppError('Firebase ID Token is required', 400);
 
@@ -206,6 +208,7 @@ export async function firebaseLogin(req: Request, res: Response, next: NextFunct
         accessToken: tokens.accessToken,
       },
     });
+    */
   } catch (error) {
     next(error);
   }
@@ -217,6 +220,8 @@ export async function firebaseLogin(req: Request, res: Response, next: NextFunct
  */
 export async function firebaseResetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    throw new AppError('Firebase password reset is currently disabled.', 503);
+    /*
     const { idToken, newPassword } = req.body;
     if (!idToken || !newPassword) throw new AppError('ID Token and new password are required', 400);
 
@@ -228,6 +233,7 @@ export async function firebaseResetPassword(req: Request, res: Response, next: N
       success: true,
       message: 'Password reset successfully via Firebase verification.',
     });
+    */
   } catch (error) {
     next(error);
   }

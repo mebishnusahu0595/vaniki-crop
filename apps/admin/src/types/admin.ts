@@ -27,6 +27,7 @@ export interface ProductVariant {
   label: string;
   price: number;
   adminPrice?: number;
+  offerPrice?: number;
   mrp: number;
   stock: number;
   sku: string;
@@ -75,6 +76,8 @@ export interface DealerInventoryVariant {
   label: string;
   price: number;
   adminPrice?: number;
+  dealerPrice?: number;
+  offerPrice?: number;
   mrp: number;
   quantity: number;
 }
@@ -100,6 +103,9 @@ export interface DealerProductRequest {
   petiSize?: number;
   petiUnit?: 'Liter' | 'Kg';
   notes?: string;
+  dealerPrice?: number;
+  offerPrice?: number;
+  hsnCode?: string;
   status: 'pending' | 'contacted' | 'fulfilled' | 'rejected';
   superAdminNote?: string;
   createdAt: string;

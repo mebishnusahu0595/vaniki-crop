@@ -83,14 +83,26 @@ export default function ProductRequestsPage() {
                     <span className="flex items-center gap-1.5"><Warehouse size={14} className="text-primary-500" /> {request.store?.name || 'Unassigned'}</span>
                     <span className="flex items-center gap-1.5"><Box size={14} className="text-primary-500" /> {request.petiQuantity} Peti ({request.petiSize} {request.petiUnit})</span>
                   </div>
-                  {request.productId && request.requestedPack && (
-                    <div className="mt-2 inline-flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-1.5 border border-amber-100">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">Admin Price:</span>
-                      <span className="text-sm font-black text-amber-900">
-                        ₹{request.productId.variants.find(v => v.label === request.requestedPack)?.adminPrice || 'N/A'}
-                      </span>
-                    </div>
-                  )}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {request.dealerPrice && (
+                      <div className="inline-flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-1.5 border border-amber-100">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">Dealer Price:</span>
+                        <span className="text-sm font-black text-amber-900">₹{request.dealerPrice}</span>
+                      </div>
+                    )}
+                    {request.offerPrice && (
+                      <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-1.5 border border-emerald-100">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">Offer Price:</span>
+                        <span className="text-sm font-black text-emerald-900">₹{request.offerPrice}</span>
+                      </div>
+                    )}
+                    {request.hsnCode && (
+                      <div className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-1.5 border border-slate-100">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">HSN:</span>
+                        <span className="text-sm font-black text-slate-700">{request.hsnCode}</span>
+                      </div>
+                    )}
+                  </div>
                   <p className="mt-2 text-xs text-slate-400 font-medium tracking-wide uppercase">
                     Garage: <span className="text-slate-600">{request.garageName || 'N/A'}</span> · Requested {formatDateTime(request.createdAt)}
                   </p>
@@ -184,15 +196,21 @@ export default function ProductRequestsPage() {
               </div>
 
               <div className="rounded-2xl bg-slate-900 p-6 text-white shadow-xl">
-                <div className="flex items-center justify-between">
+                <div className="grid grid-cols-3 gap-6">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400 mb-2">Request Quantity</p>
-                    <p className="text-3xl font-black">{selectedRequest.petiQuantity} <span className="text-sm font-bold text-slate-400 uppercase">Peti</span></p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400 mb-2">Quantity</p>
+                    <p className="text-2xl font-black">{selectedRequest.petiQuantity} <span className="text-xs font-bold text-slate-400">Peti</span></p>
                   </div>
-                  <div className="text-right border-l border-white/10 pl-6">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400 mb-2">Admin Price</p>
-                    <p className="text-3xl font-black">
-                      ₹{selectedRequest.productId?.variants.find(v => v.label === selectedRequest.requestedPack)?.adminPrice || 'N/A'}
+                  <div className="border-l border-white/10 pl-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400 mb-2">Dealer Price</p>
+                    <p className="text-2xl font-black">
+                      ₹{selectedRequest.dealerPrice || selectedRequest.productId?.variants.find(v => v.label === selectedRequest.requestedPack)?.adminPrice || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="border-l border-white/10 pl-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400 mb-2">Offer Price</p>
+                    <p className="text-2xl font-black text-emerald-400">
+                      ₹{selectedRequest.offerPrice || 'N/A'}
                     </p>
                   </div>
                 </div>

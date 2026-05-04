@@ -16,6 +16,8 @@ interface CartItem {
   variantLabel: string;
   variantId: string;
   price?: number;
+  dealerPrice?: number;
+  offerPrice?: number;
   hsnCode?: string;
 }
 
@@ -28,6 +30,7 @@ export default function ProductRequestsPage() {
   const [petiQuantity, setPetiQuantity] = useState(1);
   const [requestNotes, setRequestNotes] = useState('');
   const [price, setPrice] = useState<number>(0);
+  const [offerPrice, setOfferPrice] = useState<number>(0);
   const [hsnCode, setHsnCode] = useState('');
 
   const inventoryQuery = useQuery({
@@ -69,6 +72,8 @@ export default function ProductRequestsPage() {
       variantLabel: variant.label,
       variantId: variant.id,
       price: price > 0 ? price : undefined,
+      dealerPrice: variant.dealerPrice,
+      offerPrice: offerPrice > 0 ? offerPrice : variant.offerPrice,
       hsnCode: hsnCode.trim() || undefined,
     };
 
@@ -77,6 +82,7 @@ export default function ProductRequestsPage() {
     setRequestedPack('');
     setPetiQuantity(1);
     setPrice(0);
+    setOfferPrice(0);
     setHsnCode('');
   };
 
@@ -94,6 +100,8 @@ export default function ProductRequestsPage() {
           petiQuantity: item.petiQuantity,
           requestedPack: item.variantLabel,
           price: item.price,
+          dealerPrice: item.dealerPrice,
+          offerPrice: item.offerPrice,
           hsnCode: item.hsnCode,
         })),
       }),
@@ -180,7 +188,16 @@ export default function ProductRequestsPage() {
                 <select
                   value={requestedPack}
                   disabled={!selectedProductId}
-                  onChange={(e) => setRequestedPack(e.target.value)}
+                  onChange={(e) => {
+                    const packLabel = e.target.value;
+                    setRequestedPack(packLabel);
+                    const product = inventoryQuery.data?.find(p => p.id === selectedProductId);
+                    const variant = product?.variants.find(v => v.label === packLabel);
+                    if (variant) {
+                      setPrice(variant.dealerPrice || variant.price || 0);
+                      setOfferPrice(variant.offerPrice || 0);
+                    }
+                  }}
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition disabled:opacity-50"
                 >
                   <option value="">Choose pack</option>
@@ -200,6 +217,27 @@ export default function ProductRequestsPage() {
                     <p className="mt-1 text-sm font-medium text-primary-700 opacity-80">
                       {inventoryQuery.data?.find(p => p.id === selectedProductId)?.shortDescription}
                     </p>
+                    
+                    <div className="mt-4 pt-4 border-t border-primary-200/50">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-primary-600 mb-3">Product Pricing Information</p>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {inventoryQuery.data?.find(p => p.id === selectedProductId)?.variants.map((v: any) => (
+                          <div key={v.id} className="rounded-xl bg-white/60 p-3 border border-primary-200/50">
+                            <p className="text-xs font-black text-slate-900 mb-2">{v.label}</p>
+                            <div className="space-y-1.5">
+                              <div className="flex justify-between text-[10px] font-bold">
+                                <span className="text-slate-500 uppercase">Price (Dealer)</span>
+                                <span className="text-primary-700">₹{v.dealerPrice || v.price || 'N/A'}</span>
+                              </div>
+                              <div className="flex justify-between text-[10px] font-bold">
+                                <span className="text-slate-500 uppercase">Offer Price</span>
+                                <span className="text-emerald-600">₹{v.offerPrice || 'N/A'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -224,12 +262,12 @@ export default function ProductRequestsPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="mb-2 block text-xs font-bold text-slate-500">Your Price (Optional)</label>
+                      <label className="mb-2 block text-xs font-bold text-slate-500">Offer Price (Optional)</label>
                       <input
                         type="number"
                         placeholder="₹"
-                        value={price || ''}
-                        onChange={(e) => setPrice(Number(e.target.value))}
+                        value={offerPrice || ''}
+                        onChange={(e) => setOfferPrice(Number(e.target.value))}
                         className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-base font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
                       />
                     </div>
@@ -307,7 +345,11 @@ export default function ProductRequestsPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="font-black text-slate-900 leading-tight">{item.productName}</p>
-                    <p className="text-[10px] font-bold text-primary-600 mt-0.5">{item.variantLabel} {item.price ? `• ₹${item.price}` : ''}</p>
+                    <p className="text-[10px] font-bold text-primary-600 mt-0.5">
+                      {item.variantLabel} 
+                      {item.price ? ` • Dealer: ₹${item.price}` : ''}
+                      {item.offerPrice ? ` • Offer: ₹${item.offerPrice}` : ''}
+                    </p>
                     <p className="mt-1 text-[10px] text-slate-500 italic line-clamp-1">
                       {item.hsnCode ? `HSN: ${item.hsnCode} • ` : ''}{item.shortDescription}
                     </p>

@@ -160,6 +160,8 @@ export async function listDealerInventory(storeId: string) {
         id: variantId,
         label: variant.label,
         price: variant.price,
+        dealerPrice: variant.adminPrice,
+        offerPrice: variant.offerPrice,
         mrp: variant.mrp,
         quantity: quantityByVariant.get(key) ?? 0,
       };
@@ -283,8 +285,9 @@ export async function createDealerProductRequest(
       petiUnit: petiUnit,
       notes: notes || input.notes,
       status: 'pending',
-      // Add price and HSN if provided (extending model implicitly or just notes)
-      superAdminNote: item.price ? `Dealer Price: ₹${item.price}${item.hsnCode ? ' | HSN: ' + item.hsnCode : ''}` : undefined,
+      dealerPrice: item.dealerPrice || item.price,
+      offerPrice: item.offerPrice,
+      hsnCode: item.hsnCode,
     });
 
     results.push(request);

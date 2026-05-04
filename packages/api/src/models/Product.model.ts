@@ -40,6 +40,7 @@ export interface IProductVariant {
   label: string;
   price: number;
   adminPrice?: number;
+  offerPrice?: number;
   mrp: number;
   stock: number;
   sku: string;
@@ -99,6 +100,10 @@ const productVariantSchema = new Schema<IProductVariant>(
     adminPrice: {
       type: Number,
       min: [0, 'Admin price cannot be negative'],
+    },
+    offerPrice: {
+      type: Number,
+      min: [0, 'Offer price cannot be negative'],
     },
     mrp: {
       type: Number,
