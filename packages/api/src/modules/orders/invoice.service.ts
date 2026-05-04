@@ -119,7 +119,7 @@ export async function generateOrderInvoice(order: IOrder, user: IUser, store: IS
       // ─── Footer ────────────────────────────────────────────────────────────
       const footerTop = 750;
       doc.fontSize(8).font('Helvetica').text('This is a computer generated invoice and does not require a physical signature.', 50, footerTop, { align: 'center', width: 500 });
-      doc.text(`Store Contact: ${store.phone} | ${store.email || ''}`, 50, footerTop + 15, { align: 'center', width: 500 });
+      doc.text('Store Contact: 9302228883 | teams@vanikicrop.com', 50, footerTop + 15, { align: 'center', width: 500 });
 
       doc.end();
     } catch (err) {

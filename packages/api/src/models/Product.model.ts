@@ -41,6 +41,7 @@ export interface IProductVariant {
   price: number;
   adminPrice?: number;
   offerPrice?: number;
+  hsnCode?: string;
   mrp: number;
   stock: number;
   sku: string;
@@ -104,6 +105,10 @@ const productVariantSchema = new Schema<IProductVariant>(
     offerPrice: {
       type: Number,
       min: [0, 'Offer price cannot be negative'],
+    },
+    hsnCode: {
+      type: String,
+      trim: true,
     },
     mrp: {
       type: Number,

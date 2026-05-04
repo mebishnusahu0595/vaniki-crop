@@ -38,6 +38,7 @@ const variantSchema = z.object({
   price: requiredNumber('Price'),
   adminPrice: requiredNumber('Admin Price').optional(),
   offerPrice: requiredNumber('Offer Price').optional(),
+  hsnCode: z.string().optional(),
   mrp: requiredNumber('MRP'),
   stock: requiredNumber('Stock'),
 });
@@ -83,7 +84,7 @@ const productDefaultValues: ProductFormInput = {
   isActive: true,
   metaTitle: '',
   metaDescription: '',
-  variants: [{ quantity: '', unit: 'Liter', price: '', adminPrice: '', offerPrice: '', mrp: '', stock: '' }],
+  variants: [{ quantity: '', unit: 'Liter', price: '', adminPrice: '', offerPrice: '', hsnCode: '', mrp: '', stock: '' }],
   loyaltyPointEligible: true,
   maxLoyaltyPoints: 0,
   petiSize: 12,
@@ -110,6 +111,7 @@ function getProductDefaultValues(product?: Product): ProductFormInput {
       price: variant.price,
       adminPrice: variant.adminPrice || '',
       offerPrice: variant.offerPrice || '',
+      hsnCode: variant.hsnCode || '',
       mrp: variant.mrp,
       stock: variant.stock,
     })),
@@ -425,6 +427,7 @@ function ProductEditor({
               price: variant.price,
               adminPrice: variant.adminPrice,
               offerPrice: variant.offerPrice,
+              hsnCode: variant.hsnCode,
               mrp: variant.mrp,
               stock: variant.stock,
               sku: `${slugify(productName || 'product').toUpperCase()}-${String(index + 1).padStart(2, '0')}`,
@@ -531,7 +534,7 @@ function ProductEditor({
             </div>
             <button
               type="button"
-              onClick={() => append({ quantity: '', unit: 'Liter', price: '', adminPrice: '', offerPrice: '', mrp: '', stock: '' })}
+              onClick={() => append({ quantity: '', unit: 'Liter', price: '', adminPrice: '', offerPrice: '', hsnCode: '', mrp: '', stock: '' })}
               className="inline-flex items-center gap-2 rounded-2xl border border-primary-100 px-4 py-2 text-sm font-bold text-primary-700"
             >
               <PlusCircle size={16} />
@@ -539,12 +542,13 @@ function ProductEditor({
             </button>
           </div>
 
-          <div className="hidden grid-cols-[0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_40px] gap-2 px-4 mb-2 md:grid">
+          <div className="hidden grid-cols-[0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_40px] gap-2 px-4 mb-2 md:grid">
             <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Qty</label>
             <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Unit</label>
             <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">User Price</label>
             <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Admin Price</label>
             <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Offer Price</label>
+            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">HSN</label>
             <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">MRP</label>
             <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Stock</label>
             <div />
@@ -552,7 +556,7 @@ function ProductEditor({
 
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="grid gap-2 rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 md:grid-cols-[0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_40px]">
+              <div key={field.id} className="grid gap-2 rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 md:grid-cols-[0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_40px]">
                 <div>
                   <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Qty</div>
                   <input {...register(`variants.${index}.quantity`)} placeholder="Qty" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
@@ -583,6 +587,11 @@ function ProductEditor({
                   <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Offer Price</div>
                   <input type="number" {...register(`variants.${index}.offerPrice`)} placeholder="Offer Price" className="w-full rounded-2xl border border-primary-100 bg-white px-2 py-3 text-sm" />
                   {errors.variants?.[index]?.offerPrice ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.offerPrice?.message}</p> : null}
+                </div>
+                <div>
+                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">HSN</div>
+                  <input {...register(`variants.${index}.hsnCode`)} placeholder="HSN" className="w-full rounded-2xl border border-primary-100 bg-white px-2 py-3 text-sm" />
+                  {errors.variants?.[index]?.hsnCode ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.hsnCode?.message}</p> : null}
                 </div>
                 <div>
                   <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">MRP</div>
