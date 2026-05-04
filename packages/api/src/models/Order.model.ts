@@ -12,6 +12,11 @@ export interface IOrderItem {
   mrp: number;
   qty: number;
   image?: string;
+  hsnCode?: string;
+  taxRate?: number;
+  taxAmount?: number;
+  taxType?: 'IGST' | 'CGST' | 'SGST' | 'CGST/SGST';
+  netAmount?: number;
 }
 
 /** Shipping address for delivery orders */
@@ -65,6 +70,7 @@ export interface IOrder extends Document {
   loyaltyDiscount: number;
   deliveryCharge: number;
   totalAmount: number;
+  totalTaxAmount: number;
   shippingAddress?: IShippingAddress;
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
@@ -100,6 +106,11 @@ const orderItemSchema = new Schema<IOrderItem>(
     mrp: { type: Number, required: true, min: 0 },
     qty: { type: Number, required: true, min: 1 },
     image: { type: String },
+    hsnCode: { type: String },
+    taxRate: { type: Number, default: 0 },
+    taxAmount: { type: Number, default: 0 },
+    taxType: { type: String, enum: ['IGST', 'CGST', 'SGST', 'CGST/SGST'] },
+    netAmount: { type: Number, default: 0 },
   },
   { _id: false },
 );
@@ -165,6 +176,7 @@ const orderSchema = new Schema<IOrder, IOrderModel>(
     loyaltyDiscount: { type: Number, default: 0, min: 0 },
     deliveryCharge: { type: Number, default: 0, min: 0 },
     totalAmount: { type: Number, required: true, min: 0 },
+    totalTaxAmount: { type: Number, default: 0, min: 0 },
     shippingAddress: shippingAddressSchema,
     paymentStatus: {
       type: String,

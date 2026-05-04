@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2, LogOut } from 'lucide-react';
+import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2, LogOut, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
@@ -256,6 +256,15 @@ const Account: React.FC = () => {
       toast.success(t('accountPage.referralCopied'));
     } catch {
       toast.error(t('accountPage.referralCopyFailed'));
+    }
+  };
+
+  const handleDownloadInvoice = async (orderId: string, orderNumber: string) => {
+    try {
+      await storefrontApi.downloadInvoice(orderId, orderNumber);
+      toast.success('Invoice downloaded successfully');
+    } catch {
+      toast.error('Failed to download invoice');
     }
   };
 
@@ -660,9 +669,20 @@ const Account: React.FC = () => {
                 <p className="section-kicker mb-2">{t('accountPage.orderDetail')}</p>
                 <h2 className="text-2xl font-black text-primary-900">{orderDetail?.orderNumber || t('accountPage.loading')}</h2>
               </div>
-              <button onClick={() => setSelectedOrderId(null)} className="rounded-full p-2 hover:bg-primary-50">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                {orderDetail && (
+                  <button
+                    onClick={() => handleDownloadInvoice(orderDetail.id, orderDetail.orderNumber)}
+                    className="flex items-center gap-2 rounded-xl bg-primary-50 px-4 py-2 text-xs font-black uppercase tracking-[0.15em] text-primary transition hover:bg-primary hover:text-white"
+                  >
+                    <FileText size={16} />
+                    Invoice
+                  </button>
+                )}
+                <button onClick={() => setSelectedOrderId(null)} className="rounded-full p-2 hover:bg-primary-50">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {isLoadingOrderDetail || !orderDetail ? (

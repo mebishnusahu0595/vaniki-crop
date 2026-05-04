@@ -550,4 +550,21 @@ export const adminApi = {
     });
     return response.data.data;
   },
+  createB2BInvoice: async (payload: {
+    storeId: string;
+    items: Array<{
+      productName: string;
+      hsnCode?: string;
+      qty: number;
+      price: number;
+      taxRate: number;
+    }>;
+    invoiceNumber?: string;
+    invoiceDate?: string;
+  }) => {
+    const response = await api.post('/superadmin/invoices/create', payload, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
 };

@@ -279,6 +279,7 @@ export const storefrontApi = {
     const response = await request<Order>(`/orders/${id}`);
     return response.data;
   },
+  getInvoiceUrl: (id: string) => `${API_BASE_URL}/orders/${id}/invoice`,
   submitReview: async (payload: { productId: string; rating: number; comment?: string }) => {
     return request<unknown>('/reviews', {
       method: 'POST',

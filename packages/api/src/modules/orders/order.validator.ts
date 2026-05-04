@@ -101,6 +101,24 @@ export const updateOrderStatusSchema = z.object({
 });
 
 /**
+ * Zod schema for B2B invoice generation.
+ */
+export const generateB2BInvoiceSchema = z.object({
+  body: z.object({
+    storeId: objectIdSchema,
+    items: z.array(z.object({
+      productName: z.string().min(1),
+      hsnCode: z.string().optional(),
+      qty: z.number().min(1),
+      price: z.number().min(0),
+      taxRate: z.number().min(0),
+    })).min(1),
+    invoiceNumber: z.string().min(1).optional(),
+    invoiceDate: z.string().optional(),
+  }),
+});
+
+/**
  * Zod validator middleware factory.
  */
 export function validate(schema: z.ZodObject<any>) {

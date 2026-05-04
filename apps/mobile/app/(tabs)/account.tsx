@@ -4,6 +4,8 @@ import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { Screen } from '../../src/components/Screen';
 import { ProductCard } from '../../src/components/ProductCard';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -146,6 +148,32 @@ export default function AccountScreen() {
     }
   };
 
+  const handleDownloadInvoice = async (orderId: string, orderNumber: string) => {
+    try {
+      const url = storefrontApi.getInvoiceUrl(orderId);
+      const token = useAuthStore.getState().token;
+      const fileUri = `${FileSystem.documentDirectory}invoice-${orderNumber}.pdf`;
+
+      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (downloadRes.status !== 200) {
+        throw new Error('Failed to download invoice');
+      }
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(downloadRes.uri);
+      } else {
+        Alert.alert('Download Complete', `Invoice saved to ${downloadRes.uri}`);
+      }
+    } catch (caughtError) {
+      Alert.alert('Download failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
+    }
+  };
+
   return (
     <Screen>
       <View className="flex-row items-center justify-between">
@@ -229,8 +257,19 @@ export default function AccountScreen() {
 
           {selectedOrderId && orderDetailQuery.data ? (
             <View className="rounded-[28px] bg-white p-5">
-              <Text className="text-lg font-black text-primary-900">Order Detail</Text>
-              <Text className="mt-2 text-sm text-primary-900/70">{orderDetailQuery.data.orderNumber}</Text>
+              <View className="flex-row items-center justify-between">
+                <View>
+                  <Text className="text-lg font-black text-primary-900">Order Detail</Text>
+                  <Text className="mt-1 text-sm text-primary-900/70">{orderDetailQuery.data.orderNumber}</Text>
+                </View>
+                <Pressable
+                  onPress={() => handleDownloadInvoice(orderDetailQuery.data!.id, orderDetailQuery.data!.orderNumber)}
+                  className="flex-row items-center gap-2 rounded-xl bg-primary-50 px-4 py-3"
+                >
+                  <Feather name="download" size={16} color="#143D2E" />
+                  <Text className="text-[10px] font-black uppercase tracking-[1px] text-primary-900">Invoice</Text>
+                </Pressable>
+              </View>
               <View className="mt-4 gap-3">
                 {orderDetailQuery.data.statusHistory.map((entry) => (
                   <View key={`${entry.status}-${entry.timestamp}`} className="flex-row gap-3">

@@ -15,6 +15,14 @@ export interface ISiteSetting extends Document {
   metaDescription?: string;
   loyaltyPointRupeeValue: number;
   garageNames?: string[];
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
+  panNumber?: string;
+  gstNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -89,6 +97,14 @@ const siteSettingSchema = new Schema<ISiteSetting>(
       type: [String],
       default: [],
     },
+    address: {
+      street: { type: String, trim: true },
+      city: { type: String, trim: true },
+      state: { type: String, trim: true },
+      pincode: { type: String, trim: true },
+    },
+    panNumber: { type: String, trim: true, uppercase: true },
+    gstNumber: { type: String, trim: true, uppercase: true },
   },
   {
     timestamps: true,

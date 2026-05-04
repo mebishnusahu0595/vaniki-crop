@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Boxes, IndianRupee, ShoppingCart, Users } from 'lucide-react';
+import { Boxes, IndianRupee, ShoppingCart, Users, FileText, Plus, Trash2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Bar,
@@ -29,6 +29,11 @@ export default function DashboardPage() {
   const analyticsQuery = useQuery({
     queryKey: ['super-admin-dashboard', range],
     queryFn: () => adminApi.analytics(range),
+  });
+
+  const storesQuery = useQuery({
+    queryKey: ['super-admin-dashboard-stores'],
+    queryFn: () => adminApi.stores({ limit: 200 }),
   });
 
   const timelineData = useMemo(() => {
@@ -138,6 +143,20 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <div className="rounded-[1.75rem] border border-primary-100 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-3 border-b border-primary-100 pb-4 mb-6">
+          <div className="rounded-2xl bg-primary-50 p-3 text-primary-600">
+            <FileText size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-slate-900">B2B Invoice Creator</h2>
+            <p className="text-sm text-slate-500">Generate manual GST tax invoices for Store Admins / Dealers.</p>
+          </div>
+        </div>
+
+        <B2BInvoiceCreator stores={storesQuery.data?.data || []} />
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-2">
         <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
           <div className="mb-4">
@@ -200,6 +219,127 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function B2BInvoiceCreator({ stores }: { stores: any[] }) {
+  const [storeId, setStoreId] = useState('');
+  const [items, setItems] = useState([{ productName: '', hsnCode: '', qty: 1, price: 0, taxRate: 18 }]);
+  const [invoiceNumber, setInvoiceNumber] = useState(`B2B-${Date.now().toString().slice(-6)}`);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const addItem = () => setItems([...items, { productName: '', hsnCode: '', qty: 1, price: 0, taxRate: 18 }]);
+  const removeItem = (index: number) => setItems(items.filter((_, i) => i !== index));
+  const updateItem = (index: number, field: string, value: any) => {
+    const next = [...items];
+    (next[index] as any)[field] = value;
+    setItems(next);
+  };
+
+  const handleGenerate = async () => {
+    if (!storeId) return alert('Please select a store');
+    if (items.some(i => !i.productName || i.price <= 0)) return alert('Please fill item details correctly');
+
+    setIsGenerating(true);
+    try {
+      const blob = await adminApi.createB2BInvoice({ storeId, items, invoiceNumber });
+      const url = window.URL.createObjectURL(blob as any);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to generate invoice');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Select Recipient Store</label>
+          <select 
+            value={storeId} 
+            onChange={e => setStoreId(e.target.value)}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm"
+          >
+            <option value="">Select a store</option>
+            {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Invoice Number</label>
+          <input 
+            value={invoiceNumber} 
+            onChange={e => setInvoiceNumber(e.target.value)}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">Invoice Items</p>
+          <button onClick={addItem} className="flex items-center gap-1 text-xs font-black uppercase text-primary-600 hover:text-primary-700">
+            <Plus size={14} /> Add Item
+          </button>
+        </div>
+
+        {items.map((item, index) => (
+          <div key={index} className="grid gap-3 rounded-2xl border border-primary-50 bg-primary-50/30 p-4 md:grid-cols-[2fr_1fr_0.8fr_1fr_0.8fr_auto]">
+            <input 
+              placeholder="Product Name"
+              value={item.productName}
+              onChange={e => updateItem(index, 'productName', e.target.value)}
+              className="rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm"
+            />
+            <input 
+              placeholder="HSN"
+              value={item.hsnCode}
+              onChange={e => updateItem(index, 'hsnCode', e.target.value)}
+              className="rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm"
+            />
+            <input 
+              type="number"
+              placeholder="Qty"
+              value={item.qty}
+              onChange={e => updateItem(index, 'qty', Number(e.target.value))}
+              className="rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm"
+            />
+            <input 
+              type="number"
+              placeholder="Price"
+              value={item.price}
+              onChange={e => updateItem(index, 'price', Number(e.target.value))}
+              className="rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm"
+            />
+            <select
+              value={item.taxRate}
+              onChange={e => updateItem(index, 'taxRate', Number(e.target.value))}
+              className="rounded-xl border border-primary-100 bg-white px-3 py-2 text-sm"
+            >
+              {[0, 5, 12, 18, 28].map(r => <option key={r} value={r}>{r}%</option>)}
+            </select>
+            <button onClick={() => removeItem(index)} className="text-rose-400 hover:text-rose-600">
+              <Trash2 size={18} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <button
+        onClick={handleGenerate}
+        disabled={isGenerating}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-600 px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-white hover:bg-primary-700 disabled:opacity-50"
+      >
+        <FileText size={18} />
+        {isGenerating ? 'Generating PDF...' : 'Generate & Download B2B Invoice'}
+      </button>
     </div>
   );
 }

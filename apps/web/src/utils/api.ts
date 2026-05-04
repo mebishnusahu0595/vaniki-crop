@@ -292,6 +292,19 @@ export const storefrontApi = {
     const response = await api.get<ApiResponse<Order>>(`/orders/${id}`);
     return response.data.data;
   },
+  downloadInvoice: async (id: string, orderNumber: string) => {
+    const response = await api.get(`/orders/${id}/invoice`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `invoice-${orderNumber}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
   submitReview: async (payload: { productId: string; rating: number; comment?: string }) => {
     const response = await api.post<ApiResponse<unknown>>('/reviews', payload);
     return response.data;

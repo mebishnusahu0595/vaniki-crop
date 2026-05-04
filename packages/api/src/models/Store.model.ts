@@ -43,6 +43,7 @@ export interface IStore extends Document {
   cgst?: number;
   sgst?: number;
   igst?: number;
+  panNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -149,6 +150,11 @@ const storeSchema = new Schema<IStore>(
       default: 0,
       min: 0,
       max: 100,
+    },
+    panNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
     },
   },
   {

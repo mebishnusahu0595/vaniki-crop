@@ -407,6 +407,9 @@ export interface SiteSettings {
   metaDescription?: string;
   loyaltyPointRupeeValue?: number;
   garageNames?: string[];
+  address?: Address;
+  panNumber?: string;
+  gstNumber?: string;
 }
 
 export interface StoreSecretsResponse {

@@ -65,6 +65,8 @@ async function calculateCart(items: any[], storeId: string) {
       image: product.images.length > 0 ? product.images[0].url : undefined,
       loyaltyPointEligible: product.loyaltyPointEligible,
       maxLoyaltyPoints: product.maxLoyaltyPoints,
+      hsnCode: product.hsnCode,
+      taxRate: product.taxRate,
     });
   }
 
@@ -185,19 +187,28 @@ export async function initiateOrder(userId: string, input: any) {
 
   const deliveryCharge = serviceMode === 'delivery' ? (subtotal >= threshold ? 0 : charge) : 0;
 
-  // 4.5 Loyalty Points
-  let loyaltyDiscount = 0;
-  let loyaltyPointsApplied = 0;
-  if (loyaltyPoints > 0) {
-    const user = await User.findById(userId);
-    if (!user || user.loyaltyPoints < loyaltyPoints) {
-      throw new AppError('Insufficient loyalty points', 400);
-    }
+  // 5. Calculate Taxes
+  const isInterState = serviceMode === 'delivery' 
+    ? shippingAddress.state.toLowerCase() !== store.address.state.toLowerCase()
+    : false;
 
-    const pointValue = siteSettings?.loyaltyPointRupeeValue ?? 1;
-    loyaltyPointsApplied = loyaltyPoints;
-    loyaltyDiscount = loyaltyPointsApplied * pointValue;
-  }
+  let totalTaxAmount = 0;
+  const itemsWithTax = validatedItems.map((item: any) => {
+    const taxRate = item.taxRate || 0;
+    const taxAmount = (item.price * item.qty * taxRate) / (100 + taxRate);
+    const netAmount = (item.price * item.qty) - taxAmount;
+    const taxType = isInterState ? 'IGST' : 'CGST/SGST';
+
+    totalTaxAmount += taxAmount;
+
+    return {
+      ...item,
+      taxRate,
+      taxAmount,
+      taxType,
+      netAmount,
+    };
+  });
 
   const totalAmount = subtotal - couponDiscount - loyaltyDiscount + deliveryCharge;
 
@@ -219,7 +230,7 @@ export async function initiateOrder(userId: string, input: any) {
     userId,
     storeId: resolvedStoreId,
     serviceMode,
-    items: validatedItems,
+    items: itemsWithTax,
     subtotal,
     couponCode,
     couponDiscount,
@@ -227,6 +238,7 @@ export async function initiateOrder(userId: string, input: any) {
     loyaltyDiscount,
     deliveryCharge,
     totalAmount,
+    totalTaxAmount,
     shippingAddress,
     paymentStatus: 'pending',
     paymentMethod: 'razorpay',
@@ -247,7 +259,8 @@ export async function initiateOrder(userId: string, input: any) {
       loyaltyDiscount,
       deliveryCharge,
       totalAmount,
-      items: validatedItems,
+      totalTaxAmount,
+      items: itemsWithTax,
     },
     orderId: order._id,
   };
@@ -292,17 +305,28 @@ export async function placeCodOrder(userId: string, input: any) {
 
   const deliveryCharge = serviceMode === 'delivery' ? (subtotal >= thresholdForCOD ? 0 : chargeForCOD) : 0;
   
-  let loyaltyDiscount = 0;
-  let loyaltyPointsApplied = 0;
-  if (loyaltyPoints > 0) {
-    const user = await User.findById(userId);
-    if (!user || user.loyaltyPoints < loyaltyPoints) {
-      throw new AppError('Insufficient loyalty points', 400);
-    }
-    const pointValue = siteSettingsForCOD?.loyaltyPointRupeeValue ?? 1;
-    loyaltyPointsApplied = loyaltyPoints;
-    loyaltyDiscount = loyaltyPointsApplied * pointValue;
-  }
+  // 5. Calculate Taxes
+  const isInterState = serviceMode === 'delivery' 
+    ? shippingAddress.state.toLowerCase() !== store.address.state.toLowerCase()
+    : false;
+
+  let totalTaxAmount = 0;
+  const itemsWithTax = validatedItems.map((item: any) => {
+    const taxRate = item.taxRate || 0;
+    const taxAmount = (item.price * item.qty * taxRate) / (100 + taxRate);
+    const netAmount = (item.price * item.qty) - taxAmount;
+    const taxType = isInterState ? 'IGST' : 'CGST/SGST';
+
+    totalTaxAmount += taxAmount;
+
+    return {
+      ...item,
+      taxRate,
+      taxAmount,
+      taxType,
+      netAmount,
+    };
+  });
 
   const totalAmount = subtotal - couponDiscount - loyaltyDiscount + deliveryCharge;
 
@@ -312,7 +336,7 @@ export async function placeCodOrder(userId: string, input: any) {
     userId,
     storeId: resolvedStoreId,
     serviceMode,
-    items: validatedItems,
+    items: itemsWithTax,
     subtotal,
     couponCode,
     couponDiscount,
@@ -320,6 +344,7 @@ export async function placeCodOrder(userId: string, input: any) {
     loyaltyDiscount,
     deliveryCharge,
     totalAmount,
+    totalTaxAmount,
     shippingAddress,
     paymentStatus: 'pending',
     paymentMethod: 'cod',

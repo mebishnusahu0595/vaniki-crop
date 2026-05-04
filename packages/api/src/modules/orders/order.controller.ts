@@ -1,5 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as orderService from './order.service.js';
+import { generateOrderInvoice, generateB2BInvoice } from './invoice.service.js';
+import { Order } from '../../models/Order.model.js';
+import { User } from '../../models/User.model.js';
+import { Store } from '../../models/Store.model.js';
+import { SiteSetting } from '../../models/SiteSetting.model.js';
+import { AppError } from '../../utils/AppError.js';
 
 // ─── Customer Controllers ────────────────────────────────────────────────
 
@@ -91,6 +97,35 @@ export async function cancelOrder(req: Request, res: Response, next: NextFunctio
   }
 }
 
+/**
+ * GET /api/orders/:id/invoice
+ */
+export async function downloadInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const orderId = (req.params as any).id;
+    const order = await Order.findById(orderId);
+    if (!order) throw new AppError('Order not found', 404);
+
+    // Security: Check if user owns the order or is an admin
+    const isAdmin = ['admin', 'superadmin'].includes((req as any).userRole);
+    if (!isAdmin && order.userId.toString() !== req.userId) {
+      throw new AppError('Unauthorized access to invoice', 403);
+    }
+
+    const user = await User.findById(order.userId);
+    const store = await Store.findById(order.storeId);
+    if (!user || !store) throw new AppError('Incomplete order data', 400);
+
+    const pdfBuffer = await generateOrderInvoice(order as any, user as any, store as any);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${order.orderNumber}.pdf`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ─── Admin Controllers ───────────────────────────────────────────────────
 
 /**
@@ -145,6 +180,34 @@ export async function updateOrderStatus(req: Request, res: Response, next: NextF
   try {
     const order = await orderService.updateOrderStatus((req.params as any).id, req.body, req.userId!);
     res.status(200).json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/super-admin/invoices/create
+ * Generates a B2B invoice from platform to store.
+ */
+export async function createB2BInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { storeId, items, invoiceNumber, invoiceDate } = req.body;
+    
+    const store = await Store.findById(storeId);
+    if (!store) throw new AppError('Store not found', 404);
+
+    const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
+    if (!siteSettings) throw new AppError('Site settings not found', 404);
+
+    const pdfBuffer = await generateB2BInvoice(
+      { items, invoiceNumber, invoiceDate },
+      siteSettings,
+      store as any
+    );
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=b2b-invoice-${store.name.replace(/\s+/g, '-')}.pdf`);
+    res.send(pdfBuffer);
   } catch (error) {
     next(error);
   }

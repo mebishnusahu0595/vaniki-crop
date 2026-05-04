@@ -7,6 +7,7 @@ import {
   placeCodOrderSchema,
   confirmOrderSchema,
   updateOrderStatusSchema,
+  generateB2BInvoiceSchema,
 } from './order.validator.js';
 
 const router: Router = Router();
@@ -31,6 +32,9 @@ router.get('/:id', requireAuth, orderController.getOrderDetail);
 /** PATCH /api/orders/:id/cancel — Customer cancellation */
 router.patch('/:id/cancel', requireAuth, orderController.cancelOrder);
 
+/** GET /api/orders/:id/invoice — Download invoice PDF */
+router.get('/:id/invoice', requireAuth, orderController.downloadInvoice);
+
 // ─── Store Admin Routes ──────────────────────────────────────────────────
 
 /** GET /api/admin/orders — Store-specific orders */
@@ -46,5 +50,8 @@ router.patch('/admin/:id/status', requireAuth, requireStoreAdmin, validate(updat
 
 /** GET /api/super-admin/orders — Global order list */
 router.get('/super-admin/list', requireAuth, requireSuperAdmin, orderController.getSuperAdminOrders);
+
+/** POST /api/super-admin/invoices/create — Create B2B invoice */
+router.post('/super-admin/invoices/create', requireAuth, requireSuperAdmin, validate(generateB2BInvoiceSchema), orderController.createB2BInvoice);
 
 export default router;

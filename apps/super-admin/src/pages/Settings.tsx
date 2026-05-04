@@ -21,6 +21,12 @@ const settingsSchema = z.object({
   metaDescription: z.string().max(300, 'Meta description can be up to 300 characters').optional(),
   loyaltyPointRupeeValue: z.coerce.number().min(0, 'Point value cannot be negative'),
   garageNames: z.array(z.string().trim().min(1, 'Garage name is required')).default([]),
+  street: z.string().trim().optional().or(z.literal('')),
+  city: z.string().trim().optional().or(z.literal('')),
+  state: z.string().trim().optional().or(z.literal('')),
+  pincode: z.string().trim().optional().or(z.literal('')),
+  panNumber: z.string().trim().toUpperCase().optional().or(z.literal('')),
+  gstNumber: z.string().trim().toUpperCase().optional().or(z.literal('')),
 });
 
 type SettingsFormInput = z.input<typeof settingsSchema>;
@@ -39,6 +45,12 @@ const settingsDefaultValues: SettingsFormInput = {
   metaDescription: '',
   loyaltyPointRupeeValue: 1,
   garageNames: [],
+  street: '',
+  city: '',
+  state: '',
+  pincode: '',
+  panNumber: '',
+  gstNumber: '',
 };
 
 export default function SettingsPage() {
@@ -78,11 +90,28 @@ export default function SettingsPage() {
       metaDescription: settingsQuery.data.metaDescription || '',
       loyaltyPointRupeeValue: settingsQuery.data.loyaltyPointRupeeValue || 1,
       garageNames: settingsQuery.data.garageNames || [],
+      street: settingsQuery.data.address?.street || '',
+      city: settingsQuery.data.address?.city || '',
+      state: settingsQuery.data.address?.state || '',
+      pincode: settingsQuery.data.address?.pincode || '',
+      panNumber: settingsQuery.data.panNumber || '',
+      gstNumber: settingsQuery.data.gstNumber || '',
     });
   }, [reset, settingsQuery.data]);
 
   const mutation = useMutation({
-    mutationFn: (values: SettingsFormOutput) => adminApi.updateSiteSettings(values),
+    mutationFn: (values: SettingsFormOutput) => {
+      const payload = {
+        ...values,
+        address: {
+          street: values.street,
+          city: values.city,
+          state: values.state,
+          pincode: values.pincode,
+        },
+      };
+      return adminApi.updateSiteSettings(payload);
+    },
     onMutate: () => {
       setSaveError('');
       setSaveSuccess('');
@@ -206,6 +235,36 @@ export default function SettingsPage() {
               )}
             </div>
             {errors.garageNames && <p className="mt-2 text-xs font-semibold text-rose-600">Please enter valid garage names</p>}
+          </div>
+
+          <div className="md:col-span-2 mt-4">
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-primary-600 border-b border-primary-100 pb-2 mb-4">Platform Tax Details (B2B Invoices)</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Street Address</label>
+                <input {...register('street')} placeholder="Street" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">City</label>
+                <input {...register('city')} placeholder="City" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">State</label>
+                <input {...register('state')} placeholder="State" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Pincode</label>
+                <input {...register('pincode')} placeholder="Pincode" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">PAN Number</label>
+                <input {...register('panNumber')} placeholder="PAN" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">GST Registration No.</label>
+                <input {...register('gstNumber')} placeholder="GSTIN" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+            </div>
           </div>
         </div>
 
