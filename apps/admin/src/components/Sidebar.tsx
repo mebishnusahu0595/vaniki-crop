@@ -6,6 +6,7 @@ import {
   ClipboardList,
   FileText,
   X,
+  Wallet,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink } from 'react-router-dom';
@@ -24,6 +25,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/product-requests', label: 'Product Requests', icon: ClipboardList },
   { to: '/request-history', label: 'Request History', icon: ClipboardList },
+  { to: '/settlements', label: 'Settlements', icon: Wallet },
   { to: '/settings', label: 'Profile', icon: UserRound },
 ];
 

@@ -74,3 +74,21 @@ export async function getGarages(req: Request, res: Response, next: NextFunction
     next(error);
   }
 }
+export async function getSettlementEligibleOrders(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await adminService.listSettlementEligibleOrders(req.userStoreId!);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createSettlementRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { orderIds } = req.body;
+    const result = await adminService.createSettlementRequest(req.userStoreId!, req.userId!, orderIds);
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}

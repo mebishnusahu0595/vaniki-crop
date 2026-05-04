@@ -320,3 +320,51 @@ export async function getGarages(): Promise<string[]> {
   const settings = await SiteSetting.findOne({ singletonKey: 'default' }).select('garageNames');
   return settings?.garageNames || [];
 }
+export async function listSettlementEligibleOrders(storeId: string) {
+  return Order.find({
+    storeId,
+    status: 'delivered',
+    paymentStatus: 'paid',
+    isSettlementRequested: { $ne: true },
+  })
+    .sort({ createdAt: -1 })
+    .select('orderNumber totalAmount createdAt items');
+}
+
+export async function createSettlementRequest(
+  storeId: string,
+  adminId: string,
+  orderIds: string[],
+) {
+  const batchId = `SETTLE-${Date.now()}`;
+  
+  await Order.updateMany(
+    {
+      _id: { $in: orderIds },
+      storeId,
+      status: 'delivered',
+      isSettlementRequested: { $ne: true },
+    },
+    {
+      $set: {
+        isSettlementRequested: true,
+        settlementBatchId: batchId,
+      },
+    }
+  );
+
+  const orders = await Order.find({ settlementBatchId: batchId }).populate('items');
+  
+  // Create a product request for super admin to track this settlement
+  const request = await ProductRequest.create({
+    storeId,
+    adminId,
+    productName: `Settlement Request: ${batchId}`,
+    requestedQuantity: orderIds.length,
+    notes: `Settlement for orders: ${orders.map(o => o.orderNumber).join(', ')}`,
+    status: 'pending',
+    dealerPrice: orders.reduce((sum, o) => sum + o.totalAmount, 0),
+  });
+
+  return { batchId, request };
+}

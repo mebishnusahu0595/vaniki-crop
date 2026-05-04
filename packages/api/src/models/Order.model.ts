@@ -80,6 +80,8 @@ export interface IOrder extends Document {
   status: OrderStatus;
   statusHistory: IStatusHistoryEntry[];
   adminNote?: string;
+  isSettlementRequested?: boolean;
+  settlementBatchId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -207,6 +209,8 @@ const orderSchema = new Schema<IOrder, IOrderModel>(
     },
     statusHistory: { type: [statusHistorySchema], default: [] },
     adminNote: { type: String, trim: true },
+    isSettlementRequested: { type: Boolean, default: false },
+    settlementBatchId: { type: String },
   },
   {
     timestamps: true,

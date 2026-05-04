@@ -312,4 +312,12 @@ export const adminApi = {
     });
     return response.data;
   },
+  getSettlementEligibleOrders: async () => {
+    const response = await api.get<ApiResponse<any[]>>('/admin/settlements/eligible');
+    return response.data.data;
+  },
+  createSettlementRequest: async (orderIds: string[]) => {
+    const response = await api.post<ApiResponse<any>>('/admin/settlements', { orderIds });
+    return response.data.data;
+  },
 };

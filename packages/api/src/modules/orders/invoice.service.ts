@@ -30,7 +30,8 @@ export async function generateOrderInvoice(order: IOrder, user: IUser, store: IS
       doc.font('Helvetica').text(store.name, 50, customerTop + 15);
       doc.text(`${store.address.street},`, 50, customerTop + 30);
       doc.text(`${store.address.city}, ${store.address.state}, ${store.address.pincode}`, 50, customerTop + 45);
-      doc.text('IN', 50, customerTop + 60);
+      doc.text(`Contact: ${store.phone}`, 50, customerTop + 60);
+      doc.text('IN', 50, customerTop + 75);
       
       if (store.panNumber) {
         doc.font('Helvetica-Bold').text('PAN No:', 50, customerTop + 80);
@@ -71,8 +72,11 @@ export async function generateOrderInvoice(order: IOrder, user: IUser, store: IS
       doc.font('Helvetica-Bold').text('Order Date:', 50, orderTop + 15);
       doc.font('Helvetica').text(order.createdAt.toLocaleDateString('en-IN'), 130, orderTop + 15);
 
-      doc.font('Helvetica-Bold').text('Invoice Date:', 350, orderTop + 15);
-      doc.font('Helvetica').text(new Date().toLocaleDateString('en-IN'), 440, orderTop + 15);
+      doc.font('Helvetica-Bold').text('Billing Date:', 350, orderTop + 15);
+      doc.font('Helvetica').text(order.createdAt.toLocaleDateString('en-IN'), 440, orderTop + 15);
+
+      doc.font('Helvetica-Bold').text('Invoice Date:', 350, orderTop + 30);
+      doc.font('Helvetica').text(new Date().toLocaleDateString('en-IN'), 440, orderTop + 30);
 
       // ─── Table ─────────────────────────────────────────────────────────────
       let i;
@@ -83,20 +87,34 @@ export async function generateOrderInvoice(order: IOrder, user: IUser, store: IS
       generateHr(doc, invoiceTableTop + 20);
       doc.font('Helvetica');
 
+      let totalNetAmount = 0;
+      let totalTaxAmount = 0;
+
       for (i = 0; i < order.items.length; i++) {
         const item = order.items[i];
         const position = invoiceTableTop + (i + 1) * 35;
+        
+        // Backward tax calculation: Price is inclusive of tax
+        const taxRate = item.taxRate || 0;
+        const netUnitPrice = item.price / (1 + taxRate / 100);
+        const itemNetAmount = netUnitPrice * item.qty;
+        const itemTaxAmount = (item.price * item.qty) - itemNetAmount;
+        const cgst = itemTaxAmount / 2;
+        const sgst = itemTaxAmount / 2;
+
+        totalNetAmount += itemNetAmount;
+        totalTaxAmount += itemTaxAmount;
         
         generateTableRow(
           doc,
           position,
           (i + 1).toString(),
-          `${item.productName} (${item.variantLabel})${item.hsnCode ? '\nHSN:' + item.hsnCode : ''}`,
-          `₹${(item.price - (item.taxAmount || 0) / item.qty).toFixed(2)}`,
+          `${item.productName} (${item.variantLabel})${item.hsnCode ? '\nHSN: ' + item.hsnCode : ''}\nCGST 9%: ₹${cgst.toFixed(2)} | SGST 9%: ₹${sgst.toFixed(2)}`,
+          `₹${netUnitPrice.toFixed(2)}`,
           item.qty.toString(),
-          `₹${(item.netAmount || 0).toFixed(2)}`,
-          `${item.taxRate || 0}%`,
-          `₹${(item.taxAmount || 0).toFixed(2)}`,
+          `₹${itemNetAmount.toFixed(2)}`,
+          `${taxRate}%`,
+          `₹${itemTaxAmount.toFixed(2)}`,
           `₹${(item.price * item.qty).toFixed(2)}`
         );
 
@@ -107,14 +125,39 @@ export async function generateOrderInvoice(order: IOrder, user: IUser, store: IS
       
       // Totals
       doc.font('Helvetica-Bold');
-      doc.text('TOTAL:', 350, subtotalPosition + 10);
-      doc.text(`₹${order.totalTaxAmount.toFixed(2)}`, 450, subtotalPosition + 10, { width: 50, align: 'right' });
-      doc.text(`₹${order.totalAmount.toFixed(2)}`, 500, subtotalPosition + 10, { width: 50, align: 'right' });
+      
+      const summaryX = 350;
+      let currentY = subtotalPosition + 10;
+
+      doc.text('SUBTOTAL:', summaryX, currentY);
+      doc.text(`₹${totalNetAmount.toFixed(2)}`, 500, currentY, { width: 50, align: 'right' });
+      
+      currentY += 15;
+      doc.text('CGST (9%):', summaryX, currentY);
+      doc.text(`₹${(totalTaxAmount / 2).toFixed(2)}`, 500, currentY, { width: 50, align: 'right' });
+      
+      currentY += 15;
+      doc.text('SGST (9%):', summaryX, currentY);
+      doc.text(`₹${(totalTaxAmount / 2).toFixed(2)}`, 500, currentY, { width: 50, align: 'right' });
+
+      if (order.serviceMode === 'delivery') {
+        currentY += 15;
+        doc.text('DELIVERY CHARGE:', summaryX, currentY);
+        doc.text(`₹${(order.deliveryCharge || 50).toFixed(2)}`, 500, currentY, { width: 50, align: 'right' });
+      } else {
+        currentY += 15;
+        doc.text('MODE: PICKUP', summaryX, currentY);
+        doc.text('₹0.00', 500, currentY, { width: 50, align: 'right' });
+      }
+
+      currentY += 20;
+      doc.fontSize(12).text('TOTAL:', summaryX, currentY);
+      doc.text(`₹${order.totalAmount.toFixed(2)}`, 480, currentY, { width: 70, align: 'right' });
 
       // Amount in words
-      doc.fontSize(10).font('Helvetica-Bold').text('Amount in Words:', 50, subtotalPosition + 40);
+      doc.fontSize(10).font('Helvetica-Bold').text('Amount in Words:', 50, currentY + 40);
       const words = converter.toWords(Math.floor(order.totalAmount)).replace(/^\w/, (c) => c.toUpperCase());
-      doc.font('Helvetica').text(`${words} Rupees Only`, 50, subtotalPosition + 55);
+      doc.font('Helvetica').text(`${words} Rupees Only`, 50, currentY + 55);
 
       // ─── Footer ────────────────────────────────────────────────────────────
       const footerTop = 750;
@@ -193,30 +236,37 @@ export async function generateB2BInvoice(data: any, siteSettings: any, store: IS
       generateHr(doc, tableTop + 20);
       doc.font('Helvetica');
 
+      let totalNetAmount = 0;
       let totalTaxAmount = 0;
-      let totalAmount = 0;
+      let totalFinalAmount = 0;
 
       for (i = 0; i < data.items.length; i++) {
         const item = data.items[i];
         const position = tableTop + (i + 1) * 35;
         
+        // Backward tax calculation: price is inclusive of tax
         const taxRate = item.taxRate || 0;
-        const taxAmount = (item.price * item.qty * taxRate) / 100;
-        const itemTotal = (item.price * item.qty) + taxAmount;
+        const netUnitPrice = item.price / (1 + taxRate / 100);
+        const itemNetAmount = netUnitPrice * item.qty;
+        const itemTaxAmount = (item.price * item.qty) - itemNetAmount;
+        const cgst = itemTaxAmount / 2;
+        const sgst = itemTaxAmount / 2;
+        const itemTotal = item.price * item.qty;
         
-        totalTaxAmount += taxAmount;
-        totalAmount += itemTotal;
+        totalNetAmount += itemNetAmount;
+        totalTaxAmount += itemTaxAmount;
+        totalFinalAmount += itemTotal;
 
         generateTableRow(
           doc,
           position,
           (i + 1).toString(),
-          `${item.productName}${item.hsnCode ? '\nHSN:' + item.hsnCode : ''}`,
-          `₹${item.price.toFixed(2)}`,
+          `${item.productName}${item.hsnCode ? '\nHSN: ' + item.hsnCode : ''}\nCGST 9%: ₹${cgst.toFixed(2)} | SGST 9%: ₹${sgst.toFixed(2)}`,
+          `₹${netUnitPrice.toFixed(2)}`,
           item.qty.toString(),
-          `₹${(item.price * item.qty).toFixed(2)}`,
+          `₹${itemNetAmount.toFixed(2)}`,
           `${taxRate}%`,
-          `₹${taxAmount.toFixed(2)}`,
+          `₹${itemTaxAmount.toFixed(2)}`,
           `₹${itemTotal.toFixed(2)}`
         );
 
@@ -226,14 +276,28 @@ export async function generateB2BInvoice(data: any, siteSettings: any, store: IS
       const totalPosition = tableTop + (i + 1) * 35;
       
       doc.font('Helvetica-Bold');
-      doc.text('TOTAL:', 350, totalPosition + 10);
-      doc.text(`₹${totalTaxAmount.toFixed(2)}`, 450, totalPosition + 10, { width: 50, align: 'right' });
-      doc.text(`₹${totalAmount.toFixed(2)}`, 500, totalPosition + 10, { width: 50, align: 'right' });
+      const summaryX = 350;
+      let currentY = totalPosition + 10;
+
+      doc.text('SUBTOTAL:', summaryX, currentY);
+      doc.text(`₹${totalNetAmount.toFixed(2)}`, 500, currentY, { width: 50, align: 'right' });
+      
+      currentY += 15;
+      doc.text('CGST (9%):', summaryX, currentY);
+      doc.text(`₹${(totalTaxAmount / 2).toFixed(2)}`, 500, currentY, { width: 50, align: 'right' });
+      
+      currentY += 15;
+      doc.text('SGST (9%):', summaryX, currentY);
+      doc.text(`₹${(totalTaxAmount / 2).toFixed(2)}`, 500, currentY, { width: 50, align: 'right' });
+
+      currentY += 20;
+      doc.fontSize(12).text('TOTAL:', summaryX, currentY);
+      doc.text(`₹${totalFinalAmount.toFixed(2)}`, 480, currentY, { width: 70, align: 'right' });
 
       // Amount in words
-      doc.fontSize(10).font('Helvetica-Bold').text('Amount in Words:', 50, totalPosition + 40);
-      const words = converter.toWords(Math.floor(totalAmount)).replace(/^\w/, (c) => c.toUpperCase());
-      doc.font('Helvetica').text(`${words} Rupees Only`, 50, totalPosition + 55);
+      doc.fontSize(10).font('Helvetica-Bold').text('Amount in Words:', 50, currentY + 40);
+      const words = converter.toWords(Math.floor(totalFinalAmount)).replace(/^\w/, (c) => c.toUpperCase());
+      doc.font('Helvetica').text(`${words} Rupees Only`, 50, currentY + 55);
 
       // ─── Footer ────────────────────────────────────────────────────────────
       const footerTop = 750;

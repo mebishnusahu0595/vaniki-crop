@@ -13,5 +13,7 @@ router.patch('/inventory', adminController.updateInventory);
 router.get('/garages', adminController.getGarages);
 router.get('/product-requests', adminController.listProductRequests);
 router.post('/product-requests', adminController.createProductRequest);
+router.get('/settlements/eligible', adminController.getSettlementEligibleOrders);
+router.post('/settlements', adminController.createSettlementRequest);
 
 export default router;
