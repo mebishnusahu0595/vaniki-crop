@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "643230690121",
+    "project_id": "vanikicropweb",
+    "storage_bucket": "vanikicropweb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:643230690121:android:9eeb2a68f2ffca56da4898",
+        "android_client_info": {
+          "package_name": "com.vanikicrop.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8Hs34qj-HpL7YPuL7RxU65zrm4HJQET8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
