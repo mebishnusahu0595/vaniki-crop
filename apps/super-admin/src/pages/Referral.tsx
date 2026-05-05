@@ -25,6 +25,7 @@ interface Staff {
   name: string;
   mobile: string;
   referralCode: string;
+  role?: 'delivery' | 'referral';
   referralCount: number;
   isActive: boolean;
 }

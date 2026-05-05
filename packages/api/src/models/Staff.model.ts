@@ -7,6 +7,7 @@ export interface IStaff extends Document {
   email?: string;
   password: string;
   referralCode: string;
+  role: 'delivery' | 'referral';
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

@@ -144,6 +144,7 @@ export interface StaffMember {
   mobile: string;
   email?: string;
   referralCode: string;
+  role?: 'delivery' | 'referral';
   referralCount?: number;
   activeDeliveries?: number;
   deliveredDeliveries?: number;
