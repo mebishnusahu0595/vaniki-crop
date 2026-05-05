@@ -1,10 +1,11 @@
 import '../global.css';
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { router, Stack, usePathname } from 'expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import Constants from 'expo-constants';
 import { bindOnlineManager, getQueryClient } from '../src/lib/queryClient';
 import { useBootstrapSession } from '../src/hooks/useBootstrapSession';
 import { useAuthStore } from '../src/store/useAuthStore';
@@ -19,11 +20,19 @@ import { CheckInModal } from '../src/components/CheckInModal';
 bindOnlineManager();
 
 function RootNavigation() {
+  const pathname = usePathname();
   const hydrated = useAuthStore((state) => state.hydrated);
   const user = useAuthStore((state) => state.user);
+  const staffToken = useStaffAuthStore((state) => state.token);
+  const isStaffApp = Constants.expoConfig?.extra?.appVariant === 'staff';
 
   useBootstrapSession();
   usePushNotifications(Boolean(user));
+
+  useEffect(() => {
+    if (!hydrated || !isStaffApp || pathname.startsWith('/delivery')) return;
+    router.replace((staffToken ? '/delivery' : '/delivery/login') as never);
+  }, [hydrated, isStaffApp, pathname, staffToken]);
 
   if (!hydrated) return <LoadingScreen />;
 

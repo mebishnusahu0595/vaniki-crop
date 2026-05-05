@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { Screen } from '../../src/components/Screen';
 import { staffApi } from '../../src/lib/staffApi';
 import { useStaffAuthStore } from '../../src/store/useStaffAuthStore';
 
 export default function DeliveryLoginScreen() {
+  const isStaffApp = Constants.expoConfig?.extra?.appVariant === 'staff';
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -91,11 +93,13 @@ export default function DeliveryLoginScreen() {
             </Text>
           </Pressable>
 
-          <Pressable onPress={() => router.replace('/(auth)/login')} className="mt-5 py-2">
-            <Text className="text-center text-[11px] font-black uppercase tracking-[2px] text-primary-500">
-              Customer Login
-            </Text>
-          </Pressable>
+          {!isStaffApp ? (
+            <Pressable onPress={() => router.replace('/(auth)/login')} className="mt-5 py-2">
+              <Text className="text-center text-[11px] font-black uppercase tracking-[2px] text-primary-500">
+                Customer Login
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </KeyboardAvoidingView>
     </Screen>
