@@ -54,7 +54,7 @@ function StaffList({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search staff"
-          className="w-full rounded-2xl border border-primary-100 bg-white py-3 pl-10 pr-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary-500/20"
+          className="w-full rounded-2xl border border-primary-100 bg-white py-2 pl-10 pr-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary-500/20"
         />
       </div>
 
@@ -133,22 +133,22 @@ function AddStaffForm() {
   });
 
   return (
-    <div className="rounded-[1.5rem] border border-primary-100 bg-white p-5">
+    <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
       <div className="flex items-center gap-3">
         <div className="rounded-2xl bg-primary-50 p-3 text-primary-700">
           <Plus size={18} />
         </div>
         <div>
           <h2 className="font-black text-slate-900">Add Delivery Staff</h2>
-          <p className="text-sm text-slate-500">Create login for the delivery APK.</p>
+          <p className="text-xs text-slate-500">Create login for the delivery app.</p>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2">
-        <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Name" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-        <input value={form.mobile} onChange={(event) => setForm({ ...form, mobile: event.target.value.replace(/\D/g, '').slice(0, 10) })} placeholder="Mobile" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-        <input value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Email optional" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-        <input value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} type="password" placeholder="Password" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+      <div className="mt-4 grid gap-2 md:grid-cols-2">
+        <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Name" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm" />
+        <input value={form.mobile} onChange={(event) => setForm({ ...form, mobile: event.target.value.replace(/\D/g, '').slice(0, 10) })} placeholder="Mobile" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm" />
+        <input value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Email (optional)" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm" />
+        <input value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} type="password" placeholder="Password" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm" />
       </div>
 
       <button
@@ -262,8 +262,8 @@ function StaffDetailView({ staffId }: { staffId: string }) {
   const activeDeliveries = detail.deliveries.filter((order) => !['delivered', 'cancelled'].includes(order.status)).length;
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-[1.5rem] border border-primary-100 bg-slate-950 p-5 text-white">
+    <div className="space-y-4">
+      <div className="rounded-[1.5rem] border border-primary-100 bg-slate-950 p-4 text-white">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
             <div className="rounded-2xl bg-white/10 p-3">
@@ -286,7 +286,7 @@ function StaffDetailView({ staffId }: { staffId: string }) {
           </button>
         </div>
 
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid gap-2 md:grid-cols-3">
           <div className="rounded-2xl bg-white/10 p-4">
             <p className="text-2xl font-black">{activeDeliveries}</p>
             <p className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-white/50">Active Deliveries</p>
@@ -302,7 +302,7 @@ function StaffDetailView({ staffId }: { staffId: string }) {
         </div>
       </div>
 
-      <div className="rounded-[1.5rem] border border-primary-100 bg-white p-5">
+      <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
         <div className="flex items-center gap-3">
           <div className="rounded-2xl bg-primary-50 p-3 text-primary-700">
             <ShieldCheck size={18} />
@@ -313,15 +313,15 @@ function StaffDetailView({ staffId }: { staffId: string }) {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-[1.4fr_0.5fr_1fr_auto]">
-          <select value={orderId} onChange={(event) => setOrderId(event.target.value)} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-            <option value="">Choose unassigned delivery order</option>
+        <div className="mt-4 grid gap-2 lg:grid-cols-[1.4fr_0.5fr_1fr_auto]">
+          <select value={orderId} onChange={(event) => setOrderId(event.target.value)} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm">
+            <option value="">Choose order</option>
             {(availableOrdersQuery.data || []).map((order: Order) => (
               <option key={getOrderId(order)} value={getOrderId(order)}>{orderLabel(order)}</option>
             ))}
           </select>
-          <input value={deliveryOtp} onChange={(event) => setDeliveryOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="OTP" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-          <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Assignment note" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+          <input value={deliveryOtp} onChange={(event) => setDeliveryOtp(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="OTP" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm" />
+          <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Note" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-sm" />
           <button
             onClick={() => assignMutation.mutate()}
             disabled={!orderId || assignMutation.isPending}
@@ -353,10 +353,10 @@ export default function StaffPage() {
   const { id } = useParams();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Staff"
-        subtitle="Create delivery staff, assign orders, set delivery OTP, and monitor proof, cancellations, customer and product details."
+        subtitle="Manage delivery staff, assignments, and performance monitoring."
         action={
           <Link to="/orders" className="inline-flex items-center gap-2 rounded-2xl border border-primary-100 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-primary-700">
             <PackageCheck size={16} />

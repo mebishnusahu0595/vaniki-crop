@@ -146,11 +146,11 @@ export default function ReferralPage() {
   if (staffQuery.isLoading) return <LoadingBlock label="Loading referral data..." />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Referral Management</h1>
-          <p className="text-slate-500">Track staff referrals and user signups</p>
+          <h1 className="text-xl font-black text-slate-900">Referral Management</h1>
+          <p className="text-sm text-slate-500">Track staff referrals and user signups</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -180,7 +180,7 @@ export default function ReferralPage() {
               placeholder="Search staff..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500/20"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500/20"
             />
           </div>
 
@@ -218,16 +218,16 @@ export default function ReferralPage() {
         </div>
 
         {/* Details Area */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-4">
           {selectedStaffId ? (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {/* Staff Stats Card */}
               {(() => {
                 const staff = staffQuery.data?.find(s => getStaffId(s) === selectedStaffId);
                 if (!staff) return null;
                 const staffId = getStaffId(staff);
                 return (
-                  <div className="rounded-3xl bg-slate-900 p-6 text-white shadow-xl">
+                  <div className="rounded-2xl bg-slate-900 p-4 text-white shadow-xl">
                     <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                       <div className="flex items-center gap-4">
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white">
@@ -276,7 +276,7 @@ export default function ReferralPage() {
               })()}
 
               {/* Referral List */}
-              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
                 <div className="mb-6 flex items-center justify-between">
                   <h3 className="text-lg font-black text-slate-900">Referred Users & Purchases</h3>
                   <button 
