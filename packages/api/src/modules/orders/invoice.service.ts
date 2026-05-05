@@ -162,7 +162,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       let summarySgstRate = storeTax?.sgst || 0;
 
       order.items.forEach((item: any, index: number) => {
-        if (currentTop > pageHeight - 120) {
+        if (currentTop > pageHeight - 100) {
           doc.addPage();
           drawTableHeader(pageMargin + 15);
           currentTop = pageMargin + 35;
@@ -216,7 +216,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       const expectedTotal = Math.max(0, subtotalGross - discount + deliveryCharge);
       const payableTotal = Number(order.totalAmount || expectedTotal);
       let summaryTop = currentTop + 6;
-      if (summaryTop > pageHeight - 160) {
+      if (summaryTop > pageHeight - 140) {
         doc.addPage();
         summaryTop = pageMargin + 15;
       }
@@ -247,13 +247,13 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       const footerTop = pageHeight - 50;
       doc.moveTo(pageMargin, footerTop).lineTo(rightEdge, footerTop).lineWidth(0.5).strokeColor('#E5E7EB').stroke();
       
-      doc.fontSize(7)
+      doc.fontSize(6.5)
         .fillColor('#6B7280')
         .font('Helvetica')
-        .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 8, { align: 'center', width: contentWidth });
+        .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 10, { align: 'left', width: contentWidth / 2 + 50 });
         
-      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(7)
-        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin, footerTop + 20, { align: 'center', width: contentWidth });
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(6.5)
+        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin + contentWidth / 2 - 50, footerTop + 10, { align: 'right', width: contentWidth / 2 + 50 });
 
       doc.end();
     } catch (error) {
