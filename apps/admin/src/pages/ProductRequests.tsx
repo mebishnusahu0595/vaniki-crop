@@ -269,13 +269,9 @@ export default function ProductRequestsPage() {
                     </div>
                     <div>
                       <label className="mb-2 block text-xs font-bold text-slate-500">HSN Code</label>
-                      <input
-                        type="text"
-                        placeholder="HSN Code"
-                        value={hsnCode}
-                        onChange={(e) => setHsnCode(e.target.value)}
-                        className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-base font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
-                      />
+                      <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-3 text-base font-black text-slate-500">
+                        {hsnCode || 'N/A'}
+                      </div>
                     </div>
                   </div>
                 </div>
