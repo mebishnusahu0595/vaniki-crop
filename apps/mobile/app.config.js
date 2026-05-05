@@ -10,6 +10,11 @@ module.exports = {
       ? 'Vaniki Staff delivery app for assigned delivery tasks, OTP verification, proof upload, and cancellation reporting.'
       : appJson.expo.description,
     scheme: isStaffApp ? 'vanikistaff' : appJson.expo.scheme,
+    plugins: isStaffApp
+      ? appJson.expo.plugins.filter(
+          (p) => p !== '@react-native-firebase/app' && p !== '@react-native-firebase/auth'
+        )
+      : appJson.expo.plugins,
     android: {
       ...appJson.expo.android,
       package: isStaffApp ? 'com.vanikicrop.staff' : appJson.expo.android.package,
