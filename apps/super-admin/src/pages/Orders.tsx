@@ -60,8 +60,9 @@ export default function OrdersPage() {
   const [paymentStatus, setPaymentStatus] = useState('');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 350);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const today = new Date().toLocaleDateString('en-CA');
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [nextStatus, setNextStatus] = useState('confirmed');
   const [note, setNote] = useState('');
@@ -198,6 +199,13 @@ export default function OrdersPage() {
             ))}
           </tbody>
         </table>
+        {ordersQuery.data?.data.length === 0 && (
+          <div className="py-12 text-center">
+            <p className="text-lg font-black text-slate-400">
+              {startDate === today && endDate === today ? 'No orders today' : 'No orders found for the selected period'}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 lg:hidden">
@@ -231,6 +239,13 @@ export default function OrdersPage() {
             </div>
           </button>
         ))}
+        {ordersQuery.data?.data.length === 0 && (
+          <div className="rounded-[1.5rem] border border-dashed border-primary-200 bg-primary-50/30 py-12 text-center">
+            <p className="text-lg font-black text-slate-400">
+              {startDate === today && endDate === today ? 'No orders today' : 'No orders found for the selected period'}
+            </p>
+          </div>
+        )}
       </div>
 
       {isOrderModalOpen ? (
