@@ -16,6 +16,8 @@ declare global {
       userStoreId?: string;
       /** Active store context ID (set by extractStoreId middleware) */
       storeId?: string;
+      /** Authenticated staff ID (set by staff auth middleware) */
+      staffId?: string;
     }
   }
 }

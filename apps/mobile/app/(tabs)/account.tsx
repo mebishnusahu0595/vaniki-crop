@@ -13,9 +13,21 @@ import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
 import { storefrontApi } from '../../src/lib/api';
 import { currencyFormatter, formatStoreAddress } from '../../src/utils/format';
+import { resolveMediaUrl } from '../../src/utils/media';
 import type { Product, ServiceMode } from '../../src/types/storefront';
 
 const tabs = ['orders', 'loyalty', 'wishlist', 'profile', 'password'] as const;
+
+function getOrderItemProduct(item: { productId: string | Product }) {
+  return typeof item.productId === 'object' ? item.productId : null;
+}
+
+function getOrderItemImage(item: { image?: string; productId: string | Product }) {
+  const product = getOrderItemProduct(item);
+  const imageUrl = product?.images?.[0]?.url || item.image;
+  const publicId = product?.images?.[0]?.publicId;
+  return imageUrl ? resolveMediaUrl(imageUrl, publicId) : '';
+}
 
 export default function AccountScreen() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('orders');
@@ -252,6 +264,13 @@ export default function AccountScreen() {
               <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">{order.orderNumber}</Text>
               <Text className="mt-2 text-lg font-black text-primary-900">{currencyFormatter.format(order.totalAmount)}</Text>
               <Text className="mt-2 text-sm text-primary-900/60">{order.status}</Text>
+              {order.deliveryOtp && !['delivered', 'cancelled'].includes(order.status) ? (
+                <View className="mt-3 self-start rounded-full bg-amber-100 px-3 py-1">
+                  <Text className="text-[10px] font-black uppercase tracking-[1px] text-amber-700">
+                    OTP {order.deliveryOtp}
+                  </Text>
+                </View>
+              ) : null}
             </Pressable>
           ))}
 
@@ -271,6 +290,66 @@ export default function AccountScreen() {
                 </Pressable>
               </View>
               <View className="mt-4 gap-3">
+                {orderDetailQuery.data.deliveryOtp && !['delivered', 'cancelled'].includes(orderDetailQuery.data.status) ? (
+                  <View className="rounded-[22px] bg-amber-50 p-4">
+                    <Text className="text-[10px] font-black uppercase tracking-[2px] text-amber-700">Delivery OTP</Text>
+                    <Text className="mt-2 text-3xl font-black tracking-[6px] text-primary-900">{orderDetailQuery.data.deliveryOtp}</Text>
+                    <Text className="mt-2 text-sm leading-6 text-primary-900/60">
+                      Share this code only when the delivery arrives.
+                    </Text>
+                  </View>
+                ) : null}
+                <View className="rounded-[22px] border border-primary-100 bg-primary-50 p-4">
+                  <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Order Summary</Text>
+                  <View className="mt-3 gap-2">
+                    <View className="flex-row justify-between">
+                      <Text className="text-sm text-primary-900/60">Subtotal</Text>
+                      <Text className="text-sm font-black text-primary-900">{currencyFormatter.format(orderDetailQuery.data.subtotal)}</Text>
+                    </View>
+                    <View className="flex-row justify-between">
+                      <Text className="text-sm text-primary-900/60">Delivery</Text>
+                      <Text className="text-sm font-black text-primary-900">
+                        {orderDetailQuery.data.serviceMode === 'pickup' ? 'Pickup - no charge' : currencyFormatter.format(orderDetailQuery.data.deliveryCharge || 0)}
+                      </Text>
+                    </View>
+                    <View className="flex-row justify-between border-t border-primary-100 pt-2">
+                      <Text className="text-sm font-black text-primary-900">Total</Text>
+                      <Text className="text-sm font-black text-primary-900">{currencyFormatter.format(orderDetailQuery.data.totalAmount)}</Text>
+                    </View>
+                  </View>
+                </View>
+                <View className="gap-3">
+                  {orderDetailQuery.data.items.map((item, index) => {
+                    const product = getOrderItemProduct(item);
+                    const imageUrl = getOrderItemImage(item);
+                    const description = product?.shortDescription || product?.description || '';
+
+                    return (
+                      <Pressable
+                        key={`${typeof item.productId === 'string' ? item.productId : item.productId.id}-${index}`}
+                        onPress={() => product?.slug && router.push(`/product/${product.slug}` as any)}
+                        disabled={!product?.slug}
+                        className="flex-row gap-3 rounded-[22px] border border-primary-100 bg-white p-3"
+                      >
+                        {imageUrl ? (
+                          <Image source={{ uri: imageUrl }} style={{ width: 72, height: 72, borderRadius: 18 }} />
+                        ) : (
+                          <View className="h-[72px] w-[72px] rounded-[18px] bg-primary-50" />
+                        )}
+                        <View className="flex-1">
+                          <Text className="text-sm font-black text-primary-900">{item.productName}</Text>
+                          <Text className="mt-1 text-[10px] font-black uppercase tracking-[1px] text-primary-500">
+                            {item.qty} x {item.variantLabel}
+                          </Text>
+                          {description ? (
+                            <Text numberOfLines={3} className="mt-2 text-xs leading-5 text-primary-900/60">{description}</Text>
+                          ) : null}
+                          <Text className="mt-2 text-sm font-black text-primary-700">{currencyFormatter.format(item.price * item.qty)}</Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
                 {orderDetailQuery.data.statusHistory.map((entry) => (
                   <View key={`${entry.status}-${entry.timestamp}`} className="flex-row gap-3">
                     <View className="mt-1 h-3 w-3 rounded-full bg-primary-500" />

@@ -875,7 +875,7 @@ async function seedSiteSettings() {
     {
       singletonKey: 'default',
       platformName: 'Vaniki Crop',
-      supportEmail: 'support@vanikicrop.com',
+      supportEmail: 'teams@vanikicrop.com',
       supportPhone: '+91-8041234567',
       maintenanceMode: false,
       homepageHeadline: 'Trusted crop protection products delivered fast to your farm cluster.',

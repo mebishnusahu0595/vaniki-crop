@@ -96,7 +96,7 @@ const PrivacyPolicy: React.FC = () => {
               We retain your personal information for as long as your account is active or as needed to provide
               you services. Order history is kept for accounting and legal compliance. You can request deletion
               of your account by contacting us at{' '}
-              <a href="mailto:support@vanikicrop.com" className="text-primary font-bold hover:underline">support@vanikicrop.com</a>.
+              <a href="mailto:teams@vanikicrop.com" className="text-primary font-bold hover:underline">teams@vanikicrop.com</a>.
             </p>
           </section>
 
@@ -140,9 +140,9 @@ const PrivacyPolicy: React.FC = () => {
             <h2>11. Contact Us</h2>
             <p>If you have questions about this Privacy Policy, please contact us:</p>
             <ul>
-              <li><strong>Email:</strong> <a href="mailto:support@vanikicrop.com" className="text-primary font-bold hover:underline">support@vanikicrop.com</a></li>
-              <li><strong>Phone:</strong> +91 94061 02621</li>
-              <li><strong>Address:</strong> Main Road, Bagsewania, Bhopal, Madhya Pradesh 462043</li>
+              <li><strong>Email:</strong> <a href="mailto:teams@vanikicrop.com" className="text-primary font-bold hover:underline">teams@vanikicrop.com</a></li>
+              <li><strong>Phone:</strong> +91 9302228883</li>
+              <li><strong>Address:</strong> Shop no. 37, Krishi Upaj Mandi, Dhamdha Road, Durg 491001 (C.G.)</li>
             </ul>
           </section>
         </div>

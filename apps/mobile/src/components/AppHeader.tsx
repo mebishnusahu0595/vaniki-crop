@@ -115,7 +115,7 @@ export const AppHeader = memo(function AppHeader() {
           <View className="flex-row items-center gap-1.5">
             <Feather name="phone" size={12} color="#52B788" />
             <Text className="text-[9px] font-black uppercase tracking-[1.6px] text-white">
-              {t('mobile.topNotice.call')}: +91 94061 02621
+              {t('mobile.topNotice.call')}: +91 9302228883
             </Text>
           </View>
         </View>

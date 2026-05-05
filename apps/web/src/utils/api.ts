@@ -175,6 +175,17 @@ const normalizeProduct = (product: ProductLike | null | undefined): Product | un
 const normalizeProducts = (products: ProductLike[] = []): Product[] =>
   products.map((product) => normalizeProduct(product) as Product);
 
+const normalizeOrder = (order: Order): Order => ({
+  ...order,
+  id: order.id || (order as Order & { _id?: string })._id || '',
+  items: (order.items || []).map((item) => ({
+    ...item,
+    productId: typeof item.productId === 'object'
+      ? normalizeProduct(item.productId as ProductLike) as Product
+      : item.productId,
+  })),
+});
+
 const normalizeHomepageData = (homepage: HomepageData): HomepageData => ({
   ...homepage,
   featuredCategories: (homepage.featuredCategories || []).map((category) => ({
@@ -290,7 +301,7 @@ export const storefrontApi = {
   },
   orderDetail: async (id: string) => {
     const response = await api.get<ApiResponse<Order>>(`/orders/${id}`);
-    return response.data.data;
+    return normalizeOrder(response.data.data);
   },
   downloadInvoice: async (id: string, orderNumber: string) => {
     const response = await api.get(`/orders/${id}/invoice`, {

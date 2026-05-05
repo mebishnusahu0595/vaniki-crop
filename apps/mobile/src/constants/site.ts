@@ -1,7 +1,7 @@
 export const siteConfig = {
-  supportPhone: '+91 94061 02621',
+  supportPhone: '+91 9302228883',
   whatsappLink: process.env.EXPO_PUBLIC_WHATSAPP_LINK || 'https://wa.link/vanikicrop',
-  supportEmail: 'support@vanikicrop.com',
+  supportEmail: 'teams@vanikicrop.com',
   aboutBlurb:
     'Premium crop protection solutions with local store fulfillment, delivery convenience, and farmer-first support.',
   aboutTitle: 'Precision crop care built for growers who need fast, genuine supply.',
@@ -21,6 +21,6 @@ export const siteConfig = {
       description: 'Switch between delivery and pickup without losing context, pricing, or store selection.',
     },
   ],
-  contactAddress: 'Main Road, Bagsewania, Bhopal, Madhya Pradesh 462043',
+  contactAddress: 'Shop no. 37, Krishi Upaj Mandi, Dhamdha Road, Durg 491001 (C.G.)',
   workingHours: 'Mon - Sat: 9:00 AM - 7:00 PM',
 };

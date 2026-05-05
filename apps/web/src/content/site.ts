@@ -2,8 +2,8 @@ export const siteContent = {
   brand: {
     name: 'Vaniki Crop',
     tagline: 'Smart crop protection for modern farms',
-    supportPhone: '+91 94061 02621',
-    supportEmail: 'support@vanikicrop.com',
+    supportPhone: '+91 9302228883',
+    supportEmail: 'teams@vanikicrop.com',
   },
   notices: [
     'Free delivery on orders above Rs. 1,000',
@@ -33,9 +33,9 @@ export const siteContent = {
     headline: 'Talk to the Vaniki team',
     description:
       'Need product guidance, bulk order support, or help with an order? Send us a note and we will get back to you shortly.',
-    address: 'Main Road, Bagsewania, Bhopal, Madhya Pradesh 462043',
+    address: 'Shop no. 37, Krishi Upaj Mandi, Dhamdha Road, Durg 491001 (C.G.)',
     workingHours: 'Mon - Sat: 9:00 AM - 7:00 PM',
     mapEmbedUrl:
-      'https://www.google.com/maps?q=Bhopal%20Madhya%20Pradesh&output=embed',
+      'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d5099.8074829720035!2d81.29006897632325!3d21.211309781481525!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a293d2419857e09%3A0x9611818434664bad!2sKrishi%20Upaj%20Mandi%20Durg%20Shops!5e1!3m2!1sen!2sin!4v1777959072771!5m2!1sen!2sin',
   },
 };

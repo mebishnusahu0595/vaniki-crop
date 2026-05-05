@@ -11,6 +11,7 @@ import { storefrontApi } from '../utils/api';
 import { currencyFormatter, formatStoreAddress } from '../utils/format';
 import type { OrderStatusHistoryEntry, Product, ServiceMode } from '../types/storefront';
 import { cn } from '../utils/cn';
+import { resolveMediaUrl } from '../utils/media';
 import ProductCard from '../components/shared/ProductCard';
 
 const statusSequence: OrderStatusHistoryEntry['status'][] = [
@@ -20,6 +21,17 @@ const statusSequence: OrderStatusHistoryEntry['status'][] = [
   'shipped',
   'delivered',
 ];
+
+function getOrderItemProduct(item: { productId: string | Product }) {
+  return typeof item.productId === 'object' ? item.productId : null;
+}
+
+function getOrderItemImage(item: { image?: string; productId: string | Product }) {
+  const product = getOrderItemProduct(item);
+  const imageUrl = product?.images?.[0]?.url || item.image;
+  const publicId = product?.images?.[0]?.publicId;
+  return imageUrl ? resolveMediaUrl(imageUrl, publicId) : '';
+}
 
 const Account: React.FC = () => {
   const { t } = useTranslation();
@@ -388,6 +400,11 @@ const Account: React.FC = () => {
                           <p className="mt-2 text-sm font-medium text-primary-900/60">
                             {new Date(order.createdAt).toLocaleDateString()} · {order.serviceMode === 'delivery' ? t('checkoutPage.delivery') : t('checkoutPage.pickup')}
                           </p>
+                          {order.deliveryOtp && !['delivered', 'cancelled'].includes(order.status) ? (
+                            <p className="mt-2 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-amber-700">
+                              Delivery OTP {order.deliveryOtp}
+                            </p>
+                          ) : null}
                         </div>
                         <div className="text-left sm:text-right">
                           <p className="text-sm font-black uppercase tracking-[0.16em] text-primary-500">{statusLabelMap[order.status] || order.status}</p>
@@ -663,7 +680,7 @@ const Account: React.FC = () => {
 
       {selectedOrderId && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-primary-900/60 px-4 py-6 backdrop-blur-sm">
-          <div className="surface-card w-full max-w-3xl p-6">
+          <div className="surface-card max-h-[90vh] w-full max-w-5xl overflow-y-auto p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="section-kicker mb-2">{t('accountPage.orderDetail')}</p>
@@ -690,15 +707,81 @@ const Account: React.FC = () => {
             ) : (
               <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
                 <div className="space-y-4">
-                  {orderDetail.items.map((item, index) => (
-                    <div key={`${item.productId}-${index}`} className="rounded-[1.5rem] border border-primary-100 bg-primary-50/50 p-4">
-                      <p className="text-sm font-black text-primary-900">{item.productName}</p>
-                      <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-primary-500">
-                        {item.qty} x {item.variantLabel}
+                  {orderDetail.deliveryOtp && !['delivered', 'cancelled'].includes(orderDetail.status) ? (
+                    <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">Delivery OTP</p>
+                      <p className="mt-2 text-3xl font-black tracking-[0.24em] text-primary-900">{orderDetail.deliveryOtp}</p>
+                      <p className="mt-2 text-sm font-semibold text-primary-900/60">
+                        Give this one-time code only to the delivery person after receiving the order.
                       </p>
-                      <p className="mt-2 text-sm font-bold text-primary">{currencyFormatter.format(item.price * item.qty)}</p>
                     </div>
-                  ))}
+                  ) : null}
+
+                  <div className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-white p-4 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary-500">Payment</p>
+                      <p className="mt-1 text-sm font-black text-primary-900">{orderDetail.paymentMethod.toUpperCase()} · {orderDetail.paymentStatus}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary-500">Fulfillment</p>
+                      <p className="mt-1 text-sm font-black text-primary-900">{orderDetail.serviceMode === 'delivery' ? 'Delivery' : 'Pickup'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary-500">Subtotal</p>
+                      <p className="mt-1 text-sm font-black text-primary-900">{currencyFormatter.format(orderDetail.subtotal)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary-500">Delivery Charge</p>
+                      <p className="mt-1 text-sm font-black text-primary-900">
+                        {orderDetail.serviceMode === 'pickup' ? 'Pickup - no charge' : currencyFormatter.format(orderDetail.deliveryCharge || 0)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {orderDetail.items.map((item, index) => {
+                    const product = getOrderItemProduct(item);
+                    const imageUrl = getOrderItemImage(item);
+                    const productDescription = product?.shortDescription || product?.description || '';
+                    const canOpenProduct = Boolean(product?.slug);
+
+                    return (
+                      <div key={`${typeof item.productId === 'string' ? item.productId : item.productId.id}-${index}`} className="rounded-[1.5rem] border border-primary-100 bg-primary-50/50 p-4">
+                        <div className="flex gap-4">
+                          {imageUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => product?.slug && navigate(`/product/${product.slug}`)}
+                              className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-primary-100 bg-white"
+                            >
+                              <img src={imageUrl} alt={item.productName} className="h-full w-full object-cover" />
+                            </button>
+                          ) : (
+                            <div className="h-24 w-24 shrink-0 rounded-2xl border border-dashed border-primary-200 bg-white" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <button
+                              type="button"
+                              onClick={() => product?.slug && navigate(`/product/${product.slug}`)}
+                              disabled={!canOpenProduct}
+                              className={cn(
+                                'text-left text-sm font-black text-primary-900',
+                                canOpenProduct && 'underline-offset-4 hover:underline',
+                              )}
+                            >
+                              {item.productName}
+                            </button>
+                            <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-primary-500">
+                              {item.qty} x {item.variantLabel}
+                            </p>
+                            {productDescription ? (
+                              <p className="mt-2 line-clamp-3 text-sm leading-6 text-primary-900/60">{productDescription}</p>
+                            ) : null}
+                            <p className="mt-2 text-sm font-bold text-primary">{currencyFormatter.format(item.price * item.qty)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">

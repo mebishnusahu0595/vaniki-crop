@@ -2,7 +2,6 @@ import type { Request, Response, NextFunction } from 'express';
 import * as orderService from './order.service.js';
 import { generateInvoicePdf, generateB2BInvoicePdf } from './invoice.service.js';
 import { Order } from '../../models/Order.model.js';
-import { User } from '../../models/User.model.js';
 import { Store } from '../../models/Store.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { B2BInvoice } from '../../models/B2BInvoice.model.js';
@@ -105,18 +104,20 @@ export async function cancelOrder(req: Request, res: Response, next: NextFunctio
 export async function downloadInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const orderId = (req.params as any).id;
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId)
+      .populate('userId', 'name mobile email savedAddress')
+      .populate('storeId', 'name address phone email gstNumber sgstNumber cgst sgst igst panNumber')
+      .populate('items.productId', 'name slug description shortDescription images');
     if (!order) throw new AppError('Order not found', 404);
 
     // Security: Check if user owns the order or is an admin
-    const isAdmin = ['admin', 'superadmin'].includes((req as any).userRole);
-    if (!isAdmin && order.userId.toString() !== req.userId) {
+    const isAdmin = ['storeAdmin', 'superAdmin'].includes((req as any).userRole);
+    const orderUserId = (order.userId as any)?._id?.toString() || order.userId.toString();
+    if (!isAdmin && orderUserId !== req.userId) {
       throw new AppError('Unauthorized access to invoice', 403);
     }
 
-    const user = await User.findById(order.userId);
-    const store = await Store.findById(order.storeId);
-    if (!user || !store) throw new AppError('Incomplete order data', 400);
+    if (!order.userId || !order.storeId) throw new AppError('Incomplete order data', 400);
 
     const pdfBuffer = await generateInvoicePdf(order);
 

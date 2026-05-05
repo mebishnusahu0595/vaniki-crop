@@ -102,6 +102,17 @@ const normalizeProduct = <T extends ProductLike | null | undefined>(product: T):
 
 const normalizeProducts = (products: ProductLike[] = []) => products.map((product) => normalizeProduct(product)!);
 
+const normalizeOrder = (order: Order): Order => ({
+  ...order,
+  id: order.id || (order as Order & { _id?: string })._id || '',
+  items: (order.items || []).map((item) => ({
+    ...item,
+    productId: typeof item.productId === 'object'
+      ? normalizeProduct(item.productId as ProductLike)!
+      : item.productId,
+  })),
+});
+
 const normalizeAuthUser = (user: AuthUserLike): AuthUser => ({
   ...user,
   id: user.id || user._id || '',
@@ -277,7 +288,7 @@ export const storefrontApi = {
   },
   orderDetail: async (id: string) => {
     const response = await request<Order>(`/orders/${id}`);
-    return response.data;
+    return normalizeOrder(response.data);
   },
   getInvoiceUrl: (id: string) => `${API_BASE_URL}/orders/${id}/invoice`,
   submitReview: async (payload: { productId: string; rating: number; comment?: string }) => {

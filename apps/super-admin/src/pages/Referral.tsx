@@ -20,12 +20,17 @@ import { toast } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 
 interface Staff {
-  _id: string;
+  _id?: string;
+  id?: string;
   name: string;
   mobile: string;
   referralCode: string;
   referralCount: number;
   isActive: boolean;
+}
+
+function getStaffId(staff: Staff) {
+  return staff.id || staff._id || '';
 }
 
 interface OrderItem {
@@ -39,6 +44,7 @@ interface Order {
   orderNumber: string;
   totalAmount: number;
   createdAt: string;
+  status: string;
   items: OrderItem[];
 }
 
@@ -64,14 +70,15 @@ export default function ReferralPage() {
   const [formData, setFormData] = useState({
     name: '',
     mobile: '',
-    email: ''
+    email: '',
+    password: ''
   });
 
   const staffQuery = useQuery<Staff[]>({
     queryKey: ['superadmin-staff'],
     queryFn: async () => {
       const res = await adminApi.getStaffList();
-      return res as Staff[];
+      return res as unknown as Staff[];
     }
   });
 
@@ -85,13 +92,13 @@ export default function ReferralPage() {
   });
 
   const createStaffMutation = useMutation({
-    mutationFn: (payload: { name: string; mobile: string; email?: string }) => 
+    mutationFn: (payload: { name: string; mobile: string; email?: string; password: string }) =>
       adminApi.createStaff(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['superadmin-staff'] });
       toast.success('Staff added successfully');
       setIsAddModalOpen(false);
-      setFormData({ name: '', mobile: '', email: '' });
+      setFormData({ name: '', mobile: '', email: '', password: '' });
     }
   });
 
@@ -178,13 +185,15 @@ export default function ReferralPage() {
 
           <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
             <div className="divide-y divide-slate-50">
-              {filteredStaff.map((staff: Staff) => (
+              {filteredStaff.map((staff: Staff) => {
+                const staffId = getStaffId(staff);
+                return (
                 <button
-                  key={staff._id}
-                  onClick={() => setSelectedStaffId(staff._id)}
+                  key={staffId}
+                  onClick={() => setSelectedStaffId(staffId)}
                   className={cn(
                     "w-full flex items-center justify-between p-4 text-left transition hover:bg-slate-50",
-                    selectedStaffId === staff._id && "bg-primary-50/50 border-l-4 border-l-primary-500"
+                    selectedStaffId === staffId && "bg-primary-50/50 border-l-4 border-l-primary-500"
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -201,7 +210,8 @@ export default function ReferralPage() {
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Referrals</p>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -212,8 +222,9 @@ export default function ReferralPage() {
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {/* Staff Stats Card */}
               {(() => {
-                const staff = staffQuery.data?.find(s => s._id === selectedStaffId);
+                const staff = staffQuery.data?.find(s => getStaffId(s) === selectedStaffId);
                 if (!staff) return null;
+                const staffId = getStaffId(staff);
                 return (
                   <div className="rounded-3xl bg-slate-900 p-6 text-white shadow-xl">
                     <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -240,7 +251,7 @@ export default function ReferralPage() {
                       
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={() => toggleStatusMutation.mutate({ id: staff._id, isActive: !staff.isActive })}
+                          onClick={() => toggleStatusMutation.mutate({ id: staffId, isActive: !staff.isActive })}
                           className={cn(
                             "flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold",
                             staff.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"
@@ -251,7 +262,7 @@ export default function ReferralPage() {
                         </button>
                         <button
                           onClick={() => {
-                            if (window.confirm('Remove this staff?')) deleteStaffMutation.mutate(staff._id);
+                            if (window.confirm('Remove this staff?')) deleteStaffMutation.mutate(staffId);
                           }}
                           className="rounded-xl bg-white/5 p-2 text-white/40 hover:bg-rose-500/20 hover:text-rose-400"
                         >
@@ -316,7 +327,17 @@ export default function ReferralPage() {
                             {user.orders.map((order) => (
                               <div key={order.orderNumber} className="rounded-xl bg-white p-3 shadow-sm">
                                 <div className="flex items-center justify-between border-b border-slate-50 pb-2 mb-2">
-                                  <p className="text-xs font-black text-slate-700">{order.orderNumber}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-xs font-black text-slate-700">{order.orderNumber}</p>
+                                    <span className={cn(
+                                      "rounded-full px-2 py-0.5 text-[8px] font-black uppercase tracking-wider",
+                                      order.status === 'delivered' ? "bg-emerald-100 text-emerald-700" :
+                                      order.status === 'cancelled' ? "bg-rose-100 text-rose-700" :
+                                      "bg-amber-100 text-amber-700"
+                                    )}>
+                                      {order.status}
+                                    </span>
+                                  </div>
                                   <p className="text-[10px] font-bold text-slate-400">{new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
                                 </div>
                                 <div className="space-y-1">
@@ -391,6 +412,17 @@ export default function ReferralPage() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500/20"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-bold text-slate-500">Password</label>
+                <input
+                  required
+                  minLength={6}
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </div>

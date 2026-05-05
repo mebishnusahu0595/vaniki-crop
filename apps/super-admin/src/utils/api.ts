@@ -21,6 +21,8 @@ import type {
   SiteSettings,
   StoreSecretsResponse,
   StoreSummary,
+  StaffDetail,
+  StaffMember,
   Testimonial,
 } from '../types/admin';
 
@@ -572,15 +574,27 @@ export const adminApi = {
     return response.data;
   },
   getStaffList: async () => {
-    const response = await api.get<ApiResponse<any[]>>('/staff');
+    const response = await api.get<ApiResponse<StaffMember[]>>('/staff');
     return response.data.data;
   },
-  createStaff: async (payload: { name: string; mobile: string; email?: string }) => {
-    const response = await api.post<ApiResponse<any>>('/staff', payload);
+  createStaff: async (payload: { name: string; mobile: string; email?: string; password: string }) => {
+    const response = await api.post<ApiResponse<StaffMember>>('/staff', payload);
+    return response.data.data;
+  },
+  getStaffDetail: async (id: string) => {
+    const response = await api.get<ApiResponse<StaffDetail>>(`/staff/${id}`);
+    return response.data.data;
+  },
+  availableDeliveryOrders: async () => {
+    const response = await api.get<ApiResponse<Order[]>>('/staff/orders/available');
+    return response.data.data;
+  },
+  assignOrderToStaff: async (id: string, payload: { orderId: string; deliveryOtp?: string; note?: string }) => {
+    const response = await api.post<ApiResponse<Order>>(`/staff/${id}/assign-order`, payload);
     return response.data.data;
   },
   updateStaffStatus: async (id: string, isActive: boolean) => {
-    const response = await api.patch<ApiResponse<any>>(`/staff/${id}/status`, { isActive });
+    const response = await api.patch<ApiResponse<StaffMember>>(`/staff/${id}/status`, { isActive });
     return response.data.data;
   },
   deleteStaff: async (id: string) => {

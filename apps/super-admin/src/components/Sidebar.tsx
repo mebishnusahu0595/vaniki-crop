@@ -16,6 +16,7 @@ import {
   Users,
   X,
   UserCheck,
+  Bike,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink } from 'react-router-dom';
@@ -42,6 +43,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/banners', label: 'Global Banners', icon: GalleryVerticalEnd },
   { to: '/testimonials', label: 'Testimonials', icon: MessageSquare },
   { to: '/loyalty', label: 'Loyalty Points', icon: Coins },
+  { to: '/staff', label: 'Staff', icon: Bike },
   { to: '/referrals', label: 'Referrals & Staff', icon: UserCheck },
   { to: '/reviews', label: 'Reviews', icon: MessageSquare },
   { to: '/site-settings', label: 'Site Settings (Garages)', icon: Settings },

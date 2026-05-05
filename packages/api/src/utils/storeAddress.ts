@@ -110,7 +110,7 @@ export async function reverseGeocodeStoreCoordinates(
     {
       headers: {
         Accept: 'application/json',
-        'User-Agent': 'VanikiCrop/1.0 (support@vanikicrop.com)',
+        'User-Agent': 'VanikiCrop/1.0 (teams@vanikicrop.com)',
       },
     },
   );

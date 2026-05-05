@@ -135,13 +135,17 @@ export interface ProductListResponse {
 }
 
 export interface OrderItem {
-  productId: string;
+  productId: string | Product;
   productName: string;
   variantLabel: string;
   price: number;
   mrp: number;
   qty: number;
   image?: string;
+  hsnCode?: string;
+  taxRate?: number;
+  taxAmount?: number;
+  netAmount?: number;
 }
 
 export interface OrderStatusHistoryEntry {
@@ -165,6 +169,12 @@ export interface Order {
   paymentMethod: 'razorpay' | 'cod';
   status: OrderStatusHistoryEntry['status'];
   statusHistory: OrderStatusHistoryEntry[];
+  deliveryOtp?: string;
+  deliveryAssignedAt?: string;
+  deliveryDeliveredAt?: string;
+  deliveryProofDescription?: string;
+  deliveryCancelReason?: string;
+  deliveryCancelNote?: string;
   createdAt: string;
   storeId?: Store;
 }

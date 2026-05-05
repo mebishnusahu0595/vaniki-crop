@@ -224,9 +224,10 @@ const Contact: React.FC = () => {
             <iframe
               title="Vaniki Crop location"
               src={siteContent.contact.mapEmbedUrl}
-              width="100%"
-              height="280"
-              style={{ border: 0, borderRadius: '1.25rem' }}
+              width="600"
+              height="450"
+              style={{ border: 0, maxWidth: '100%' }}
+              allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             />

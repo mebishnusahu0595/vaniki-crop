@@ -574,6 +574,7 @@ export async function getMyOrders(userId: string, query: any) {
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
+      .select('+deliveryOtp')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -590,7 +591,11 @@ export async function getOrderDetail(orderId: string, userId: string) {
   const filter: Record<string, any> = { _id: orderId, userId };
   applyVisibleOrderFilter(filter);
 
-  const order = await Order.findOne(filter).populate('storeId', 'name address phone');
+  const order = await Order.findOne(filter)
+    .select('+deliveryOtp')
+    .populate('storeId', 'name address phone')
+    .populate('assignedStaff', 'name mobile email')
+    .populate('items.productId', 'name slug description shortDescription images');
   if (!order) {
     throw new AppError('Order not found', 404);
   }
@@ -647,7 +652,9 @@ export async function getAdminOrders(storeId: string, query: any) {
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
+      .select('+deliveryOtp')
       .populate('userId', 'name mobile email')
+      .populate('assignedStaff', 'name mobile email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -662,8 +669,10 @@ export async function getAdminOrderDetail(orderId: string, storeId: string) {
   applyVisibleOrderFilter(filter);
 
   const order = await Order.findOne(filter)
+    .select('+deliveryOtp')
     .populate('userId', 'name mobile email savedAddress')
-    .populate('storeId', 'name address phone email');
+    .populate('storeId', 'name address phone email')
+    .populate('assignedStaff', 'name mobile email');
 
   if (!order) {
     throw new AppError('Order not found', 404);
@@ -697,8 +706,10 @@ export async function getSuperAdminOrders(query: any) {
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
+      .select('+deliveryOtp')
       .populate('userId', 'name mobile')
       .populate('storeId', 'name')
+      .populate('assignedStaff', 'name mobile email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),

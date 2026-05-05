@@ -964,8 +964,10 @@ export async function listOrders(query: Record<string, any>) {
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
+      .select('+deliveryOtp')
       .populate('userId', 'name mobile email')
       .populate('storeId', 'name address')
+      .populate('assignedStaff', 'name mobile email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -980,8 +982,10 @@ export async function getOrderDetail(orderId: string) {
   orderService.applyVisibleOrderFilter(filter);
 
   const order = await Order.findOne(filter)
+    .select('+deliveryOtp')
     .populate('userId', 'name mobile email savedAddress')
-    .populate('storeId', 'name address phone email');
+    .populate('storeId', 'name address phone email')
+    .populate('assignedStaff', 'name mobile email');
 
   if (!order) {
     throw new AppError('Order not found', 404);

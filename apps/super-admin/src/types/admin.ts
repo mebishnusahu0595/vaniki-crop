@@ -121,7 +121,40 @@ export interface Order {
     phone?: string;
     email?: string;
   };
+  assignedStaff?: {
+    id?: string;
+    name: string;
+    mobile?: string;
+    email?: string;
+  } | null;
+  deliveryOtp?: string;
+  deliveryAssignedAt?: string;
+  deliveryDeliveredAt?: string;
+  deliveryProofImage?: ImageAsset;
+  deliveryProofDescription?: string;
+  deliveryCancelReason?: string;
+  deliveryCancelNote?: string;
+  deliveryCancelledAt?: string;
   statusHistory: OrderStatusHistoryEntry[];
+}
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  mobile: string;
+  email?: string;
+  referralCode: string;
+  referralCount?: number;
+  activeDeliveries?: number;
+  deliveredDeliveries?: number;
+  cancelledDeliveries?: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface StaffDetail {
+  staff: StaffMember;
+  deliveries: Order[];
 }
 
 export interface Coupon {

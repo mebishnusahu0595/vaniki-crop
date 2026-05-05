@@ -26,7 +26,7 @@ const sections = [
   },
   {
     title: '6. Data Retention',
-    body: 'We retain your personal information for as long as your account is active. Order history is kept for accounting and legal compliance. You can request account deletion by contacting support@vanikicrop.com.',
+    body: 'We retain your personal information for as long as your account is active. Order history is kept for accounting and legal compliance. You can request account deletion by contacting teams@vanikicrop.com.',
   },
   {
     title: '7. Your Rights',
@@ -42,7 +42,7 @@ const sections = [
   },
   {
     title: '10. Contact Us',
-    body: 'Email: support@vanikicrop.com\nPhone: +91 94061 02621\nAddress: Main Road, Bagsewania, Bhopal, Madhya Pradesh 462043',
+    body: 'Email: teams@vanikicrop.com\nPhone: +91 9302228883\nAddress: Shop no. 37, Krishi Upaj Mandi, Dhamdha Road, Durg 491001 (C.G.)',
   },
 ];
 

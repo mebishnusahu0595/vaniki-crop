@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { bindOnlineManager, getQueryClient } from '../src/lib/queryClient';
 import { useBootstrapSession } from '../src/hooks/useBootstrapSession';
 import { useAuthStore } from '../src/store/useAuthStore';
+import { useStaffAuthStore } from '../src/store/useStaffAuthStore';
 import { OfflineBanner } from '../src/components/OfflineBanner';
 import { StoreSelectorSheet } from '../src/components/StoreSelectorSheet';
 import { usePushNotifications } from '../src/hooks/usePushNotifications';
@@ -40,6 +41,7 @@ function RootNavigation() {
         <Stack.Screen name="about" />
         <Stack.Screen name="contact" />
         <Stack.Screen name="privacy-policy" />
+        <Stack.Screen name="delivery" />
       </Stack>
       <StoreSelectorSheet />
       <CheckInModal />
@@ -52,6 +54,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     useAuthStore.persist.rehydrate();
+    useStaffAuthStore.persist.rehydrate();
     void hydrateAppLanguage();
   }, []);
 

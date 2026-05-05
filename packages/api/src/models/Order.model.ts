@@ -37,6 +37,11 @@ export interface IStatusHistoryEntry {
   timestamp: Date;
 }
 
+export interface IDeliveryProofImage {
+  url: string;
+  publicId: string;
+}
+
 /** Order status enum */
 export type OrderStatus =
   | 'placed'
@@ -79,6 +84,16 @@ export interface IOrder extends Document {
   razorpaySignature?: string;
   status: OrderStatus;
   statusHistory: IStatusHistoryEntry[];
+  assignedStaff?: mongoose.Types.ObjectId | null;
+  deliveryOtp?: string;
+  deliveryOtpGeneratedAt?: Date;
+  deliveryAssignedAt?: Date;
+  deliveryDeliveredAt?: Date;
+  deliveryProofImage?: IDeliveryProofImage;
+  deliveryProofDescription?: string;
+  deliveryCancelReason?: string;
+  deliveryCancelNote?: string;
+  deliveryCancelledAt?: Date;
   adminNote?: string;
   isSettlementRequested?: boolean;
   settlementBatchId?: string;
@@ -135,6 +150,14 @@ const statusHistorySchema = new Schema<IStatusHistoryEntry>(
     note: { type: String },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     timestamp: { type: Date, default: Date.now },
+  },
+  { _id: false },
+);
+
+const deliveryProofImageSchema = new Schema<IDeliveryProofImage>(
+  {
+    url: { type: String, required: true, trim: true },
+    publicId: { type: String, required: true, trim: true },
   },
   { _id: false },
 );
@@ -208,6 +231,20 @@ const orderSchema = new Schema<IOrder, IOrderModel>(
       default: 'placed',
     },
     statusHistory: { type: [statusHistorySchema], default: [] },
+    assignedStaff: {
+      type: Schema.Types.ObjectId,
+      ref: 'Staff',
+      default: null,
+    },
+    deliveryOtp: { type: String, trim: true, select: false },
+    deliveryOtpGeneratedAt: { type: Date },
+    deliveryAssignedAt: { type: Date },
+    deliveryDeliveredAt: { type: Date },
+    deliveryProofImage: deliveryProofImageSchema,
+    deliveryProofDescription: { type: String, trim: true, maxlength: 1000 },
+    deliveryCancelReason: { type: String, trim: true },
+    deliveryCancelNote: { type: String, trim: true, maxlength: 1000 },
+    deliveryCancelledAt: { type: Date },
     adminNote: { type: String, trim: true },
     isSettlementRequested: { type: Boolean, default: false },
     settlementBatchId: { type: String },
@@ -230,6 +267,7 @@ orderSchema.index({ userId: 1 });
 orderSchema.index({ storeId: 1 });
 orderSchema.index({ orderNumber: 1 }, { unique: true });
 orderSchema.index({ status: 1 });
+orderSchema.index({ assignedStaff: 1, status: 1, createdAt: -1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ userId: 1, createdAt: -1 });
 

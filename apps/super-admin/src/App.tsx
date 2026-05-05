@@ -19,6 +19,7 @@ import TestimonialsPage from './pages/Testimonials';
 import ProductRequestsPage from './pages/ProductRequests';
 import LoyaltyPage from './pages/Loyalty';
 import ReferralPage from './pages/Referral';
+import StaffPage from './pages/Staff';
 
 function App() {
   return (
@@ -45,6 +46,8 @@ function App() {
           <Route path="/testimonials" element={<TestimonialsPage />} />
           <Route path="/loyalty" element={<LoyaltyPage />} />
           <Route path="/referrals" element={<ReferralPage />} />
+          <Route path="/staff" element={<StaffPage />} />
+          <Route path="/staff/:id" element={<StaffPage />} />
           <Route path="/site-settings" element={<SettingsPage />} />
           <Route path="/settings" element={<ProfileSettingsPage />} />
         </Route>
