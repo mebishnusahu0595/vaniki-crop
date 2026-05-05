@@ -244,16 +244,16 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       doc.text(formatMoney(payableTotal), valueX - 5, totalLineY + 6, { width: 105, align: 'right' });
       doc.moveTo(summaryX, totalLineY + 22).lineTo(rightEdge, totalLineY + 22).lineWidth(1).strokeColor('#111827').stroke();
 
-      const footerTop = pageHeight - 65;
+      const footerTop = pageHeight - 50;
       doc.moveTo(pageMargin, footerTop).lineTo(rightEdge, footerTop).lineWidth(0.5).strokeColor('#E5E7EB').stroke();
       
-      doc.fontSize(7.5)
+      doc.fontSize(7)
         .fillColor('#6B7280')
         .font('Helvetica')
-        .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 10, { align: 'center', width: contentWidth });
+        .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 8, { align: 'center', width: contentWidth });
         
-      doc.fillColor('#111827').font('Helvetica-Bold')
-        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin, footerTop + 22, { align: 'center', width: contentWidth });
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(7)
+        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin, footerTop + 20, { align: 'center', width: contentWidth });
 
       doc.end();
     } catch (error) {

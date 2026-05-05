@@ -48,8 +48,9 @@ export function Screen({
   ].some(matchesPath);
 
   const isAuthRoute = ['/login', '/signup', '/(auth)', '/(auth)/login', '/(auth)/signup'].some(matchesPath);
+  const isDeliveryRoute = ['/delivery'].some(matchesPath);
 
-  const showPersistentBottomNav = !isTabsRoute && !isAuthRoute;
+  const showPersistentBottomNav = !isTabsRoute && !isAuthRoute && !isDeliveryRoute;
   const bottomPadding = (withWhatsAppFab ? 36 : 20) + insets.bottom;
   const contentClassName = scroll ? 'bg-offwhite px-4' : 'flex-1 bg-offwhite px-4';
 

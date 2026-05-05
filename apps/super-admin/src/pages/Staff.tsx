@@ -24,6 +24,13 @@ function orderLabel(order: Order) {
   return `${order.orderNumber} - ${order.userId?.name || order.shippingAddress?.name || 'Customer'} - ${products}`;
 }
 
+function isAssignableDeliveryOrder(order: Order) {
+  const isOpenOrder = !['delivered', 'cancelled'].includes(order.status);
+  const isPayableOrder = order.paymentMethod === 'cod' || order.paymentStatus === 'paid';
+
+  return Boolean(getOrderId(order)) && order.serviceMode === 'delivery' && !order.assignedStaff && isOpenOrder && isPayableOrder;
+}
+
 function StaffList({
   selectedStaffId,
 }: {
@@ -274,6 +281,11 @@ function StaffDetailView({ staffId }: { staffId: string }) {
     queryFn: adminApi.availableDeliveryOrders,
     enabled: Boolean(staffId),
   });
+  const availableOrders = useMemo(
+    () => (availableOrdersQuery.data || []).filter(isAssignableDeliveryOrder),
+    [availableOrdersQuery.data],
+  );
+  const selectedOrder = availableOrders.find((order) => getOrderId(order) === orderId);
 
   const toggleMutation = useMutation({
     mutationFn: (payload: { id: string; isActive: boolean }) => adminApi.updateStaffStatus(payload.id, payload.isActive),
@@ -285,7 +297,20 @@ function StaffDetailView({ staffId }: { staffId: string }) {
   });
 
   const assignMutation = useMutation({
-    mutationFn: () => adminApi.assignOrderToStaff(staffId, { orderId, deliveryOtp, note }),
+    mutationFn: () => {
+      if (!selectedOrder) {
+        throw new Error('Choose an active delivery order before assigning.');
+      }
+
+      const trimmedOtp = deliveryOtp.trim();
+      const trimmedNote = note.trim();
+
+      return adminApi.assignOrderToStaff(staffId, {
+        orderId: getOrderId(selectedOrder),
+        ...(trimmedOtp ? { deliveryOtp: trimmedOtp } : {}),
+        ...(trimmedNote ? { note: trimmedNote } : {}),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['superadmin-staff'] });
       queryClient.invalidateQueries({ queryKey: ['superadmin-staff-detail', staffId] });
@@ -364,7 +389,7 @@ function StaffDetailView({ staffId }: { staffId: string }) {
         <div className="grid gap-2 lg:grid-cols-[1.4fr_0.5fr_1fr_auto]">
           <select value={orderId} onChange={(event) => setOrderId(event.target.value)} className="rounded-xl border border-primary-100 bg-primary-50 px-3 py-2 text-xs">
             <option value="">Choose order</option>
-            {(availableOrdersQuery.data || []).map((order: Order) => (
+            {availableOrders.map((order: Order) => (
               <option key={getOrderId(order)} value={getOrderId(order)}>{orderLabel(order)}</option>
             ))}
           </select>
@@ -372,7 +397,7 @@ function StaffDetailView({ staffId }: { staffId: string }) {
           <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Note" className="rounded-xl border border-primary-100 bg-primary-50 px-3 py-2 text-xs" />
           <button
             onClick={() => assignMutation.mutate()}
-            disabled={!orderId || assignMutation.isPending}
+            disabled={!selectedOrder || assignMutation.isPending}
             className="rounded-xl bg-primary-500 px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white disabled:opacity-60"
           >
             Assign
