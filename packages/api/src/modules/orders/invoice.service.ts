@@ -13,27 +13,43 @@ function getDocId(value: any) {
   return value?._id?.toString?.() || value?.id || value?.toString?.() || '';
 }
 
-function getLineItemTax(item: any) {
-  const taxRate = item.taxRate && item.taxRate > 0 ? Number(item.taxRate) : 18;
+function formatRate(value: number) {
+  const rate = Number(value || 0);
+  return Number.isInteger(rate) ? rate.toFixed(0) : rate.toFixed(2);
+}
+
+function getLineItemTax(item: any, storeTax?: { cgst: number; sgst: number }) {
+  const configuredTaxRate = Number(storeTax?.cgst || 0) + Number(storeTax?.sgst || 0);
+  const taxRate = configuredTaxRate > 0
+    ? configuredTaxRate
+    : item.taxRate && item.taxRate > 0
+      ? Number(item.taxRate)
+      : 18;
   const grossAmount = Number(item.price || 0) * Number(item.qty || 0);
-  const netAmount = item.netAmount && item.netAmount > 0
+  const netAmount = configuredTaxRate > 0
+    ? grossAmount / (1 + taxRate / 100)
+    : item.netAmount && item.netAmount > 0
     ? Number(item.netAmount)
     : grossAmount / (1 + taxRate / 100);
-  const taxAmount = item.taxAmount && item.taxAmount > 0
+  const taxAmount = configuredTaxRate > 0
+    ? grossAmount - netAmount
+    : item.taxAmount && item.taxAmount > 0
     ? Number(item.taxAmount)
     : grossAmount - netAmount;
-  const halfTaxRate = taxRate / 2;
-  const halfTaxAmount = taxAmount / 2;
+  const cgstRate = configuredTaxRate > 0 ? Number(storeTax?.cgst || 0) : taxRate / 2;
+  const sgstRate = configuredTaxRate > 0 ? Number(storeTax?.sgst || 0) : taxRate / 2;
+  const cgstAmount = configuredTaxRate > 0 ? taxAmount * (cgstRate / configuredTaxRate) : taxAmount / 2;
+  const sgstAmount = configuredTaxRate > 0 ? taxAmount * (sgstRate / configuredTaxRate) : taxAmount / 2;
 
   return {
     taxRate,
     grossAmount,
     netAmount,
     taxAmount,
-    cgstRate: halfTaxRate,
-    sgstRate: halfTaxRate,
-    cgstAmount: halfTaxAmount,
-    sgstAmount: halfTaxAmount,
+    cgstRate,
+    sgstRate,
+    cgstAmount,
+    sgstAmount,
   };
 }
 
@@ -45,38 +61,49 @@ function getLineItemTax(item: any) {
 export async function generateInvoicePdf(order: any): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const pageMargin = 36;
+      const doc = new PDFDocument({ margin: pageMargin, size: 'A4', layout: 'landscape' });
       const buffers: Buffer[] = [];
       doc.on('data', buffers.push.bind(buffers));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
 
+      const pageWidth = doc.page.width;
+      const pageHeight = doc.page.height;
+      const rightEdge = pageWidth - pageMargin;
+      const contentWidth = pageWidth - pageMargin * 2;
       const store = order.storeId || {};
       const customer = order.userId || {};
       const deliveryAddress = order.shippingAddress || customer.savedAddress;
       const serviceMode = order.serviceMode === 'pickup' ? 'Store pickup' : 'Delivery';
       const invoiceNumber = `INV-${String(order.orderNumber || getDocId(order)).replace(/^VNK-?/, '')}`;
+      const storeTax = Number(store.cgst || 0) + Number(store.sgst || 0) > 0
+        ? { cgst: Number(store.cgst || 0), sgst: Number(store.sgst || 0) }
+        : undefined;
+      const columnGap = 28;
+      const detailColumnWidth = (contentWidth - columnGap) / 2;
+      const detailRightX = pageMargin + detailColumnWidth + columnGap;
 
-      doc.rect(0, 0, 595.28, 96).fill('#143D2E');
-      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(24).text('TAX INVOICE', 50, 34);
-      doc.font('Helvetica').fontSize(9).text('Original for Recipient', 50, 64);
-      doc.font('Helvetica-Bold').fontSize(11).text('Vaniki Crop', 380, 34, { width: 165, align: 'right' });
-      doc.font('Helvetica').fontSize(8).text('teams@vanikicrop.com | 9302228883', 330, 54, { width: 215, align: 'right' });
+      doc.rect(0, 0, pageWidth, 88).fill('#143D2E');
+      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(24).text('TAX INVOICE', pageMargin, 28);
+      doc.font('Helvetica').fontSize(9).text('Original for Recipient', pageMargin, 58);
+      doc.font('Helvetica-Bold').fontSize(11).text('Vaniki Crop', pageWidth - pageMargin - 240, 30, { width: 240, align: 'right' });
+      doc.font('Helvetica').fontSize(8).text('teams@vanikicrop.com | 9302228883', pageWidth - pageMargin - 260, 50, { width: 260, align: 'right' });
 
-      const addressTop = 120;
-      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(10).text('Sold By', 50, addressTop);
+      const addressTop = 108;
+      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(10).text('Sold By', pageMargin, addressTop);
       doc.fillColor('#1F2937').font('Helvetica').fontSize(9)
-        .text(store.name || 'Vaniki Crop Store', 50, addressTop + 16, { width: 230 })
-        .text(formatAddress(store.address), 50, addressTop + 31, { width: 230 })
-        .text(`Contact: ${store.phone || '9302228883'}`, 50, addressTop + 58, { width: 230 })
-        .text(`GSTIN: ${store.gstNumber || store.sgstNumber || '-'}`, 50, addressTop + 73, { width: 230 });
+        .text(store.name || 'Vaniki Crop Store', pageMargin, addressTop + 16, { width: detailColumnWidth })
+        .text(formatAddress(store.address), pageMargin, addressTop + 31, { width: detailColumnWidth })
+        .text(`Contact: ${store.phone || '9302228883'}`, pageMargin, addressTop + 58, { width: detailColumnWidth })
+        .text(`GSTIN: ${store.gstNumber || store.sgstNumber || '-'}`, pageMargin, addressTop + 73, { width: detailColumnWidth });
 
-      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(10).text('Bill To / Ship To', 330, addressTop);
+      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(10).text('Bill To / Ship To', detailRightX, addressTop);
       doc.fillColor('#1F2937').font('Helvetica').fontSize(9)
-        .text(order.shippingAddress?.name || customer.name || 'Customer', 330, addressTop + 16, { width: 215 })
-        .text(`Mobile: ${order.shippingAddress?.mobile || customer.mobile || '-'}`, 330, addressTop + 31, { width: 215 })
-        .text(formatAddress(deliveryAddress), 330, addressTop + 46, { width: 215 });
+        .text(order.shippingAddress?.name || customer.name || 'Customer', detailRightX, addressTop + 16, { width: detailColumnWidth })
+        .text(`Mobile: ${order.shippingAddress?.mobile || customer.mobile || '-'}`, detailRightX, addressTop + 31, { width: detailColumnWidth })
+        .text(formatAddress(deliveryAddress), detailRightX, addressTop + 46, { width: detailColumnWidth });
 
-      const infoTop = 230;
+      const infoTop = 212;
       const infoRows = [
         ['Order Number', order.orderNumber || '-'],
         ['Order Date', order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : '-'],
@@ -86,57 +113,75 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         ['Payment', `${String(order.paymentMethod || '-').toUpperCase()} / ${order.paymentStatus || '-'}`],
       ];
 
-      doc.roundedRect(50, infoTop - 10, 495, 66, 10).fillAndStroke('#F0F8F4', '#CDEBDD');
+      doc.roundedRect(pageMargin, infoTop - 10, contentWidth, 62, 10).fillAndStroke('#F0F8F4', '#CDEBDD');
       infoRows.forEach(([label, value], index) => {
         const column = index % 3;
         const row = Math.floor(index / 3);
-        const x = 68 + column * 160;
-        const y = infoTop + row * 30;
+        const columnWidth = contentWidth / 3;
+        const x = pageMargin + 18 + column * columnWidth;
+        const y = infoTop + row * 28;
         doc.fillColor('#2D6A4F').font('Helvetica-Bold').fontSize(7).text(label.toUpperCase(), x, y);
-        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9).text(String(value), x, y + 11, { width: 145 });
+        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9).text(String(value), x, y + 11, { width: columnWidth - 24 });
       });
 
-      const tableTop = 330;
+      const tableTop = 296;
       const columns = [
-        { label: '#', x: 50, width: 18, align: 'left' as const },
-        { label: 'Product', x: 72, width: 108, align: 'left' as const },
-        { label: 'HSN', x: 184, width: 42, align: 'left' as const },
-        { label: 'Pack', x: 230, width: 46, align: 'left' as const },
-        { label: 'Qty', x: 280, width: 28, align: 'right' as const },
-        { label: 'Taxable', x: 313, width: 58, align: 'right' as const },
-        { label: 'CGST', x: 376, width: 48, align: 'right' as const },
-        { label: 'SGST', x: 429, width: 48, align: 'right' as const },
-        { label: 'Total', x: 482, width: 63, align: 'right' as const },
+        { label: '#', x: pageMargin, width: 22, align: 'left' as const },
+        { label: 'Product', x: pageMargin + 28, width: 160, align: 'left' as const },
+        { label: 'HSN', x: pageMargin + 194, width: 50, align: 'left' as const },
+        { label: 'Pack', x: pageMargin + 250, width: 58, align: 'left' as const },
+        { label: 'Qty', x: pageMargin + 314, width: 34, align: 'right' as const },
+        { label: 'Taxable', x: pageMargin + 354, width: 70, align: 'right' as const },
+        { label: 'CGST %', x: pageMargin + 430, width: 48, align: 'right' as const },
+        { label: 'CGST Amt', x: pageMargin + 484, width: 70, align: 'right' as const },
+        { label: 'SGST %', x: pageMargin + 560, width: 48, align: 'right' as const },
+        { label: 'SGST Amt', x: pageMargin + 614, width: 70, align: 'right' as const },
+        { label: 'Total', x: pageMargin + 690, width: 80, align: 'right' as const },
       ];
 
-      doc.roundedRect(50, tableTop - 12, 495, 26, 8).fill('#143D2E');
-      columns.forEach((column) => {
-        doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(7).text(column.label, column.x, tableTop - 3, {
-          width: column.width,
-          align: column.align,
+      const drawTableHeader = (headerTop: number) => {
+        doc.roundedRect(pageMargin, headerTop - 12, contentWidth, 30, 8).fill('#143D2E');
+        columns.forEach((column) => {
+          doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8).text(column.label, column.x, headerTop - 2, {
+            width: column.width,
+            align: column.align,
+          });
         });
-      });
+      };
 
-      let currentTop = tableTop + 25;
+      drawTableHeader(tableTop);
+
+      let currentTop = tableTop + 28;
       let subtotalNet = 0;
       let subtotalTax = 0;
       let subtotalGross = 0;
+      let subtotalCgst = 0;
+      let subtotalSgst = 0;
+      let summaryCgstRate = storeTax?.cgst || 0;
+      let summarySgstRate = storeTax?.sgst || 0;
 
       order.items.forEach((item: any, index: number) => {
-        if (currentTop > 675) {
+        if (currentTop > pageHeight - 145) {
           doc.addPage();
-          currentTop = 60;
+          drawTableHeader(pageMargin + 18);
+          currentTop = pageMargin + 46;
         }
 
-        const tax = getLineItemTax(item);
+        const tax = getLineItemTax(item, storeTax);
+        if (!storeTax && index === 0) {
+          summaryCgstRate = tax.cgstRate;
+          summarySgstRate = tax.sgstRate;
+        }
         subtotalNet += tax.netAmount;
         subtotalTax += tax.taxAmount;
         subtotalGross += tax.grossAmount;
+        subtotalCgst += tax.cgstAmount;
+        subtotalSgst += tax.sgstAmount;
 
         const productName = String(item.productName || 'Product').replace(/\(.*\)/, '').trim();
-        const rowHeight = 36;
+        const rowHeight = 38;
         if (index % 2 === 0) {
-          doc.roundedRect(50, currentTop - 8, 495, rowHeight, 6).fill('#F8FCFA');
+          doc.roundedRect(pageMargin, currentTop - 8, contentWidth, rowHeight, 6).fill('#F8FCFA');
         }
 
         const values = [
@@ -146,15 +191,17 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
           item.variantLabel || '-',
           String(item.qty || 0),
           tax.netAmount.toFixed(2),
-          `${tax.cgstRate.toFixed(0)}% ${tax.cgstAmount.toFixed(2)}`,
-          `${tax.sgstRate.toFixed(0)}% ${tax.sgstAmount.toFixed(2)}`,
+          `${formatRate(tax.cgstRate)}%`,
+          tax.cgstAmount.toFixed(2),
+          `${formatRate(tax.sgstRate)}%`,
+          tax.sgstAmount.toFixed(2),
           tax.grossAmount.toFixed(2),
         ];
 
         columns.forEach((column, columnIndex) => {
           doc.fillColor('#111827')
             .font(columnIndex === 1 ? 'Helvetica-Bold' : 'Helvetica')
-            .fontSize(columnIndex === 1 ? 7.5 : 7)
+            .fontSize(columnIndex === 1 ? 8 : 7.5)
             .text(values[columnIndex], column.x, currentTop, {
               width: column.width,
               align: column.align,
@@ -165,19 +212,23 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         currentTop += rowHeight;
       });
 
-      doc.moveTo(50, currentTop).lineTo(545, currentTop).strokeColor('#CDEBDD').stroke();
+      doc.moveTo(pageMargin, currentTop).lineTo(rightEdge, currentTop).strokeColor('#CDEBDD').stroke();
 
       const deliveryCharge = order.serviceMode === 'pickup' ? 0 : Number(order.deliveryCharge || 0);
       const discount = Number(order.couponDiscount || 0) + Number(order.loyaltyDiscount || 0) + Number(order.discount || 0);
       const expectedTotal = Math.max(0, subtotalGross - discount + deliveryCharge);
       const payableTotal = Number(order.totalAmount || expectedTotal);
-      const summaryTop = Math.min(currentTop + 18, 665);
-      const summaryX = 345;
-      const valueX = 465;
+      let summaryTop = currentTop + 18;
+      if (summaryTop > pageHeight - 190) {
+        doc.addPage();
+        summaryTop = pageMargin + 20;
+      }
+      const summaryX = pageWidth - pageMargin - 310;
+      const valueX = pageWidth - pageMargin - 115;
       const summaryRows = [
         ['Taxable Value', subtotalNet],
-        ['CGST 9%', subtotalTax / 2],
-        ['SGST 9%', subtotalTax / 2],
+        [`CGST ${formatRate(summaryCgstRate)}%`, subtotalCgst],
+        [`SGST ${formatRate(summarySgstRate)}%`, subtotalSgst],
         ['Gross Item Total', subtotalGross],
         ['Discount', -discount],
         [order.serviceMode === 'pickup' ? 'Delivery Charge (Pickup)' : 'Delivery Charge', deliveryCharge],
@@ -186,24 +237,24 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       doc.fillColor('#111827').font('Helvetica').fontSize(8);
       summaryRows.forEach(([label, value], index) => {
         const y = summaryTop + index * 15;
-        doc.text(String(label), summaryX, y, { width: 110 });
-        doc.text(formatMoney(Number(value)), valueX, y, { width: 80, align: 'right' });
+        doc.text(String(label), summaryX, y, { width: 180 });
+        doc.text(formatMoney(Number(value)), valueX, y, { width: 115, align: 'right' });
       });
 
-      doc.roundedRect(summaryX - 8, summaryTop + 92, 208, 30, 8).fill('#143D2E');
+      doc.roundedRect(summaryX - 8, summaryTop + 92, 318, 30, 8).fill('#143D2E');
       doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(11).text('TOTAL PAYABLE', summaryX, summaryTop + 102);
-      doc.text(formatMoney(payableTotal), valueX - 8, summaryTop + 102, { width: 88, align: 'right' });
+      doc.text(formatMoney(payableTotal), valueX - 8, summaryTop + 102, { width: 123, align: 'right' });
 
-      const footerTop = 745;
-      doc.moveTo(50, footerTop).lineTo(545, footerTop).stroke();
+      const footerTop = pageHeight - 66;
+      doc.moveTo(pageMargin, footerTop).lineTo(rightEdge, footerTop).stroke();
       
       doc.fontSize(8)
         .fillColor('#111827')
         .font('Helvetica')
-        .text('This is a computer generated invoice and does not require a physical signature.', 50, footerTop + 15, { align: 'center', width: 500 });
+        .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 15, { align: 'center', width: contentWidth });
         
       doc.font('Helvetica-Bold')
-        .text('Store Contact: 9302228883 | teams@vanikicrop.com', 50, footerTop + 30, { align: 'center', width: 500 });
+        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin, footerTop + 30, { align: 'center', width: contentWidth });
 
       doc.end();
     } catch (error) {

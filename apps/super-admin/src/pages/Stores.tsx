@@ -636,6 +636,14 @@ export default function StoresPage() {
                   CGST {selectedStore.cgst ?? 0}% · SGST {selectedStore.sgst ?? 0}% · IGST {selectedStore.igst ?? 0}%
                 </p>
               </div>
+              <div className="rounded-2xl bg-primary-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Orders</p>
+                <p className="mt-1 text-sm font-black text-slate-900">{selectedStore.totalOrders}</p>
+              </div>
+              <div className="rounded-2xl bg-primary-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Revenue</p>
+                <p className="mt-1 text-sm font-black text-slate-900">{currencyFormatter.format(selectedStore.totalRevenue)}</p>
+              </div>
             </div>
           </div>
         ) : null}
@@ -667,8 +675,8 @@ export default function StoresPage() {
                   Edit
                 </button>
                 <button
-                  onClick={() => {
-                    event?.stopPropagation?.();
+                  onClick={(event) => {
+                    event.stopPropagation();
                     if (!window.confirm(`Delete store ${store.name}? This action cannot be undone.`)) return;
                     setActioningStoreId(store.id);
                     deleteStoreMutation.mutate(store.id);
@@ -691,13 +699,14 @@ export default function StoresPage() {
                 <p className="mt-1 text-sm font-black text-slate-900">{currencyFormatter.format(store.totalRevenue)}</p>
               </div>
               <div className="rounded-2xl border border-primary-100 bg-primary-50/60 px-3 py-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Delivery Radius</p>
-                <p className="mt-1 text-sm font-black text-slate-900">{store.deliveryRadius} km</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Tax Rates</p>
+                <p className="mt-1 text-sm font-black text-slate-900">CGST {store.cgst ?? 0}% · SGST {store.sgst ?? 0}%</p>
               </div>
               <div className="rounded-2xl border border-primary-100 bg-primary-50/60 px-3 py-3">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Status</p>
                 <button
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     setActioningStoreId(store.id);
                     toggleActiveMutation.mutate({
                       id: store.id,
