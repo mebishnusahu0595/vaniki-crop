@@ -245,7 +245,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(11).text('TOTAL PAYABLE', summaryX, summaryTop + 102);
       doc.text(formatMoney(payableTotal), valueX - 8, summaryTop + 102, { width: 123, align: 'right' });
 
-      const footerTop = pageHeight - 66;
+      const footerTop = pageHeight - 96;
       doc.moveTo(pageMargin, footerTop).lineTo(rightEdge, footerTop).stroke();
       
       doc.fontSize(8)
