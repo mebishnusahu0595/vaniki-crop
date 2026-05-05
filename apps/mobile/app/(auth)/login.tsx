@@ -423,13 +423,6 @@ export default function LoginScreen() {
                 </Text>
               </Pressable>
             )}
-            {mode === 'login' && (
-              <Pressable onPress={() => router.push('/delivery/login' as never)} className="mt-2 py-2">
-                <Text className="text-center text-xs font-black uppercase tracking-[2px] text-primary-900">
-                  Delivery Staff Login
-                </Text>
-              </Pressable>
-            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
