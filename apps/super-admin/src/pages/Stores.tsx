@@ -23,6 +23,11 @@ const storeSchema = z.object({
   latitude: z.coerce.number().min(-90, 'Latitude must be between -90 and 90.').max(90, 'Latitude must be between -90 and 90.'),
   longitude: z.coerce.number().min(-180, 'Longitude must be between -180 and 180.').max(180, 'Longitude must be between -180 and 180.'),
   deliveryRadius: z.coerce.number().min(0, 'Delivery radius cannot be negative.'),
+  gstNumber: z.string().trim().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, 'Invalid GST number.').optional().or(z.literal('')),
+  sgstNumber: z.string().trim().max(30, 'SGST number is too long.').optional().or(z.literal('')),
+  cgst: z.coerce.number().min(0, 'CGST cannot be negative.').max(100, 'CGST cannot exceed 100.'),
+  sgst: z.coerce.number().min(0, 'SGST cannot be negative.').max(100, 'SGST cannot exceed 100.'),
+  igst: z.coerce.number().min(0, 'IGST cannot be negative.').max(100, 'IGST cannot exceed 100.'),
   openHoursMonday: z.string().optional().or(z.literal('')),
   openHoursTuesday: z.string().optional().or(z.literal('')),
   openHoursWednesday: z.string().optional().or(z.literal('')),
@@ -47,6 +52,11 @@ const storeDefaultValues: StoreFormInput = {
   latitude: 0,
   longitude: 0,
   deliveryRadius: 10,
+  gstNumber: '',
+  sgstNumber: '',
+  cgst: 9,
+  sgst: 9,
+  igst: 18,
   openHoursMonday: '',
   openHoursTuesday: '',
   openHoursWednesday: '',
@@ -62,6 +72,7 @@ export default function StoresPage() {
   const [search, setSearch] = useState('');
   const [formError, setFormError] = useState('');
   const [actioningStoreId, setActioningStoreId] = useState<string | null>(null);
+  const [selectedStore, setSelectedStore] = useState<StoreSummary | null>(null);
   const debouncedSearch = useDebouncedValue(search, 350);
 
   const storesQuery = useQuery({
@@ -118,6 +129,11 @@ export default function StoresPage() {
       latitude: nextLatitude || 0,
       longitude: nextLongitude || 0,
       deliveryRadius: editing.deliveryRadius,
+      gstNumber: editing.gstNumber || '',
+      sgstNumber: editing.sgstNumber || '',
+      cgst: editing.cgst ?? 9,
+      sgst: editing.sgst ?? 9,
+      igst: editing.igst ?? 18,
       openHoursMonday: editingOpenHours.monday || '',
       openHoursTuesday: editingOpenHours.tuesday || '',
       openHoursWednesday: editingOpenHours.wednesday || '',
@@ -250,6 +266,11 @@ export default function StoresPage() {
           coordinates: [values.longitude, values.latitude] as [number, number],
         },
         deliveryRadius: values.deliveryRadius,
+        gstNumber: values.gstNumber,
+        sgstNumber: values.sgstNumber,
+        cgst: values.cgst,
+        sgst: values.sgst,
+        igst: values.igst,
         openHours,
       };
 
@@ -263,6 +284,7 @@ export default function StoresPage() {
       queryClient.invalidateQueries({ queryKey: ['super-admin-stores'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-admin-options'] });
       setEditing(null);
+      setSelectedStore(null);
       setFormError('');
       reset(storeDefaultValues);
     },
@@ -292,6 +314,7 @@ export default function StoresPage() {
       queryClient.invalidateQueries({ queryKey: ['super-admin-admin-options'] });
       if (editing) {
         setEditing(null);
+        setSelectedStore(null);
         reset(storeDefaultValues);
       }
       setFormError('');
@@ -455,6 +478,62 @@ export default function StoresPage() {
               />
               {errors.deliveryRadius ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.deliveryRadius.message}</p> : null}
             </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">GST Number</label>
+              <input
+                {...register('gstNumber')}
+                placeholder="22AAAAA0000A1Z5"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 uppercase ${errors.gstNumber ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.gstNumber ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.gstNumber.message}</p> : null}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">SGST Number</label>
+              <input
+                {...register('sgstNumber')}
+                placeholder="State GST registration number"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 uppercase ${errors.sgstNumber ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.sgstNumber ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.sgstNumber.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">CGST (%)</label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('cgst', { valueAsNumber: true })}
+                placeholder="9"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.cgst ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.cgst ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.cgst.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">SGST (%)</label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('sgst', { valueAsNumber: true })}
+                placeholder="9"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.sgst ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.sgst ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.sgst.message}</p> : null}
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">IGST (%)</label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('igst', { valueAsNumber: true })}
+                placeholder="18"
+                className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.igst ? 'border-rose-300' : 'border-primary-100'}`}
+              />
+              {errors.igst ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.igst.message}</p> : null}
+            </div>
           </div>
 
           <div>
@@ -515,8 +594,58 @@ export default function StoresPage() {
           {storesQuery.isFetching ? <p className="mt-2 text-xs font-semibold text-slate-500">Updating list...</p> : null}
         </div>
 
+        {selectedStore ? (
+          <div className="rounded-[1.5rem] border border-primary-100 bg-white p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-primary-500">Store Details</p>
+                <h2 className="mt-2 text-2xl font-black text-slate-900">{selectedStore.name}</h2>
+                <p className="mt-1 text-sm text-slate-500">{formatDisplayStoreAddress(selectedStore.address) || 'Address needs update'}</p>
+              </div>
+              <button
+                onClick={() => setSelectedStore(null)}
+                className="rounded-xl border border-primary-100 px-3 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500"
+              >
+                Close
+              </button>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="rounded-2xl bg-primary-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Admin</p>
+                <p className="mt-1 text-sm font-black text-slate-900">{selectedStore.adminName}</p>
+              </div>
+              <div className="rounded-2xl bg-primary-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Phone</p>
+                <p className="mt-1 text-sm font-black text-slate-900">{selectedStore.phone}</p>
+              </div>
+              <div className="rounded-2xl bg-primary-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Email</p>
+                <p className="mt-1 break-all text-sm font-black text-slate-900">{selectedStore.email || '-'}</p>
+              </div>
+              <div className="rounded-2xl bg-primary-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">GST Number</p>
+                <p className="mt-1 break-all text-sm font-black text-slate-900">{selectedStore.gstNumber || '-'}</p>
+              </div>
+              <div className="rounded-2xl bg-primary-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">SGST Number</p>
+                <p className="mt-1 break-all text-sm font-black text-slate-900">{selectedStore.sgstNumber || '-'}</p>
+              </div>
+              <div className="rounded-2xl bg-primary-50 px-4 py-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Tax Rates</p>
+                <p className="mt-1 text-sm font-black text-slate-900">
+                  CGST {selectedStore.cgst ?? 0}% · SGST {selectedStore.sgst ?? 0}% · IGST {selectedStore.igst ?? 0}%
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {storesQuery.data?.data.map((store) => (
-          <div key={store.id} className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
+          <div
+            key={store.id}
+            onClick={() => setSelectedStore(store)}
+            className="cursor-pointer rounded-[1.5rem] border border-primary-100 bg-white p-4 transition hover:border-primary-300 hover:bg-primary-50/30"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-lg font-black text-slate-900">{store.name}</p>
@@ -529,13 +658,17 @@ export default function StoresPage() {
               </div>
               <div className="flex flex-col items-end gap-2">
                 <button
-                  onClick={() => setEditing(store)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setEditing(store);
+                  }}
                   className="rounded-xl border border-primary-100 px-4 py-2 text-sm font-semibold text-primary-700"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => {
+                    event?.stopPropagation?.();
                     if (!window.confirm(`Delete store ${store.name}? This action cannot be undone.`)) return;
                     setActioningStoreId(store.id);
                     deleteStoreMutation.mutate(store.id);

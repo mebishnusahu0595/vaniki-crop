@@ -54,6 +54,11 @@ const storeSchema = z.object({
     coordinates: z.array(z.number()).length(2),
   }),
   deliveryRadius: numberFromInput(z.number().min(0), 10).default(10),
+  gstNumber: z.string().trim().toUpperCase().regex(GSTIN_PATTERN, 'Invalid GST number').optional().or(z.literal('')),
+  sgstNumber: z.string().trim().toUpperCase().optional().or(z.literal('')),
+  cgst: numberFromInput(z.number().min(0).max(100), 0).optional(),
+  sgst: numberFromInput(z.number().min(0).max(100), 0).optional(),
+  igst: numberFromInput(z.number().min(0).max(100), 0).optional(),
   openHours: z
     .object({
       monday: z.string().trim().max(80).optional(),

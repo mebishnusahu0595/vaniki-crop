@@ -362,16 +362,21 @@ export async function listStores(query: Record<string, any>) {
   const [orderStats, secretDocs] = await Promise.all([
     storeIds.length
       ? Order.aggregate([
-          { $match: { storeId: { $in: storeIds } } },
+          {
+            $match: {
+              storeId: { $in: storeIds },
+              status: { $ne: 'cancelled' },
+              $or: [
+                { paymentMethod: 'cod' },
+                { paymentStatus: 'paid' },
+              ],
+            },
+          },
           {
             $group: {
               _id: '$storeId',
               totalOrders: { $sum: 1 },
-              totalRevenue: {
-                $sum: {
-                  $cond: [{ $eq: ['$paymentStatus', 'paid'] }, toNumericExpression('$totalAmount'), 0],
-                },
-              },
+              totalRevenue: { $sum: toNumericExpression('$totalAmount') },
             },
           },
         ])
