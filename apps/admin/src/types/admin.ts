@@ -80,6 +80,7 @@ export interface DealerInventoryVariant {
   offerPrice?: number;
   mrp: number;
   quantity: number;
+  hsnCode?: string;
 }
 
 export interface DealerInventoryProduct {
@@ -90,6 +91,7 @@ export interface DealerInventoryProduct {
   shortDescription?: string;
   petiSize?: number;
   petiUnit?: 'Liter' | 'Kg';
+  hsnCode?: string;
   variants: DealerInventoryVariant[];
 }
 

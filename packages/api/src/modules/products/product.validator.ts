@@ -33,6 +33,8 @@ const variantSchema = z.object({
   label: z.string().trim().min(1, 'Variant label is required'),
   price: requiredNumber('Price').pipe(z.number().min(0, 'Price must be non-negative')),
   adminPrice: z.coerce.number().min(0, 'Admin price must be non-negative').optional(),
+  offerPrice: z.coerce.number().min(0, 'Offer price must be non-negative').optional(),
+  hsnCode: z.string().trim().optional(),
   mrp: requiredNumber('MRP').pipe(z.number().min(0, 'MRP must be non-negative')),
   stock: requiredNumber('Stock').pipe(z.number().int().min(0, 'Stock must be non-negative')),
   sku: z.string().trim().min(1, 'SKU is required').toUpperCase(),

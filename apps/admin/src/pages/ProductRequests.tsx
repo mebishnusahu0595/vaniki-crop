@@ -196,6 +196,7 @@ export default function ProductRequestsPage() {
                     if (variant) {
                       setPrice(variant.dealerPrice || variant.price || 0);
                       setOfferPrice(variant.offerPrice || 0);
+                      setHsnCode(variant.hsnCode || product?.hsnCode || '');
                     }
                   }}
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition disabled:opacity-50"
@@ -217,6 +218,11 @@ export default function ProductRequestsPage() {
                     <p className="mt-1 text-sm font-medium text-primary-700 opacity-80">
                       {inventoryQuery.data?.find(p => p.id === selectedProductId)?.shortDescription}
                     </p>
+                    {inventoryQuery.data?.find(p => p.id === selectedProductId)?.hsnCode && (
+                      <p className="mt-1 text-[11px] font-black text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-lg border border-emerald-100">
+                        HSN: {inventoryQuery.data?.find(p => p.id === selectedProductId)?.hsnCode}
+                      </p>
+                    )}
                     
                     <div className="mt-4 pt-4 border-t border-primary-200/50">
                       <p className="text-[10px] font-black uppercase tracking-wider text-primary-600 mb-3">Product Pricing Information</p>
@@ -262,7 +268,7 @@ export default function ProductRequestsPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="mb-2 block text-xs font-bold text-slate-500">HSN (Optional)</label>
+                      <label className="mb-2 block text-xs font-bold text-slate-500">HSN Code</label>
                       <input
                         type="text"
                         placeholder="HSN Code"

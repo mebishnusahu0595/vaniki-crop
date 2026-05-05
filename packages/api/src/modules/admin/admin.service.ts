@@ -130,7 +130,7 @@ export async function listStoreCustomers(storeId: string, query: Record<string, 
 
 export async function listDealerInventory(storeId: string) {
   const products = await Product.find({ isActive: true })
-    .select('name slug images category variants isActive shortDescription petiSize petiUnit')
+    .select('name slug images category variants isActive shortDescription petiSize petiUnit hsnCode')
     .populate('category', 'name')
     .sort({ updatedAt: -1 });
 
@@ -153,6 +153,7 @@ export async function listDealerInventory(storeId: string) {
     shortDescription: product.shortDescription,
     petiSize: product.petiSize,
     petiUnit: product.petiUnit,
+    hsnCode: product.hsnCode,
     variants: product.variants.map((variant: any) => {
       const variantId = variant._id.toString();
       const key = `${(product._id as mongoose.Types.ObjectId).toString()}:${variantId}`;
@@ -162,6 +163,7 @@ export async function listDealerInventory(storeId: string) {
         price: variant.price,
         dealerPrice: variant.adminPrice,
         offerPrice: variant.offerPrice,
+        hsnCode: variant.hsnCode,
         mrp: variant.mrp,
         quantity: quantityByVariant.get(key) ?? 0,
       };
