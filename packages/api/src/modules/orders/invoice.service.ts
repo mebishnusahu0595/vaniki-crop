@@ -90,15 +90,15 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       doc.font('Helvetica').fontSize(7.5).text('teams@vanikicrop.com | 9302228883', pageWidth - pageMargin - 200, 36, { width: 200, align: 'right' });
 
       const addressTop = 85;
-      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(9).text('Sold By', pageMargin, addressTop);
-      doc.fillColor('#1F2937').font('Helvetica').fontSize(8)
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9).text('Sold By', pageMargin, addressTop);
+      doc.fillColor('#111827').font('Helvetica').fontSize(8)
         .text(store.name || 'Vaniki Crop Store', pageMargin, addressTop + 13, { width: detailColumnWidth })
         .text(formatAddress(store.address), pageMargin, addressTop + 24, { width: detailColumnWidth })
         .text(`Contact: ${store.phone || '9302228883'}`, pageMargin, addressTop + 46, { width: detailColumnWidth })
         .text(`GSTIN: ${store.gstNumber || store.sgstNumber || '-'}`, pageMargin, addressTop + 57, { width: detailColumnWidth });
 
-      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(9).text('Bill To / Ship To', detailRightX, addressTop);
-      doc.fillColor('#1F2937').font('Helvetica').fontSize(8)
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9).text('Bill To / Ship To', detailRightX, addressTop);
+      doc.fillColor('#111827').font('Helvetica').fontSize(8)
         .text(order.shippingAddress?.name || customer.name || 'Customer', detailRightX, addressTop + 13, { width: detailColumnWidth })
         .text(`Mobile: ${order.shippingAddress?.mobile || customer.mobile || '-'}`, detailRightX, addressTop + 24, { width: detailColumnWidth })
         .text(formatAddress(deliveryAddress), detailRightX, addressTop + 35, { width: detailColumnWidth });
@@ -113,45 +113,46 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         ['Payment', `${String(order.paymentMethod || '-').toUpperCase()} / ${order.paymentStatus || '-'}`],
       ];
 
-      doc.roundedRect(pageMargin, infoTop - 8, contentWidth, 50, 8).fillAndStroke('#F0F8F4', '#CDEBDD');
+      doc.roundedRect(pageMargin, infoTop - 8, contentWidth, 50, 4).lineWidth(0.5).strokeColor('#E5E7EB').stroke();
       infoRows.forEach(([label, value], index) => {
         const column = index % 3;
         const row = Math.floor(index / 3);
         const columnWidth = contentWidth / 3;
         const x = pageMargin + 12 + column * columnWidth;
         const y = infoTop + row * 22;
-        doc.fillColor('#2D6A4F').font('Helvetica-Bold').fontSize(6).text(label.toUpperCase(), x, y);
+        doc.fillColor('#6B7280').font('Helvetica').fontSize(6).text(label.toUpperCase(), x, y);
         doc.fillColor('#111827').font('Helvetica-Bold').fontSize(8).text(String(value), x, y + 9, { width: columnWidth - 18 });
       });
 
       const tableTop = 235;
       const columns = [
-        { label: '#', x: pageMargin, width: 18, align: 'left' as const },
-        { label: 'Product', x: pageMargin + 22, width: 140, align: 'left' as const },
-        { label: 'HSN', x: pageMargin + 166, width: 35, align: 'left' as const },
-        { label: 'Pack', x: pageMargin + 205, width: 45, align: 'left' as const },
-        { label: 'Qty', x: pageMargin + 254, width: 25, align: 'right' as const },
-        { label: 'Taxable', x: pageMargin + 283, width: 50, align: 'right' as const },
-        { label: 'CGST %', x: pageMargin + 337, width: 35, align: 'right' as const },
-        { label: 'CGST Amt', x: pageMargin + 376, width: 45, align: 'right' as const },
-        { label: 'SGST %', x: pageMargin + 425, width: 35, align: 'right' as const },
-        { label: 'SGST Amt', x: pageMargin + 464, width: 45, align: 'right' as const },
-        { label: 'Total', x: pageMargin + 513, width: 50, align: 'right' as const },
+        { label: '#', x: pageMargin, width: 15, align: 'left' as const },
+        { label: 'Product', x: pageMargin + 18, width: 140, align: 'left' as const },
+        { label: 'HSN', x: pageMargin + 160, width: 35, align: 'left' as const },
+        { label: 'Pack', x: pageMargin + 198, width: 45, align: 'left' as const },
+        { label: 'Qty', x: pageMargin + 245, width: 22, align: 'right' as const },
+        { label: 'Taxable', x: pageMargin + 270, width: 50, align: 'right' as const },
+        { label: 'CGST %', x: pageMargin + 325, width: 32, align: 'right' as const },
+        { label: 'CGST Amt', x: pageMargin + 360, width: 45, align: 'right' as const },
+        { label: 'SGST %', x: pageMargin + 410, width: 32, align: 'right' as const },
+        { label: 'SGST Amt', x: pageMargin + 445, width: 45, align: 'right' as const },
+        { label: 'Total', x: pageMargin + 495, width: 50, align: 'right' as const },
       ];
 
       const drawTableHeader = (headerTop: number) => {
-        doc.roundedRect(pageMargin, headerTop - 10, contentWidth, 24, 6).fill('#143D2E');
+        doc.moveTo(pageMargin, headerTop - 10).lineTo(rightEdge, headerTop - 10).lineWidth(1).strokeColor('#111827').stroke();
         columns.forEach((column) => {
-          doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(7).text(column.label, column.x, headerTop - 2, {
+          doc.fillColor('#111827').font('Helvetica-Bold').fontSize(7.5).text(column.label, column.x, headerTop - 2, {
             width: column.width,
             align: column.align,
           });
         });
+        doc.moveTo(pageMargin, headerTop + 14).lineTo(rightEdge, headerTop + 14).lineWidth(0.5).strokeColor('#111827').stroke();
       };
 
       drawTableHeader(tableTop);
 
-      let currentTop = tableTop + 24;
+      let currentTop = tableTop + 20;
       let subtotalNet = 0;
       let subtotalTax = 0;
       let subtotalGross = 0;
@@ -179,10 +180,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         subtotalSgst += tax.sgstAmount;
 
         const productName = String(item.productName || 'Product').replace(/\(.*\)/, '').trim();
-        const rowHeight = 28;
-        if (index % 2 === 0) {
-          doc.roundedRect(pageMargin, currentTop - 6, contentWidth, rowHeight, 4).fill('#F8FCFA');
-        }
+        const rowHeight = 22;
 
         const values = [
           String(index + 1),
@@ -210,15 +208,14 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         });
 
         currentTop += rowHeight;
+        doc.moveTo(pageMargin, currentTop - 2).lineTo(rightEdge, currentTop - 2).lineWidth(0.2).strokeColor('#E5E7EB').stroke();
       });
-
-      doc.moveTo(pageMargin, currentTop).lineTo(rightEdge, currentTop).strokeColor('#CDEBDD').stroke();
 
       const deliveryCharge = order.serviceMode === 'pickup' ? 0 : Number(order.deliveryCharge || 0);
       const discount = Number(order.couponDiscount || 0) + Number(order.loyaltyDiscount || 0) + Number(order.discount || 0);
       const expectedTotal = Math.max(0, subtotalGross - discount + deliveryCharge);
       const payableTotal = Number(order.totalAmount || expectedTotal);
-      let summaryTop = currentTop + 15;
+      let summaryTop = currentTop + 10;
       if (summaryTop > pageHeight - 160) {
         doc.addPage();
         summaryTop = pageMargin + 15;
@@ -234,27 +231,28 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         [order.serviceMode === 'pickup' ? 'Delivery Charge (Pickup)' : 'Delivery Charge', deliveryCharge],
       ];
 
-      doc.fillColor('#111827').font('Helvetica').fontSize(7.5);
+      doc.fillColor('#111827').font('Helvetica').fontSize(8);
       summaryRows.forEach(([label, value], index) => {
-        const y = summaryTop + index * 13;
+        const y = summaryTop + index * 14;
         doc.text(String(label), summaryX, y, { width: 160 });
         doc.text(formatMoney(Number(value)), valueX, y, { width: 100, align: 'right' });
       });
 
-      doc.roundedRect(summaryX - 6, summaryTop + 82, 266, 26, 6).fill('#143D2E');
-      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(10).text('TOTAL PAYABLE', summaryX, summaryTop + 90);
-      doc.text(formatMoney(payableTotal), valueX - 6, summaryTop + 90, { width: 106, align: 'right' });
+      doc.moveTo(summaryX, summaryTop + 85).lineTo(rightEdge, summaryTop + 85).lineWidth(1).strokeColor('#111827').stroke();
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10.5).text('TOTAL PAYABLE', summaryX, summaryTop + 92);
+      doc.text(formatMoney(payableTotal), valueX - 5, summaryTop + 92, { width: 105, align: 'right' });
+      doc.moveTo(summaryX, summaryTop + 108).lineTo(rightEdge, summaryTop + 108).lineWidth(1).strokeColor('#111827').stroke();
 
-      const footerTop = pageHeight - 75;
-      doc.moveTo(pageMargin, footerTop).lineTo(rightEdge, footerTop).stroke();
+      const footerTop = pageHeight - 65;
+      doc.moveTo(pageMargin, footerTop).lineTo(rightEdge, footerTop).lineWidth(0.5).strokeColor('#E5E7EB').stroke();
       
       doc.fontSize(7.5)
-        .fillColor('#111827')
+        .fillColor('#6B7280')
         .font('Helvetica')
-        .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 12, { align: 'center', width: contentWidth });
+        .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 10, { align: 'center', width: contentWidth });
         
-      doc.font('Helvetica-Bold')
-        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin, footerTop + 24, { align: 'center', width: contentWidth });
+      doc.fillColor('#111827').font('Helvetica-Bold')
+        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin, footerTop + 22, { align: 'center', width: contentWidth });
 
       doc.end();
     } catch (error) {
