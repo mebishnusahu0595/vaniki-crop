@@ -74,7 +74,12 @@ export async function createStaff(payload: { name: string; mobile: string; email
 
 export async function listStaff(query: { role?: string } = {}) {
   const filter: any = {};
-  if (query.role) filter.role = query.role;
+  if (query.role === 'delivery') {
+    filter.role = 'delivery';
+  } else if (query.role === 'referral') {
+    // Include legacy staff (no role field) as referral staff
+    filter.$or = [{ role: 'referral' }, { role: { $exists: false } }, { role: null }];
+  }
 
   const staff = await Staff.find(filter).sort({ createdAt: -1 });
   
