@@ -62,7 +62,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
       const pageMargin = 36;
-      const doc = new PDFDocument({ margin: pageMargin, size: 'A4', layout: 'landscape' });
+      const doc = new PDFDocument({ margin: pageMargin, size: 'A4', layout: 'portrait' });
       const buffers: Buffer[] = [];
       doc.on('data', buffers.push.bind(buffers));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
@@ -79,31 +79,31 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       const storeTax = Number(store.cgst || 0) + Number(store.sgst || 0) > 0
         ? { cgst: Number(store.cgst || 0), sgst: Number(store.sgst || 0) }
         : undefined;
-      const columnGap = 28;
+      const columnGap = 20;
       const detailColumnWidth = (contentWidth - columnGap) / 2;
       const detailRightX = pageMargin + detailColumnWidth + columnGap;
 
-      doc.rect(0, 0, pageWidth, 88).fill('#143D2E');
-      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(24).text('TAX INVOICE', pageMargin, 28);
-      doc.font('Helvetica').fontSize(9).text('Original for Recipient', pageMargin, 58);
-      doc.font('Helvetica-Bold').fontSize(11).text('Vaniki Crop', pageWidth - pageMargin - 240, 30, { width: 240, align: 'right' });
-      doc.font('Helvetica').fontSize(8).text('teams@vanikicrop.com | 9302228883', pageWidth - pageMargin - 260, 50, { width: 260, align: 'right' });
+      doc.rect(0, 0, pageWidth, 70).fill('#143D2E');
+      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(18).text('TAX INVOICE', pageMargin, 20);
+      doc.font('Helvetica').fontSize(8).text('Original for Recipient', pageMargin, 42);
+      doc.font('Helvetica-Bold').fontSize(10).text('Vaniki Crop', pageWidth - pageMargin - 200, 22, { width: 200, align: 'right' });
+      doc.font('Helvetica').fontSize(7.5).text('teams@vanikicrop.com | 9302228883', pageWidth - pageMargin - 200, 36, { width: 200, align: 'right' });
 
-      const addressTop = 108;
-      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(10).text('Sold By', pageMargin, addressTop);
-      doc.fillColor('#1F2937').font('Helvetica').fontSize(9)
-        .text(store.name || 'Vaniki Crop Store', pageMargin, addressTop + 16, { width: detailColumnWidth })
-        .text(formatAddress(store.address), pageMargin, addressTop + 31, { width: detailColumnWidth })
-        .text(`Contact: ${store.phone || '9302228883'}`, pageMargin, addressTop + 58, { width: detailColumnWidth })
-        .text(`GSTIN: ${store.gstNumber || store.sgstNumber || '-'}`, pageMargin, addressTop + 73, { width: detailColumnWidth });
+      const addressTop = 85;
+      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(9).text('Sold By', pageMargin, addressTop);
+      doc.fillColor('#1F2937').font('Helvetica').fontSize(8)
+        .text(store.name || 'Vaniki Crop Store', pageMargin, addressTop + 13, { width: detailColumnWidth })
+        .text(formatAddress(store.address), pageMargin, addressTop + 24, { width: detailColumnWidth })
+        .text(`Contact: ${store.phone || '9302228883'}`, pageMargin, addressTop + 46, { width: detailColumnWidth })
+        .text(`GSTIN: ${store.gstNumber || store.sgstNumber || '-'}`, pageMargin, addressTop + 57, { width: detailColumnWidth });
 
-      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(10).text('Bill To / Ship To', detailRightX, addressTop);
-      doc.fillColor('#1F2937').font('Helvetica').fontSize(9)
-        .text(order.shippingAddress?.name || customer.name || 'Customer', detailRightX, addressTop + 16, { width: detailColumnWidth })
-        .text(`Mobile: ${order.shippingAddress?.mobile || customer.mobile || '-'}`, detailRightX, addressTop + 31, { width: detailColumnWidth })
-        .text(formatAddress(deliveryAddress), detailRightX, addressTop + 46, { width: detailColumnWidth });
+      doc.fillColor('#143D2E').font('Helvetica-Bold').fontSize(9).text('Bill To / Ship To', detailRightX, addressTop);
+      doc.fillColor('#1F2937').font('Helvetica').fontSize(8)
+        .text(order.shippingAddress?.name || customer.name || 'Customer', detailRightX, addressTop + 13, { width: detailColumnWidth })
+        .text(`Mobile: ${order.shippingAddress?.mobile || customer.mobile || '-'}`, detailRightX, addressTop + 24, { width: detailColumnWidth })
+        .text(formatAddress(deliveryAddress), detailRightX, addressTop + 35, { width: detailColumnWidth });
 
-      const infoTop = 212;
+      const infoTop = 165;
       const infoRows = [
         ['Order Number', order.orderNumber || '-'],
         ['Order Date', order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : '-'],
@@ -113,36 +113,36 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         ['Payment', `${String(order.paymentMethod || '-').toUpperCase()} / ${order.paymentStatus || '-'}`],
       ];
 
-      doc.roundedRect(pageMargin, infoTop - 10, contentWidth, 62, 10).fillAndStroke('#F0F8F4', '#CDEBDD');
+      doc.roundedRect(pageMargin, infoTop - 8, contentWidth, 50, 8).fillAndStroke('#F0F8F4', '#CDEBDD');
       infoRows.forEach(([label, value], index) => {
         const column = index % 3;
         const row = Math.floor(index / 3);
         const columnWidth = contentWidth / 3;
-        const x = pageMargin + 18 + column * columnWidth;
-        const y = infoTop + row * 28;
-        doc.fillColor('#2D6A4F').font('Helvetica-Bold').fontSize(7).text(label.toUpperCase(), x, y);
-        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9).text(String(value), x, y + 11, { width: columnWidth - 24 });
+        const x = pageMargin + 12 + column * columnWidth;
+        const y = infoTop + row * 22;
+        doc.fillColor('#2D6A4F').font('Helvetica-Bold').fontSize(6).text(label.toUpperCase(), x, y);
+        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(8).text(String(value), x, y + 9, { width: columnWidth - 18 });
       });
 
-      const tableTop = 296;
+      const tableTop = 235;
       const columns = [
-        { label: '#', x: pageMargin, width: 22, align: 'left' as const },
-        { label: 'Product', x: pageMargin + 28, width: 160, align: 'left' as const },
-        { label: 'HSN', x: pageMargin + 194, width: 50, align: 'left' as const },
-        { label: 'Pack', x: pageMargin + 250, width: 58, align: 'left' as const },
-        { label: 'Qty', x: pageMargin + 314, width: 34, align: 'right' as const },
-        { label: 'Taxable', x: pageMargin + 354, width: 70, align: 'right' as const },
-        { label: 'CGST %', x: pageMargin + 430, width: 48, align: 'right' as const },
-        { label: 'CGST Amt', x: pageMargin + 484, width: 70, align: 'right' as const },
-        { label: 'SGST %', x: pageMargin + 560, width: 48, align: 'right' as const },
-        { label: 'SGST Amt', x: pageMargin + 614, width: 70, align: 'right' as const },
-        { label: 'Total', x: pageMargin + 690, width: 80, align: 'right' as const },
+        { label: '#', x: pageMargin, width: 18, align: 'left' as const },
+        { label: 'Product', x: pageMargin + 22, width: 140, align: 'left' as const },
+        { label: 'HSN', x: pageMargin + 166, width: 35, align: 'left' as const },
+        { label: 'Pack', x: pageMargin + 205, width: 45, align: 'left' as const },
+        { label: 'Qty', x: pageMargin + 254, width: 25, align: 'right' as const },
+        { label: 'Taxable', x: pageMargin + 283, width: 50, align: 'right' as const },
+        { label: 'CGST %', x: pageMargin + 337, width: 35, align: 'right' as const },
+        { label: 'CGST Amt', x: pageMargin + 376, width: 45, align: 'right' as const },
+        { label: 'SGST %', x: pageMargin + 425, width: 35, align: 'right' as const },
+        { label: 'SGST Amt', x: pageMargin + 464, width: 45, align: 'right' as const },
+        { label: 'Total', x: pageMargin + 513, width: 50, align: 'right' as const },
       ];
 
       const drawTableHeader = (headerTop: number) => {
-        doc.roundedRect(pageMargin, headerTop - 12, contentWidth, 30, 8).fill('#143D2E');
+        doc.roundedRect(pageMargin, headerTop - 10, contentWidth, 24, 6).fill('#143D2E');
         columns.forEach((column) => {
-          doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8).text(column.label, column.x, headerTop - 2, {
+          doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(7).text(column.label, column.x, headerTop - 2, {
             width: column.width,
             align: column.align,
           });
@@ -151,7 +151,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
 
       drawTableHeader(tableTop);
 
-      let currentTop = tableTop + 28;
+      let currentTop = tableTop + 24;
       let subtotalNet = 0;
       let subtotalTax = 0;
       let subtotalGross = 0;
@@ -161,10 +161,10 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       let summarySgstRate = storeTax?.sgst || 0;
 
       order.items.forEach((item: any, index: number) => {
-        if (currentTop > pageHeight - 145) {
+        if (currentTop > pageHeight - 120) {
           doc.addPage();
-          drawTableHeader(pageMargin + 18);
-          currentTop = pageMargin + 46;
+          drawTableHeader(pageMargin + 15);
+          currentTop = pageMargin + 35;
         }
 
         const tax = getLineItemTax(item, storeTax);
@@ -179,9 +179,9 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         subtotalSgst += tax.sgstAmount;
 
         const productName = String(item.productName || 'Product').replace(/\(.*\)/, '').trim();
-        const rowHeight = 38;
+        const rowHeight = 28;
         if (index % 2 === 0) {
-          doc.roundedRect(pageMargin, currentTop - 8, contentWidth, rowHeight, 6).fill('#F8FCFA');
+          doc.roundedRect(pageMargin, currentTop - 6, contentWidth, rowHeight, 4).fill('#F8FCFA');
         }
 
         const values = [
@@ -201,7 +201,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         columns.forEach((column, columnIndex) => {
           doc.fillColor('#111827')
             .font(columnIndex === 1 ? 'Helvetica-Bold' : 'Helvetica')
-            .fontSize(columnIndex === 1 ? 8 : 7.5)
+            .fontSize(columnIndex === 1 ? 7.5 : 7)
             .text(values[columnIndex], column.x, currentTop, {
               width: column.width,
               align: column.align,
@@ -218,13 +218,13 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       const discount = Number(order.couponDiscount || 0) + Number(order.loyaltyDiscount || 0) + Number(order.discount || 0);
       const expectedTotal = Math.max(0, subtotalGross - discount + deliveryCharge);
       const payableTotal = Number(order.totalAmount || expectedTotal);
-      let summaryTop = currentTop + 18;
-      if (summaryTop > pageHeight - 190) {
+      let summaryTop = currentTop + 15;
+      if (summaryTop > pageHeight - 160) {
         doc.addPage();
-        summaryTop = pageMargin + 20;
+        summaryTop = pageMargin + 15;
       }
-      const summaryX = pageWidth - pageMargin - 310;
-      const valueX = pageWidth - pageMargin - 115;
+      const summaryX = pageWidth - pageMargin - 260;
+      const valueX = pageWidth - pageMargin - 100;
       const summaryRows = [
         ['Taxable Value', subtotalNet],
         [`CGST ${formatRate(summaryCgstRate)}%`, subtotalCgst],
@@ -234,27 +234,27 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         [order.serviceMode === 'pickup' ? 'Delivery Charge (Pickup)' : 'Delivery Charge', deliveryCharge],
       ];
 
-      doc.fillColor('#111827').font('Helvetica').fontSize(8);
+      doc.fillColor('#111827').font('Helvetica').fontSize(7.5);
       summaryRows.forEach(([label, value], index) => {
-        const y = summaryTop + index * 15;
-        doc.text(String(label), summaryX, y, { width: 180 });
-        doc.text(formatMoney(Number(value)), valueX, y, { width: 115, align: 'right' });
+        const y = summaryTop + index * 13;
+        doc.text(String(label), summaryX, y, { width: 160 });
+        doc.text(formatMoney(Number(value)), valueX, y, { width: 100, align: 'right' });
       });
 
-      doc.roundedRect(summaryX - 8, summaryTop + 92, 318, 30, 8).fill('#143D2E');
-      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(11).text('TOTAL PAYABLE', summaryX, summaryTop + 102);
-      doc.text(formatMoney(payableTotal), valueX - 8, summaryTop + 102, { width: 123, align: 'right' });
+      doc.roundedRect(summaryX - 6, summaryTop + 82, 266, 26, 6).fill('#143D2E');
+      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(10).text('TOTAL PAYABLE', summaryX, summaryTop + 90);
+      doc.text(formatMoney(payableTotal), valueX - 6, summaryTop + 90, { width: 106, align: 'right' });
 
-      const footerTop = pageHeight - 96;
+      const footerTop = pageHeight - 75;
       doc.moveTo(pageMargin, footerTop).lineTo(rightEdge, footerTop).stroke();
       
-      doc.fontSize(8)
+      doc.fontSize(7.5)
         .fillColor('#111827')
         .font('Helvetica')
-        .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 15, { align: 'center', width: contentWidth });
+        .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 12, { align: 'center', width: contentWidth });
         
       doc.font('Helvetica-Bold')
-        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin, footerTop + 30, { align: 'center', width: contentWidth });
+        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin, footerTop + 24, { align: 'center', width: contentWidth });
 
       doc.end();
     } catch (error) {
