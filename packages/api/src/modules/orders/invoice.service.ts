@@ -126,17 +126,17 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
 
       const tableTop = 235;
       const columns = [
-        { label: '#', x: pageMargin, width: 15, align: 'left' as const },
-        { label: 'Product', x: pageMargin + 18, width: 140, align: 'left' as const },
-        { label: 'HSN', x: pageMargin + 160, width: 35, align: 'left' as const },
-        { label: 'Pack', x: pageMargin + 198, width: 45, align: 'left' as const },
-        { label: 'Qty', x: pageMargin + 245, width: 22, align: 'right' as const },
-        { label: 'Taxable', x: pageMargin + 270, width: 50, align: 'right' as const },
-        { label: 'CGST %', x: pageMargin + 325, width: 32, align: 'right' as const },
-        { label: 'CGST Amt', x: pageMargin + 360, width: 45, align: 'right' as const },
-        { label: 'SGST %', x: pageMargin + 410, width: 32, align: 'right' as const },
-        { label: 'SGST Amt', x: pageMargin + 445, width: 45, align: 'right' as const },
-        { label: 'Total', x: pageMargin + 495, width: 50, align: 'right' as const },
+        { label: '#', x: pageMargin, width: 14, align: 'left' as const },
+        { label: 'Product', x: pageMargin + 14, width: 105, align: 'left' as const },
+        { label: 'HSN', x: pageMargin + 120, width: 38, align: 'left' as const },
+        { label: 'Pack', x: pageMargin + 160, width: 48, align: 'left' as const },
+        { label: 'Qty', x: pageMargin + 210, width: 22, align: 'right' as const },
+        { label: 'Taxable', x: pageMargin + 238, width: 50, align: 'right' as const },
+        { label: 'CGST %', x: pageMargin + 294, width: 30, align: 'right' as const },
+        { label: 'CGST Amt', x: pageMargin + 328, width: 44, align: 'right' as const },
+        { label: 'SGST %', x: pageMargin + 378, width: 30, align: 'right' as const },
+        { label: 'SGST Amt', x: pageMargin + 412, width: 44, align: 'right' as const },
+        { label: 'Total', x: pageMargin + 462, width: 60, align: 'right' as const },
       ];
 
       const drawTableHeader = (headerTop: number) => {
@@ -180,7 +180,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         subtotalSgst += tax.sgstAmount;
 
         const productName = String(item.productName || 'Product').replace(/\(.*\)/, '').trim();
-        const rowHeight = 22;
+        const rowHeight = 18;
 
         const values = [
           String(index + 1),
@@ -215,7 +215,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       const discount = Number(order.couponDiscount || 0) + Number(order.loyaltyDiscount || 0) + Number(order.discount || 0);
       const expectedTotal = Math.max(0, subtotalGross - discount + deliveryCharge);
       const payableTotal = Number(order.totalAmount || expectedTotal);
-      let summaryTop = currentTop + 10;
+      let summaryTop = currentTop + 6;
       if (summaryTop > pageHeight - 160) {
         doc.addPage();
         summaryTop = pageMargin + 15;
@@ -233,15 +233,16 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
 
       doc.fillColor('#111827').font('Helvetica').fontSize(8);
       summaryRows.forEach(([label, value], index) => {
-        const y = summaryTop + index * 14;
+        const y = summaryTop + index * 12;
         doc.text(String(label), summaryX, y, { width: 160 });
         doc.text(formatMoney(Number(value)), valueX, y, { width: 100, align: 'right' });
       });
 
-      doc.moveTo(summaryX, summaryTop + 85).lineTo(rightEdge, summaryTop + 85).lineWidth(1).strokeColor('#111827').stroke();
-      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10.5).text('TOTAL PAYABLE', summaryX, summaryTop + 92);
-      doc.text(formatMoney(payableTotal), valueX - 5, summaryTop + 92, { width: 105, align: 'right' });
-      doc.moveTo(summaryX, summaryTop + 108).lineTo(rightEdge, summaryTop + 108).lineWidth(1).strokeColor('#111827').stroke();
+      const totalLineY = summaryTop + summaryRows.length * 12 + 4;
+      doc.moveTo(summaryX, totalLineY).lineTo(rightEdge, totalLineY).lineWidth(1).strokeColor('#111827').stroke();
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(10.5).text('TOTAL PAYABLE', summaryX, totalLineY + 6);
+      doc.text(formatMoney(payableTotal), valueX - 5, totalLineY + 6, { width: 105, align: 'right' });
+      doc.moveTo(summaryX, totalLineY + 22).lineTo(rightEdge, totalLineY + 22).lineWidth(1).strokeColor('#111827').stroke();
 
       const footerTop = pageHeight - 65;
       doc.moveTo(pageMargin, footerTop).lineTo(rightEdge, footerTop).lineWidth(0.5).strokeColor('#E5E7EB').stroke();

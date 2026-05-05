@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
@@ -149,8 +149,11 @@ function TaskCard({ task }: { task: DeliveryTask }) {
         <Pressable
           onPress={() => completeMutation.mutate()}
           disabled={completeMutation.isPending}
-          className="flex-1 rounded-full bg-primary-500 px-4 py-4 disabled:opacity-60"
+          className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-primary-500 px-4 py-4 disabled:opacity-60"
         >
+          {completeMutation.isPending ? (
+            <ActivityIndicator color="#ffffff" size="small" />
+          ) : null}
           <Text className="text-center text-[10px] font-black uppercase tracking-[1px] text-white">
             {completeMutation.isPending ? 'Saving...' : 'Complete'}
           </Text>
@@ -173,10 +176,19 @@ function TaskCard({ task }: { task: DeliveryTask }) {
           placeholderTextColor="#7a978b"
         />
         <Pressable
-          onPress={() => deliverMutation.mutate()}
-          disabled={deliverMutation.isPending || otp.length < 4}
-          className="mt-3 rounded-full bg-primary-900 px-4 py-4 disabled:opacity-60"
+          onPress={() => {
+            if (!otp || otp.length < 4) {
+              Alert.alert('OTP Required', 'Please enter the customer OTP (min 4 digits) to complete delivery.');
+              return;
+            }
+            deliverMutation.mutate();
+          }}
+          disabled={deliverMutation.isPending}
+          className="mt-3 flex-row items-center justify-center gap-2 rounded-full bg-primary-900 px-4 py-4 disabled:opacity-60"
         >
+          {deliverMutation.isPending ? (
+            <ActivityIndicator color="#ffffff" size="small" />
+          ) : null}
           <Text className="text-center text-[10px] font-black uppercase tracking-[1px] text-white">
             {deliverMutation.isPending ? 'Delivering...' : 'Mark Delivered'}
           </Text>
@@ -213,8 +225,11 @@ function TaskCard({ task }: { task: DeliveryTask }) {
             ]);
           }}
           disabled={cancelMutation.isPending}
-          className="mt-3 rounded-full bg-red-600 px-4 py-4 disabled:opacity-60"
+          className="mt-3 flex-row items-center justify-center gap-2 rounded-full bg-red-600 px-4 py-4 disabled:opacity-60"
         >
+          {cancelMutation.isPending ? (
+            <ActivityIndicator color="#ffffff" size="small" />
+          ) : null}
           <Text className="text-center text-[10px] font-black uppercase tracking-[1px] text-white">
             {cancelMutation.isPending ? 'Sending...' : 'Send Cancellation'}
           </Text>

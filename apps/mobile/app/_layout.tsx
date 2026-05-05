@@ -41,19 +41,19 @@ function RootNavigation() {
       <StatusBar style="dark" translucent={false} />
       <OfflineBanner />
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="product/[slug]" />
-        <Stack.Screen name="products" />
-        <Stack.Screen name="checkout" />
-        <Stack.Screen name="order-success/[id]" />
-        <Stack.Screen name="about" />
-        <Stack.Screen name="contact" />
-        <Stack.Screen name="privacy-policy" />
+        {!isStaffApp && <Stack.Screen name="(tabs)" />}
+        {!isStaffApp && <Stack.Screen name="(auth)" />}
+        {!isStaffApp && <Stack.Screen name="product/[slug]" />}
+        {!isStaffApp && <Stack.Screen name="products" />}
+        {!isStaffApp && <Stack.Screen name="checkout" />}
+        {!isStaffApp && <Stack.Screen name="order-success/[id]" />}
+        {!isStaffApp && <Stack.Screen name="about" />}
+        {!isStaffApp && <Stack.Screen name="contact" />}
+        {!isStaffApp && <Stack.Screen name="privacy-policy" />}
         <Stack.Screen name="delivery" />
       </Stack>
-      <StoreSelectorSheet />
-      <CheckInModal />
+      {!isStaffApp && <StoreSelectorSheet />}
+      {!isStaffApp && <CheckInModal />}
     </>
   );
 }
