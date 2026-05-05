@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCartStore } from '../store/useCartStore';
 import { shadow } from '../constants/theme';
@@ -39,6 +40,9 @@ interface TabBarProps {
 export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const itemCount = useCartStore((store) => store.items.reduce((sum, item) => sum + item.qty, 0));
+  const isStaffApp = Constants.expoConfig?.extra?.appVariant === 'staff';
+
+  if (isStaffApp) return null;
 
   return (
     <View

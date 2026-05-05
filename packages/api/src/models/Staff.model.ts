@@ -20,6 +20,7 @@ const staffSchema = new Schema<IStaff>(
     email: { type: String, trim: true, lowercase: true },
     password: { type: String, required: true, minlength: 6, select: false },
     referralCode: { type: String, required: true, unique: true, uppercase: true, trim: true },
+    role: { type: String, enum: ['delivery', 'referral'], default: 'delivery' },
     isActive: { type: Boolean, default: true },
   },
   {

@@ -32,8 +32,8 @@ function StaffList({
   const [search, setSearch] = useState('');
 
   const staffQuery = useQuery({
-    queryKey: ['superadmin-staff'],
-    queryFn: adminApi.getStaffList,
+    queryKey: ['superadmin-staff', 'delivery'],
+    queryFn: () => adminApi.getStaffList({ role: 'delivery' }),
   });
 
   const filteredStaff = useMemo(() => {
@@ -124,7 +124,7 @@ function AddStaffForm() {
   const createMutation = useMutation({
     mutationFn: adminApi.createStaff,
     onSuccess: (staff) => {
-      queryClient.invalidateQueries({ queryKey: ['superadmin-staff'] });
+      queryClient.invalidateQueries({ queryKey: ['superadmin-staff', 'delivery'] });
       toast.success('Staff added');
       navigate(`/staff/${getStaffId(staff)}`);
       setForm({ name: '', mobile: '', email: '', password: '' });
@@ -152,7 +152,7 @@ function AddStaffForm() {
       </div>
 
       <button
-        onClick={() => createMutation.mutate(form)}
+        onClick={() => createMutation.mutate({ ...form, role: 'delivery' })}
         disabled={createMutation.isPending}
         className="mt-4 rounded-2xl bg-primary-500 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white disabled:opacity-60"
       >
@@ -227,7 +227,7 @@ function StaffDetailView({ staffId }: { staffId: string }) {
   const toggleMutation = useMutation({
     mutationFn: (payload: { id: string; isActive: boolean }) => adminApi.updateStaffStatus(payload.id, payload.isActive),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['superadmin-staff'] });
+      queryClient.invalidateQueries({ queryKey: ['superadmin-staff', 'delivery'] });
       queryClient.invalidateQueries({ queryKey: ['superadmin-staff-detail', staffId] });
       toast.success('Staff status updated');
     },

@@ -75,9 +75,9 @@ export default function ReferralPage() {
   });
 
   const staffQuery = useQuery<Staff[]>({
-    queryKey: ['superadmin-staff'],
+    queryKey: ['superadmin-staff', 'referral'],
     queryFn: async () => {
-      const res = await adminApi.getStaffList();
+      const res = await adminApi.getStaffList({ role: 'referral' });
       return res as unknown as Staff[];
     }
   });
@@ -93,9 +93,9 @@ export default function ReferralPage() {
 
   const createStaffMutation = useMutation({
     mutationFn: (payload: { name: string; mobile: string; email?: string; password: string }) =>
-      adminApi.createStaff(payload),
+      adminApi.createStaff({ ...payload, role: 'referral' }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['superadmin-staff'] });
+      queryClient.invalidateQueries({ queryKey: ['superadmin-staff', 'referral'] });
       toast.success('Staff added successfully');
       setIsAddModalOpen(false);
       setFormData({ name: '', mobile: '', email: '', password: '' });
@@ -106,7 +106,7 @@ export default function ReferralPage() {
     mutationFn: (params: { id: string; isActive: boolean }) => 
       adminApi.updateStaffStatus(params.id, params.isActive),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['superadmin-staff'] });
+      queryClient.invalidateQueries({ queryKey: ['superadmin-staff', 'referral'] });
       toast.success('Status updated');
     }
   });
@@ -114,7 +114,7 @@ export default function ReferralPage() {
   const deleteStaffMutation = useMutation({
     mutationFn: (id: string) => adminApi.deleteStaff(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['superadmin-staff'] });
+      queryClient.invalidateQueries({ queryKey: ['superadmin-staff', 'referral'] });
       toast.success('Staff removed');
     }
   });

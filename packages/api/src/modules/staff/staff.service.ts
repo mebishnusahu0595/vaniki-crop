@@ -65,15 +65,18 @@ function orderPopulate(query: any) {
     .populate('assignedStaff', 'name mobile email isActive');
 }
 
-export async function createStaff(payload: { name: string; mobile: string; email?: string; password?: string }) {
+export async function createStaff(payload: { name: string; mobile: string; email?: string; password?: string; role?: 'delivery' | 'referral' }) {
   if (!payload.password || payload.password.length < 6) {
     throw new AppError('Staff password must be at least 6 characters', 400);
   }
   return Staff.create(payload);
 }
 
-export async function listStaff() {
-  const staff = await Staff.find().sort({ createdAt: -1 });
+export async function listStaff(query: { role?: string } = {}) {
+  const filter: any = {};
+  if (query.role) filter.role = query.role;
+
+  const staff = await Staff.find(filter).sort({ createdAt: -1 });
   
   // Get referral counts for each staff
   const staffWithStats = await Promise.all(

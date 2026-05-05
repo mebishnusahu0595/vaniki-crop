@@ -573,11 +573,11 @@ export const adminApi = {
     });
     return response.data;
   },
-  getStaffList: async () => {
-    const response = await api.get<ApiResponse<StaffMember[]>>('/staff');
+  getStaffList: async (params?: { role?: string }) => {
+    const response = await api.get<ApiResponse<StaffMember[]>>('/staff', { params });
     return response.data.data;
   },
-  createStaff: async (payload: { name: string; mobile: string; email?: string; password: string }) => {
+  createStaff: async (payload: { name: string; mobile: string; email?: string; password: string; role?: 'delivery' | 'referral' }) => {
     const response = await api.post<ApiResponse<StaffMember>>('/staff', payload);
     return response.data.data;
   },

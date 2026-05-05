@@ -12,7 +12,7 @@ export async function addStaff(req: Request, res: Response, next: NextFunction) 
 
 export async function getStaffList(req: Request, res: Response, next: NextFunction) {
   try {
-    const data = await staffService.listStaff();
+    const data = await staffService.listStaff(req.query as any);
     res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
