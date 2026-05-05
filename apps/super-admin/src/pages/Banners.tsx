@@ -60,8 +60,12 @@ export default function BannersPage() {
   const [imageUrlError, setImageUrlError] = useState('');
   const [reorderedBanners, setReorderedBanners] = useState<Banner[] | null>(null);
   const [draggedBannerId, setDraggedBannerId] = useState<string | null>(null);
+  const [filterStoreId, setFilterStoreId] = useState('global');
   const queryClient = useQueryClient();
-  const bannersQuery = useQuery({ queryKey: ['admin-banners'], queryFn: adminApi.banners });
+  const bannersQuery = useQuery({ 
+    queryKey: ['admin-banners', filterStoreId], 
+    queryFn: () => adminApi.banners({ storeId: filterStoreId }) 
+  });
   const storesQuery = useQuery({ queryKey: ['banner-store-options'], queryFn: () => adminApi.stores({ limit: 200 }) });
   const productsQuery = useQuery({ queryKey: ['admin-banner-products'], queryFn: () => adminApi.products({ limit: 50, isActive: true }) });
   const { register, handleSubmit, reset, setValue, watch, formState: { isSubmitting } } = useForm<
@@ -75,7 +79,10 @@ export default function BannersPage() {
 
   useEffect(() => {
     if (!editing) {
-      reset(bannerDefaultValues);
+      reset({
+        ...bannerDefaultValues,
+        storeId: filterStoreId === 'global' ? '' : filterStoreId,
+      });
       setImageUrlInput('');
       return;
     }
@@ -98,7 +105,7 @@ export default function BannersPage() {
       linkedProducts: editing.linkedProducts.map((item) => item.productId?.id).filter(Boolean).join(','),
     });
     setImageUrlInput('');
-  }, [editing, reset]);
+  }, [editing, reset, filterStoreId]);
 
   useEffect(() => {
     return () => {
@@ -418,6 +425,27 @@ export default function BannersPage() {
       </div>
 
       <div className="space-y-4">
+        <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
+          <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Filter by Target Store</label>
+          <select 
+            value={filterStoreId} 
+            onChange={(e) => setFilterStoreId(e.target.value)}
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+          >
+            <option value="">All Stores</option>
+            <option value="global">Global (all stores)</option>
+            {storesQuery.data?.data.map((store) => (
+              <option key={store.id} value={store.id}>{store.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {visibleBanners.length === 0 && (
+          <div className="rounded-[1.5rem] border border-dashed border-primary-200 bg-primary-50/30 py-12 text-center">
+            <p className="text-lg font-black text-slate-400">No banners found for this store.</p>
+          </div>
+        )}
+
         {visibleBanners.map((banner) => (
           <div
             key={banner.id}

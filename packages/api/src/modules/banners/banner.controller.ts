@@ -35,7 +35,7 @@ export async function createBanner(req: Request, res: Response, next: NextFuncti
 
 export async function listAdminBanners(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const banners = await bannerService.listAdminBanners(req.userRole!, req.userStoreId);
+    const banners = await bannerService.listAdminBanners(req.userRole!, req.userStoreId, req.query);
     res.status(200).json({ success: true, data: banners });
   } catch (error) {
     next(error);

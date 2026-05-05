@@ -404,8 +404,8 @@ export const adminApi = {
     const response = await api.delete<{ success: boolean; message: string }>(`/reviews/${id}`);
     return response.data;
   },
-  banners: async () => {
-    const response = await api.get<ApiResponse<Banner[]>>('/banners/admin');
+  banners: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<Banner[]>>('/banners/admin', { params });
     return response.data.data;
   },
   createBanner: async (payload: FormData) => {

@@ -31,8 +31,27 @@ export async function listActiveBanners(storeId?: string) {
     .populate('linkedProducts.productId', 'name slug variants images');
 }
 
-export async function listAdminBanners(userRole: string, userStoreId?: string) {
-  const filter: any = userRole === 'storeAdmin' && userStoreId ? { storeId: userStoreId } : {};
+export async function listAdminBanners(userRole: string, userStoreId?: string, params: any = {}) {
+  let filter: any = {};
+
+  if (userRole === 'storeAdmin' && userStoreId) {
+    filter.storeId = userStoreId;
+  } else {
+    // SuperAdmin filtering
+    if (params.storeId === 'global') {
+      filter.storeId = null;
+    } else if (params.storeId) {
+      filter.storeId = params.storeId;
+    }
+  }
+
+  if (params.startDate) {
+    filter.startDate = { $gte: new Date(params.startDate) };
+  }
+  if (params.endDate) {
+    filter.endDate = { $lte: new Date(params.endDate) };
+  }
+
   return Banner.find(filter)
     .sort({ sortOrder: 1, createdAt: -1 })
     .populate('linkedProducts.productId', 'name slug variants images');
