@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
-import { Coins, Search, CheckCircle2, XCircle, Save, CheckSquare, Square } from 'lucide-react';
+import { Search, CheckCircle2, XCircle, Save, CheckSquare, Square } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { API_BASE_URL } from '../config/api';
 
@@ -154,8 +154,8 @@ export default function LoyaltyPage() {
         <div className="space-y-6">
           <div className="rounded-[1.75rem] border border-primary-100 bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-3">
-              <div className="rounded-2xl bg-amber-50 p-3 text-amber-600">
-                <Coins size={24} />
+              <div className="rounded-2xl bg-amber-50 p-3">
+                <img src="/coin.png" alt="Loyalty coin" className="h-6 w-6 object-contain" />
               </div>
               <h2 className="text-xl font-black text-slate-900">Point Value</h2>
             </div>

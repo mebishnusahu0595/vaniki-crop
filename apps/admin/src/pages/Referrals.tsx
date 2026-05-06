@@ -68,11 +68,7 @@ export default function ReferralsPage() {
           <div className="bg-amber-50 p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="rounded-2xl bg-amber-500 p-2.5 text-white shadow-lg shadow-amber-500/30">
-                <img
-                  src="https://www.pngplay.com/wp-content/uploads/12/Coin-Icon-PNG-Photo-Image.png"
-                  alt="Coins"
-                  className="h-5 w-5 object-contain brightness-0 invert"
-                />
+                <img src="/coin.png" alt="Coins" className="h-5 w-5 object-contain brightness-0 invert" />
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Loyalty Balance</p>

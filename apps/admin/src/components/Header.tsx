@@ -19,11 +19,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
         <div className="ml-auto flex items-center gap-3">
           {user?.loyaltyPoints !== undefined && (
             <div className="hidden items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/50 px-4 py-2 sm:flex">
-              <img
-                src="https://www.pngplay.com/wp-content/uploads/12/Coin-Icon-PNG-Photo-Image.png"
-                alt="Loyalty Points"
-                className="h-5 w-5 object-contain"
-              />
+              <img src="/coin.png" alt="Loyalty Points" className="h-5 w-5 object-contain" />
               <span className="text-sm font-black text-amber-700">{user.loyaltyPoints}</span>
             </div>
           )}

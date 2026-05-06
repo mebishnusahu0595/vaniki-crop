@@ -870,11 +870,7 @@ export default function AdminsPage() {
                       <span className="text-xs font-black text-primary-700">{admin.referralCount || 0}</span>
                     </div>
                     <div className="flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-1">
-                      <img
-                        src="https://www.pngplay.com/wp-content/uploads/12/Coin-Icon-PNG-Photo-Image.png"
-                        alt="Coins"
-                        className="h-3 w-3 object-contain"
-                      />
+                      <img src="/coin.png" alt="Coins" className="h-3 w-3 object-contain" />
                       <span className="text-xs font-black text-amber-700">{admin.loyaltyPoints || 0}</span>
                     </div>
                   </div>
@@ -1010,11 +1006,7 @@ export default function AdminsPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-black text-slate-900">Loyalty Points:</span>
                     <div className="flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-2 py-0.5">
-                      <img
-                        src="https://www.pngplay.com/wp-content/uploads/12/Coin-Icon-PNG-Photo-Image.png"
-                        alt="Coins"
-                        className="h-3.5 w-3.5 object-contain"
-                      />
+                      <img src="/coin.png" alt="Coins" className="h-3.5 w-3.5 object-contain" />
                       <span className="text-xs font-black text-amber-700">{selectedAdmin.loyaltyPoints || 0}</span>
                     </div>
                   </div>
