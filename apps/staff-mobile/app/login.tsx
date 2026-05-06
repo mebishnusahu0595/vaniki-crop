@@ -38,7 +38,7 @@ export default function DeliveryLoginScreen() {
   };
 
   return (
-    <Screen withHeader={false} withServiceBar={false} withWhatsAppFab={false}>
+    <Screen>
       <View className="justify-center py-8" style={{ minHeight: minContentHeight }}>
         <View className="rounded-[32px] bg-white p-8">
           <View className="h-14 w-14 items-center justify-center rounded-2xl bg-primary-500">

@@ -1,70 +1,20 @@
 import { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
-import { usePathname } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AppHeader } from './AppHeader';
-import { PersistentBottomNav } from './PersistentBottomNav';
-import { ServiceModeBar } from './ServiceModeBar';
-import { WhatsAppFab } from './WhatsAppFab';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface ScreenProps {
   children: ReactNode;
-  withServiceBar?: boolean;
-  withHeader?: boolean;
-  withWhatsAppFab?: boolean;
-  scroll?: boolean;
   keyboardAware?: boolean;
 }
 
 export function Screen({
   children,
-  withServiceBar = true,
-  withHeader = true,
-  withWhatsAppFab = true,
-  scroll = true,
   keyboardAware = true,
 }: ScreenProps) {
-  const insets = useSafeAreaInsets();
-  const pathname = usePathname();
-  const normalizedPath = pathname.replace(/\/+$/, '') || '/';
-
-  const matchesPath = (basePath: string) =>
-    basePath === '/'
-      ? normalizedPath === '/'
-      : normalizedPath === basePath || normalizedPath.startsWith(`${basePath}/`);
-
-  const isAuthRoute = ['/login'].some(matchesPath);
-
-  const showPersistentBottomNav = false; // Dedicated staff app doesn't need the customer bottom nav.
-  const bottomPadding = (withWhatsAppFab ? 36 : 20) + insets.bottom;
-  const contentClassName = scroll ? 'bg-offwhite px-4' : 'flex-1 bg-offwhite px-4';
-
   const content = (
-    <View className={contentClassName} style={{ paddingBottom: bottomPadding }}>
-      {withHeader ? (
-        <View className="pb-4 pt-3">
-          <AppHeader />
-        </View>
-      ) : null}
-      {withServiceBar ? (
-        <View className="pb-4">
-          <ServiceModeBar />
-        </View>
-      ) : null}
+    <View className="flex-1 bg-offwhite px-4">
       {children}
     </View>
-  );
-
-  const body = scroll ? (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
-    >
-      {content}
-    </ScrollView>
-  ) : (
-    content
   );
 
   return (
@@ -75,13 +25,11 @@ export function Screen({
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
         >
-          {body}
+          {content}
         </KeyboardAvoidingView>
       ) : (
-        body
+        content
       )}
-      {showPersistentBottomNav ? <PersistentBottomNav /> : null}
-      {withWhatsAppFab ? <WhatsAppFab /> : null}
     </SafeAreaView>
   );
 }
