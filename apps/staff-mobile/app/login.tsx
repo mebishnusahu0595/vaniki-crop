@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Alert, Pressable, Text, TextInput, useWindowDimensions, View } from 'react-native';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen } from '../src/components/Screen';
+import { LoadingScreen } from '../src/components/LoadingScreen';
 import { staffApi } from '../src/lib/staffApi';
 import { useStaffAuthStore } from '../src/store/useStaffAuthStore';
 
@@ -16,8 +17,18 @@ export default function DeliveryLoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const hydrated = useStaffAuthStore((state) => state.hydrated);
+  const token = useStaffAuthStore((state) => state.token);
   const setSession = useStaffAuthStore((state) => state.setSession);
   const minContentHeight = Math.max(0, height - insets.top - insets.bottom - 72);
+
+  if (!hydrated) {
+    return <LoadingScreen />;
+  }
+
+  if (token) {
+    return <Redirect href="/" />;
+  }
 
   const handleLogin = async () => {
     if (!/^[6-9]\d{9}$/.test(mobile) || password.length < 6) {

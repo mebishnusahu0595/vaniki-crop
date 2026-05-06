@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { staffApi, DELIVERY_CANCEL_REASONS, type DeliveryTask } from '../src/lib
 import { useStaffAuthStore } from '../src/store/useStaffAuthStore';
 import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
 import { resolveMediaUrl } from '../src/utils/media';
+import { LoadingScreen } from '../src/components/LoadingScreen';
 
 function taskAddress(task: DeliveryTask) {
   return task.shippingAddress || task.userId?.savedAddress;
@@ -264,9 +265,12 @@ export default function DeliveryTasksScreen() {
 
   const tasks = useMemo(() => tasksQuery.data || [], [tasksQuery.data]);
 
-  if (hydrated && !token) {
-    router.replace('/login' as never);
-    return null;
+  if (!hydrated) {
+    return <LoadingScreen />;
+  }
+
+  if (!token) {
+    return <Redirect href="/login" />;
   }
 
   return (

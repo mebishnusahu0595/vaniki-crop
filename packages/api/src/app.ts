@@ -60,19 +60,30 @@ app.use(
   }),
 );
 
-const allowedOrigins = [
+const allowedOriginMatchers: Array<string | RegExp> = [
   'https://vanikicrop.com',
   'https://www.vanikicrop.com',
   'https://admin.vanikicrop.com',
   'https://superadmin.vanikicrop.com',
   ...(process.env.NODE_ENV !== 'production'
-    ? ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4173']
+    ? [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/]
     : []),
 ];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const isAllowed = allowedOriginMatchers.some((matcher) =>
+        typeof matcher === 'string' ? matcher === origin : matcher.test(origin),
+      );
+
+      callback(isAllowed ? null : new Error('Not allowed by CORS'), isAllowed);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
