@@ -8,6 +8,7 @@ import SettingsPage from './pages/Profile';
 import InvoicesPage from './pages/Invoices';
 import RequestHistoryPage from './pages/RequestHistory';
 import SettlementPage from './pages/Settlement';
+import ReferralsPage from './pages/Referrals';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/product-requests" element={<ProductRequestsPage />} />
           <Route path="/request-history" element={<RequestHistoryPage />} />
           <Route path="/settlements" element={<SettlementPage />} />
+          <Route path="/referrals" element={<ReferralsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<Navigate to="/settings" replace />} />
         </Route>

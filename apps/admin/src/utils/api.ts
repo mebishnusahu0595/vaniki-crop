@@ -320,4 +320,8 @@ export const adminApi = {
     const response = await api.post<ApiResponse<any>>('/admin/settlements', { orderIds });
     return response.data.data;
   },
+  referrals: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<any[]>>('/admin/referrals', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
 };

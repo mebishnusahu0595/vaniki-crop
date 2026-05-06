@@ -15,5 +15,6 @@ router.get('/product-requests', adminController.listProductRequests);
 router.post('/product-requests', adminController.createProductRequest);
 router.get('/settlements/eligible', adminController.getSettlementEligibleOrders);
 router.post('/settlements', adminController.createSettlementRequest);
+router.get('/referrals', adminController.listReferrals);
 
 export default router;

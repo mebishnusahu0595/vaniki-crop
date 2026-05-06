@@ -538,6 +538,9 @@ function toAdminAccountResponse(admin: any, assignedStore: any) {
     latitude: typeof dealerProfile.latitude === 'number' ? dealerProfile.latitude : undefined,
     gstNumber: dealerProfile.gstNumber || '',
     sgstNumber: dealerProfile.sgstNumber || '',
+    referralCount: admin.referralCount || 0,
+    loyaltyPoints: admin.loyaltyPoints || 0,
+    referralCode: admin.referralCode,
   };
 }
 
@@ -949,7 +952,7 @@ export async function listCustomers(query: Record<string, any>) {
         lastOrder: 1,
       },
     },
-    { $sort: { lastOrderDate: -1, name: 1 } },
+    { $sort: { lastOrderDate: -1, name: 1 } as any },
     { $skip: skip },
     { $limit: limit },
   ];

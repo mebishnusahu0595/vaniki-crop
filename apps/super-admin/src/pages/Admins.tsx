@@ -864,6 +864,20 @@ export default function AdminsPage() {
                   <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary-600">
                     Assigned Store: {admin.assignedStore?.name || 'Unassigned'}
                   </p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 rounded-lg border border-primary-100 bg-primary-50/50 px-2.5 py-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Referrals:</span>
+                      <span className="text-xs font-black text-primary-700">{admin.referralCount || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-1">
+                      <img
+                        src="https://www.pngplay.com/wp-content/uploads/12/Coin-Icon-PNG-Photo-Image.png"
+                        alt="Coins"
+                        className="h-3 w-3 object-contain"
+                      />
+                      <span className="text-xs font-black text-amber-700">{admin.loyaltyPoints || 0}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               <button
@@ -990,8 +1004,21 @@ export default function AdminsPage() {
               <p><span className="font-black text-slate-900">Longitude:</span> {selectedAdmin.longitude ?? '-'}</p>
               <p><span className="font-black text-slate-900">Latitude:</span> {selectedAdmin.latitude ?? '-'}</p>
               <p><span className="font-black text-slate-900">GST No.:</span> {selectedAdmin.gstNumber || '-'}</p>
-              <p><span className="font-black text-slate-900">SGST No.:</span> {selectedAdmin.sgstNumber || '-'}</p>
-            </div>
+                  <p><span className="font-black text-slate-900">SGST No.:</span> {selectedAdmin.sgstNumber || '-'}</p>
+                  <p><span className="font-black text-slate-900">Referral Code:</span> {selectedAdmin.referralCode || '-'}</p>
+                  <p><span className="font-black text-slate-900">Total Referrals:</span> {selectedAdmin.referralCount || 0}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-slate-900">Loyalty Points:</span>
+                    <div className="flex items-center gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-2 py-0.5">
+                      <img
+                        src="https://www.pngplay.com/wp-content/uploads/12/Coin-Icon-PNG-Photo-Image.png"
+                        alt="Coins"
+                        className="h-3.5 w-3.5 object-contain"
+                      />
+                      <span className="text-xs font-black text-amber-700">{selectedAdmin.loyaltyPoints || 0}</span>
+                    </div>
+                  </div>
+                </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {buildDirectionsUrl(selectedAdmin.latitude, selectedAdmin.longitude) ? (

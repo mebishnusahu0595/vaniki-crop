@@ -57,19 +57,21 @@ function generateOtp(): string {
 }
 
 function buildReferralCode(name: string, mobile: string): string {
-  const cleanedName = name.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 4).padEnd(4, 'V');
-  const mobileSeed = mobile.slice(-4);
-  return `${cleanedName}${mobileSeed}`;
+  const initial = name.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1) || 'V';
+  const mobileSeed = mobile.slice(-3);
+  return `${initial}${mobileSeed}`;
 }
 
 async function generateUniqueReferralCode(name: string, mobile: string): Promise<string> {
-  const baseCode = buildReferralCode(name, mobile);
-  let candidate = baseCode;
+  let candidate = buildReferralCode(name, mobile);
   let attempt = 0;
 
-  while (await User.exists({ referralCode: candidate })) {
+  while (await User.exists({ referralCode: candidate }) || await Staff.exists({ referralCode: candidate })) {
     attempt += 1;
-    candidate = `${baseCode}${attempt}`;
+    const initial = name.charAt(0).toUpperCase() || 'V';
+    const randomSuffix = Math.floor(100 + Math.random() * 900); // 3 digits
+    candidate = `${initial}${randomSuffix}`;
+    if (attempt > 10) break; // Safety break
   }
 
   return candidate;
@@ -263,11 +265,13 @@ export async function signup(
   }
 
   if (shouldIncrementReferrer && referredById) {
-    const randomReward = crypto.randomInt(1, 11); // 1-10 points
+    const referrer = await User.findById(referredById).select('role');
+    const reward = (referrer?.role === 'storeAdmin') ? 1 : crypto.randomInt(1, 11);
+    
     await User.findByIdAndUpdate(referredById, { 
       $inc: { 
         referralCount: 1,
-        loyaltyPoints: randomReward
+        loyaltyPoints: reward
       } 
     });
   }

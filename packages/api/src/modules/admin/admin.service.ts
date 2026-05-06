@@ -370,3 +370,54 @@ export async function createSettlementRequest(
 
   return { batchId, request };
 }
+export async function listReferrals(adminId: string, query: Record<string, any>) {
+  const { page, limit, skip } = parsePagination(query);
+
+  const [referredUsers, totalCount] = await Promise.all([
+    User.find({ referredBy: adminId })
+      .select('name mobile email createdAt loyaltyPoints')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    User.countDocuments({ referredBy: adminId }),
+  ]);
+
+  const userIds = referredUsers.map((u) => u._id);
+  const orderStats = await Order.aggregate([
+    { $match: { userId: { $in: userIds } } },
+    {
+      $group: {
+        _id: '$userId',
+        orderCount: { $sum: 1 },
+        totalSpend: { $sum: { $convert: { input: '$totalAmount', to: 'double', onError: 0 } } },
+        allItems: { $push: '$items' },
+      },
+    },
+  ]);
+
+  const statsMap = new Map(orderStats.map((s) => [s._id.toString(), s]));
+
+  const rows = referredUsers.map((user) => {
+    const stats = statsMap.get((user._id as mongoose.Types.ObjectId).toString());
+    const allItems = (stats?.allItems || []).flat();
+
+    const productCounts: Record<string, number> = {};
+    allItems.forEach((item: any) => {
+      productCounts[item.productName] = (productCounts[item.productName] || 0) + (item.qty || 1);
+    });
+
+    const mostBoughtProduct = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
+
+    return {
+      id: user._id,
+      name: user.name,
+      mobile: user.mobile,
+      joinedAt: user.createdAt,
+      orderCount: stats?.orderCount || 0,
+      totalSpend: stats?.totalSpend || 0,
+      mostBoughtProduct,
+    };
+  });
+
+  return createPaginationResponse(rows, totalCount, page, limit);
+}

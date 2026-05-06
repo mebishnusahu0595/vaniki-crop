@@ -69,6 +69,24 @@ export interface AuthUser {
   savedAddress?: Address;
   role: 'customer' | 'storeAdmin' | 'superAdmin';
   approvalStatus?: 'pending' | 'approved' | 'rejected';
+  referralCode?: string;
+  loyaltyPoints?: number;
+}
+
+export interface ReferralRecord {
+  id: string;
+  name: string;
+  mobile: string;
+  joinedAt: string;
+  orderCount: number;
+  totalSpend: number;
+  mostBoughtProduct: string;
+}
+
+export interface ReferralResponse {
+  success: boolean;
+  data: ReferralRecord[];
+  pagination: PaginationMeta;
 }
 
 export interface DealerInventoryVariant {

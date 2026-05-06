@@ -366,6 +366,9 @@ export interface AdminAccount {
   latitude?: number;
   gstNumber?: string;
   sgstNumber?: string;
+  referralCount?: number;
+  loyaltyPoints?: number;
+  referralCode?: string;
   assignedStore?: {
     id: string;
     name: string;

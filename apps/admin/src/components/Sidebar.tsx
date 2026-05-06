@@ -2,6 +2,7 @@ import {
   Boxes,
   PackageSearch,
   UserRound,
+  Users,
   ShoppingCart,
   ClipboardList,
   FileText,
@@ -26,6 +27,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/product-requests', label: 'Product Requests', icon: ClipboardList },
   { to: '/request-history', label: 'Request History', icon: ClipboardList },
   { to: '/settlements', label: 'Settlements', icon: Wallet },
+  { to: '/referrals', label: 'Referrals', icon: Users },
   { to: '/settings', label: 'Profile', icon: UserRound },
 ];
 

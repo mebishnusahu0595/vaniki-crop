@@ -92,3 +92,12 @@ export async function createSettlementRequest(req: Request, res: Response, next:
     next(error);
   }
 }
+
+export async function listReferrals(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await adminService.listReferrals(req.userId!, req.query);
+    res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
+  } catch (error) {
+    next(error);
+  }
+}
