@@ -13,12 +13,5 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
-  ],
-  "exclude": [
-    "src/components/AppHeader.tsx",
-    "src/components/CheckInModal.tsx",
-    "src/components/HeroCarousel.tsx",
-    "src/components/PersistentBottomNav.tsx",
-    "src/components/ProductCard.tsx"
   ]
 }

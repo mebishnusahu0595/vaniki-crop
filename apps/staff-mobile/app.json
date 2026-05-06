@@ -8,6 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
+    "jsEngine": "jsc",
     "scheme": "vanikicrop-staff",
     "primaryColor": "#2D6A4F",
     "splash": {
@@ -90,6 +91,7 @@
       "typedRoutes": true
     },
     "web": {
+      "bundler": "metro",
       "favicon": "./assets/favicon.png"
     },
     "extra": {
