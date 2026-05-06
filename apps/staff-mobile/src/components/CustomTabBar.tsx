@@ -1,0 +1,93 @@
+import { Pressable, Text, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import Constants from 'expo-constants';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCartStore } from '../store/useCartStore';
+import { shadow } from '../constants/theme';
+
+const icons: Record<string, keyof typeof Feather.glyphMap> = {
+  index: 'home',
+  categories: 'grid',
+  compare: 'sliders',
+  cart: 'shopping-cart',
+  account: 'user',
+} as const;
+
+interface TabRoute {
+  key: string;
+  name: string;
+}
+
+interface TabBarProps {
+  state: {
+    index: number;
+    routes: TabRoute[];
+  };
+  descriptors: Record<
+    string,
+    {
+      options: {
+        tabBarLabel?: unknown;
+        title?: string;
+      };
+    }
+  >;
+  navigation: {
+    navigate: (name: string) => void;
+  };
+}
+
+export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
+  const insets = useSafeAreaInsets();
+  const itemCount = useCartStore((store) => store.items.reduce((sum, item) => sum + item.qty, 0));
+  const isStaffApp = Constants.expoConfig?.extra?.appVariant === 'staff';
+
+  if (isStaffApp) return null;
+
+  return (
+    <View
+      style={[shadow.card, { paddingBottom: Math.max(insets.bottom, 8) + 12 }]}
+      className="bg-white px-4 pt-3"
+    >
+      <View className="flex-row rounded-[28px] border border-primary-100 bg-white px-2 py-2">
+        {state.routes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          const isFocused = state.index === index;
+          const label =
+            typeof options.tabBarLabel === 'string'
+              ? options.tabBarLabel
+              : options.title || route.name;
+
+          return (
+            <Pressable
+              key={route.key}
+              onPress={() => navigation.navigate(route.name)}
+              className="flex-1 items-center gap-1 rounded-[20px] py-3"
+            >
+              <View>
+                <Feather
+                  name={icons[route.name] || 'circle'}
+                  size={18}
+                  color={isFocused ? '#000000' : '#555555'}
+                />
+                {route.name === 'cart' && itemCount ? (
+                  <View className="absolute -right-3 -top-2 min-w-[18px] rounded-full bg-rose-500 px-1.5 py-0.5">
+                    <Text className="text-center text-[10px] font-black text-white">{itemCount}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text
+                numberOfLines={1}
+                className={`text-[9px] font-black uppercase tracking-[0.5px] ${
+                  isFocused ? 'text-black' : 'text-black/50'
+                }`}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}

@@ -6,10 +6,10 @@ import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { staffApi, DELIVERY_CANCEL_REASONS, type DeliveryTask } from '../../src/lib/staffApi';
-import { useStaffAuthStore } from '../../src/store/useStaffAuthStore';
-import { currencyFormatter, formatStoreAddress } from '../../src/utils/format';
-import { resolveMediaUrl } from '../../src/utils/media';
+import { staffApi, DELIVERY_CANCEL_REASONS, type DeliveryTask } from '../src/lib/staffApi';
+import { useStaffAuthStore } from '../src/store/useStaffAuthStore';
+import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
+import { resolveMediaUrl } from '../src/utils/media';
 
 function taskAddress(task: DeliveryTask) {
   return task.shippingAddress || task.userId?.savedAddress;
@@ -265,7 +265,7 @@ export default function DeliveryTasksScreen() {
   const tasks = useMemo(() => tasksQuery.data || [], [tasksQuery.data]);
 
   if (hydrated && !token) {
-    router.replace('/delivery/login' as never);
+    router.replace('/login' as never);
     return null;
   }
 
@@ -286,7 +286,7 @@ export default function DeliveryTasksScreen() {
           <Pressable
             onPress={() => {
               logout();
-              router.replace('/delivery/login' as never);
+              router.replace('/login' as never);
             }}
             className="h-12 w-12 items-center justify-center rounded-full bg-white"
           >

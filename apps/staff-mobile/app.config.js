@@ -5,7 +5,7 @@ module.exports = {
     ...appJson.expo,
     extra: {
       ...appJson.expo.extra,
-      appVariant: 'customer',
+      appVariant: 'staff',
     },
   },
 };

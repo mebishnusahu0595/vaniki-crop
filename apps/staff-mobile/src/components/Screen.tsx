@@ -33,24 +33,9 @@ export function Screen({
       ? normalizedPath === '/'
       : normalizedPath === basePath || normalizedPath.startsWith(`${basePath}/`);
 
-  const isTabsRoute = [
-    '/',
-    '/categories',
-    '/compare',
-    '/cart',
-    '/account',
-    '/(tabs)',
-    '/(tabs)/index',
-    '/(tabs)/categories',
-    '/(tabs)/compare',
-    '/(tabs)/cart',
-    '/(tabs)/account',
-  ].some(matchesPath);
+  const isAuthRoute = ['/login'].some(matchesPath);
 
-  const isAuthRoute = ['/login', '/signup', '/(auth)', '/(auth)/login', '/(auth)/signup'].some(matchesPath);
-
-
-  const showPersistentBottomNav = !isTabsRoute && !isAuthRoute;
+  const showPersistentBottomNav = false; // Dedicated staff app doesn't need the customer bottom nav.
   const bottomPadding = (withWhatsAppFab ? 36 : 20) + insets.bottom;
   const contentClassName = scroll ? 'bg-offwhite px-4' : 'flex-1 bg-offwhite px-4';
 

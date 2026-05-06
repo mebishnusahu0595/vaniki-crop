@@ -1,0 +1,102 @@
+{
+  "expo": {
+    "name": "Vaniki Staff",
+    "slug": "vanikicrop-staff",
+    "version": "1.0.0",
+    "description": "Vaniki Crop Staff App — For delivery and order management.",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "scheme": "vanikicrop-staff",
+    "primaryColor": "#2D6A4F",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2D6A4F"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#2D6A4F",
+          "defaultChannel": "orders"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vanikicrop.staff"
+    },
+    "android": {
+      "googleServicesFile": "./google-services.json",
+      "package": "com.vanikicrop.staff",
+      "versionCode": 4,
+      "targetSdkVersion": 35,
+      "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2D6A4F"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "vanikicrop.com",
+              "pathPrefix": "/product"
+            },
+            {
+              "scheme": "https",
+              "host": "vanikicrop.com",
+              "pathPrefix": "/products"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      }
+
+    }
+  }
+}
