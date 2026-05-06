@@ -264,6 +264,11 @@ export interface Customer {
   lastOrderDate?: string;
   totalSpend: number;
   isActive?: boolean;
+  savedAddress?: Address;
+  area?: string;
+  district?: string;
+  mostBoughtProduct?: string;
+  mostBoughtCategory?: string;
 }
 
 export interface AdminSearchResults {

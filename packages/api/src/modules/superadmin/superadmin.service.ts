@@ -898,52 +898,113 @@ export async function listCustomers(query: Record<string, any>) {
     match.$or = [{ name: searchRegex }, { mobile: searchRegex }, { email: searchRegex }];
   }
 
-  const [rows, totalCount] = await Promise.all([
-    User.aggregate([
-      { $match: match },
-      {
-        $lookup: {
-          from: 'orders',
-          localField: '_id',
-          foreignField: 'userId',
-          as: 'orders',
-        },
+  const pipeline = [
+    { $match: match },
+    {
+      $lookup: {
+        from: 'orders',
+        localField: '_id',
+        foreignField: 'userId',
+        as: 'orders',
       },
-      {
-        $addFields: {
-          orderCount: { $size: '$orders' },
-          lastOrderDate: { $max: '$orders.createdAt' },
-          totalSpend: {
-            $sum: {
-              $map: {
-                input: '$orders',
-                as: 'order',
-                in: toNumericExpression('$$order.totalAmount'),
-              },
+    },
+    {
+      $addFields: {
+        orderCount: { $size: '$orders' },
+        lastOrderDate: { $max: '$orders.createdAt' },
+        totalSpend: {
+          $sum: {
+            $map: {
+              input: '$orders',
+              as: 'order',
+              in: toNumericExpression('$$order.totalAmount'),
             },
           },
         },
-      },
-      {
-        $project: {
-          id: '$_id',
-          name: 1,
-          mobile: 1,
-          email: 1,
-          isActive: 1,
-          orderCount: 1,
-          lastOrderDate: 1,
-          totalSpend: 1,
+        // Extract items and addresses for further processing
+        orderItems: {
+          $reduce: {
+            input: '$orders',
+            initialValue: [],
+            in: { $concatArrays: ['$$value', '$$this.items'] },
+          },
+        },
+        lastOrder: {
+          $arrayElemAt: [{ $sortArray: { input: '$orders', sortBy: { createdAt: -1 } } }, 0],
         },
       },
-      { $sort: { lastOrderDate: -1, name: 1 } },
-      { $skip: skip },
-      { $limit: limit },
-    ]),
+    },
+    {
+      $project: {
+        id: '$_id',
+        name: 1,
+        mobile: 1,
+        email: 1,
+        isActive: 1,
+        orderCount: 1,
+        lastOrderDate: 1,
+        totalSpend: 1,
+        savedAddress: 1,
+        orderItems: 1,
+        lastOrder: 1,
+      },
+    },
+    { $sort: { lastOrderDate: -1, name: 1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ];
+
+  const [rows, totalCount] = await Promise.all([
+    User.aggregate(pipeline),
     User.countDocuments(match),
   ]);
 
-  return createPaginationResponse(rows, totalCount, page, limit);
+  // Fetch unique products to get categories for "Most Bought Category"
+  const allProductIds = Array.from(
+    new Set(
+      rows.flatMap((row: any) => (row.orderItems || []).map((item: any) => item.productId.toString())),
+    ),
+  );
+  const products = await Product.find({ _id: { $in: allProductIds } })
+    .select('_id category')
+    .populate('category', 'name');
+  const categoryMap = new Map(
+    products.map((p) => [p._id.toString(), (p.category as any)?.name || 'Unknown']),
+  );
+
+  const processedRows = rows.map((row: any) => {
+    const items = row.orderItems || [];
+    const productCounts: Record<string, number> = {};
+    const categoryCounts: Record<string, number> = {};
+
+    items.forEach((item: any) => {
+      const pName = item.productName;
+      const pId = item.productId.toString();
+      const catName = categoryMap.get(pId) || 'Unknown';
+
+      productCounts[pName] = (productCounts[pName] || 0) + (item.qty || 1);
+      categoryCounts[catName] = (categoryCounts[catName] || 0) + (item.qty || 1);
+    });
+
+    const mostBoughtProduct = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const mostBoughtCategory = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+    const address = row.savedAddress || {};
+    const lastShipping = row.lastOrder?.shippingAddress || {};
+
+    return {
+      ...row,
+      area: address.landmark || lastShipping.street || '-',
+      district: address.city || lastShipping.city || '-',
+      mostBoughtProduct: mostBoughtProduct || '-',
+      mostBoughtCategory: mostBoughtCategory || '-',
+      // Cleanup
+      orderItems: undefined,
+      lastOrder: undefined,
+    };
+  });
+
+  return createPaginationResponse(processedRows, totalCount, page, limit);
 }
 
 export async function listOrders(query: Record<string, any>) {

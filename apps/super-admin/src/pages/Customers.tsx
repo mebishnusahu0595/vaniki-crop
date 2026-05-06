@@ -64,14 +64,60 @@ export default function CustomersPage() {
               </button>
             </div>
 
-            <div className="mt-6 grid gap-3 rounded-[1.5rem] border border-primary-100 bg-primary-50/40 p-4 text-sm text-slate-600">
-              <p><span className="font-black text-slate-900">Customer ID:</span> {selectedCustomer.id}</p>
-              <p><span className="font-black text-slate-900">Status:</span> {selectedCustomer.isActive ? 'Active' : 'Inactive'}</p>
-              <p><span className="font-black text-slate-900">Mobile:</span> {selectedCustomer.mobile}</p>
-              <p><span className="font-black text-slate-900">Email:</span> {selectedCustomer.email || '-'}</p>
-              <p><span className="font-black text-slate-900">Total Orders:</span> {selectedCustomer.orderCount}</p>
-              <p><span className="font-black text-slate-900">Last Order:</span> {formatDate(selectedCustomer.lastOrderDate)}</p>
-              <p><span className="font-black text-slate-900">Total Spend:</span> {currencyFormatter.format(selectedCustomer.totalSpend)}</p>
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-primary-500">Contact & Status</p>
+                  <div className="mt-2 space-y-1.5 text-sm text-slate-600">
+                    <p><span className="font-black text-slate-900">Mobile:</span> {selectedCustomer.mobile}</p>
+                    <p><span className="font-black text-slate-900">Email:</span> {selectedCustomer.email || '-'}</p>
+                    <p><span className="font-black text-slate-900">Status:</span> {selectedCustomer.isActive ? 'Active' : 'Inactive'}</p>
+                    <p><span className="font-black text-slate-900">ID:</span> {selectedCustomer.id}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-primary-500">Location Details</p>
+                  <div className="mt-2 space-y-1.5 text-sm text-slate-600">
+                    <p><span className="font-black text-slate-900">Area:</span> {selectedCustomer.area || '-'}</p>
+                    <p><span className="font-black text-slate-900">District:</span> {selectedCustomer.district || '-'}</p>
+                    {selectedCustomer.savedAddress && (
+                      <div className="mt-2 rounded-2xl bg-primary-50/50 p-3">
+                        <p className="font-black text-slate-900">Saved Address:</p>
+                        <p className="mt-1 leading-relaxed">
+                          {selectedCustomer.savedAddress.street}, {selectedCustomer.savedAddress.landmark && `${selectedCustomer.savedAddress.landmark}, `}
+                          {selectedCustomer.savedAddress.city}, {selectedCustomer.savedAddress.state} - {selectedCustomer.savedAddress.pincode}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-primary-500">Purchase History</p>
+                  <div className="mt-2 space-y-1.5 text-sm text-slate-600">
+                    <p><span className="font-black text-slate-900">Total Orders:</span> {selectedCustomer.orderCount}</p>
+                    <p><span className="font-black text-slate-900">Last Order:</span> {formatDate(selectedCustomer.lastOrderDate)}</p>
+                    <p><span className="font-black text-slate-900">Total Spend:</span> {currencyFormatter.format(selectedCustomer.totalSpend)}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-primary-500">Purchasing Insights</p>
+                  <div className="mt-2 space-y-3">
+                    <div className="rounded-2xl border border-primary-100 bg-white p-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">Most Bought Product</p>
+                      <p className="mt-1 text-sm font-black text-primary-900">{selectedCustomer.mostBoughtProduct || '-'}</p>
+                    </div>
+                    <div className="rounded-2xl border border-primary-100 bg-white p-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">Most Bought Category</p>
+                      <p className="mt-1 text-sm font-black text-primary-900">{selectedCustomer.mostBoughtCategory || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
