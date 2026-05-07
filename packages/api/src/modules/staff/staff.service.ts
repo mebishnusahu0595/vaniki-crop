@@ -69,7 +69,12 @@ export async function createStaff(payload: { name: string; mobile: string; email
   if (!payload.password || payload.password.length < 6) {
     throw new AppError('Staff password must be at least 6 characters', 400);
   }
-  return Staff.create(payload);
+  try {
+    return await Staff.create(payload);
+  } catch (error: any) {
+    console.error('[ERROR] Failed to create staff:', error.message, payload);
+    throw error;
+  }
 }
 
 export async function listStaff(query: { role?: string } = {}) {
@@ -211,13 +216,17 @@ export async function assignDelivery(staffId: string, payload: { orderId: string
 
   const order = await Order.findById(payload.orderId).select('+deliveryOtp');
   if (!order) {
-    throw new AppError('Order not found', 404);
+    throw new AppError(`Order not found with ID: ${payload.orderId}`, 404);
   }
-  if (order.serviceMode !== 'delivery') {
-    throw new AppError('Only delivery orders can be assigned to delivery staff', 400);
+
+  // If order is pickup, convert it to delivery since it's being assigned to delivery staff
+  if (order.serviceMode === 'pickup') {
+    console.log(`[INFO] Converting order ${order.orderNumber} from pickup to delivery for staff assignment`);
+    order.serviceMode = 'delivery';
   }
+
   if (['delivered', 'cancelled'].includes(order.status)) {
-    throw new AppError('Completed or cancelled orders cannot be assigned', 400);
+    throw new AppError(`Cannot assign order in ${order.status} status.`, 400);
   }
 
   const requestedOtp = String(payload.deliveryOtp || '').trim();

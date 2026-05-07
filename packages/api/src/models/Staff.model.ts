@@ -39,15 +39,26 @@ const staffSchema = new Schema<IStaff>(
 );
 
 // Auto-generate unique referral code if not provided
-staffSchema.pre('validate', async function (next) {
-  const staff = this as any;
-  if (!staff.referralCode) {
-    const count = await mongoose.model('Staff').countDocuments();
-    const nextNumber = 111 + count;
-    const initial = staff.name.charAt(0).toUpperCase();
-    staff.referralCode = `${initial}${nextNumber}`;
+staffSchema.pre('validate', async function (this: any, next) {
+  if (!this.referralCode) {
+    try {
+      // Use a more robust generation: Initial + Timestamp subset + Random
+      const initial = (this.name || 'S').charAt(0).toUpperCase();
+      const timestamp = Date.now().toString().slice(-4);
+      const random = Math.floor(Math.random() * 900) + 100; // 100-999
+      this.referralCode = `${initial}${timestamp}${random}`;
+      
+      // Check if already exists (highly unlikely now, but safe)
+      const existing = await mongoose.models.Staff.findOne({ referralCode: this.referralCode });
+      if (existing) {
+        // One more try with different random
+        this.referralCode = `${initial}${timestamp}${Math.floor(Math.random() * 900) + 100}`;
+      }
+    } catch (error) {
+      console.error('Error generating referral code:', error);
+    }
   }
-  (next as any)?.();
+  next();
 });
 
 staffSchema.pre('save', async function (this: any) {
