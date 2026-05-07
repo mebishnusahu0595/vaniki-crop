@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Redirect, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlashList } from '@shopify/flash-list';
 import { staffApi, DELIVERY_CANCEL_REASONS, type DeliveryTask } from '../src/lib/staffApi';
 import { useStaffAuthStore } from '../src/store/useStaffAuthStore';
 import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
@@ -242,6 +243,7 @@ function TaskCard({ task }: { task: DeliveryTask }) {
 
 export default function DeliveryTasksScreen() {
   const { staff, token, hydrated, logout, setStaff } = useStaffAuthStore();
+  const queryClient = useQueryClient();
 
   const tasksQuery = useQuery({
     queryKey: ['delivery-staff-tasks'],
@@ -275,57 +277,67 @@ export default function DeliveryTasksScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-offwhite" edges={['top', 'left', 'right']}>
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 36 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={tasksQuery.isRefetching} onRefresh={() => tasksQuery.refetch()} />}
-      >
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-[11px] font-black uppercase tracking-[2px] text-primary-500">Delivery Panel</Text>
-            <Text className="mt-2 text-3xl font-black text-primary-900">{staff?.name || 'Staff'}</Text>
-            <Text className="mt-1 text-sm text-primary-900/60">{staff?.mobile}</Text>
-          </View>
-          <Pressable
-            onPress={() => {
-              logout();
-              router.replace('/login' as never);
-            }}
-            className="h-12 w-12 items-center justify-center rounded-full bg-white"
-          >
-            <Feather name="log-out" size={20} color="#DC2626" />
-          </Pressable>
-        </View>
+      <View className="flex-1">
+        <FlashList
+          data={tasks}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <TaskCard task={item} />}
+          estimatedItemSize={400}
+          contentContainerStyle={{ padding: 16, paddingBottom: 36 }}
+          showsVerticalScrollIndicator={false}
+          onRefresh={() => tasksQuery.refetch()}
+          refreshing={tasksQuery.isRefetching}
+          ListHeaderComponent={
+            <View>
+              <View className="flex-row items-center justify-between">
+                <View>
+                  <Text className="text-[11px] font-black uppercase tracking-[2px] text-primary-500">Delivery Panel</Text>
+                  <Text className="mt-2 text-3xl font-black text-primary-900">{staff?.name || 'Staff'}</Text>
+                  <Text className="mt-1 text-sm text-primary-900/60">{staff?.mobile}</Text>
+                </View>
+                <Pressable
+                  onPress={() => {
+                    logout();
+                    router.replace('/login' as never);
+                  }}
+                  className="h-12 w-12 items-center justify-center rounded-full bg-white"
+                >
+                  <Feather name="log-out" size={20} color="#DC2626" />
+                </Pressable>
+              </View>
 
-        <View className="mt-5 flex-row gap-3">
-          <View className="flex-1 rounded-[24px] bg-primary-900 p-4">
-            <Text className="text-2xl font-black text-white">{tasks.length}</Text>
-            <Text className="mt-1 text-[10px] font-black uppercase tracking-[1.5px] text-white/55">Active Tasks</Text>
-          </View>
-          <Pressable onPress={() => tasksQuery.refetch()} className="w-24 items-center justify-center rounded-[24px] bg-white">
-            <Feather name="refresh-cw" size={20} color="#143D2E" />
-            <Text className="mt-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900">Refresh</Text>
-          </Pressable>
-        </View>
-
-        <View className="mt-5 gap-5">
-          {tasksQuery.isLoading ? (
-            <View className="rounded-[28px] bg-white p-8">
-              <Text className="text-center text-sm font-semibold text-primary-900/60">Loading tasks...</Text>
+              <View className="mt-5 flex-row gap-3">
+                <View className="flex-1 rounded-[24px] bg-primary-900 p-4">
+                  <Text className="text-2xl font-black text-white">{tasks.length}</Text>
+                  <Text className="mt-1 text-[10px] font-black uppercase tracking-[1.5px] text-white/55">Active Tasks</Text>
+                </View>
+                <Pressable onPress={() => tasksQuery.refetch()} className="w-24 items-center justify-center rounded-[24px] bg-white">
+                  <Feather name="refresh-cw" size={20} color="#143D2E" />
+                  <Text className="mt-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900">Refresh</Text>
+                </Pressable>
+              </View>
+              
+              <View className="h-5" />
             </View>
-          ) : tasks.length === 0 ? (
-            <View className="rounded-[28px] bg-white p-8">
-              <Text className="text-center text-xl font-black text-primary-900">No active deliveries.</Text>
-              <Text className="mt-2 text-center text-sm leading-6 text-primary-900/60">
-                New tasks assigned from superadmin will appear here automatically.
-              </Text>
-            </View>
-          ) : (
-            tasks.map((task) => <TaskCard key={task.id} task={task} />)
-          )}
-        </View>
-      </ScrollView>
+          }
+          ListEmptyComponent={
+            tasksQuery.isLoading ? (
+              <View className="rounded-[28px] bg-white p-8">
+                <ActivityIndicator color="#2D6A4F" />
+                <Text className="mt-4 text-center text-sm font-semibold text-primary-900/60">Loading tasks...</Text>
+              </View>
+            ) : (
+              <View className="rounded-[28px] bg-white p-8">
+                <Text className="text-center text-xl font-black text-primary-900">No active deliveries.</Text>
+                <Text className="mt-2 text-center text-sm leading-6 text-primary-900/60">
+                  New tasks assigned from superadmin will appear here automatically.
+                </Text>
+              </View>
+            )
+          }
+          ItemSeparatorComponent={() => <View className="h-5" />}
+        />
+      </View>
     </SafeAreaView>
   );
 }

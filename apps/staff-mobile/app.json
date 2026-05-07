@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
-    "jsEngine": "jsc",
+    "jsEngine": "hermes",
     "scheme": "vanikicrop-staff",
     "primaryColor": "#2D6A4F",
     "splash": {
@@ -93,7 +93,7 @@
     },
     "web": {
       "bundler": "metro",
-      "jsEngine": "jsc",
+      "jsEngine": "hermes",
       "favicon": "./assets/favicon.png"
     },
     "extra": {
