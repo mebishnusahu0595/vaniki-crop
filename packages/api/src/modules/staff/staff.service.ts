@@ -248,8 +248,13 @@ export async function assignDelivery(staffId: string, payload: { orderId: string
     timestamp: new Date(),
   });
 
-  await order.save();
-  return orderPopulate(Order.findById(order._id));
+  try {
+    await order.save({ validateBeforeSave: false });
+    return orderPopulate(Order.findById(order._id));
+  } catch (error: any) {
+    console.error('[ERROR] Failed to save assigned order:', error.message, { orderId: order._id, status: order.status });
+    throw new AppError(`Failed to assign order: ${error.message}`, 400);
+  }
 }
 
 export async function listStaffTasks(staffId: string) {
