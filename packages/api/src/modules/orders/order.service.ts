@@ -416,7 +416,7 @@ export async function placeCodOrder(userId: string, input: any) {
   }
 
   // Notify Superadmins
-  const superadmins = await User.find({ role: 'superadmin', isActive: true }).select('email');
+  const superadmins = await User.find({ role: 'superAdmin', isActive: true }).select('email');
   for (const admin of superadmins) {
     if (admin.email) {
       addEmailToQueue({
@@ -520,7 +520,7 @@ export async function finalizeOrder(razorpayOrderId: string, paymentId: string, 
   }
 
   // Notify Superadmins
-  const superadmins = await User.find({ role: 'superadmin', isActive: true }).select('email');
+  const superadmins = await User.find({ role: 'superAdmin', isActive: true }).select('email');
   for (const admin of superadmins) {
     if (admin.email) {
       addEmailToQueue({

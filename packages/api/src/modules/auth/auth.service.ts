@@ -29,7 +29,7 @@ const otpStore: Record<string, { hashedOtp: string; otpExpiry: Date }> = {};
 
 // ─── Token Config ────────────────────────────────────────────────────────
 
-const ACCESS_TOKEN_EXPIRES = '15m';
+const ACCESS_TOKEN_EXPIRES = '7d';
 const REFRESH_TOKEN_EXPIRES = '30d';
 const OTP_EXPIRY_MINUTES = 10;
 

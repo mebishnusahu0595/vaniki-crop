@@ -11,7 +11,7 @@ import { ApiError } from '../middleware/errorHandler.js';
  * @returns Signed JWT string
  */
 function generateAccessToken(id: string, role: string): string {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET!, { expiresIn: '15m' });
+  return jwt.sign({ id, role }, process.env.JWT_SECRET!, { expiresIn: '7d' });
 }
 
 /**
@@ -20,7 +20,7 @@ function generateAccessToken(id: string, role: string): string {
  * @returns Signed JWT refresh string
  */
 function generateRefreshToken(id: string): string {
-  return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET!, { expiresIn: '7d' });
+  return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET!, { expiresIn: '30d' });
 }
 
 /**

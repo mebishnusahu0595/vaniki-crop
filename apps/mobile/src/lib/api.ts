@@ -234,20 +234,26 @@ export const storefrontApi = {
     const response = await request<Array<{
       id: string;
       name: string;
-      address: Store['address'];
-      location: Store['location'];
+      address: Address;
+      location?: StoreLocation;
       isFullyAvailable: boolean;
       unavailableItems: Array<{
         productId: string;
         variantId: string;
-        availableStock: number;
+        productName: string;
+        variantLabel: string;
         requestedQty: number;
+        availableStock: number;
       }>;
     }>>('/stores/cart-availability', {
       method: 'POST',
       body: JSON.stringify({ items }),
     });
-    return response.data;
+
+    return (response.data || []).map((store) => ({
+      ...store,
+      id: store.id || (store as any)._id?.toString(),
+    }));
   },
   validateCoupon: async (payload: { code: string; storeId: string; cartTotal: number }) => {
     const response = await request<CouponValidation>('/coupons/validate', {

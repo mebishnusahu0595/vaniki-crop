@@ -236,7 +236,7 @@ export async function createDealerProductRequest(
   input: any,
 ) {
   const items = Array.isArray(input.items) ? input.items : [input];
-  const results = [];
+  const results: any[] = [];
 
   for (const item of items) {
     const requestedQuantity = Number(item.requestedQuantity || item.quantity || 0);
@@ -284,7 +284,7 @@ export async function createDealerProductRequest(
       garageName: typeof item.garageName === 'string' ? item.garageName.trim() : input.garageName || 'Unknown Garage',
       petiQuantity: Number(item.petiQuantity) || 1,
       petiSize: petiSize,
-      petiUnit: petiUnit,
+      petiUnit: petiUnit as any,
       notes: notes || input.notes,
       status: 'pending',
       dealerPrice: item.dealerPrice || item.price,

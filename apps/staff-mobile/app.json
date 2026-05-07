@@ -88,10 +88,12 @@
       ]
     },
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "css": true
     },
     "web": {
       "bundler": "metro",
+      "jsEngine": "jsc",
       "favicon": "./assets/favicon.png"
     },
     "extra": {
@@ -99,7 +101,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "b8b259cb-6b37-43c4-8f58-8f9ef987dd7e"
+        "projectId": "86b93c0f-925b-43b5-9c2d-40238c0b980c"
       }
     }
   }

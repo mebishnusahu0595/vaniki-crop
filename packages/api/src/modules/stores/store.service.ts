@@ -57,7 +57,7 @@ export async function listActiveStores() {
     isActive: true,
     adminId: { $in: approvedAdminIds },
   })
-    .select('name address phone location openHours')
+    .select('name address phone location openHours adminId')
     .sort({ name: 1 });
 
   const hydratedStores = await Promise.all(stores.map((store) => repairStoreAddressIfNeeded(store)));
@@ -183,7 +183,7 @@ export async function getProductAvailabilityAcrossStores(productId: string, vari
   const stores = await Store.find({
     isActive: true,
     adminId: { $in: approvedAdminIds },
-  }).select('name address location');
+  }).select('name address location adminId');
 
   const { DealerInventory } = await import('../../models/DealerInventory.model.js');
   const { Product } = await import('../../models/Product.model.js');
@@ -237,7 +237,7 @@ export async function getCartAvailabilityAcrossStores(items: Array<{ productId: 
   const stores = await Store.find({
     isActive: true,
     adminId: { $in: approvedAdminIds },
-  }).select('name address location phone email');
+  }).select('name address location phone email adminId');
 
   const { DealerInventory } = await import('../../models/DealerInventory.model.js');
   const { Product } = await import('../../models/Product.model.js');
@@ -276,7 +276,7 @@ export async function getCartAvailabilityAcrossStores(items: Array<{ productId: 
 
     await repairStoreAddressIfNeeded(store);
     storeAvailability.push({
-      id: store._id,
+      id: store._id.toString(),
       name: store.name,
       address: store.address,
       location: store.location,

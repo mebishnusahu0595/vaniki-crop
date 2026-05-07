@@ -1,11 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
-    '../../packages/api/src/**/*.{ts,tsx}'
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}",
   ],
-  presets: [require('nativewind/preset')],
+  presets: [require("nativewind/preset")],
   theme: {
     extend: {
       colors: {
@@ -22,12 +22,6 @@ module.exports = {
           900: '#082018',
         },
         offwhite: '#F8FAF9',
-      },
-      fontFamily: {
-        sans: ['System'],
-      },
-      boxShadow: {
-        soft: '0px -6px 18px rgba(8, 32, 24, 0.08)',
       },
     },
   },

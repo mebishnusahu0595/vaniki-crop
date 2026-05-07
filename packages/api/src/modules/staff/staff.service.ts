@@ -49,12 +49,12 @@ function createStaffToken(staff: any) {
 function getStaffOrderQuery(staffId: string) {
   return {
     assignedStaff: staffId,
-    serviceMode: 'delivery',
+    serviceMode: 'delivery' as const,
     $or: [
       { paymentMethod: 'cod' },
       { paymentStatus: 'paid' },
     ],
-  };
+  } as any;
 }
 
 function orderPopulate(query: any) {
