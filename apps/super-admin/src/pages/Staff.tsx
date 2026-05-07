@@ -21,14 +21,15 @@ function getOrderId(order: Order & { _id?: string }) {
 
 function orderLabel(order: Order) {
   const products = order.items.map((item) => item.productName).join(', ');
-  return `${order.orderNumber} - ${order.userId?.name || order.shippingAddress?.name || 'Customer'} - ${products}`;
+  const mode = order.serviceMode === 'pickup' ? '[PICKUP]' : '[DELIVERY]';
+  return `${mode} ${order.orderNumber} - ${order.userId?.name || order.shippingAddress?.name || 'Customer'} - ${products}`;
 }
 
 function isAssignableDeliveryOrder(order: Order) {
   const isOpenOrder = !['delivered', 'cancelled'].includes(order.status);
   const isPayableOrder = order.paymentMethod === 'cod' || order.paymentStatus === 'paid';
 
-  return Boolean(getOrderId(order)) && order.serviceMode === 'delivery' && !order.assignedStaff && isOpenOrder && isPayableOrder;
+  return Boolean(getOrderId(order)) && (order.serviceMode === 'delivery' || order.serviceMode === 'pickup') && !order.assignedStaff && isOpenOrder && isPayableOrder;
 }
 
 function StaffList({

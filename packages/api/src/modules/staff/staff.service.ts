@@ -195,7 +195,7 @@ export async function getStaffSession(staffId: string) {
 export async function listAvailableDeliveryOrders() {
   return orderPopulate(
     Order.find({
-      serviceMode: 'delivery',
+      serviceMode: { $in: ['delivery', 'pickup'] },
       status: { $nin: ['delivered', 'cancelled'] },
       assignedStaff: null,
       $or: [
