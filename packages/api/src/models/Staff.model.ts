@@ -39,7 +39,7 @@ const staffSchema = new Schema<IStaff>(
 );
 
 // Auto-generate unique referral code if not provided
-staffSchema.pre('validate', async function (this: any, next) {
+staffSchema.pre('validate', async function (this: any) {
   if (!this.referralCode) {
     try {
       // Use a more robust generation: Initial + Timestamp subset + Random
@@ -58,7 +58,7 @@ staffSchema.pre('validate', async function (this: any, next) {
       console.error('Error generating referral code:', error);
     }
   }
-  next();
+
 });
 
 staffSchema.pre('save', async function (this: any) {
