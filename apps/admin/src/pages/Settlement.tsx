@@ -38,12 +38,12 @@ export default function SettlementPage() {
     if (selectedOrderIds.size === eligibleOrdersQuery.data?.length) {
       setSelectedOrderIds(new Set());
     } else {
-      setSelectedOrderIds(new Set(eligibleOrdersQuery.data?.map(o => o._id)));
+      setSelectedOrderIds(new Set(eligibleOrdersQuery.data?.map(o => o.id)));
     }
   };
 
   const totalAmount = Array.from(selectedOrderIds).reduce((sum, id) => {
-    const order = eligibleOrdersQuery.data?.find(o => o._id === id);
+    const order = eligibleOrdersQuery.data?.find(o => o.id === id);
     return sum + (order?.totalAmount || 0);
   }, 0);
 
@@ -79,16 +79,16 @@ export default function SettlementPage() {
           <div className="grid gap-3">
             {eligibleOrdersQuery.data?.map((order) => (
               <button
-                key={order._id}
-                onClick={() => toggleOrder(order._id)}
+                key={order.id}
+                onClick={() => toggleOrder(order.id)}
                 className={`flex items-center gap-4 rounded-[2rem] border p-5 text-left transition-all ${
-                  selectedOrderIds.has(order._id) 
+                  selectedOrderIds.has(order.id) 
                     ? 'border-primary-500 bg-primary-50/50 shadow-md' 
                     : 'border-slate-100 bg-white hover:border-primary-200'
                 }`}
               >
-                <div className={`rounded-full p-1 ${selectedOrderIds.has(order._id) ? 'text-primary-600' : 'text-slate-300'}`}>
-                  {selectedOrderIds.has(order._id) ? <CheckCircle2 size={24} /> : <Circle size={24} />}
+                <div className={`rounded-full p-1 ${selectedOrderIds.has(order.id) ? 'text-primary-600' : 'text-slate-300'}`}>
+                  {selectedOrderIds.has(order.id) ? <CheckCircle2 size={24} /> : <Circle size={24} />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
