@@ -343,11 +343,12 @@ export async function createSettlementRequest(
   }
 
   const batchId = `SETTLE-${Date.now()}`;
+  const objectOrderIds = orderIds.map(id => new mongoose.Types.ObjectId(id));
   
-  await Order.updateMany(
+  const updateResult = await Order.updateMany(
     {
-      _id: { $in: orderIds },
-      storeId,
+      _id: { $in: objectOrderIds },
+      storeId: new mongoose.Types.ObjectId(storeId),
       status: 'delivered',
       isSettlementRequested: { $ne: true },
     },
@@ -359,10 +360,14 @@ export async function createSettlementRequest(
     }
   );
 
+  if (updateResult.modifiedCount === 0) {
+    throw new AppError('Selected orders are either already requested for settlement or not eligible.', 400);
+  }
+
   const orders = await Order.find({ settlementBatchId: batchId });
   
   if (orders.length === 0) {
-    throw new AppError('No eligible orders found for settlement in this request', 400);
+    throw new AppError('Technical error: Could not retrieve updated orders for settlement request.', 500);
   }
 
   // Create a product request for super admin to track this settlement
