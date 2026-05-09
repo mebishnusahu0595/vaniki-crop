@@ -338,6 +338,10 @@ export async function createSettlementRequest(
   adminId: string,
   orderIds: string[],
 ) {
+  if (!Array.isArray(orderIds) || orderIds.length === 0) {
+    throw new AppError('At least one order must be selected for settlement', 400);
+  }
+
   const batchId = `SETTLE-${Date.now()}`;
   
   await Order.updateMany(
@@ -355,17 +359,24 @@ export async function createSettlementRequest(
     }
   );
 
-  const orders = await Order.find({ settlementBatchId: batchId }).populate('items');
+  const orders = await Order.find({ settlementBatchId: batchId });
   
+  if (orders.length === 0) {
+    throw new AppError('No eligible orders found for settlement in this request', 400);
+  }
+
   // Create a product request for super admin to track this settlement
   const request = await ProductRequest.create({
     storeId,
     adminId,
     productName: `Settlement Request: ${batchId}`,
-    requestedQuantity: orderIds.length,
+    requestedQuantity: orders.length,
     notes: `Settlement for orders: ${orders.map(o => o.orderNumber).join(', ')}`,
     status: 'pending',
     dealerPrice: orders.reduce((sum, o) => sum + o.totalAmount, 0),
+    garageName: 'Settlement',
+    petiSize: 1,
+    petiUnit: 'Liter',
   });
 
   return { batchId, request };

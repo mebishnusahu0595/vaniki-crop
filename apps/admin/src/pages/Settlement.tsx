@@ -22,6 +22,9 @@ export default function SettlementPage() {
       setSelectedOrderIds(new Set());
       alert('Settlement request sent to Super Admin successfully!');
     },
+    onError: (error: any) => {
+      alert(error.message || 'Failed to create settlement request. Please try again.');
+    },
   });
 
   const toggleOrder = (id: string) => {
