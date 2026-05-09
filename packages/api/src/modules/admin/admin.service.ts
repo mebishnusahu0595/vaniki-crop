@@ -338,17 +338,26 @@ export async function createSettlementRequest(
   adminId: string,
   orderIds: string[],
 ) {
+  console.log('[DEBUG] createSettlementRequest starting', { storeId, adminId, orderIds });
+  
   if (!Array.isArray(orderIds) || orderIds.length === 0) {
     throw new AppError('At least one order must be selected for settlement', 400);
   }
 
   const batchId = `SETTLE-${Date.now()}`;
   const objectOrderIds = orderIds.map(id => new mongoose.Types.ObjectId(id));
+  const objectStoreId = new mongoose.Types.ObjectId(storeId);
+
+  console.log('[DEBUG] Executing updateMany with', { 
+    batchId, 
+    count: objectOrderIds.length,
+    objectStoreId 
+  });
   
   const updateResult = await Order.updateMany(
     {
       _id: { $in: objectOrderIds },
-      storeId: new mongoose.Types.ObjectId(storeId),
+      storeId: objectStoreId,
       status: 'delivered',
       isSettlementRequested: { $ne: true },
     },
@@ -360,11 +369,14 @@ export async function createSettlementRequest(
     }
   );
 
+  console.log('[DEBUG] updateMany result:', updateResult);
+
   if (updateResult.modifiedCount === 0) {
     throw new AppError('Selected orders are either already requested for settlement or not eligible.', 400);
   }
 
   const orders = await Order.find({ settlementBatchId: batchId });
+  console.log('[DEBUG] Orders found after update:', orders.length);
   
   if (orders.length === 0) {
     throw new AppError('Technical error: Could not retrieve updated orders for settlement request.', 500);
