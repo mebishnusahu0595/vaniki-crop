@@ -27,7 +27,7 @@ export default function ProductRequestsPage() {
   const [selectedProductId, setSelectedProductId] = useState('');
   const [requestedPack, setRequestedPack] = useState('');
   const [garageName, setGarageName] = useState('');
-  const [petiQuantity, setPetiQuantity] = useState(1);
+  const [petiQuantity, setPetiQuantity] = useState<number | string>(1);
   const [requestNotes, setRequestNotes] = useState('');
   const [price, setPrice] = useState<number>(0);
   const [offerPrice, setOfferPrice] = useState<number>(0);
@@ -66,7 +66,7 @@ export default function ProductRequestsPage() {
       productId: product.id,
       productName: product.name,
       shortDescription: product.shortDescription || '',
-      petiQuantity,
+      petiQuantity: Number(petiQuantity) || 1,
       petiSize: product.petiSize || 12,
       petiUnit: product.petiUnit || 'Liter',
       variantLabel: variant.label,
@@ -257,7 +257,17 @@ export default function ProductRequestsPage() {
                         type="number"
                         min={1}
                         value={petiQuantity}
-                        onChange={(e) => setPetiQuantity(Math.max(1, Number(e.target.value) || 1))}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            setPetiQuantity('');
+                          } else {
+                            const num = parseInt(val);
+                            if (!isNaN(num)) {
+                              setPetiQuantity(num);
+                            }
+                          }
+                        }}
                         className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-base font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
                       />
                     </div>
