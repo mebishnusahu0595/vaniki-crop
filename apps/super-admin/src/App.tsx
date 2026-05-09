@@ -17,6 +17,7 @@ import StoresPage from './pages/Stores';
 import AdminsPage from './pages/Admins';
 import TestimonialsPage from './pages/Testimonials';
 import ProductRequestsPage from './pages/ProductRequests';
+import SettlementsPage from './pages/Settlements';
 import LoyaltyPage from './pages/Loyalty';
 import ReferralPage from './pages/Referral';
 import StaffPage from './pages/Staff';
@@ -33,6 +34,7 @@ function App() {
           <Route path="/stores" element={<StoresPage />} />
           <Route path="/admins" element={<AdminsPage />} />
           <Route path="/product-requests" element={<ProductRequestsPage />} />
+          <Route path="/settlements" element={<SettlementsPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/new" element={<ProductFormPage />} />
           <Route path="/products/:id/edit" element={<ProductFormPage />} />

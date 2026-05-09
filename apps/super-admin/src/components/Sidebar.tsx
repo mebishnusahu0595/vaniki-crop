@@ -34,6 +34,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/stores', label: 'All Stores', icon: Boxes },
   { to: '/admins', label: 'All Admins', icon: Users },
   { to: '/product-requests', label: 'Product Requests', icon: ClipboardList },
+  { to: '/settlements', label: 'Settlements', icon: Banknote },
   { to: '/products', label: 'Products', icon: Box },
   { to: '/categories', label: 'Categories', icon: Tags },
   { to: '/orders', label: 'All Orders', icon: ShoppingCart },
@@ -109,7 +110,7 @@ export function Sidebar({
       />
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 flex h-full w-[280px] flex-col border-r border-primary-100 bg-white px-4 py-5 shadow-[0_20px_80px_rgba(15,23,42,0.12)] transition md:sticky md:top-0 md:h-screen md:translate-x-0 md:overflow-y-auto md:shadow-none',
+          'fixed left-0 top-0 z-40 flex h-full w-[280px] flex-col border-r border-primary-100 bg-white px-4 py-5 shadow-[0_20px_80px_rgba(15,23,42,0.12)] transition overflow-y-auto md:sticky md:top-0 md:h-screen md:translate-x-0 md:shadow-none',
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
