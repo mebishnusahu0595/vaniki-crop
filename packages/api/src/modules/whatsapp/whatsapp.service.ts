@@ -6,6 +6,7 @@ const WHATSAPP_API_URL = `https://graph.facebook.com/v20.0/${process.env.WHATSAP
 const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const DEEPSEEK_API_URL = process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1';
+const APP_URL = 'https://vanikicrop.com';
 
 /**
  * Sends a WhatsApp message using Meta Cloud API
@@ -41,26 +42,7 @@ async function sendWhatsAppMessage(to: string, payload: any) {
 async function sendTextMessage(to: string, text: string) {
   return sendWhatsAppMessage(to, {
     type: 'text',
-    text: { body: text },
-  });
-}
-
-/**
- * Sends a language selection menu
- */
-async function sendLanguageSelection(to: string) {
-  return sendWhatsAppMessage(to, {
-    type: 'interactive',
-    interactive: {
-      type: 'button',
-      body: { text: 'नमस्ते! Vaniki Crop में आपका स्वागत है। कृपया अपनी भाषा चुनें।\n\nWelcome! Please select your language.' },
-      action: {
-        buttons: [
-          { type: 'reply', reply: { id: 'lang_hi', title: 'Hindi / हिंदी' } },
-          { type: 'reply', reply: { id: 'lang_en', title: 'English' } },
-        ],
-      },
-    },
+    text: { body: text, preview_url: true },
   });
 }
 
@@ -68,139 +50,170 @@ async function sendLanguageSelection(to: string) {
  * Processes incoming message
  */
 export async function processIncomingMessage(message: any, contact: any) {
-  const from = message.from; // Phone number
+  console.log('--- Incoming WhatsApp Message ---');
+  console.log('From:', message.from);
+  console.log('Type:', message.type);
+  console.log('Text:', message.text?.body);
+
+  const from = message.from; 
   const messageType = message.type;
-  
-  // Normalize phone number (strip +91 etc if needed, but Meta usually gives clean numbers)
-  const mobile = from.replace(/^91/, ''); // Standardize to 10 digits for DB lookup
+  const mobile = from.replace(/^91/, ''); 
 
+  console.log('Normalized Mobile:', mobile);
+
+  // 1. Check if user is registered
   let user = await User.findOne({ mobile });
+  console.log('User found:', user ? user.name : 'No');
 
-  // 1. Language Selection Handling
+  if (!user) {
+    const signupMsg = `नमस्ते! Vaniki Crop में आपका स्वागत है। 🙏
+
+हमें आपका यह नंबर हमारे रिकॉर्ड में नहीं मिला। WhatsApp सुविधाओं का लाभ उठाने के लिए कृपया पहले रजिस्टर करें।
+
+🔗 रजिस्टर करने के लिए यहाँ क्लिक करें: ${APP_URL}/signup?ref=whatsapp
+
+पंजीकरण के बाद आप अपने ऑर्डर्स और खेती से जुड़ी सलाह पा सकेंगे।`;
+    console.log('Sending Signup Link...');
+    await sendTextMessage(from, signupMsg);
+    return;
+  }
+
+  // 2. Handle Language Selection (One-time or default)
   if (messageType === 'interactive' && message.interactive.type === 'button_reply') {
     const replyId = message.interactive.button_reply.id;
     if (replyId === 'lang_hi' || replyId === 'lang_en') {
-      const lang = replyId === 'lang_hi' ? 'hi' : 'en';
-      if (user) {
-        user.preferredLanguage = lang;
-        await user.save();
-      }
-      const welcome = lang === 'hi' 
-        ? 'धन्यवाद! अब आप मुझसे हिंदी में बात कर सकते हैं। मैं आपकी क्या मदद कर सकता हूँ?' 
-        : 'Thank you! You can now chat with me in English. How can I help you today?';
-      await sendTextMessage(from, welcome);
+      user.preferredLanguage = replyId === 'lang_hi' ? 'hi' : 'en';
+      await user.save();
+      const msg = user.preferredLanguage === 'hi' 
+        ? 'धन्यवाद! आपकी भाषा हिंदी सेट कर दी गई है। अब आप मुझसे कुछ भी पूछ सकते हैं।' 
+        : 'Thank you! Your language is set to English. How can I help you?';
+      await sendTextMessage(from, msg);
       return;
     }
   }
 
-  // 2. If user is new or hasn't selected language
-  if (!user || !user.preferredLanguage) {
-    await sendLanguageSelection(from);
-    return;
-  }
+  // Default to Hindi if not set
+  const lang = user.preferredLanguage || 'hi';
+  const text = (message.text?.body || message.interactive?.button_reply?.title || '').toLowerCase();
 
-  const lang = user.preferredLanguage;
-  const text = message.text?.body?.toLowerCase() || '';
-
-  // 3. Intent Handling
-  if (text.includes('order') || text.includes('आर्डर') || text.includes('ऑर्डर')) {
+  // 3. Command & Profile Handling
+  if (text.includes('order') || text.includes('आर्डर') || text.includes('ऑर्डर') || text.includes('status')) {
     await handleOrderQuery(from, user, lang);
-  } else if (text.includes('product') || text.includes('उत्पाद')) {
-    await handleProductQuery(from, text, lang);
+  } else if (text.startsWith('name ') || text.startsWith('नाम ')) {
+    await handleProfileUpdate(from, user, 'name', text.split(' ').slice(1).join(' '));
+  } else if (text.startsWith('address ') || text.startsWith('पता ')) {
+    await handleProfileUpdate(from, user, 'address', text.split(' ').slice(1).join(' '));
+  } else if (text.includes('pickup') || text.includes('पिकअप')) {
+    await handleProfileUpdate(from, user, 'serviceMode', 'pickup');
+  } else if (text.includes('delivery') || text.includes('डिलीवरी')) {
+    await handleProfileUpdate(from, user, 'serviceMode', 'delivery');
   } else {
-    // 4. AI Chat fallback
+    // Default to AI Chat for everything else
     await handleAiChat(from, text, user, lang);
   }
 }
 
 /**
- * Handles order related queries
+ * Handles profile updates (Name, Address, Service Mode)
  */
-async function handleOrderQuery(to: string, user: any, lang: string) {
-  const lastOrder = await Order.findOne({ userId: user._id }).sort({ createdAt: -1 });
-  
-  if (!lastOrder) {
-    const msg = lang === 'hi' 
-      ? 'हमें आपका कोई पिछला आर्डर नहीं मिला।' 
-      : 'We could not find any recent orders for you.';
-    return sendTextMessage(to, msg);
+async function handleProfileUpdate(to: string, user: any, field: string, value: string) {
+  try {
+    const lang = user.preferredLanguage || 'hi';
+    
+    if (field === 'name') {
+      user.name = value;
+      await user.save();
+      const msg = lang === 'hi' ? `✅ आपका नाम बदलकर *${value}* कर दिया गया है।` : `✅ Your name has been updated to *${value}*.`;
+      await sendTextMessage(to, msg);
+    } 
+    else if (field === 'address') {
+      // Basic address update (storing in street for now, or parsing)
+      if (!user.savedAddress) user.savedAddress = {};
+      user.savedAddress.street = value;
+      await user.save();
+      const msg = lang === 'hi' ? `✅ आपका पता अपडेट कर दिया गया है: *${value}*` : `✅ Your address has been updated to: *${value}*`;
+      await sendTextMessage(to, msg);
+    }
+    else if (field === 'serviceMode') {
+      user.serviceMode = value;
+      await user.save();
+      const msg = value === 'pickup' 
+        ? (lang === 'hi' ? '🛒 आपने *Store Pickup* चुना है। कृपया दुकान पर आते समय पैसे साथ लाएं।' : '🛒 You have selected *Store Pickup*. Please bring cash when you visit the store.')
+        : (lang === 'hi' ? '🚚 आपने *Home Delivery* चुनी है। आपका सामान आपके पते पर भेज दिया जाएगा।' : '🚚 You have selected *Home Delivery*. Your items will be delivered to your address.');
+      await sendTextMessage(to, msg);
+    }
+  } catch (error) {
+    console.error('Profile Update Error:', error);
+    await sendTextMessage(to, '❌ Update failed. Please try again later.');
   }
-
-  let statusMsg = lang === 'hi'
-    ? `आपका आर्डर #${lastOrder.orderNumber}\nस्टेटस: ${translateStatus(lastOrder.status, 'hi')}\nकुल राशि: ₹${lastOrder.totalAmount}`
-    : `Your Order #${lastOrder.orderNumber}\nStatus: ${lastOrder.status}\nTotal: ₹${lastOrder.totalAmount}`;
-
-  if (lastOrder.deliveryOtp && (lastOrder.status === 'processing' || lastOrder.status === 'shipped')) {
-    statusMsg += lang === 'hi' 
-      ? `\n\nडिलीवरी OTP: ${lastOrder.deliveryOtp}` 
-      : `\n\nDelivery OTP: ${lastOrder.deliveryOtp}`;
-  }
-
-  await sendTextMessage(to, statusMsg);
 }
 
 /**
- * Handles product queries
+ * Handles detailed order tracking
  */
-async function handleProductQuery(to: string, query: string, lang: string) {
-  const searchTerm = query.replace('product', '').replace('उत्पाद', '').trim();
-  if (!searchTerm) {
+async function handleOrderQuery(to: string, user: any, lang: string) {
+  const orders = await Order.find({ userId: user._id }).sort({ createdAt: -1 }).limit(3);
+  
+  if (orders.length === 0) {
     const msg = lang === 'hi' 
-      ? 'आप किस उत्पाद के बारे में जानना चाहते हैं? उदाहरण: "Imidacloprid के बारे में बताएं"' 
-      : 'Which product would you like to know about? Example: "Tell me about Imidacloprid"';
+      ? 'हमें आपका कोई पिछला आर्डर नहीं मिला। आप हमारी वेबसाइट पर आर्डर कर सकते हैं: ' + APP_URL 
+      : 'We could not find any recent orders. You can shop at: ' + APP_URL;
     return sendTextMessage(to, msg);
   }
 
-  const products = await Product.find({ 
-    $text: { $search: searchTerm },
-    isActive: true 
-  }).limit(3);
+  let response = lang === 'hi' 
+    ? `📋 *आपके पिछले ऑर्डers:*\n` 
+    : `📋 *Your Recent Orders:*\n`;
 
-  if (products.length === 0) {
-    const msg = lang === 'hi'
-      ? 'क्षमा करें, हमें इस नाम का कोई उत्पाद नहीं मिला।'
-      : 'Sorry, we could not find any products matching that name.';
-    return sendTextMessage(to, msg);
-  }
+  orders.forEach((order, index) => {
+    const date = new Date(order.createdAt).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN');
+    const items = order.items.map(i => `${i.productName} (${i.qty})`).join(', ');
+    const status = translateStatus(order.status, lang);
+    const mode = order.serviceMode === 'pickup' ? (lang === 'hi' ? 'पिकअप (Store Pickup)' : 'Store Pickup') : (lang === 'hi' ? 'डिलीवरी (Home Delivery)' : 'Home Delivery');
+    
+    response += `\n${index + 1}. *ID:* #${order.orderNumber}\n📅 *तारीख:* ${date}\n📦 *सामान:* ${items}\n💰 *कुल:* ₹${order.totalAmount}\n🚦 *स्टेटस:* ${status}\n🏠 *मोड:* ${mode}\n`;
+    
+    if (order.serviceMode === 'pickup' && order.status !== 'delivered') {
+      response += lang === 'hi' ? `⚠️ *याद दिलाएं:* कृपया दुकान से सामान लेते समय पैसे (Cash) साथ लाएं।\n` : `⚠️ *Reminder:* Please bring cash for payment at the store.\n`;
+    }
 
-  let response = lang === 'hi' ? 'यहाँ कुछ उत्पाद हैं जो आपकी खोज से मेल खाते हैं:\n' : 'Here are some products matching your search:\n';
-  products.forEach(p => {
-    response += `\n📦 *${p.name}*\n${p.shortDescription}\nPrice: ₹${p.variants[0]?.price || '-'}\n`;
+    if (order.deliveryOtp && (order.status === 'processing' || order.status === 'shipped')) {
+      response += `🔑 *OTP:* ${order.deliveryOtp}\n`;
+    }
   });
 
+  response += `\nअधिक जानकारी के लिए यहाँ देखें: ${APP_URL}/account/orders`;
   await sendTextMessage(to, response);
 }
 
 /**
- * AI Chat using DeepSeek
+ * AI Expert Chat with Product Context
  */
 async function handleAiChat(to: string, text: string, user: any, lang: string) {
   try {
-    // Fetch top products for general context
-    const topProducts = await Product.find({ isActive: true, isFeatured: true }).limit(10).select('name shortDescription variants');
-    const productContext = topProducts.map(p => `- ${p.name}: ${p.shortDescription} (Price: ₹${p.variants[0]?.price || '-'})`).join('\n');
+    // Fetch relevant products based on query or featured ones
+    const products = await Product.find({ isActive: true }).limit(20).select('name slug shortDescription variants');
+    const productContext = products.map(p => `- ${p.name}: ${p.shortDescription} (Price: ₹${p.variants[0]?.price || '-'}). Link: ${APP_URL}/product/${p.slug}`).join('\n');
 
-    const systemPrompt = `You are "Ask Vaniki", a premium AI assistant for Vaniki Crop, India's leading agriculture e-commerce platform.
-    Language: ${lang === 'hi' ? 'Hindi (हिंदी)' : 'English'}.
-    Tone: Professional, helpful, and empathetic towards farmers.
+    const systemPrompt = `You are "Ask Vaniki", the official Senior Agriculture Expert for Vaniki Crop.
+    Current Language: ${lang === 'hi' ? 'Hindi' : 'English'}.
     
-    About Vaniki Crop:
-    - We provide genuine crop protection (pesticides, insecticides, fungicides, herbicides).
-    - We offer local store fulfillment (pickup or delivery).
-    - We have a loyalty program for farmers.
+    CRITICAL INSTRUCTIONS:
+    1. Respond strictly in ${lang === 'hi' ? 'Hindi' : 'English'}.
+    2. Only suggest products from the list below. Do not invent products.
+    3. Always provide the full product link if you suggest a product.
+    4. If the user describes a crop problem (pest, disease, nutrition), act as a doctor and prescribe the best matching product from our list.
+    5. If you don't find a matching product, tell them to visit our store or contact support.
+    6. For order status, tell them to type "My Order".
+    7. Use bolding and emojis to make the response premium and readable.
+    8. You have READ-ONLY access to the data provided below.
     
-    Products in our catalog:
+    AVAILABLE PRODUCTS:
     ${productContext}
     
-    User Context:
-    Name: ${user?.name || 'Farmer'}
-    Mobile: ${user?.mobile || 'Unknown'}
-    
-    Instructions:
-    1. If the user asks about products we have, refer to the catalog above.
-    2. If the user asks about an order, tell them to type "My Order".
-    3. Always encourage modern farming practices.
-    4. Keep answers concise (max 3-4 sentences).`;
+    USER PROFILE:
+    Name: ${user.name}
+    Language: ${lang}`;
 
     const response = await fetch(`${DEEPSEEK_API_URL}/chat/completions`, {
       method: 'POST',
@@ -214,8 +227,8 @@ async function handleAiChat(to: string, text: string, user: any, lang: string) {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text }
         ],
-        max_tokens: 500,
-        temperature: 0.7
+        max_tokens: 800,
+        temperature: 0.5
       }),
     });
 
@@ -232,12 +245,12 @@ async function handleAiChat(to: string, text: string, user: any, lang: string) {
 
 function translateStatus(status: string, lang: string) {
   const map: any = {
-    'placed': { hi: 'आर्डर मिल गया', en: 'Placed' },
-    'confirmed': { hi: 'कन्फर्म हो गया', en: 'Confirmed' },
-    'processing': { hi: 'तैयार हो रहा है', en: 'Processing' },
-    'shipped': { hi: 'भेज दिया गया है', en: 'Shipped' },
-    'delivered': { hi: 'डिलीवर हो गया', en: 'Delivered' },
-    'cancelled': { hi: 'निरस्त कर दिया गया', en: 'Cancelled' },
+    'placed': { hi: 'आर्डर मिल गया (Placed)', en: 'Placed' },
+    'confirmed': { hi: 'कन्फर्म हो गया (Confirmed)', en: 'Confirmed' },
+    'processing': { hi: 'तैयार हो रहा है (Processing)', en: 'Processing' },
+    'shipped': { hi: 'रास्ते में है (Shipped)', en: 'Shipped' },
+    'delivered': { hi: 'डिलीवर हो गया (Delivered)', en: 'Delivered' },
+    'cancelled': { hi: 'निरस्त (Cancelled)', en: 'Cancelled' },
   };
   return map[status]?.[lang] || status;
 }
