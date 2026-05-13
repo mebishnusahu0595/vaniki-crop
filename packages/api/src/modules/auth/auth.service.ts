@@ -11,6 +11,7 @@ import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary
 import { buildStoreAddressFromCoordinates } from '../../utils/storeAddress.js';
 import { addEmailToQueue } from '../../queues/email.queue.js';
 import { passwordResetOtpTemplate } from '../../utils/emailTemplates.js';
+import * as whatsappService from '../whatsapp/whatsapp.service.js';
 import type {
   ChangePasswordInput,
   DealerSignupInput,
@@ -296,6 +297,12 @@ export async function signup(
   }
 
   const tokens = await generateTokenPair(user);
+
+  // Send WhatsApp Welcome Message
+  whatsappService.sendWelcomeMessage(user).catch(err => {
+    console.error('Failed to send WhatsApp welcome message:', err);
+  });
+
   return { user, tokens };
 }
 

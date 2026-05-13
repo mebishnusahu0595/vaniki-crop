@@ -243,6 +243,37 @@ async function handleAiChat(to: string, text: string, user: any, lang: string) {
   }
 }
 
+
+/**
+ * Sends a welcome message with instructions to new users
+ */
+export async function sendWelcomeMessage(user: any) {
+  const lang = user.preferredLanguage || 'hi';
+  const welcomeMsg = lang === 'hi'
+    ? `🎉 *बधाई हो, ${user.name}!* आप Vaniki Crop परिवार का हिस्सा बन गए हैं। 🙏
+
+अब आप WhatsApp पर ये सब कर सकते हैं:
+1. 📋 *ऑर्डर ट्रैक करें:* "My Order" लिखें।
+2. 👨‍🌾 *खेती की सलाह:* अपनी समस्या लिखें (जैसे: "धान में कीड़ा लगा है")।
+3. 📦 *प्रोडक्ट्स खोजें:* दवाई या बीज के बारे में पूछें।
+4. ⚙️ *प्रोफाइल बदलें:* "नाम [नया नाम]" या "पता [नया पता]" लिखें।
+5. 🛒 *मोड बदलें:* "pickup" या "delivery" लिखें।
+
+हमें खुशी है कि आप हमारे साथ हैं! 🌾✨`
+    : `🎉 *Congratulations, ${user.name}!* You are now part of the Vaniki Crop family. 🙏
+
+You can now use these features on WhatsApp:
+1. 📋 *Track Orders:* Type "My Order".
+2. 👨‍🌾 *Farming Advice:* Describe your problem (e.g., "Pests in my rice crop").
+3. 📦 *Search Products:* Ask about pesticides or seeds.
+4. ⚙️ *Update Profile:* Type "name [new name]" or "address [new address]".
+5. 🛒 *Change Mode:* Type "pickup" or "delivery".
+
+We are happy to have you with us! 🌾✨`;
+
+  await sendTextMessage(`91${user.mobile}`, welcomeMsg);
+}
+
 function translateStatus(status: string, lang: string) {
   const map: any = {
     'placed': { hi: 'आर्डर मिल गया (Placed)', en: 'Placed' },
