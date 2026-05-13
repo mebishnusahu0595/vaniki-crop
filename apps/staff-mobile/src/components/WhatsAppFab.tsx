@@ -3,7 +3,7 @@ import { Animated, Dimensions, Linking, PanResponder, Pressable, Text } from 're
 import { FontAwesome } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-const SUPPORT_WHATSAPP_PHONE = '919302228883';
+const SUPPORT_WHATSAPP_PHONE = '919406160185';
 const FAB_SIZE = 56;
 const FAB_MARGIN = 16;
 const FAB_TOP_LIMIT = 96;

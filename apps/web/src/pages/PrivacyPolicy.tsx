@@ -141,7 +141,7 @@ const PrivacyPolicy: React.FC = () => {
             <p>If you have questions about this Privacy Policy, please contact us:</p>
             <ul>
               <li><strong>Email:</strong> <a href="mailto:teams@vanikicrop.com" className="text-primary font-bold hover:underline">teams@vanikicrop.com</a></li>
-              <li><strong>Phone:</strong> +91 9302228883</li>
+              <li><strong>Phone:</strong> +91 9406160185</li>
               <li><strong>Address:</strong> Shop no. 37, Krishi Upaj Mandi, Dhamdha Road, Durg 491001 (C.G.)</li>
             </ul>
           </section>

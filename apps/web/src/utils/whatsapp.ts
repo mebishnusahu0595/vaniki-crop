@@ -1,4 +1,4 @@
-const SUPPORT_WHATSAPP_PHONE = '919302228883';
+const SUPPORT_WHATSAPP_PHONE = '919406160185';
 const FALLBACK_WHATSAPP_MESSAGE = 'Hello Vaniki Crop, I need help';
 
 const isMobileDevice = () =>

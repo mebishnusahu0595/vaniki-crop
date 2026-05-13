@@ -42,7 +42,7 @@ const sections = [
   },
   {
     title: '10. Contact Us',
-    body: 'Email: teams@vanikicrop.com\nPhone: +91 9302228883\nAddress: Shop no. 37, Krishi Upaj Mandi, Dhamdha Road, Durg 491001 (C.G.)',
+    body: 'Email: teams@vanikicrop.com\nPhone: +91 9406160185\nAddress: Shop no. 37, Krishi Upaj Mandi, Dhamdha Road, Durg 491001 (C.G.)',
   },
 ];
 

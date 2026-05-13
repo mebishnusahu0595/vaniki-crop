@@ -87,14 +87,14 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
       doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(18).text('TAX INVOICE', pageMargin, 20);
       doc.font('Helvetica').fontSize(8).text('Original for Recipient', pageMargin, 42);
       doc.font('Helvetica-Bold').fontSize(10).text('Vaniki Crop', pageWidth - pageMargin - 200, 22, { width: 200, align: 'right' });
-      doc.font('Helvetica').fontSize(7.5).text('teams@vanikicrop.com | 9302228883', pageWidth - pageMargin - 200, 36, { width: 200, align: 'right' });
+      doc.font('Helvetica').fontSize(7.5).text('teams@vanikicrop.com | 9406160185', pageWidth - pageMargin - 200, 36, { width: 200, align: 'right' });
 
       const addressTop = 85;
       doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9).text('Sold By', pageMargin, addressTop);
       doc.fillColor('#111827').font('Helvetica').fontSize(8)
         .text(store.name || 'Vaniki Crop Store', pageMargin, addressTop + 13, { width: detailColumnWidth })
         .text(formatAddress(store.address), pageMargin, addressTop + 24, { width: detailColumnWidth })
-        .text(`Contact: ${store.phone || '9302228883'}`, pageMargin, addressTop + 46, { width: detailColumnWidth })
+        .text(`Contact: ${store.phone || '9406160185'}`, pageMargin, addressTop + 46, { width: detailColumnWidth })
         .text(`GSTIN: ${store.gstNumber || store.sgstNumber || '-'}`, pageMargin, addressTop + 57, { width: detailColumnWidth });
 
       doc.fillColor('#111827').font('Helvetica-Bold').fontSize(9).text('Bill To / Ship To', detailRightX, addressTop);
@@ -254,7 +254,7 @@ export async function generateInvoicePdf(order: any): Promise<Buffer> {
         .text('This is a computer generated invoice and does not require a physical signature.', pageMargin, footerTop + 8, { align: 'left', width: contentWidth / 2 + 50 });
         
       doc.fillColor('#111827').font('Helvetica-Bold').fontSize(6.5)
-        .text('Store Contact: 9302228883 | teams@vanikicrop.com', pageMargin + contentWidth / 2 - 50, footerTop + 8, { align: 'right', width: contentWidth / 2 + 50 });
+        .text('Store Contact: 9406160185 | teams@vanikicrop.com', pageMargin + contentWidth / 2 - 50, footerTop + 8, { align: 'right', width: contentWidth / 2 + 50 });
 
       doc.end();
     } catch (error) {
