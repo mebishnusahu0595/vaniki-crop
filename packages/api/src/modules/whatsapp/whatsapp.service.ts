@@ -96,26 +96,14 @@ export async function processIncomingMessage(message: any, contact: any) {
   const lang = user.preferredLanguage || 'hi';
   const text = (message.text?.body || message.interactive?.button_reply?.title || '').toLowerCase();
 
-  // 3. Command & Profile Handling
-  const isOrderHistoryIntent = (text.includes('my order') || text.includes('order status') || text.includes('status') || text === 'order' || text === 'आर्डर') 
-                               && !text.includes('buy') && !text.includes('want to');
-
+  // Send everything to AI first (except basic menu)
   if (text === '/commands' || text === 'help' || text === 'menu' || text === 'मदद') {
     await handleHelpCommand(from, lang);
-  } else if (isOrderHistoryIntent) {
-    await handleOrderQuery(from, user, lang);
-  } else if (text.startsWith('name ') || text.startsWith('नाम ')) {
-    await handleProfileUpdate(from, user, 'name', text.split(' ').slice(1).join(' '));
-  } else if (text.startsWith('address ') || text.startsWith('पता ')) {
-    await handleProfileUpdate(from, user, 'address', text.split(' ').slice(1).join(' '));
-  } else if (text.includes('pickup') || text.includes('पिकअप')) {
-    await handleProfileUpdate(from, user, 'serviceMode', 'pickup');
-  } else if (text.includes('delivery') || text.includes('डिलीवरी')) {
-    await handleProfileUpdate(from, user, 'serviceMode', 'delivery');
-  } else {
-    // Default to AI Chat for everything else (Products, Diseases, Buying)
-    await handleAiChat(from, text, user, lang);
+    return;
   }
+
+  // AI-First Intent Analysis
+  await handleAiChat(from, text, user, lang);
 }
 
 /**
@@ -221,33 +209,41 @@ async function handleOrderQuery(to: string, user: any, lang: string) {
 }
 
 /**
- * AI Expert Chat with Product Context
+ * AI Expert Chat with Semantic Intent Parsing
  */
 async function handleAiChat(to: string, text: string, user: any, lang: string) {
   try {
-    // Fetch relevant products based on query or featured ones
+    // Fetch relevant products
     const products = await Product.find({ isActive: true }).limit(20).select('name slug shortDescription variants');
     const productContext = products.map(p => `- ${p.name}: ${p.shortDescription} (Price: ₹${p.variants[0]?.price || '-'}). Link: ${APP_URL}/product/${p.slug}`).join('\n');
 
-    const systemPrompt = `You are "Ask Vaniki", the Senior Agriculture Expert and Shopping Assistant for Vaniki Crop.
-    Current Language: ${lang === 'hi' ? 'Hindi' : 'English'}.
+    const systemPrompt = `You are "Ask Vaniki", the Senior Agriculture Brain and Personal Assistant for Vaniki Crop.
     
-    CRITICAL RULES:
-    1. If the user asks for a specific category (like "Pesticides"), ONLY show products from that category. 
-    2. If a specific product (like "Rudra 505") is mentioned, find and provide info for ONLY that product.
-    3. If you cannot find a matching product in the list below, say: "क्षमा करें, यह अभी उपलब्ध नहीं है।" (Sorry, this is not available right now).
-    4. NEVER invent products or suggest products from outside the provided list.
-    5. Always provide the full link: ${APP_URL}/product/[slug]
-    6. Use emojis (🚜, 💊, 📦) and bold text to keep it professional and premium.
-    7. If the user wants to buy/order, give them the product link and tell them they can pay via Cash on Delivery (COD).
-    8. For order history/status, tell them to type "My Order".
+    TASK: Analyze the user's intent and respond. 
+    If you identify a specific action requested, you MUST prefix your response with exactly one of these tags:
+    - [ORDER_HISTORY] : User wants to see their order status, history, or track an order.
+    - [UPDATE_NAME:New Name] : User wants to change their name.
+    - [UPDATE_ADDRESS:New Address] : User wants to change their address.
+    - [SET_PICKUP] : User wants to switch to Store Pickup.
+    - [SET_DELIVERY] : User wants to switch to Home Delivery.
     
-    AVAILABLE PRODUCTS DATA:
+    If no specific system action is needed (e.g. asking about crop disease), do not use any tag.
+    
+    RULES:
+    1. Respond in ${lang === 'hi' ? 'Hindi' : 'English'}.
+    2. Only suggest products from the list below. Link: ${APP_URL}/product/[slug]
+    3. If the product is not available, say so politely.
+    4. Use emojis and bold text.
+    5. You are an expert doctor for crops. Give helpful advice.
+    
+    AVAILABLE PRODUCTS:
     ${productContext}
     
     USER PROFILE:
     Name: ${user.name}
-    Preferred Language: ${lang}`;
+    Mobile: ${user.mobile}
+    Current Mode: ${user.serviceMode}
+    Language: ${lang}`;
 
     const response = await fetch(`${DEEPSEEK_API_URL}/chat/completions`, {
       method: 'POST',
@@ -262,18 +258,56 @@ async function handleAiChat(to: string, text: string, user: any, lang: string) {
           { role: 'user', content: text }
         ],
         max_tokens: 800,
-        temperature: 0.5
+        temperature: 0.3
       }),
     });
 
     const aiData: any = await response.json();
-    const aiResponse = aiData.choices?.[0]?.message?.content || (lang === 'hi' ? 'क्षमा करें, मैं अभी उत्तर देने में असमर्थ हूँ।' : 'I am sorry, I am unable to respond right now.');
-    
-    await sendTextMessage(to, aiResponse);
+    let aiContent = aiData.choices?.[0]?.message?.content || '';
+
+    if (!aiContent) {
+      await sendTextMessage(to, lang === 'hi' ? 'क्षमा करें, मैं समझ नहीं पाया।' : 'Sorry, I could not understand that.');
+      return;
+    }
+
+    // --- Action Parsing ---
+    if (aiContent.includes('[ORDER_HISTORY]')) {
+      aiContent = aiContent.replace('[ORDER_HISTORY]', '').trim();
+      await sendTextMessage(to, aiContent);
+      await handleOrderQuery(to, user, lang);
+    } 
+    else if (aiContent.includes('[UPDATE_NAME:')) {
+      const match = aiContent.match(/\[UPDATE_NAME:(.*?)\]/);
+      const newName = match ? match[1].trim() : '';
+      aiContent = aiContent.replace(/\[UPDATE_NAME:.*?\]/, '').trim();
+      await handleProfileUpdate(to, user, 'name', newName);
+      if (aiContent) await sendTextMessage(to, aiContent);
+    }
+    else if (aiContent.includes('[UPDATE_ADDRESS:')) {
+      const match = aiContent.match(/\[UPDATE_ADDRESS:(.*?)\]/);
+      const newAddr = match ? match[1].trim() : '';
+      aiContent = aiContent.replace(/\[UPDATE_ADDRESS:.*?\]/, '').trim();
+      await handleProfileUpdate(to, user, 'address', newAddr);
+      if (aiContent) await sendTextMessage(to, aiContent);
+    }
+    else if (aiContent.includes('[SET_PICKUP]')) {
+      aiContent = aiContent.replace('[SET_PICKUP]', '').trim();
+      await handleProfileUpdate(to, user, 'serviceMode', 'pickup');
+      if (aiContent) await sendTextMessage(to, aiContent);
+    }
+    else if (aiContent.includes('[SET_DELIVERY]')) {
+      aiContent = aiContent.replace('[SET_DELIVERY]', '').trim();
+      await handleProfileUpdate(to, user, 'serviceMode', 'delivery');
+      if (aiContent) await sendTextMessage(to, aiContent);
+    }
+    else {
+      // Normal Chat response
+      await sendTextMessage(to, aiContent);
+    }
+
   } catch (error) {
-    console.error('DeepSeek Error:', error);
-    const msg = lang === 'hi' ? 'तकनीकी समस्या के कारण मैं अभी जवाब नहीं दे पा रहा हूँ।' : 'I am facing technical issues and cannot respond right now.';
-    await sendTextMessage(to, msg);
+    console.error('AI Error:', error);
+    await sendTextMessage(to, lang === 'hi' ? 'तकनीकी समस्या है।' : 'Technical error.');
   }
 }
 
