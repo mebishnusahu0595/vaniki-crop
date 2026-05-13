@@ -33,6 +33,7 @@ type SeedUserInput = {
   savedAddress?: {
     street: string;
     city: string;
+    district: string;
     state: string;
     pincode: string;
     landmark?: string;
@@ -64,6 +65,7 @@ const customerSeeds = [
     savedAddress: {
       street: '16th Main Road, Block 3, Koramangala',
       city: 'Bengaluru',
+      district: 'Bengaluru Urban',
       state: 'Karnataka',
       pincode: '560034',
       landmark: 'Near Jyoti Nivas College',
@@ -78,6 +80,7 @@ const customerSeeds = [
     savedAddress: {
       street: '8th Cross Road, Ejipura',
       city: 'Bengaluru',
+      district: 'Bengaluru Urban',
       state: 'Karnataka',
       pincode: '560047',
       landmark: 'Near Kendriya Sadan',
@@ -715,6 +718,7 @@ async function upsertOrderAndPayment(params: {
     mobile: string;
     street: string;
     city: string;
+    district: string;
     state: string;
     pincode: string;
   };
@@ -1001,6 +1005,7 @@ async function main() {
       mobile: customerSeeds[0].mobile,
       street: customerSeeds[0].savedAddress.street,
       city: customerSeeds[0].savedAddress.city,
+      district: customerSeeds[0].savedAddress.district,
       state: customerSeeds[0].savedAddress.state,
       pincode: customerSeeds[0].savedAddress.pincode,
     },
@@ -1045,6 +1050,7 @@ async function main() {
       mobile: customerSeeds[1].mobile,
       street: customerSeeds[1].savedAddress.street,
       city: customerSeeds[1].savedAddress.city,
+      district: customerSeeds[1].savedAddress.district,
       state: customerSeeds[1].savedAddress.state,
       pincode: customerSeeds[1].savedAddress.pincode,
     },

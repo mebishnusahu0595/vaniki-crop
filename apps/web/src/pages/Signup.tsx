@@ -25,8 +25,13 @@ const Signup: React.FC = () => {
     email: '',
     mobile: '',
     password: '',
+    address: '',
+    district: '',
+    state: '',
+    pincode: '',
     referralCode: searchParams.get('ref') || '',
   });
+
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -96,6 +101,39 @@ const Signup: React.FC = () => {
           placeholder={t('authPages.mobileNumber')}
           className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
         />
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <input
+            required
+            value={formData.address}
+            onChange={(event) => setFormData((current) => ({ ...current, address: event.target.value }))}
+            placeholder="Full Address (Street/Village)"
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+          />
+          <input
+            required
+            value={formData.district}
+            onChange={(event) => setFormData((current) => ({ ...current, district: event.target.value }))}
+            placeholder="District"
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+          />
+          <input
+            required
+            value={formData.state}
+            onChange={(event) => setFormData((current) => ({ ...current, state: event.target.value }))}
+            placeholder="State"
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+          />
+          <input
+            required
+            maxLength={6}
+            value={formData.pincode}
+            onChange={(event) => setFormData((current) => ({ ...current, pincode: event.target.value.replace(/\D/g, '') }))}
+            placeholder="Pincode"
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+          />
+        </div>
+
         <div className="relative">
           <input
             required

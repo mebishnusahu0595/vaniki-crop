@@ -65,6 +65,10 @@ export const signupSchema = z.object({
     password: passwordSchema,
     otp: otpSchema.optional(),
     referralCode: referralCodeSchema.optional(),
+    address: z.string().trim().min(3, 'Address is required').optional(),
+    district: z.string().trim().min(2, 'District is required').optional(),
+    state: z.string().trim().min(2, 'State is required').optional(),
+    pincode: z.string().trim().regex(/^\d{6}$/, 'Pincode must be 6 digits').optional(),
   }),
 });
 
@@ -182,6 +186,7 @@ export const updateMeSchema = z.object({
       .object({
         street: optionalTrimmedField(z.string().trim().min(3, 'Street must be at least 3 characters')),
         city: optionalTrimmedField(z.string().trim().min(2, 'City must be at least 2 characters')),
+        district: optionalTrimmedField(z.string().trim().min(2, 'District must be at least 2 characters')),
         state: optionalTrimmedField(z.string().trim().min(2, 'State must be at least 2 characters')),
         pincode: optionalTrimmedField(z.string().trim().regex(/^\d{6}$/, 'Pincode must be 6 digits')),
         landmark: optionalTrimmedField(z.string().trim().max(120, 'Landmark cannot exceed 120 characters')),

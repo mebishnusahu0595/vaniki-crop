@@ -7,6 +7,7 @@ import bcrypt from 'bcrypt';
 export interface ISavedAddress {
   street: string;
   city: string;
+  district: string;
   state: string;
   pincode: string;
   landmark?: string;
@@ -79,6 +80,7 @@ const savedAddressSchema = new Schema<ISavedAddress>(
   {
     street: { type: String, trim: true },
     city: { type: String, trim: true },
+    district: { type: String, trim: true },
     state: { type: String, trim: true },
     pincode: { type: String, trim: true },
     landmark: { type: String, trim: true },

@@ -246,6 +246,18 @@ export async function signup(
     if (referredByStaffId && !existingUser.referredByStaff) {
       existingUser.referredByStaff = referredByStaffId;
     }
+    
+    // Update address if provided
+    if (input.address || input.district || input.state || input.pincode) {
+      existingUser.savedAddress = {
+        street: input.address || existingUser.savedAddress?.street || '',
+        district: input.district || existingUser.savedAddress?.district || '',
+        state: input.state || existingUser.savedAddress?.state || '',
+        city: input.district || existingUser.savedAddress?.city || '',
+        pincode: input.pincode || existingUser.savedAddress?.pincode || '',
+      };
+    }
+
     existingUser.isActive = true;
     existingUser.otp = undefined;
     existingUser.otpExpiry = undefined;
@@ -259,6 +271,13 @@ export async function signup(
       referralCode: ownReferralCode,
       ...(referredById ? { referredBy: referredById } : {}),
       ...(referredByStaffId ? { referredByStaff: referredByStaffId } : {}),
+      savedAddress: {
+        street: input.address || '',
+        district: input.district || '',
+        state: input.state || '',
+        city: input.district || '',
+        pincode: input.pincode || '',
+      },
       isActive: true,
     });
     shouldIncrementReferrer = Boolean(referredById);
@@ -762,6 +781,7 @@ export async function updateMe(userId: string, input: UpdateMeInput): Promise<IU
     const addressPatch: Partial<{
       street: string;
       city: string;
+      district: string;
       state: string;
       pincode: string;
       landmark?: string;
@@ -786,12 +806,16 @@ export async function updateMe(userId: string, input: UpdateMeInput): Promise<IU
       addressPatch.landmark = undefined;
     }
 
+    const district = (input.savedAddress as any).district?.trim();
+    if (district) addressPatch.district = district;
+
     if (Object.keys(addressPatch).length > 0) {
     const existingAddress = user.savedAddress
       ? { ...user.savedAddress }
       : {
           street: '',
           city: '',
+          district: '',
           state: '',
           pincode: '',
           landmark: '',
@@ -803,7 +827,8 @@ export async function updateMe(userId: string, input: UpdateMeInput): Promise<IU
 
     user.savedAddress = {
       street: mergedAddress.street,
-      city: mergedAddress.city,
+      city: mergedAddress.district || mergedAddress.city,
+      district: mergedAddress.district,
       state: mergedAddress.state,
       pincode: mergedAddress.pincode,
       ...(mergedAddress.landmark ? { landmark: mergedAddress.landmark } : {}),

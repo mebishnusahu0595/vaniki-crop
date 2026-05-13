@@ -319,7 +319,17 @@ export const storefrontApi = {
       user: normalizeAuthUser(response.data.user as AuthUserLike),
     };
   },
-  signup: async (payload: { name: string; email?: string; mobile: string; password: string; referralCode?: string }) => {
+  signup: async (payload: { 
+    name: string; 
+    email?: string; 
+    mobile: string; 
+    password: string; 
+    address?: string;
+    district?: string;
+    state?: string;
+    pincode?: string;
+    referralCode?: string 
+  }) => {
     const response = await request<{ user: AuthUser; accessToken: string }>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify(payload),

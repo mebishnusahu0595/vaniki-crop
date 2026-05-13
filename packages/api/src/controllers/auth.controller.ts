@@ -32,14 +32,26 @@ function generateRefreshToken(id: string): string {
  */
 export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { name, email, mobile, password } = req.body;
+    const { name, email, mobile, password, address, district, state, pincode } = req.body;
 
     const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
     if (existingUser) {
       throw new ApiError(409, 'User with this email or mobile already exists');
     }
 
-    const user = await User.create({ name, email, mobile, password });
+    const user = await User.create({
+      name,
+      email,
+      mobile,
+      password,
+      savedAddress: {
+        street: address,
+        district,
+        state,
+        city: district, // Mapping city to district for compatibility
+        pincode,
+      },
+    });
 
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
@@ -47,7 +59,14 @@ export async function register(req: Request, res: Response, next: NextFunction):
     res.status(201).json({
       success: true,
       data: {
-        user: { id: user.id, name: user.name, email: user.email, mobile: user.mobile, role: user.role },
+        user: { 
+          id: user.id, 
+          name: user.name, 
+          email: user.email, 
+          mobile: user.mobile, 
+          role: user.role,
+          savedAddress: user.savedAddress
+        },
         accessToken,
         refreshToken,
       },
