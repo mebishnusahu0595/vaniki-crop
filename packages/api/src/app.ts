@@ -29,6 +29,7 @@ import adminRoutes from './modules/admin/admin.routes.js';
 import superAdminRoutes from './modules/superadmin/superadmin.routes.js';
 import loyaltyRoutes from './modules/loyalty/loyalty.routes.js';
 import staffRoutes from './modules/staff/staff.routes.js';
+import whatsappRoutes from './modules/whatsapp/whatsapp.routes.js';
 import { Product } from './models/Product.model.js';
 import { Category } from './models/Category.model.js';
 
@@ -220,6 +221,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // ─── Admin API Routes ────────────────────────────────────────────────────
 app.use('/api/admin/categories', categoryAdminRoutes);

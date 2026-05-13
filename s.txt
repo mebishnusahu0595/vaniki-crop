@@ -11,3 +11,5 @@ git pull
 pnpm install
 pnpm build
 pm2 restart vaniki-api
+
+EAANrwacYACIBRUMgTzZCZBKm0vgcHpq6KkNIdoY2sFXISWxkJg6dUZB93y0Gu57C4cPf7O7i6m1m7vRVQkyDYwVfMcmtqbWdl3fdQPlZBxh3HUYj5iNocuYyTujWonCgp75N7xjZA36zSOiSukFWZAiO3tTggAgHJ9Ys6yKKlJwiw8iwVtarZBTMuEHEWZAxptYrCgZDZD

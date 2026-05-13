@@ -63,6 +63,7 @@ export interface IUser extends Document {
   expoPushToken?: string;
   loyaltyPoints: number;
   lastCheckIn?: Date;
+  preferredLanguage?: 'en' | 'hi';
   checkInHistory: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -162,6 +163,11 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ['delivery', 'pickup'],
       default: 'delivery',
+    },
+    preferredLanguage: {
+      type: String,
+      enum: ['en', 'hi'],
+      default: null,
     },
     savedAddress: savedAddressSchema,
     wishlist: [
