@@ -91,4 +91,7 @@ router.delete('/testimonials/:id', superAdminController.deleteTestimonial);
 router.get('/site-settings', superAdminController.getSiteSettings);
 router.patch('/site-settings', validate(updateSiteSettingsSchema), superAdminController.updateSiteSettings);
 
+router.get('/user-referrals', superAdminController.listUserReferrals);
+router.get('/user-referrals/:id', superAdminController.getUserReferralDetails);
+
 export default router;

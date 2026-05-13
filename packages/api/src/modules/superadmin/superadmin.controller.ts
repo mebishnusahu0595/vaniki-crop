@@ -275,3 +275,21 @@ export async function updateStoreSecrets(req: Request, res: Response, next: Next
     next(error);
   }
 }
+
+export async function listUserReferrals(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await superAdminService.listUserReferrals(req.query);
+    res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getUserReferralDetails(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.getUserReferralDetails(req.params.id as string);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}

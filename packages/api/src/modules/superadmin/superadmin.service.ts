@@ -1452,3 +1452,65 @@ export async function updateStoreSecrets(storeId: string, inputSecrets: Record<s
     secrets: maskEncryptedSecrets(storeSecretsDoc.secrets),
   };
 }
+
+export async function listUserReferrals(query: Record<string, any>) {
+  const { page, limit, skip } = parsePagination(query);
+  const filter: Record<string, any> = {
+    role: 'customer',
+    referralCount: { $gt: 0 },
+  };
+
+  if (typeof query.search === 'string' && query.search.trim()) {
+    const searchRegex = new RegExp(query.search.trim(), 'i');
+    filter.$or = [
+      { name: searchRegex },
+      { mobile: searchRegex },
+      { referralCode: searchRegex },
+    ];
+  }
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .select('name mobile referralCode referralCount loyaltyPoints createdAt isActive')
+      .sort({ referralCount: -1 })
+      .skip(skip)
+      .limit(limit),
+    User.countDocuments(filter),
+  ]);
+
+  return createPaginationResponse(users, total, page, limit);
+}
+
+export async function getUserReferralDetails(userId: string) {
+  const referrer = await User.findById(userId).select('name mobile referralCode loyaltyPoints');
+  if (!referrer) {
+    throw new AppError('Referrer not found', 404);
+  }
+
+  const referredUsers = await User.find({ referredBy: userId })
+    .select('name mobile email createdAt')
+    .sort({ createdAt: -1 });
+
+  const referredUserIds = referredUsers.map((u) => u._id);
+
+  const orders = await Order.find({ userId: { $in: referredUserIds } })
+    .select('orderNumber totalAmount status createdAt userId items')
+    .sort({ createdAt: -1 });
+
+  const ordersByUser = new Map<string, any[]>();
+  for (const order of orders) {
+    const uid = order.userId.toString();
+    if (!ordersByUser.has(uid)) ordersByUser.set(uid, []);
+    ordersByUser.get(uid)?.push(order);
+  }
+
+  const detailedReferrals = referredUsers.map((user) => ({
+    ...user.toJSON(),
+    orders: ordersByUser.get(user._id.toString()) || [],
+  }));
+
+  return {
+    referrer,
+    referrals: detailedReferrals,
+  };
+}

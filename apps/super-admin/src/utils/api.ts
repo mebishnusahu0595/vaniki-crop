@@ -605,4 +605,12 @@ export const adminApi = {
     const response = await api.get<ApiResponse<any[]>>(`/staff/${id}/referrals`);
     return response.data.data;
   },
+  userReferrals: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<any[]>>('/superadmin/user-referrals', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
+  userReferralDetails: async (id: string) => {
+    const response = await api.get<ApiResponse<{ referrer: any; referrals: any[] }>>(`/superadmin/user-referrals/${id}`);
+    return response.data.data;
+  },
 };
