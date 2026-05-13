@@ -219,7 +219,7 @@ async function handleAiChat(to: string, text: string, user: any, lang: string) {
       }),
     });
 
-    const aiData = await response.json();
+    const aiData: any = await response.json();
     const aiResponse = aiData.choices?.[0]?.message?.content || (lang === 'hi' ? 'क्षमा करें, मैं अभी उत्तर देने में असमर्थ हूँ।' : 'I am sorry, I am unable to respond right now.');
     
     await sendTextMessage(to, aiResponse);
