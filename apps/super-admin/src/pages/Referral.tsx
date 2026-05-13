@@ -789,7 +789,7 @@ export default function ReferralPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
@@ -824,7 +824,9 @@ export default function ReferralPage() {
               <h3 className="text-2xl font-black text-slate-900">{stats.customer.totalLoyaltyPoints.toLocaleString()}</h3>
             </div>
           </div>
-          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50 text-green-600">
               <Users size={24} />
@@ -835,7 +837,6 @@ export default function ReferralPage() {
             </div>
           </div>
         </div>
-      </div>
       </div>
 
       <div className="min-h-[600px]">
