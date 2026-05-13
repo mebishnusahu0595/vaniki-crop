@@ -644,12 +644,82 @@ function CustomerReferrals() {
             </div>
           </div>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50/50 py-32 text-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white text-primary-200 shadow-sm border border-slate-100">
-              <Award size={48} />
+function WhatsAppReferrals() {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const whatsappQuery = useQuery({
+    queryKey: ['whatsapp-referrals', searchTerm],
+    queryFn: () => adminApi.getWhatsAppReferrals({ search: searchTerm }),
+  });
+
+  const referrals = whatsappQuery.data?.data || [];
+
+  if (whatsappQuery.isLoading) return <LoadingBlock label="Loading WhatsApp referrals..." />;
+
+  return (
+    <div className="space-y-4 animate-in fade-in duration-500">
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+        <input
+          type="text"
+          placeholder="Search WhatsApp users..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500/20"
+        />
+      </div>
+
+      <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="text-lg font-black text-slate-900">WhatsApp Origin Registrations</h3>
+          <button 
+            onClick={() => exportToExcel(referrals, 'whatsapp_referrals')}
+            className="flex items-center gap-2 text-sm font-bold text-primary-600 hover:underline"
+          >
+            <Download size={16} />
+            Export Data
+          </button>
+        </div>
+
+        {referrals.length === 0 ? (
+          <div className="py-20 text-center">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-slate-300">
+              <Users size={40} />
             </div>
-            <h4 className="mt-8 text-xl font-black text-slate-900">Select a Referrer</h4>
-            <p className="mt-2 text-sm font-bold text-slate-400 max-w-xs px-6">Select a user from the list to see who they referred and how much those people have spent on the platform.</p>
+            <p className="mt-6 text-lg font-black text-slate-400">No WhatsApp referrals found</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">
+            {referrals.map((user: any) => (
+              <div key={user.id} className="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 transition hover:bg-slate-50">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 text-green-600 shadow-sm">
+                      <Users size={22} />
+                    </div>
+                    <div>
+                      <p className="text-lg font-black text-slate-900">{user.name}</p>
+                      <p className="text-sm font-bold text-slate-500">{user.mobile}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase text-slate-400">Joined</p>
+                    <p className="text-sm font-bold text-slate-900">{new Date(user.createdAt).toLocaleDateString('en-IN')}</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                   <div className="flex-1 rounded-xl bg-primary-100 p-3 text-center">
+                     <p className="text-lg font-black text-primary-700 leading-none">{user.orders?.length || 0}</p>
+                     <p className="text-[10px] font-bold uppercase text-primary-600 mt-1">Orders</p>
+                   </div>
+                   <div className="flex-1 rounded-xl bg-emerald-100 p-3 text-center">
+                     <p className="text-lg font-black text-emerald-700 leading-none">₹{(user.orders?.reduce((sum: number, o: any) => sum + o.totalAmount, 0) || 0).toLocaleString()}</p>
+                     <p className="text-[10px] font-bold uppercase text-emerald-600 mt-1">Spent</p>
+                   </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -658,7 +728,7 @@ function CustomerReferrals() {
 }
 
 export default function ReferralPage() {
-  const [activeTab, setActiveTab] = useState<'staff' | 'customer'>('staff');
+  const [activeTab, setActiveTab] = useState<'staff' | 'customer' | 'whatsapp'>('staff');
 
   const statsQuery = useQuery({
     queryKey: ['referral-stats'],
@@ -668,6 +738,7 @@ export default function ReferralPage() {
   const stats = statsQuery.data || {
     staff: { totalReferrals: 0 },
     customer: { totalReferrals: 0, totalLoyaltyPoints: 0 },
+    whatsapp: { totalReferrals: 0 },
   };
 
   return (
@@ -701,6 +772,18 @@ export default function ReferralPage() {
           >
             <Award size={18} />
             Customer Referrals
+          </button>
+          <button
+            onClick={() => setActiveTab('whatsapp')}
+            className={cn(
+              "flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-black transition-all duration-300",
+              activeTab === 'whatsapp' 
+                ? "bg-white text-primary-600 shadow-md" 
+                : "text-slate-500 hover:text-slate-700"
+            )}
+          >
+            <Users size={18} />
+            WhatsApp Sources
           </button>
         </div>
       </div>
@@ -741,11 +824,28 @@ export default function ReferralPage() {
               <h3 className="text-2xl font-black text-slate-900">{stats.customer.totalLoyaltyPoints.toLocaleString()}</h3>
             </div>
           </div>
+          <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50 text-green-600">
+              <Users size={24} />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">WhatsApp Referrals</p>
+              <h3 className="text-2xl font-black text-slate-900">{stats.whatsapp?.totalReferrals.toLocaleString() || 0}</h3>
+            </div>
+          </div>
         </div>
+      </div>
       </div>
 
       <div className="min-h-[600px]">
-        {activeTab === 'staff' ? <StaffReferrals /> : <CustomerReferrals />}
+        {activeTab === 'staff' ? (
+          <StaffReferrals />
+        ) : activeTab === 'customer' ? (
+          <CustomerReferrals />
+        ) : (
+          <WhatsAppReferrals />
+        )}
       </div>
     </div>
   );

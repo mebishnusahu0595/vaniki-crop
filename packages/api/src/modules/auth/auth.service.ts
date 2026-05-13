@@ -211,21 +211,26 @@ export async function signup(
 
   let referredById: IUser['_id'] | undefined;
   let referredByStaffId: any | undefined;
+  let referralSource: string | undefined;
 
   if (referralCode) {
     const code = referralCode.trim().toUpperCase();
     
-    // First check if it's a User referral
-    const referrer = await User.findOne({ referralCode: code }).select('_id');
-    if (referrer) {
-      referredById = referrer._id;
+    if (code === 'WHATSAPP') {
+      referralSource = 'WHATSAPP';
     } else {
-      // Then check if it's a Staff referral
-      const staff = await Staff.findOne({ referralCode: code, isActive: true }).select('_id');
-      if (staff) {
-        referredByStaffId = staff._id;
+      // First check if it's a User referral
+      const referrer = await User.findOne({ referralCode: code }).select('_id');
+      if (referrer) {
+        referredById = referrer._id;
       } else {
-        throw new AppError('Invalid referral code', 400);
+        // Then check if it's a Staff referral
+        const staff = await Staff.findOne({ referralCode: code, isActive: true }).select('_id');
+        if (staff) {
+          referredByStaffId = staff._id;
+        } else {
+          throw new AppError('Invalid referral code', 400);
+        }
       }
     }
   }
@@ -246,6 +251,9 @@ export async function signup(
     }
     if (referredByStaffId && !existingUser.referredByStaff) {
       existingUser.referredByStaff = referredByStaffId;
+    }
+    if (referralSource) {
+      existingUser.referralSource = referralSource;
     }
     
     // Update address if provided
@@ -272,6 +280,7 @@ export async function signup(
       referralCode: ownReferralCode,
       ...(referredById ? { referredBy: referredById } : {}),
       ...(referredByStaffId ? { referredByStaff: referredByStaffId } : {}),
+      ...(referralSource ? { referralSource } : {}),
       savedAddress: {
         street: input.address || '',
         district: input.district || '',

@@ -302,3 +302,12 @@ export async function getReferralStats(_req: Request, res: Response, next: NextF
     next(error);
   }
 }
+
+export async function listWhatsAppReferrals(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await superAdminService.listWhatsAppReferrals(req.query);
+    res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
+  } catch (error) {
+    next(error);
+  }
+}

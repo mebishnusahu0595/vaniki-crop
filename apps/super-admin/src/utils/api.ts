@@ -617,4 +617,8 @@ export const adminApi = {
     const response = await api.get<ApiResponse<any>>('/superadmin/referral-stats');
     return response.data.data;
   },
+  getWhatsAppReferrals: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<any[]>>('/superadmin/whatsapp-referrals', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
 };

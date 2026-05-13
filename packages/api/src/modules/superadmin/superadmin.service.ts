@@ -1516,21 +1516,16 @@ export async function getUserReferralDetails(userId: string) {
 }
 
 export async function getReferralStats() {
-  const [staffStats, userStats] = await Promise.all([
-    User.aggregate([
+  const [staffStats, userStats, whatsappCount] = await Promise.all([
+    Staff.aggregate([
       { $match: { role: 'referral' } },
       { $group: { _id: null, totalReferrals: { $sum: '$referralCount' } } },
     ]),
     User.aggregate([
-      { $match: { role: 'customer', referralCount: { $gt: 0 } } },
-      {
-        $group: {
-          _id: null,
-          totalReferrals: { $sum: '$referralCount' },
-          totalLoyaltyPoints: { $sum: '$loyaltyPoints' },
-        },
-      },
+      { $match: { role: 'customer' } },
+      { $group: { _id: null, totalReferrals: { $sum: '$referralCount' }, totalLoyaltyPoints: { $sum: '$loyaltyPoints' } } },
     ]),
+    User.countDocuments({ referralSource: 'WHATSAPP' }),
   ]);
 
   return {
@@ -1541,5 +1536,43 @@ export async function getReferralStats() {
       totalReferrals: userStats[0]?.totalReferrals || 0,
       totalLoyaltyPoints: userStats[0]?.totalLoyaltyPoints || 0,
     },
+    whatsapp: {
+      totalReferrals: whatsappCount || 0,
+    },
   };
+}
+
+export async function listWhatsAppReferrals(query: Record<string, any>) {
+  const { page, limit, skip } = parsePagination(query);
+  const filter: Record<string, any> = { referralSource: 'WHATSAPP' };
+
+  if (typeof query.search === 'string' && query.search.trim()) {
+    const searchRegex = new RegExp(query.search.trim(), 'i');
+    filter.$or = [{ name: searchRegex }, { mobile: searchRegex }, { email: searchRegex }];
+  }
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .select('name mobile email createdAt savedAddress'),
+    User.countDocuments(filter),
+  ]);
+
+  const userIds = users.map((u) => u._id);
+  const orders = await Order.find({ userId: { $in: userIds } }).select(
+    'userId totalAmount status orderNumber items createdAt',
+  );
+
+  const rows = users.map((user) => {
+    const userOrders = orders.filter((o) => o.userId.toString() === user._id.toString());
+    return {
+      ...user.toJSON(),
+      id: user._id,
+      orders: userOrders,
+    };
+  });
+
+  return createPaginationResponse(rows, total, page, limit);
 }
