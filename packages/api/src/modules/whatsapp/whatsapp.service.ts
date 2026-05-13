@@ -97,9 +97,12 @@ export async function processIncomingMessage(message: any, contact: any) {
   const text = (message.text?.body || message.interactive?.button_reply?.title || '').toLowerCase();
 
   // 3. Command & Profile Handling
+  const isOrderHistoryIntent = (text.includes('my order') || text.includes('order status') || text.includes('status') || text === 'order' || text === 'आर्डर') 
+                               && !text.includes('buy') && !text.includes('want to');
+
   if (text === '/commands' || text === 'help' || text === 'menu' || text === 'मदद') {
     await handleHelpCommand(from, lang);
-  } else if (text.includes('order') || text.includes('आर्डर') || text.includes('ऑर्डर') || text.includes('status')) {
+  } else if (isOrderHistoryIntent) {
     await handleOrderQuery(from, user, lang);
   } else if (text.startsWith('name ') || text.startsWith('नाम ')) {
     await handleProfileUpdate(from, user, 'name', text.split(' ').slice(1).join(' '));
@@ -110,7 +113,7 @@ export async function processIncomingMessage(message: any, contact: any) {
   } else if (text.includes('delivery') || text.includes('डिलीवरी')) {
     await handleProfileUpdate(from, user, 'serviceMode', 'delivery');
   } else {
-    // Default to AI Chat for everything else
+    // Default to AI Chat for everything else (Products, Diseases, Buying)
     await handleAiChat(from, text, user, lang);
   }
 }
@@ -226,25 +229,25 @@ async function handleAiChat(to: string, text: string, user: any, lang: string) {
     const products = await Product.find({ isActive: true }).limit(20).select('name slug shortDescription variants');
     const productContext = products.map(p => `- ${p.name}: ${p.shortDescription} (Price: ₹${p.variants[0]?.price || '-'}). Link: ${APP_URL}/product/${p.slug}`).join('\n');
 
-    const systemPrompt = `You are "Ask Vaniki", the official Senior Agriculture Expert for Vaniki Crop.
+    const systemPrompt = `You are "Ask Vaniki", the Senior Agriculture Expert and Shopping Assistant for Vaniki Crop.
     Current Language: ${lang === 'hi' ? 'Hindi' : 'English'}.
     
-    CRITICAL INSTRUCTIONS:
-    1. Respond strictly in ${lang === 'hi' ? 'Hindi' : 'English'}.
-    2. Only suggest products from the list below. Do not invent products.
-    3. Always provide the full product link if you suggest a product.
-    4. If the user describes a crop problem (pest, disease, nutrition), act as a doctor and prescribe the best matching product from our list.
-    5. If you don't find a matching product, tell them to visit our store or contact support.
-    6. For order status, tell them to type "My Order".
-    7. Use bolding and emojis to make the response premium and readable.
-    8. You have READ-ONLY access to the data provided below.
+    CRITICAL RULES:
+    1. If the user asks for a specific category (like "Pesticides"), ONLY show products from that category. 
+    2. If a specific product (like "Rudra 505") is mentioned, find and provide info for ONLY that product.
+    3. If you cannot find a matching product in the list below, say: "क्षमा करें, यह अभी उपलब्ध नहीं है।" (Sorry, this is not available right now).
+    4. NEVER invent products or suggest products from outside the provided list.
+    5. Always provide the full link: ${APP_URL}/product/[slug]
+    6. Use emojis (🚜, 💊, 📦) and bold text to keep it professional and premium.
+    7. If the user wants to buy/order, give them the product link and tell them they can pay via Cash on Delivery (COD).
+    8. For order history/status, tell them to type "My Order".
     
-    AVAILABLE PRODUCTS:
+    AVAILABLE PRODUCTS DATA:
     ${productContext}
     
     USER PROFILE:
     Name: ${user.name}
-    Language: ${lang}`;
+    Preferred Language: ${lang}`;
 
     const response = await fetch(`${DEEPSEEK_API_URL}/chat/completions`, {
       method: 'POST',
