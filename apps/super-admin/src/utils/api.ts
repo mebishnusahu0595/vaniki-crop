@@ -613,4 +613,8 @@ export const adminApi = {
     const response = await api.get<ApiResponse<{ referrer: any; referrals: any[] }>>(`/superadmin/user-referrals/${id}`);
     return response.data.data;
   },
+  referralStats: async () => {
+    const response = await api.get<ApiResponse<any>>('/superadmin/referral-stats');
+    return response.data.data;
+  },
 };

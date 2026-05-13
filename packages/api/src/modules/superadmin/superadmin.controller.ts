@@ -293,3 +293,12 @@ export async function getUserReferralDetails(req: Request, res: Response, next: 
     next(error);
   }
 }
+
+export async function getReferralStats(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.getReferralStats();
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}

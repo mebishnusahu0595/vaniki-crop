@@ -1514,3 +1514,32 @@ export async function getUserReferralDetails(userId: string) {
     referrals: detailedReferrals,
   };
 }
+
+export async function getReferralStats() {
+  const [staffStats, userStats] = await Promise.all([
+    User.aggregate([
+      { $match: { role: 'referral' } },
+      { $group: { _id: null, totalReferrals: { $sum: '$referralCount' } } },
+    ]),
+    User.aggregate([
+      { $match: { role: 'customer', referralCount: { $gt: 0 } } },
+      {
+        $group: {
+          _id: null,
+          totalReferrals: { $sum: '$referralCount' },
+          totalLoyaltyPoints: { $sum: '$loyaltyPoints' },
+        },
+      },
+    ]),
+  ]);
+
+  return {
+    staff: {
+      totalReferrals: staffStats[0]?.totalReferrals || 0,
+    },
+    customer: {
+      totalReferrals: userStats[0]?.totalReferrals || 0,
+      totalLoyaltyPoints: userStats[0]?.totalLoyaltyPoints || 0,
+    },
+  };
+}

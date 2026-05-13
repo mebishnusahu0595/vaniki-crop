@@ -660,6 +660,16 @@ function CustomerReferrals() {
 export default function ReferralPage() {
   const [activeTab, setActiveTab] = useState<'staff' | 'customer'>('staff');
 
+  const statsQuery = useQuery({
+    queryKey: ['referral-stats'],
+    queryFn: () => adminApi.referralStats(),
+  });
+
+  const stats = statsQuery.data || {
+    staff: { totalReferrals: 0 },
+    customer: { totalReferrals: 0, totalLoyaltyPoints: 0 },
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -692,6 +702,45 @@ export default function ReferralPage() {
             <Award size={18} />
             Customer Referrals
           </button>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
+              <UserCheck size={24} />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Staff Referrals</p>
+              <h3 className="text-2xl font-black text-slate-900">{stats.staff.totalReferrals.toLocaleString()}</h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+              <Users size={24} />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">User Referrals</p>
+              <h3 className="text-2xl font-black text-slate-900">{stats.customer.totalReferrals.toLocaleString()}</h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+              <Wallet size={24} />
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400">Total Loyalty Points</p>
+              <h3 className="text-2xl font-black text-slate-900">{stats.customer.totalLoyaltyPoints.toLocaleString()}</h3>
+            </div>
+          </div>
         </div>
       </div>
 

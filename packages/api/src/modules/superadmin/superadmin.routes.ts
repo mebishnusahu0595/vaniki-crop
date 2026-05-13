@@ -93,5 +93,6 @@ router.patch('/site-settings', validate(updateSiteSettingsSchema), superAdminCon
 
 router.get('/user-referrals', superAdminController.listUserReferrals);
 router.get('/user-referrals/:id', superAdminController.getUserReferralDetails);
+router.get('/referral-stats', superAdminController.getReferralStats);
 
 export default router;
