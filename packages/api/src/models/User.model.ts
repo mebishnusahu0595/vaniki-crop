@@ -165,11 +165,6 @@ const userSchema = new Schema<IUser>(
       enum: ['delivery', 'pickup'],
       default: 'delivery',
     },
-    preferredLanguage: {
-      type: String,
-      enum: ['en', 'hi'],
-      default: null,
-    },
     savedAddress: savedAddressSchema,
     wishlist: [
       {
