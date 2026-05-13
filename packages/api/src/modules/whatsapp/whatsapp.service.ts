@@ -97,7 +97,9 @@ export async function processIncomingMessage(message: any, contact: any) {
   const text = (message.text?.body || message.interactive?.button_reply?.title || '').toLowerCase();
 
   // 3. Command & Profile Handling
-  if (text.includes('order') || text.includes('आर्डर') || text.includes('ऑर्डर') || text.includes('status')) {
+  if (text === '/commands' || text === 'help' || text === 'menu' || text === 'मदद') {
+    await handleHelpCommand(from, lang);
+  } else if (text.includes('order') || text.includes('आर्डर') || text.includes('ऑर्डर') || text.includes('status')) {
     await handleOrderQuery(from, user, lang);
   } else if (text.startsWith('name ') || text.startsWith('नाम ')) {
     await handleProfileUpdate(from, user, 'name', text.split(' ').slice(1).join(' '));
@@ -111,6 +113,35 @@ export async function processIncomingMessage(message: any, contact: any) {
     // Default to AI Chat for everything else
     await handleAiChat(from, text, user, lang);
   }
+}
+
+/**
+ * Shows all available commands
+ */
+async function handleHelpCommand(to: string, lang: string) {
+  const msg = lang === 'hi'
+    ? `🛠️ *Vaniki WhatsApp कमांड्स:*
+
+1. 📋 *My Order* - अपने ऑर्डर्स ट्रैक करने के लिए।
+2. 👨‍🌾 *Kheti Sawal* - खेती की समस्या पूछें (जैसे: "धान का इलाज")।
+3. ⚙️ *नाम [Naya Name]* - अपना नाम बदलें (e.g., "नाम राम")।
+4. 🏠 *पता [Naya Address]* - अपना पता बदलें।
+5. 🛒 *Pickup* / *Delivery* - आर्डर का तरीका बदलें।
+6. ❓ */commands* - यह मेनू फिर से देखने के लिए।
+
+आप कुछ भी सामान्य सवाल भी पूछ सकते हैं, हमारा AI आपकी मदद करेगा! ✨`
+    : `🛠️ *Vaniki WhatsApp Commands:*
+
+1. 📋 *My Order* - To track your orders.
+2. 👨‍🌾 *Farming Query* - Ask any farming issue (e.g., "Rice pests").
+3. ⚙️ *name [New Name]* - Change your name.
+4. 🏠 *address [New Address]* - Change your address.
+5. 🛒 *Pickup* / *Delivery* - Change service mode.
+6. ❓ */commands* - To see this menu again.
+
+You can also ask anything else, our AI is here to help! ✨`;
+
+  await sendTextMessage(to, msg);
 }
 
 /**
