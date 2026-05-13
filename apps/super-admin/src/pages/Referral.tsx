@@ -644,6 +644,19 @@ function CustomerReferrals() {
             </div>
           </div>
         ) : (
+          <div className="flex h-full flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50/50 py-32 text-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white text-primary-200 shadow-sm border border-slate-100">
+              <Award size={48} />
+            </div>
+            <h4 className="mt-8 text-xl font-black text-slate-900">Select a Referrer</h4>
+            <p className="mt-2 text-sm font-bold text-slate-400 max-w-xs px-6">Select a user from the list to see who they referred and how much those people have spent on the platform.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function WhatsAppReferrals() {
   const [searchTerm, setSearchTerm] = useState('');
 
