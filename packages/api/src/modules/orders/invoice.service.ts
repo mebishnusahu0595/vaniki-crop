@@ -66,8 +66,9 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
   return new Promise((resolve, reject) => {
     try {
       const isA5 = (options.size || 'A5') === 'A5';
+      console.log(`[PDF] Generating invoice in ${isA5 ? 'A5' : 'A4'} format for order: ${order.orderNumber}`);
       const pageMargin = isA5 ? 24 : 36;
-      const doc = new PDFDocument({ margin: pageMargin, size: isA5 ? 'A5' : 'A4', layout: 'portrait' });
+      const doc = new PDFDocument({ margin: pageMargin, size: 'A5', layout: 'portrait' });
       const buffers: Buffer[] = [];
       doc.on('data', buffers.push.bind(buffers));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
