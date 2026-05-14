@@ -106,7 +106,7 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
     const orderId = (req.params as any).id;
     const order = await Order.findById(orderId)
       .populate('userId', 'name mobile email savedAddress')
-      .populate('storeId', 'name address phone email gstNumber sgstNumber cgst sgst igst panNumber')
+      .populate('storeId', 'name address phone email gstNumber sgstNumber cgst sgst igst panNumber adminId')
       .populate('items.productId', 'name slug description shortDescription images');
     if (!order) throw new AppError('Order not found', 404);
 

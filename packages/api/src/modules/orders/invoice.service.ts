@@ -149,8 +149,11 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
           SiteSetting.findOne().lean(),
           ...order.items.map(async (item: any) => {
             if (!item.hsnCode && item.productId) {
-              const p = await Product.findById(item.productId).select('hsnCode').lean();
-              if (p?.hsnCode) item.hsnCode = p.hsnCode;
+              const p = await Product.findById(item.productId).select('variants').lean();
+              if (p?.variants) {
+                const variant = p.variants.find((v: any) => (v._id?.toString() || v.id?.toString()) === item.variantId?.toString());
+                if (variant?.hsnCode) item.hsnCode = variant.hsnCode;
+              }
             }
           })
         ]);

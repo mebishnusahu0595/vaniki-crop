@@ -398,6 +398,20 @@ export default function SettingsPage() {
             {errors.email ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.email.message}</p> : null}
           </div>
 
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">GST Number (From Profile)</label>
+            <div className="w-full rounded-2xl border border-primary-100 bg-slate-50 px-4 py-3 text-slate-600 font-mono">
+              {(user as any)?.dealerProfile?.gstNumber || '-'}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">SGST Number (From Profile)</label>
+            <div className="w-full rounded-2xl border border-primary-100 bg-slate-50 px-4 py-3 text-slate-600 font-mono">
+              {(user as any)?.dealerProfile?.sgstNumber || '-'}
+            </div>
+          </div>
+
           <div className="md:col-span-2">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500">Personal Address</p>
             <div className="grid gap-4 rounded-2xl border border-primary-100 bg-primary-50/40 p-4 md:grid-cols-2">
