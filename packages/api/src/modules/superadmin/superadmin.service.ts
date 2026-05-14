@@ -1517,21 +1517,26 @@ export async function getUserReferralDetails(userId: string) {
 }
 
 export async function getReferralStats() {
-  const [staffStats, userStats, whatsappCount] = await Promise.all([
-    Staff.aggregate([
-      { $match: { role: 'referral' } },
-      { $group: { _id: null, totalReferrals: { $sum: '$referralCount' } } },
-    ]),
+  const [staffReferralCount, userStats, whatsappCount] = await Promise.all([
+    // Count all users that were referred by any staff member
+    User.countDocuments({ referredByStaff: { $ne: null } }),
+    // Sum stats only for customers who have actually referred someone
     User.aggregate([
-      { $match: { role: 'customer' } },
-      { $group: { _id: null, totalReferrals: { $sum: '$referralCount' }, totalLoyaltyPoints: { $sum: '$loyaltyPoints' } } },
+      { $match: { role: 'customer', referralCount: { $gt: 0 } } },
+      { 
+        $group: { 
+          _id: null, 
+          totalReferrals: { $sum: '$referralCount' }, 
+          totalLoyaltyPoints: { $sum: '$loyaltyPoints' } 
+        } 
+      },
     ]),
     User.countDocuments({ referralSource: 'WHATSAPP' }),
   ]);
 
   return {
     staff: {
-      totalReferrals: staffStats[0]?.totalReferrals || 0,
+      totalReferrals: staffReferralCount || 0,
     },
     customer: {
       totalReferrals: userStats[0]?.totalReferrals || 0,
