@@ -43,9 +43,9 @@ export function parseVariantLabel(label: string) {
   return {
     quantity: match[1],
     unit:
-      unit === 'l'
+      unit === 'l' || unit === 'liter'
         ? 'Liter'
-        : unit === 'g'
+        : unit === 'g' || unit === 'gm'
           ? 'gm'
           : unit === 'kg'
             ? 'KG'

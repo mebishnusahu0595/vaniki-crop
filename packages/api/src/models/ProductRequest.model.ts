@@ -12,7 +12,7 @@ export interface IProductRequest extends Document {
   garageName: string;
   petiQuantity: number;
   petiSize: number;
-  petiUnit: 'Liter' | 'Kg';
+  petiUnit: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';
   notes?: string;
   status: ProductRequestStatus;
   dealerPrice?: number;
@@ -76,7 +76,7 @@ const productRequestSchema = new Schema<IProductRequest>(
     },
     petiUnit: {
       type: String,
-      enum: ['Liter', 'Kg'],
+      enum: ['ml', 'Liter', 'gm', 'KG', 'Packet', 'piece'],
       default: 'Liter',
     },
     notes: {

@@ -70,7 +70,7 @@ export interface IProduct extends Document {
   hsnCode?: string;
   taxRate: number;
   petiSize: number;
-  petiUnit: 'Liter' | 'Kg';
+  petiUnit: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -194,7 +194,7 @@ const productSchema = new Schema<IProduct>(
     hsnCode: { type: String, trim: true },
     taxRate: { type: Number, default: 0, min: 0 },
     petiSize: { type: Number, default: 12 },
-    petiUnit: { type: String, enum: ['Liter', 'Kg'], default: 'Liter' },
+  petiUnit: { type: String, enum: ['ml', 'Liter', 'gm', 'KG', 'Packet', 'piece'], default: 'Liter' },
   },
   {
     timestamps: true,

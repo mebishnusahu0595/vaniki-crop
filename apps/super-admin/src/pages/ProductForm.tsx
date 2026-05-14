@@ -57,7 +57,7 @@ const productSchema = z.object({
   loyaltyPointEligible: z.boolean().default(true),
   maxLoyaltyPoints: requiredNumber('Max Loyalty Points').default(0),
   petiSize: requiredNumber('Peti Size').default(12),
-  petiUnit: z.enum(['Liter', 'Kg']).default('Liter'),
+  petiUnit: z.enum(units).default('Liter'),
 });
 
 type ProductFormInput = z.input<typeof productSchema>;
@@ -506,8 +506,11 @@ function ProductEditor({
             <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Peti Unit</label>
               <select {...register('petiUnit')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-                <option value="Liter">Liter</option>
-                <option value="Kg">Kg</option>
+                {units.map((unit) => (
+                  <option key={unit} value={unit}>
+                    {unit}
+                  </option>
+                ))}
               </select>
               {errors.petiUnit ? <p className="mt-2 text-sm text-rose-600">{errors.petiUnit.message}</p> : null}
             </div>

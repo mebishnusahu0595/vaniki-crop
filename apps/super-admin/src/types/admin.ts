@@ -49,7 +49,7 @@ export interface Product {
   loyaltyPointEligible?: boolean;
   maxLoyaltyPoints?: number;
   petiSize?: number;
-  petiUnit?: 'Liter' | 'Kg';
+  petiUnit?: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';
   metaTitle?: string;
   metaDescription?: string;
   totalSold?: number;
@@ -391,7 +391,7 @@ export interface ProductRequest {
   garageName?: string;
   petiQuantity?: number;
   petiSize?: number;
-  petiUnit?: 'Liter' | 'Kg';
+  petiUnit?: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';
   notes?: string;
   dealerPrice?: number;
   offerPrice?: number;
