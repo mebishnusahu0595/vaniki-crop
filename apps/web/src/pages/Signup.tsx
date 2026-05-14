@@ -150,6 +150,7 @@ const Signup: React.FC = () => {
                       ...current,
                       state: result.state,
                       district: result.district,
+                      address: result.block || current.address,
                     }));
                   }
                 }

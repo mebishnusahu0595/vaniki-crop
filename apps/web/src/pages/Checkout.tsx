@@ -13,7 +13,7 @@ import { storefrontApi } from '../utils/api';
 import { getApiErrorMessage } from '../utils/error';
 import { currencyFormatter, formatStoreAddress } from '../utils/format';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { INDIAN_STATES } from '@vaniki/shared';
+import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
 import { lookupPincode } from '../utils/pincode';
 
 
@@ -62,6 +62,7 @@ const Checkout: React.FC = () => {
     mobile: user?.mobile || '',
     street: address?.street || user?.savedAddress?.street || '',
     city: address?.city || user?.savedAddress?.city || '',
+    district: address?.district || user?.savedAddress?.district || '',
     state: address?.state || user?.savedAddress?.state || '',
     pincode: address?.pincode || user?.savedAddress?.pincode || '',
   });
@@ -193,6 +194,7 @@ const Checkout: React.FC = () => {
               mobile: formData.mobile,
               street: formData.street,
               city: formData.city,
+              district: formData.district,
               state: formData.state,
               pincode: formData.pincode,
             } : undefined;
@@ -211,7 +213,7 @@ const Checkout: React.FC = () => {
       };
 
       if (shippingAddress) {
-        setAddress({ street: shippingAddress.street, city: shippingAddress.city, state: shippingAddress.state, pincode: shippingAddress.pincode });
+        setAddress({ street: shippingAddress.street, city: shippingAddress.city, district: shippingAddress.district, state: shippingAddress.state, pincode: shippingAddress.pincode });
       }
 
       setIsProcessing(true);
@@ -437,7 +439,7 @@ const Checkout: React.FC = () => {
                     if (pincode.length === 6) {
                       const result = await lookupPincode(pincode);
                       if (result) {
-                        setFormData(c => ({...c, state: result.state, city: result.district}));
+                        setFormData(c => ({...c, state: result.state, district: result.district, city: result.block || result.district}));
                       }
                     }
                   }}
@@ -447,7 +449,7 @@ const Checkout: React.FC = () => {
                 />
                 <select
                   value={formData.state}
-                  onChange={(e) => setFormData(c => ({...c, state: e.target.value}))}
+                  onChange={(e) => setFormData(c => ({...c, state: e.target.value, district: ''}))}
                   className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
                 >
                   <option value="">{t('checkoutPage.state')}</option>
@@ -455,6 +457,28 @@ const Checkout: React.FC = () => {
                     <option key={state} value={state}>{state}</option>
                   ))}
                 </select>
+
+                <div className="sm:col-span-1">
+                  {STATE_DISTRICTS[formData.state] ? (
+                    <select
+                      value={formData.district}
+                      onChange={(e) => setFormData(c => ({...c, district: e.target.value}))}
+                      className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                    >
+                      <option value="">Select District</option>
+                      {STATE_DISTRICTS[formData.state].map(district => (
+                        <option key={district} value={district}>{district}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={formData.district}
+                      onChange={(e) => setFormData(c => ({...c, district: e.target.value}))}
+                      placeholder="District"
+                      className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40"
+                    />
+                  )}
+                </div>
               </div>
             </section>
           )}

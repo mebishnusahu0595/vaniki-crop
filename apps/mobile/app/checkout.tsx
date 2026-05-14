@@ -14,6 +14,9 @@ import { useServiceModeStore } from '../src/store/useServiceModeStore';
 import { useStoreStore } from '../src/store/useStoreStore';
 import { storefrontApi } from '../src/lib/api';
 import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
+import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
+import { lookupPincode } from '../src/utils/pincode';
+import { SelectionModal } from '../src/components/SelectionModal';
 
 function getCheckoutErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) return error.message;
@@ -52,8 +55,12 @@ export default function CheckoutScreen() {
   const [mobile, setMobile] = useState(user?.mobile || '');
   const [street, setStreet] = useState(address?.street || user?.savedAddress?.street || '');
   const [city, setCity] = useState(address?.city || user?.savedAddress?.city || '');
+  const [district, setDistrict] = useState(address?.district || user?.savedAddress?.district || '');
   const [state, setState] = useState(address?.state || user?.savedAddress?.state || '');
   const [pincode, setPincode] = useState(address?.pincode || user?.savedAddress?.pincode || '');
+
+  const [stateModalVisible, setStateModalVisible] = useState(false);
+  const [districtModalVisible, setDistrictModalVisible] = useState(false);
   
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [activeStoreId, setActiveStoreId] = useState(selectedStore?.id || '');
@@ -74,14 +81,15 @@ export default function CheckoutScreen() {
     () => ({
       street: street,
       city: city,
+      district: district,
       state: state,
       pincode: pincode,
       landmark: address?.landmark || user?.savedAddress?.landmark || '',
     }),
-    [street, city, state, pincode, address?.landmark, user?.savedAddress?.landmark],
+    [street, city, district, state, pincode, address?.landmark, user?.savedAddress?.landmark],
   );
   const debouncedAddressSignature = useDebouncedValue(
-    `${addressDraft.street}|${addressDraft.city}|${addressDraft.state}|${addressDraft.pincode}|${addressDraft.landmark || ''}`,
+    `${addressDraft.street}|${addressDraft.city}|${addressDraft.district}|${addressDraft.state}|${addressDraft.pincode}|${addressDraft.landmark || ''}`,
     700,
   );
 
@@ -95,9 +103,10 @@ export default function CheckoutScreen() {
     if (mode !== 'delivery' || !address) return;
     if (address.street !== street) setStreet(address.street || '');
     if (address.city !== city) setCity(address.city || '');
+    if (address.district !== district) setDistrict(address.district || '');
     if (address.state !== state) setState(address.state || '');
     if (address.pincode !== pincode) setPincode(address.pincode || '');
-  }, [address?.street, address?.city, address?.state, address?.pincode, mode]);
+  }, [address?.street, address?.city, address?.district, address?.state, address?.pincode, mode]);
 
   useEffect(() => {
     setActiveStoreId(selectedStore?.id || '');
@@ -105,7 +114,7 @@ export default function CheckoutScreen() {
 
   useEffect(() => {
     if (mode !== 'delivery' || !token || !user?.id) return;
-    if (!addressDraft.street || !addressDraft.city || !addressDraft.state || !addressDraft.pincode) return;
+    if (!addressDraft.street || !addressDraft.city || !addressDraft.district || !addressDraft.state || !addressDraft.pincode) return;
     if (debouncedAddressSignature === lastSavedAddressSignature.current) return;
 
     let cancelled = false;
@@ -147,6 +156,7 @@ export default function CheckoutScreen() {
           mobile: mobile.trim(),
           street: addressDraft.street.trim(),
           city: addressDraft.city.trim(),
+          district: addressDraft.district.trim(),
           state: addressDraft.state.trim(),
           pincode: addressDraft.pincode.trim(),
           landmark: addressDraft.landmark,
@@ -299,26 +309,133 @@ export default function CheckoutScreen() {
         <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
           <Text className="text-lg font-black text-primary-900">Delivery Address</Text>
           <View className="mt-4 gap-3">
-            {([
-              [name, setName, 'Full Name'],
-              [mobile, setMobile, 'Mobile Number'],
-              [street, setStreet, 'Street Address'],
-              [city, setCity, 'City'],
-              [state, setState, 'State'],
-              [pincode, setPincode, 'Pincode'],
-            ] as const).map(([value, setter, placeholder]) => (
-              <View key={placeholder}>
-                <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">{placeholder}</Text>
-                <TextInput
-                  value={value}
-                  onChangeText={setter}
-                  onFocus={onInputFocus}
-                  placeholder={placeholder}
-                  className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-                  placeholderTextColor="#7a978b"
-                />
+            <View>
+              <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Full Name</Text>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                onFocus={onInputFocus}
+                placeholder="Full Name"
+                className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                placeholderTextColor="#7a978b"
+              />
+            </View>
+
+            <View>
+              <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Mobile Number</Text>
+              <TextInput
+                value={mobile}
+                onChangeText={setMobile}
+                onFocus={onInputFocus}
+                placeholder="Mobile Number"
+                className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                placeholderTextColor="#7a978b"
+              />
+            </View>
+
+            <View>
+              <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Street Address</Text>
+              <TextInput
+                value={street}
+                onChangeText={setStreet}
+                onFocus={onInputFocus}
+                placeholder="Street Address"
+                className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                placeholderTextColor="#7a978b"
+              />
+            </View>
+
+            <View>
+              <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Pincode</Text>
+              <TextInput
+                value={pincode}
+                onChangeText={async (v) => {
+                  const p = v.replace(/\D/g, '');
+                  setPincode(p);
+                  if (p.length === 6) {
+                    const result = await lookupPincode(p);
+                    if (result) {
+                      setState(result.state);
+                      setDistrict(result.district);
+                      setCity(result.block || result.district);
+                    }
+                  }
+                }}
+                onFocus={onInputFocus}
+                placeholder="Pincode"
+                keyboardType="number-pad"
+                maxLength={6}
+                className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                placeholderTextColor="#7a978b"
+              />
+            </View>
+
+            <View className="flex-row gap-2">
+              <View className="flex-1">
+                <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">State</Text>
+                <Pressable 
+                  onPress={() => setStateModalVisible(true)}
+                  className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4"
+                >
+                  <Text style={{ color: state ? '#143D2E' : '#7a978b' }} className="text-base font-medium">
+                    {state || 'Select State'}
+                  </Text>
+                </Pressable>
               </View>
-            ))}
+
+              <View className="flex-1">
+                <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">District</Text>
+                {STATE_DISTRICTS[state] ? (
+                  <Pressable 
+                    onPress={() => setDistrictModalVisible(true)}
+                    className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4"
+                  >
+                    <Text style={{ color: district ? '#143D2E' : '#7a978b' }} className="text-base font-medium">
+                      {district || 'Select District'}
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <TextInput
+                    value={district}
+                    onChangeText={setDistrict}
+                    onFocus={onInputFocus}
+                    placeholder="District"
+                    className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                    placeholderTextColor="#7a978b"
+                  />
+                )}
+              </View>
+            </View>
+
+            <View>
+              <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">City</Text>
+              <TextInput
+                value={city}
+                onChangeText={setCity}
+                onFocus={onInputFocus}
+                placeholder="City"
+                className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                placeholderTextColor="#7a978b"
+              />
+            </View>
+
+            <SelectionModal
+              visible={stateModalVisible}
+              onClose={() => setStateModalVisible(false)}
+              title="Select State"
+              options={INDIAN_STATES}
+              selectedValue={state}
+              onSelect={(v) => { setState(v); setDistrict(''); }}
+            />
+
+            <SelectionModal
+              visible={districtModalVisible}
+              onClose={() => setDistrictModalVisible(false)}
+              title="Select District"
+              options={STATE_DISTRICTS[state] || []}
+              selectedValue={district}
+              onSelect={(v) => setDistrict(v)}
+            />
           </View>
         </View>
       )}
@@ -513,7 +630,7 @@ export default function CheckoutScreen() {
             return;
           }
 
-          if (mode === 'delivery' && (!name || !mobile || !street || !city || !state || !pincode)) {
+          if (mode === 'delivery' && (!name || !mobile || !street || !city || !district || !state || !pincode)) {
             Alert.alert('Complete address', 'Please complete the delivery form.');
             return;
           }
