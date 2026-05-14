@@ -1,4 +1,6 @@
 import PDFDocument from 'pdfkit';
+import Product from '../../models/Product.model';
+import SiteSetting from '../../models/SiteSetting.model';
 
 function formatMoney(value: number) {
   return `Rs. ${Number(value || 0).toFixed(2)}`;
@@ -139,6 +141,23 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
       const isA5 = (options.size || 'A5') === 'A5';
       const layout = isA5 ? A5_LAYOUT : A4_LAYOUT;
       
+      // Fetch missing HSN codes and Global GST if needed
+      let globalGst = '-';
+      try {
+        const [settings] = await Promise.all([
+          SiteSetting.findOne().lean(),
+          ...order.items.map(async (item: any) => {
+            if (!item.hsnCode && item.productId) {
+              const p = await Product.findById(item.productId).select('hsnCode').lean();
+              if (p?.hsnCode) item.hsnCode = p.hsnCode;
+            }
+          })
+        ]);
+        if (settings?.gstNumber) globalGst = settings.gstNumber;
+      } catch (e) {
+        console.error('[PDF] Error fetching fallback data:', e);
+      }
+
       console.log(`[PDF] Generating RESPONSIVE invoice in ${isA5 ? 'A5' : 'A4'} format`);
       
       const doc = new PDFDocument({ 
@@ -176,7 +195,7 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
         .text('Original for Recipient', layout.margin, (layout.headerHeight - layout.titleSize) / 2 + layout.titleSize - 2);
       
       const sellerName = order.isB2B ? 'Vaniki Crop' : (store.name || 'Vaniki Crop Store');
-      const sellerEmail = order.isB2B ? 'teams@vanikicrop.com' : (store.email || 'teams@vanikicrop.com');
+      const sellerEmail = 'teams@vanikicrop.com'; // Forced as requested
       const sellerPhone = order.isB2B ? '9406160185' : (store.phone || '9406160185');
 
       const headerRightX = pageWidth - layout.margin - 200;
@@ -198,7 +217,7 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
       doc.font('Helvetica').fontSize(layout.baseSize - 1)
         .text(formatAddress(store.address), layout.margin, addressTop + 26, { width: detailWidth })
         .text(`Contact: ${sellerPhone}`, layout.margin, addressTop + 46, { width: detailWidth })
-        .text(`GSTIN: ${store.gstNumber || store.sgstNumber || '-'}`, layout.margin, addressTop + 57, { width: detailWidth });
+        .text(`GSTIN: ${store.gstNumber || store.sgstNumber || globalGst}`, layout.margin, addressTop + 57, { width: detailWidth });
 
       // Bill To
       doc.font('Helvetica-Bold').fontSize(layout.baseSize).text(order.isB2B ? 'Bill To' : 'Bill To / Ship To', detailRightX, addressTop);
