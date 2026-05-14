@@ -1,12 +1,15 @@
 import { User } from '../../models/User.model.js';
 import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
+import { generateInvoicePdf } from '../orders/invoice.service.js';
+import { Store } from '../../models/Store.model.js';
 
 const WHATSAPP_API_URL = `https://graph.facebook.com/v20.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`;
 const WHATSAPP_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const DEEPSEEK_API_URL = process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1';
 const APP_URL = 'https://vanikicrop.com';
+const WHATSAPP_MEDIA_URL = `https://graph.facebook.com/v20.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/media`;
 
 /**
  * Sends a WhatsApp message using Meta Cloud API
@@ -44,6 +47,77 @@ async function sendTextMessage(to: string, text: string) {
     type: 'text',
     text: { body: text, preview_url: true },
   });
+}
+
+/**
+ * Uploads media to WhatsApp/Meta servers
+ */
+async function uploadMedia(buffer: Buffer, filename: string, mimeType: string) {
+  try {
+    const formData = new FormData();
+    formData.append('file', new Blob([buffer], { type: mimeType }), filename);
+    formData.append('messaging_product', 'whatsapp');
+    formData.append('type', 'document');
+
+    const response = await fetch(WHATSAPP_MEDIA_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json() as any;
+    if (!response.ok) {
+      console.error('Meta Media Upload Error:', data);
+      return null;
+    }
+    return data.id; // media_id
+  } catch (error) {
+    console.error('Error uploading WhatsApp media:', error);
+    return null;
+  }
+}
+
+/**
+ * Sends the order invoice PDF via WhatsApp
+ */
+export async function sendOrderInvoice(orderId: string) {
+  try {
+    const order = await Order.findById(orderId)
+      .populate('userId')
+      .populate('storeId')
+      .populate('items.productId');
+    
+    if (!order || !order.userId) return;
+    
+    const user = order.userId as any;
+    const to = `91${user.mobile}`;
+    
+    // Generate PDF
+    const pdfBuffer = await generateInvoicePdf(order);
+    
+    // Upload PDF
+    const mediaId = await uploadMedia(pdfBuffer, `invoice-${order.orderNumber}.pdf`, 'application/pdf');
+    
+    if (!mediaId) {
+      // Fallback: send text if upload fails
+      await sendTextMessage(to, `आपका आर्डर #${order.orderNumber} कन्फर्म हो गया है! आप यहाँ से इनवॉइस देख सकते हैं: ${APP_URL}/account/orders`);
+      return;
+    }
+
+    // Send Document
+    await sendWhatsAppMessage(to, {
+      type: 'document',
+      document: {
+        id: mediaId,
+        filename: `Invoice-${order.orderNumber}.pdf`,
+        caption: `आपका आर्डर #${order.orderNumber} के लिए इनवॉइस। Vaniki Crop चुनने के लिए धन्यवाद! 🌾`,
+      },
+    });
+  } catch (error) {
+    console.error('Error in sendOrderInvoice:', error);
+  }
 }
 
 /**

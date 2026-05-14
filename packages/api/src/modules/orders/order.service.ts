@@ -13,6 +13,7 @@ import { orderPlacedTemplate, orderStatusUpdateTemplate } from '../../utils/emai
 import { sendExpoPushNotification } from '../../utils/expoPush.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
+import { sendOrderInvoice } from '../whatsapp/whatsapp.service.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -199,7 +200,17 @@ export async function initiateOrder(userId: string, input: any) {
     couponDiscount = couponResult.discount!;
   }
 
-  // 4. Delivery Charge
+  // 4. Handle Loyalty Points
+  if (loyaltyPoints && Number(loyaltyPoints) > 0) {
+    const user = await User.findById(userId).select('loyaltyPoints');
+    const pointsToApply = Math.min(Number(loyaltyPoints), user?.loyaltyPoints || 0);
+    // Limit loyalty discount to subtotal - couponDiscount
+    const maxAllowedPoints = Math.max(0, subtotal - couponDiscount);
+    loyaltyPointsApplied = Math.min(pointsToApply, maxAllowedPoints);
+    loyaltyDiscount = loyaltyPointsApplied; // 1 point = 1 rupee
+  }
+
+  // 5. Delivery Charge
   const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
   const threshold = siteSettings?.freeDeliveryThreshold ?? 1000;
   const charge = siteSettings?.standardDeliveryCharge ?? 50;
@@ -443,6 +454,9 @@ export async function placeCodOrder(userId: string, input: any) {
     }
   }
 
+  // Send WhatsApp Invoice
+  sendOrderInvoice(order._id.toString()).catch(err => console.error('[WHATSAPP] Error:', err));
+
   return { orderId: order._id, orderNumber };
 }
 
@@ -546,6 +560,9 @@ export async function finalizeOrder(razorpayOrderId: string, paymentId: string, 
       });
     }
   }
+
+  // Send WhatsApp Invoice
+  sendOrderInvoice(order._id.toString()).catch(err => console.error('[WHATSAPP] Error:', err));
 
   return order;
 }

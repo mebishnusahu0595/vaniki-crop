@@ -16,7 +16,15 @@ router.post(
   orderController.createB2BInvoice
 );
 
-// ─── Admin Routes ────────────────────────────────────────────────────────
+/** GET /api/b2b-invoices/super-admin/list — List all B2B invoices */
+router.get(
+  '/super-admin/list',
+  requireAuth,
+  requireSuperAdmin,
+  orderController.getSuperAdminB2BInvoices
+);
+
+// ─── Shared & Admin Routes ────────────────────────────────────────────────
 
 /** GET /api/b2b-invoices/admin/list — List B2B invoices for the logged-in store */
 router.get(
@@ -30,7 +38,6 @@ router.get(
 router.get(
   '/download/:id',
   requireAuth,
-  requireStoreAdmin,
   orderController.downloadB2BInvoice
 );
 

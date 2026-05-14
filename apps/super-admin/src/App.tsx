@@ -21,6 +21,7 @@ import SettlementsPage from './pages/Settlements';
 import LoyaltyPage from './pages/Loyalty';
 import ReferralPage from './pages/Referral';
 import StaffPage from './pages/Staff';
+import InvoicesPage from './pages/Invoices';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           <Route path="/admins" element={<AdminsPage />} />
           <Route path="/product-requests" element={<ProductRequestsPage />} />
           <Route path="/settlements" element={<SettlementsPage />} />
+          <Route path="/invoices" element={<InvoicesPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/new" element={<ProductFormPage />} />
           <Route path="/products/:id/edit" element={<ProductFormPage />} />

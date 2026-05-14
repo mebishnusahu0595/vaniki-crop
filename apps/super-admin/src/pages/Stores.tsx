@@ -10,6 +10,8 @@ import type { StoreSummary } from '../types/admin';
 import { adminApi } from '../utils/api';
 import { formatDisplayStoreAddress, isMeaningfulAddressText, reverseGeocodeCoordinates } from '../utils/geocoding';
 import { currencyFormatter } from '../utils/format';
+import { FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const storeSchema = z.object({
   name: z.string().trim().min(2, 'Store name must be at least 2 characters.'),
@@ -74,6 +76,7 @@ export default function StoresPage() {
   const [actioningStoreId, setActioningStoreId] = useState<string | null>(null);
   const [selectedStore, setSelectedStore] = useState<StoreSummary | null>(null);
   const debouncedSearch = useDebouncedValue(search, 350);
+  const navigate = useNavigate();
 
   const storesQuery = useQuery({
     queryKey: ['super-admin-stores', debouncedSearch],
@@ -609,6 +612,15 @@ export default function StoresPage() {
                 Close
               </button>
             </div>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                onClick={() => navigate(`/invoices?storeId=${selectedStore.id}`)}
+                className="flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-primary-500/20 transition hover:bg-primary-700"
+              >
+                <FileText size={14} />
+                Manage B2B Invoices
+              </button>
+            </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <div className="rounded-2xl bg-primary-50 px-4 py-3">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Admin</p>
@@ -685,6 +697,16 @@ export default function StoresPage() {
                   className="rounded-xl border border-rose-100 px-4 py-2 text-sm font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Delete
+                </button>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    navigate(`/invoices?storeId=${store.id}`);
+                  }}
+                  className="rounded-xl border border-primary-100 bg-primary-50/50 p-2 text-primary-600 hover:bg-primary-100 transition"
+                  title="View Invoices"
+                >
+                  <FileText size={18} />
                 </button>
               </div>
             </div>

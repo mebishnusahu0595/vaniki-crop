@@ -244,7 +244,30 @@ export async function getAdminB2BInvoices(req: Request, res: Response, next: Nex
     const filter = { storeId };
 
     const [invoices, total] = await Promise.all([
-      B2BInvoice.find(filter).sort({ invoiceDate: -1 }).skip(skip).limit(limit),
+      B2BInvoice.find(filter).sort({ invoiceDate: -1 }).skip(skip).limit(limit).populate('storeId', 'name'),
+      B2BInvoice.countDocuments(filter),
+    ]);
+
+    res.status(200).json(createPaginationResponse(invoices, total, page, limit));
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/b2b-invoices/super-admin/list
+ */
+export async function getSuperAdminB2BInvoices(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { page, limit, skip } = parsePagination(req.query);
+    const filter: any = {};
+
+    if (req.query.storeId) {
+      filter.storeId = req.query.storeId;
+    }
+
+    const [invoices, total] = await Promise.all([
+      B2BInvoice.find(filter).sort({ invoiceDate: -1 }).skip(skip).limit(limit).populate('storeId', 'name'),
       B2BInvoice.countDocuments(filter),
     ]);
 
@@ -264,7 +287,8 @@ export async function downloadB2BInvoice(req: Request, res: Response, next: Next
     if (!invoice) throw new AppError('Invoice not found', 404);
 
     // Check permissions
-    if (req.userRole !== 'superAdmin' && invoice.storeId.toString() !== req.userStoreId) {
+    const isSuperAdmin = (req as any).userRole === 'superAdmin';
+    if (!isSuperAdmin && invoice.storeId.toString() !== req.userStoreId) {
       throw new AppError('Unauthorized access to invoice', 403);
     }
 
