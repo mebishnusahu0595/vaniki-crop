@@ -1,6 +1,6 @@
 import PDFDocument from 'pdfkit';
-import Product from '../../models/Product.model';
-import SiteSetting from '../../models/SiteSetting.model';
+import { Product } from '../../models/Product.model';
+import { SiteSetting } from '../../models/SiteSetting.model';
 
 function formatMoney(value: number) {
   return `Rs. ${Number(value || 0).toFixed(2)}`;
