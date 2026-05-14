@@ -144,6 +144,22 @@ export function applyVisibleOrderFilter(filter: Record<string, any>) {
   return filter;
 }
 
+/**
+ * Rewards the referrer when a referred user completes a purchase (delivered).
+ */
+export async function rewardReferrerForPurchase(orderUserId: string) {
+  try {
+    const user = await User.findById(orderUserId).select('referredBy');
+    if (user?.referredBy) {
+      const points = crypto.randomInt(2, 8);
+      await User.findByIdAndUpdate(user.referredBy, { $inc: { loyaltyPoints: points } });
+      console.log(`[LOYALTY] Rewarded referrer ${user.referredBy} with ${points} points for purchase by ${orderUserId}`);
+    }
+  } catch (error) {
+    console.error('[LOYALTY] Error rewarding referrer:', error);
+  }
+}
+
 // ─── Customer Services ───────────────────────────────────────────────────
 
 /**
@@ -730,6 +746,7 @@ export async function updateOrderStatus(orderId: string, input: any, adminId: st
     throw new AppError('Order not found', 404);
   }
 
+  const oldStatus = order.status;
   order.status = status;
   order.statusHistory.push({
     status,
@@ -739,6 +756,12 @@ export async function updateOrderStatus(orderId: string, input: any, adminId: st
   });
 
   await order.save();
+
+  // If order was newly marked as delivered, reward the referrer if applicable
+  if (status === 'delivered' && oldStatus !== 'delivered') {
+    await rewardReferrerForPurchase(order.userId.toString());
+  }
+
 
   // Send Email Notification to Customer
   const user = await User.findById(order.userId);

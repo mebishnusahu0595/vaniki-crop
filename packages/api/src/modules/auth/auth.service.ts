@@ -294,14 +294,17 @@ export async function signup(
   }
 
   if (shouldIncrementReferrer && referredById) {
-    const referrer = await User.findById(referredById).select('role');
-    const reward = (referrer?.role === 'storeAdmin') ? 1 : crypto.randomInt(1, 11);
+    const referrerReward = crypto.randomInt(10, 21);
+    const userReward = crypto.randomInt(2, 6);
     
+    // Reward Referrer
     await User.findByIdAndUpdate(referredById, { 
-      $inc: { 
-        referralCount: 1,
-        loyaltyPoints: reward
-      } 
+      $inc: { referralCount: 1, loyaltyPoints: referrerReward } 
+    });
+
+    // Reward New User
+    await User.findByIdAndUpdate(user._id, {
+      $inc: { loyaltyPoints: userReward }
     });
   }
 

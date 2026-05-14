@@ -5,6 +5,8 @@ import { User } from '../../models/User.model.js';
 import { Order } from '../../models/Order.model.js';
 import { AppError } from '../../utils/AppError.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
+import { rewardReferrerForPurchase } from '../orders/order.service.js';
+
 
 export const DELIVERY_CANCEL_REASONS = [
   'Customer not available',
@@ -336,7 +338,12 @@ export async function deliverTask(
   });
 
   await order.save({ validateBeforeSave: false });
+
+  // Reward referrer for the purchase
+  await rewardReferrerForPurchase(order.userId.toString());
+
   return getStaffTask(staffId, orderId);
+
 }
 
 export async function cancelTask(staffId: string, orderId: string, payload: { reason: string; note?: string }) {
