@@ -222,9 +222,10 @@ export async function initiateOrder(userId: string, input: any) {
     ? shippingAddress.state.toLowerCase() !== store.address.state.toLowerCase()
     : false;
 
+  const storeTaxRate = Number(store.cgst || 0) + Number(store.sgst || 0);
   let totalTaxAmount = 0;
   const itemsWithTax = validatedItems.map((item: any) => {
-    const taxRate = item.taxRate || 0;
+    const taxRate = storeTaxRate > 0 ? storeTaxRate : (item.taxRate || 18);
     const taxAmount = (item.price * item.qty * taxRate) / (100 + taxRate);
     const netAmount = (item.price * item.qty) - taxAmount;
     const taxType = isInterState ? 'IGST' : 'CGST/SGST';
@@ -342,9 +343,10 @@ export async function placeCodOrder(userId: string, input: any) {
     ? shippingAddress.state.toLowerCase() !== store.address.state.toLowerCase()
     : false;
 
+  const storeTaxRate = Number(store.cgst || 0) + Number(store.sgst || 0);
   let totalTaxAmount = 0;
   const itemsWithTax = validatedItems.map((item: any) => {
-    const taxRate = item.taxRate || 0;
+    const taxRate = storeTaxRate > 0 ? storeTaxRate : (item.taxRate || 18);
     const taxAmount = (item.price * item.qty * taxRate) / (100 + taxRate);
     const netAmount = (item.price * item.qty) - taxAmount;
     const taxType = isInterState ? 'IGST' : 'CGST/SGST';

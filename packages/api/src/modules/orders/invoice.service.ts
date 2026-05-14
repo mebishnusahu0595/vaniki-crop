@@ -22,10 +22,24 @@ function getLineItemTax(item: any, storeTax?: { cgst: number; sgst: number }, is
   // For B2B (Platform to Store), we always use the tax rate specified in the item
   // For regular orders, we might fallback to store's default tax rates
   const taxRate = (isB2B || !storeTax)
-    ? (item.taxRate ?? 18)
+    ? (Number(item.taxRate || 0) || 18)
     : (Number(storeTax.cgst || 0) + Number(storeTax.sgst || 0));
 
   const grossAmount = Number(item.price || 0) * Number(item.qty || 0);
+  
+  if (taxRate <= 0) {
+    return {
+      taxRate: 0,
+      grossAmount,
+      netAmount: grossAmount,
+      taxAmount: 0,
+      cgstRate: 0,
+      sgstRate: 0,
+      cgstAmount: 0,
+      sgstAmount: 0,
+    };
+  }
+
   const netAmount = grossAmount / (1 + taxRate / 100);
   const taxAmount = grossAmount - netAmount;
 
@@ -68,7 +82,7 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
       const isA5 = (options.size || 'A5') === 'A5';
       console.log(`[PDF] Generating invoice in ${isA5 ? 'A5' : 'A4'} format for order: ${order.orderNumber}`);
       const pageMargin = isA5 ? 24 : 36;
-      const doc = new PDFDocument({ margin: pageMargin, size: 'A5', layout: 'portrait' });
+      const doc = new PDFDocument({ margin: pageMargin, size: isA5 ? 'A5' : 'A4', layout: 'portrait' });
       const buffers: Buffer[] = [];
       doc.on('data', buffers.push.bind(buffers));
       doc.on('end', () => resolve(Buffer.concat(buffers)));
@@ -149,17 +163,17 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
 
       const tableTop = isA5 ? 185 : 235;
       const columns = [
-        { label: '#', x: pageMargin, width: 14, align: 'left' as const },
-        { label: 'Product', x: pageMargin + 14, width: isA5 ? 90 : 105, align: 'left' as const },
-        { label: 'HSN', x: pageMargin + (isA5 ? 104 : 120), width: 38, align: 'left' as const },
-        { label: 'Pack', x: pageMargin + (isA5 ? 142 : 160), width: 48, align: 'left' as const },
-        { label: 'Qty', x: pageMargin + (isA5 ? 190 : 210), width: 22, align: 'right' as const },
-        { label: 'Taxable', x: pageMargin + (isA5 ? 212 : 238), width: 50, align: 'right' as const },
-        { label: 'CGST %', x: pageMargin + (isA5 ? 262 : 294), width: 30, align: 'right' as const },
-        { label: 'CGST Amt', x: pageMargin + (isA5 ? 292 : 328), width: 44, align: 'right' as const },
-        { label: 'SGST %', x: pageMargin + (isA5 ? 336 : 378), width: 30, align: 'right' as const },
-        { label: 'SGST Amt', x: pageMargin + (isA5 ? 366 : 412), width: 44, align: 'right' as const },
-        { label: 'Total', x: pageMargin + (isA5 ? 410 : 462), width: isA5 ? 50 : 60, align: 'right' as const },
+        { label: '#', x: pageMargin, width: isA5 ? 12 : 14, align: 'left' as const },
+        { label: 'Product', x: pageMargin + (isA5 ? 12 : 14), width: isA5 ? 80 : 105, align: 'left' as const },
+        { label: 'HSN', x: pageMargin + (isA5 ? 92 : 120), width: isA5 ? 35 : 38, align: 'left' as const },
+        { label: 'Pack', x: pageMargin + (isA5 ? 127 : 160), width: isA5 ? 45 : 48, align: 'left' as const },
+        { label: 'Qty', x: pageMargin + (isA5 ? 172 : 210), width: isA5 ? 18 : 22, align: 'right' as const },
+        { label: 'Taxable', x: pageMargin + (isA5 ? 190 : 238), width: isA5 ? 38 : 50, align: 'right' as const },
+        { label: 'CGST %', x: pageMargin + (isA5 ? 228 : 294), width: isA5 ? 24 : 30, align: 'right' as const },
+        { label: 'CGST Amt', x: pageMargin + (isA5 ? 252 : 328), width: isA5 ? 32 : 44, align: 'right' as const },
+        { label: 'SGST %', x: pageMargin + (isA5 ? 284 : 378), width: isA5 ? 24 : 30, align: 'right' as const },
+        { label: 'SGST Amt', x: pageMargin + (isA5 ? 308 : 412), width: isA5 ? 32 : 44, align: 'right' as const },
+        { label: 'Total', x: pageMargin + (isA5 ? 340 : 462), width: isA5 ? 40 : 60, align: 'right' as const },
       ];
 
       const drawTableHeader = (headerTop: number) => {
