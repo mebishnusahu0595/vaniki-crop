@@ -118,7 +118,7 @@ const A4_LAYOUT: InvoiceLayout = {
 };
 
 const A5_LAYOUT: InvoiceLayout = {
-  margin: 15, // Tighter for A5
+  margin: 10, // Even tighter for A5
   headerHeight: 55,
   titleSize: 15,
   subtitleSize: 7.5,
@@ -133,7 +133,7 @@ const A5_LAYOUT: InvoiceLayout = {
   infoBoxHeight: 45,
   summaryWidth: 220,
   // Aggressive weights for A5: idx, product, hsn, pack, qty, taxable, cgst%, cgstAmt, sgst%, sgstAmt, total
-  weights: [3, 26, 6, 9, 5, 9, 7, 9, 7, 9, 10] // Sum: 3+26+6+9+5+9+7+9+7+9+10 = 100
+  weights: [3, 23, 11, 8, 5, 8, 7, 8, 7, 8, 12] // Sum: 100
 };
 
 export async function generateInvoicePdf(order: any, options: { size?: string } = {}): Promise<Buffer> {
