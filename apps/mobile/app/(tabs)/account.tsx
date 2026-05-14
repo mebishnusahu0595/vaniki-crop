@@ -15,6 +15,9 @@ import { storefrontApi } from '../../src/lib/api';
 import { currencyFormatter, formatStoreAddress } from '../../src/utils/format';
 import { resolveMediaUrl } from '../../src/utils/media';
 import type { Product, ServiceMode } from '../../src/types/storefront';
+import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
+import { lookupPincode } from '../../src/utils/pincode';
+import { SelectionModal } from '../../src/components/SelectionModal';
 
 const tabs = ['orders', 'loyalty', 'wishlist', 'profile', 'password'] as const;
 
@@ -52,6 +55,8 @@ export default function AccountScreen() {
   const [serviceMode, setServiceMode] = useState<ServiceMode>(mode);
   const [pickupStoreId, setPickupStoreId] = useState(selectedStore?.id || '');
   const [isQuickModeSaving, setIsQuickModeSaving] = useState(false);
+  const [stateModalVisible, setStateModalVisible] = useState(false);
+  const [districtModalVisible, setDistrictModalVisible] = useState(false);
   const wishlistProducts = (user?.wishlist || []).filter(
     (entry): entry is Product => typeof entry !== 'string',
   );
@@ -549,25 +554,107 @@ export default function AccountScreen() {
             )}
           </View>
 
-          {([
-            ['name', 'Full Name'],
-            ['mobile', 'Mobile'],
-            ['email', 'Email'],
-            ['street', 'Street Address'],
-            ['city', 'City'],
-            ['state', 'State'],
-            ['pincode', 'Pincode'],
-            ['landmark', 'Landmark'],
-          ] as const).map(([key, placeholder]) => (
+          <TextInput
+            value={profile.name}
+            onChangeText={(value) => setProfile((current) => ({ ...current, name: value }))}
+            placeholder="Full Name"
+            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+            placeholderTextColor="#7a978b"
+          />
+          <TextInput
+            value={profile.mobile}
+            onChangeText={(value) => setProfile((current) => ({ ...current, mobile: value }))}
+            placeholder="Mobile"
+            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+            placeholderTextColor="#7a978b"
+          />
+          <TextInput
+            value={profile.email}
+            onChangeText={(value) => setProfile((current) => ({ ...current, email: value }))}
+            placeholder="Email"
+            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+            placeholderTextColor="#7a978b"
+          />
+          <TextInput
+            value={profile.street}
+            onChangeText={(value) => setProfile((current) => ({ ...current, street: value }))}
+            placeholder="Street Address"
+            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+            placeholderTextColor="#7a978b"
+          />
+          <TextInput
+            value={profile.pincode}
+            onChangeText={async (v) => {
+              const pincode = v.replace(/\D/g, '');
+              setProfile(f => ({ ...f, pincode }));
+              if (pincode.length === 6) {
+                const result = await lookupPincode(pincode);
+                if (result) {
+                  setProfile(prev => ({
+                    ...prev,
+                    state: result.state,
+                    city: result.district,
+                  }));
+                }
+              }
+            }}
+            placeholder="Pincode"
+            keyboardType="number-pad"
+            maxLength={6}
+            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+            placeholderTextColor="#7a978b"
+          />
+          <Pressable 
+            onPress={() => setStateModalVisible(true)}
+            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4"
+          >
+            <Text style={{ color: profile.state ? '#143D2E' : '#7a978b' }} className="text-base font-medium">
+              {profile.state || 'Select State'}
+            </Text>
+          </Pressable>
+          {STATE_DISTRICTS[profile.state] ? (
+            <Pressable 
+              onPress={() => setDistrictModalVisible(true)}
+              className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4"
+            >
+              <Text style={{ color: profile.city ? '#143D2E' : '#7a978b' }} className="text-base font-medium">
+                {profile.city || 'Select District'}
+              </Text>
+            </Pressable>
+          ) : (
             <TextInput
-              key={key}
-              value={profile[key] || ''}
-              onChangeText={(value) => setProfile((current) => ({ ...current, [key]: value }))}
-              placeholder={placeholder}
+              value={profile.city}
+              onChangeText={(value) => setProfile((current) => ({ ...current, city: value }))}
+              placeholder="District / City"
               className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
               placeholderTextColor="#7a978b"
             />
-          ))}
+          )}
+          <TextInput
+            value={profile.landmark}
+            onChangeText={(value) => setProfile((current) => ({ ...current, landmark: value }))}
+            placeholder="Landmark"
+            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+            placeholderTextColor="#7a978b"
+          />
+          
+          <SelectionModal
+            visible={stateModalVisible}
+            onClose={() => setStateModalVisible(false)}
+            title="Select State"
+            options={INDIAN_STATES}
+            selectedValue={profile.state}
+            onSelect={(state) => setProfile(f => ({ ...f, state, city: '' }))}
+          />
+
+          <SelectionModal
+            visible={districtModalVisible}
+            onClose={() => setDistrictModalVisible(false)}
+            title="Select District"
+            options={STATE_DISTRICTS[profile.state] || []}
+            selectedValue={profile.city}
+            onSelect={(city) => setProfile(f => ({ ...f, city }))}
+          />
           <Pressable
             onPress={async () => {
               if (serviceMode === 'pickup' && !pickupStoreId) {

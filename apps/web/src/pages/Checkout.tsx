@@ -13,6 +13,8 @@ import { storefrontApi } from '../utils/api';
 import { getApiErrorMessage } from '../utils/error';
 import { currencyFormatter, formatStoreAddress } from '../utils/format';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { INDIAN_STATES } from '@vaniki/shared';
+import { lookupPincode } from '../utils/pincode';
 
 
 
@@ -427,8 +429,32 @@ const Checkout: React.FC = () => {
                 <input value={formData.mobile} onChange={(e) => setFormData(c => ({...c, mobile: e.target.value}))} placeholder={t('checkoutPage.mobileNumber')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40" />
                 <input value={formData.street} onChange={(e) => setFormData(c => ({...c, street: e.target.value}))} placeholder={t('checkoutPage.streetVillage')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40 sm:col-span-2" />
                 <input value={formData.city} onChange={(e) => setFormData(c => ({...c, city: e.target.value}))} placeholder={t('checkoutPage.city')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40" />
-                <input value={formData.state} onChange={(e) => setFormData(c => ({...c, state: e.target.value}))} placeholder={t('checkoutPage.state')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40" />
-                <input value={formData.pincode} onChange={(e) => setFormData(c => ({...c, pincode: e.target.value}))} placeholder={t('checkoutPage.pincode')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40" />
+                <input
+                  value={formData.pincode}
+                  onChange={async (e) => {
+                    const pincode = e.target.value.replace(/\D/g, '');
+                    setFormData(c => ({...c, pincode}));
+                    if (pincode.length === 6) {
+                      const result = await lookupPincode(pincode);
+                      if (result) {
+                        setFormData(c => ({...c, state: result.state, city: result.district}));
+                      }
+                    }
+                  }}
+                  placeholder={t('checkoutPage.pincode')}
+                  maxLength={6}
+                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 placeholder:text-primary-900/40"
+                />
+                <select
+                  value={formData.state}
+                  onChange={(e) => setFormData(c => ({...c, state: e.target.value}))}
+                  className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                >
+                  <option value="">{t('checkoutPage.state')}</option>
+                  {INDIAN_STATES.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
               </div>
             </section>
           )}

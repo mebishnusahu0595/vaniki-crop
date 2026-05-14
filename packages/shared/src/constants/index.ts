@@ -51,3 +51,4 @@ export const PAGINATION = {
   DEFAULT_LIMIT: 12,
   ADMIN_LIMIT: 20,
 } as const;
+export * from './locations.js';

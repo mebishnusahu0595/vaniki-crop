@@ -10,6 +10,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
 import type { AuthUser } from '../types/storefront';
+import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
+import { lookupPincode } from '../utils/pincode';
 
 const Signup: React.FC = () => {
   const { t } = useTranslation();
@@ -132,40 +134,73 @@ const Signup: React.FC = () => {
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
-              District
-            </label>
-            <input
-              required
-              value={formData.district}
-              onChange={(event) => setFormData((current) => ({ ...current, district: event.target.value }))}
-              placeholder="District Name"
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
-              State
-            </label>
-            <input
-              required
-              value={formData.state}
-              onChange={(event) => setFormData((current) => ({ ...current, state: event.target.value }))}
-              placeholder="State Name"
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
               Pincode
             </label>
             <input
               required
               maxLength={6}
               value={formData.pincode}
-              onChange={(event) => setFormData((current) => ({ ...current, pincode: event.target.value.replace(/\D/g, '') }))}
+              onChange={async (event) => {
+                const pincode = event.target.value.replace(/\D/g, '');
+                setFormData((current) => ({ ...current, pincode }));
+                if (pincode.length === 6) {
+                  const result = await lookupPincode(pincode);
+                  if (result) {
+                    setFormData((current) => ({
+                      ...current,
+                      state: result.state,
+                      district: result.district,
+                    }));
+                  }
+                }
+              }}
               placeholder="400001"
               className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
+              State
+            </label>
+            <select
+              required
+              value={formData.state}
+              onChange={(event) => setFormData((current) => ({ ...current, state: event.target.value, district: '' }))}
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+            >
+              <option value="">Select State</option>
+              {INDIAN_STATES.map(state => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
+              District
+            </label>
+            {STATE_DISTRICTS[formData.state] ? (
+              <select
+                required
+                value={formData.district}
+                onChange={(event) => setFormData((current) => ({ ...current, district: event.target.value }))}
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+              >
+                <option value="">Select District</option>
+                {STATE_DISTRICTS[formData.state].map(district => (
+                  <option key={district} value={district}>{district}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                required
+                value={formData.district}
+                onChange={(event) => setFormData((current) => ({ ...current, district: event.target.value }))}
+                placeholder="District Name"
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+              />
+            )}
           </div>
         </div>
 

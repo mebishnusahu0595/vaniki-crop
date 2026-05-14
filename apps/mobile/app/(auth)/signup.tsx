@@ -10,6 +10,9 @@ import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
 import { useFocusAwareScroll } from '../../src/hooks/useFocusAwareScroll';
 import type { AuthUser } from '../../src/types/storefront';
+import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
+import { lookupPincode } from '../../src/utils/pincode';
+import { SelectionModal } from '../../src/components/SelectionModal';
 
 export default function SignupScreen() {
   const setSession = useAuthStore((state) => state.setSession);
@@ -21,6 +24,8 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [detecting, setDetecting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [stateModalVisible, setStateModalVisible] = useState(false);
+  const [districtModalVisible, setDistrictModalVisible] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -147,31 +152,56 @@ export default function SignupScreen() {
                   </View>
                   <View className="flex-row gap-2">
                     <View className="flex-1">
-                      <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">District</Text>
-                      <TextInput
-                        value={form.district}
-                        onChangeText={(v) => setForm(f => ({ ...f, district: v }))}
-                        placeholder="District"
-                        className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
-                        placeholderTextColor="#7a978b"
-                      />
+                      <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">State</Text>
+                      <Pressable 
+                        onPress={() => setStateModalVisible(true)}
+                        className="rounded-2xl border border-primary-100 bg-white px-4 py-4"
+                      >
+                        <Text style={{ color: form.state ? '#143D2E' : '#7a978b' }} className="text-sm font-medium">
+                          {form.state || 'Select State'}
+                        </Text>
+                      </Pressable>
                     </View>
                     <View className="flex-1">
-                      <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">State</Text>
-                      <TextInput
-                        value={form.state}
-                        onChangeText={(v) => setForm(f => ({ ...f, state: v }))}
-                        placeholder="State"
-                        className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
-                        placeholderTextColor="#7a978b"
-                      />
+                      <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">District</Text>
+                      {STATE_DISTRICTS[form.state] ? (
+                        <Pressable 
+                          onPress={() => setDistrictModalVisible(true)}
+                          className="rounded-2xl border border-primary-100 bg-white px-4 py-4"
+                        >
+                          <Text style={{ color: form.district ? '#143D2E' : '#7a978b' }} className="text-sm font-medium">
+                            {form.district || 'Select District'}
+                          </Text>
+                        </Pressable>
+                      ) : (
+                        <TextInput
+                          value={form.district}
+                          onChangeText={(v) => setForm(f => ({ ...f, district: v }))}
+                          placeholder="District"
+                          className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
+                          placeholderTextColor="#7a978b"
+                        />
+                      )}
                     </View>
                   </View>
                   <View>
                     <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">Pincode</Text>
                     <TextInput
                       value={form.pincode}
-                      onChangeText={(v) => setForm(f => ({ ...f, pincode: v.replace(/\D/g, '') }))}
+                      onChangeText={async (v) => {
+                        const pincode = v.replace(/\D/g, '');
+                        setForm(f => ({ ...f, pincode }));
+                        if (pincode.length === 6) {
+                          const result = await lookupPincode(pincode);
+                          if (result) {
+                            setForm(prev => ({
+                              ...prev,
+                              state: result.state,
+                              district: result.district,
+                            }));
+                          }
+                        }
+                      }}
                       placeholder="400001"
                       keyboardType="number-pad"
                       maxLength={6}
@@ -181,6 +211,24 @@ export default function SignupScreen() {
                   </View>
                 </View>
               </View>
+
+              <SelectionModal
+                visible={stateModalVisible}
+                onClose={() => setStateModalVisible(false)}
+                title="Select State"
+                options={INDIAN_STATES}
+                selectedValue={form.state}
+                onSelect={(state) => setForm(f => ({ ...f, state, district: '' }))}
+              />
+
+              <SelectionModal
+                visible={districtModalVisible}
+                onClose={() => setDistrictModalVisible(false)}
+                title="Select District"
+                options={STATE_DISTRICTS[form.state] || []}
+                selectedValue={form.district}
+                onSelect={(district) => setForm(f => ({ ...f, district }))}
+              />
 
               <View>
                 <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Password</Text>
