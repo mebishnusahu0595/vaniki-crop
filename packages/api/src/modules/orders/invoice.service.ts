@@ -1,6 +1,6 @@
 import PDFDocument from 'pdfkit';
-import { Product } from '../../models/Product.model';
-import { SiteSetting } from '../../models/SiteSetting.model';
+import { Product } from '../../models/Product.model.js';
+import { SiteSetting } from '../../models/SiteSetting.model.js';
 
 function formatMoney(value: number) {
   return `Rs. ${Number(value || 0).toFixed(2)}`;
@@ -136,7 +136,7 @@ const A5_LAYOUT: InvoiceLayout = {
 };
 
 export async function generateInvoicePdf(order: any, options: { size?: string } = {}): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       const isA5 = (options.size || 'A5') === 'A5';
       const layout = isA5 ? A5_LAYOUT : A4_LAYOUT;
