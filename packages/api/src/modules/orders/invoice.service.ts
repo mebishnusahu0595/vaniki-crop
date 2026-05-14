@@ -1,6 +1,7 @@
 import PDFDocument from 'pdfkit';
 import { Product } from '../../models/Product.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
+import { User } from '../../models/User.model.js';
 
 function formatMoney(value: number) {
   return `Rs. ${Number(value || 0).toFixed(2)}`;
@@ -183,6 +184,19 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
         ? order.orderNumber 
         : `INV-${String(order.orderNumber || getDocId(order)).replace(/^VNK-?/, '')}`;
       
+      // Resolve Store GST with deep fallback
+      let finalGst = store.gstNumber || store.sgstNumber || globalGst;
+      const adminIdForFallback = store.adminId?._id || store.adminId;
+      if ((!store.gstNumber || store.gstNumber === '-') && adminIdForFallback) {
+        try {
+          const admin = await User.findById(adminIdForFallback).select('dealerProfile').lean();
+          if (admin?.dealerProfile?.gstNumber) finalGst = admin.dealerProfile.gstNumber;
+          else if (admin?.dealerProfile?.sgstNumber) finalGst = admin.dealerProfile.sgstNumber;
+        } catch (e) {
+          console.error('[PDF] Error fetching admin GST fallback:', e);
+        }
+      }
+
       const storeTax = Number(store.cgst || 0) + Number(store.sgst || 0) > 0
         ? { cgst: Number(store.cgst || 0), sgst: Number(store.sgst || 0) }
         : undefined;
@@ -217,7 +231,7 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
       doc.font('Helvetica').fontSize(layout.baseSize - 1)
         .text(formatAddress(store.address), layout.margin, addressTop + 26, { width: detailWidth })
         .text(`Contact: ${sellerPhone}`, layout.margin, addressTop + 46, { width: detailWidth })
-        .text(`GSTIN: ${store.gstNumber || store.sgstNumber || globalGst}`, layout.margin, addressTop + 57, { width: detailWidth });
+        .text(`GSTIN: ${finalGst}`, layout.margin, addressTop + 57, { width: detailWidth });
 
       // Bill To
       doc.font('Helvetica-Bold').fontSize(layout.baseSize).text(order.isB2B ? 'Bill To' : 'Bill To / Ship To', detailRightX, addressTop);

@@ -351,7 +351,7 @@ export async function listStores(query: Record<string, any>) {
 
   const [stores, total] = await Promise.all([
     Store.find(filter)
-      .populate('adminId', 'name email mobile isActive')
+      .populate('adminId', 'name email mobile isActive dealerProfile')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -406,8 +406,14 @@ export async function listStores(query: Record<string, any>) {
     const admin = store.adminId as any;
     const maskedSecrets = secretMap.get(storeId) || {};
 
+    const adminProfile = admin?.dealerProfile;
+    const gstNumber = store.gstNumber || adminProfile?.gstNumber || '-';
+    const sgstNumber = store.sgstNumber || adminProfile?.sgstNumber || '-';
+
     return {
       ...store.toJSON(),
+      gstNumber,
+      sgstNumber,
       admin: admin
         ? {
             id: admin._id?.toString() || admin.id,

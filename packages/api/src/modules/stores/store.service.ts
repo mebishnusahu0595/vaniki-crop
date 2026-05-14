@@ -155,10 +155,19 @@ export async function getAdminOwnStore(userStoreId?: string, userId?: string) {
     throw new AppError('No store assigned to this admin account', 400);
   }
 
-  const store = await Store.findById(resolvedStoreId).populate('adminId', 'name email mobile');
+  const store = await Store.findById(resolvedStoreId).populate('adminId', 'name email mobile dealerProfile');
   if (!store) {
     throw new AppError('Store not found', 404);
   }
+
+  // Lazy sync GST if missing but available in admin profile
+  const admin = store.adminId as any;
+  if (admin?.dealerProfile && (!store.gstNumber || store.gstNumber === '-' || !store.gstNumber.trim())) {
+    store.gstNumber = admin.dealerProfile.gstNumber || store.gstNumber;
+    store.sgstNumber = admin.dealerProfile.sgstNumber || store.sgstNumber;
+    await store.save();
+  }
+
   return store;
 }
 
