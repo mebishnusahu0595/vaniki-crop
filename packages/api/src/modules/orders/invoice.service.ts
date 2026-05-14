@@ -149,18 +149,22 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
         const [settings] = await Promise.all([
           SiteSetting.findOne().lean(),
           ...items.map(async (item: any) => {
-            if (!item.hsnCode && item.productId) {
-              const variants = (item.productId as any).variants || [];
-              const vId = (item.variantId?._id || item.variantId)?.toString();
-              let foundV = variants.find((v: any) => (v._id?.toString() || v.id?.toString()) === vId);
-              
-              if (!foundV?.hsnCode) {
-                const pId = (item.productId as any)._id || item.productId;
-                const p = await Product.findById(pId).select('variants').lean();
-                foundV = p?.variants?.find((v: any) => (v._id?.toString() || v.id?.toString()) === vId);
+            // Force fetch HSN from DB if missing or default '-'
+            if (!item.hsnCode || item.hsnCode === '-' || item.hsnCode === '') {
+              try {
+                const pId = item.productId?._id || item.productId;
+                const vId = item.variantId?._id || item.variantId;
+                
+                if (pId && vId) {
+                  const p = await Product.findById(pId).select('variants').lean();
+                  if (p?.variants) {
+                    const variant = p.variants.find((v: any) => String(v._id || v.id) === String(vId));
+                    if (variant?.hsnCode) item.hsnCode = variant.hsnCode;
+                  }
+                }
+              } catch (err) {
+                console.error('[PDF] HSN Fetch Error:', err);
               }
-
-              if (foundV?.hsnCode) item.hsnCode = foundV.hsnCode;
             }
           })
         ]);
