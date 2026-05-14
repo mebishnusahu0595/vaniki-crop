@@ -993,3 +993,25 @@ async function generateTokenPair(user: IUser): Promise<TokenPair> {
 
   return { accessToken, refreshToken };
 }
+
+/**
+ * Deletes the authenticated user's account and all associated data.
+ * @param userId - The user's ObjectId
+ */
+export async function deleteAccount(userId: string): Promise<void> {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  // If user has a profile image, delete it from Cloudinary
+  if (user.profileImage?.publicId) {
+    await deleteFromCloudinary(user.profileImage.publicId).catch((err) => {
+      console.error('Failed to delete user profile image from Cloudinary:', err);
+    });
+  }
+
+  // Perform hard delete of the user document
+  await User.findByIdAndDelete(userId);
+}
+

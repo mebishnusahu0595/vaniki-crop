@@ -92,4 +92,8 @@ router.patch('/change-password', requireAuth, validate(changePasswordSchema), au
 /** PATCH /api/auth/wishlist/toggle — Add/remove wishlist item */
 router.patch('/wishlist/toggle', requireAuth, validate(toggleWishlistSchema), authController.toggleWishlist);
 
+/** DELETE /api/auth/me — Delete current user account */
+router.delete('/me', requireAuth, authController.deleteMe);
+
 export default router;
+

@@ -134,39 +134,51 @@ export default function SignupScreen() {
                   </Pressable>
                 </View>
 
-                <View className="gap-3">
-                  <TextInput
-                    value={form.address}
-                    onChangeText={(v) => setForm(f => ({ ...f, address: v }))}
-                    placeholder="Street / Village / House No"
-                    className="rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm text-primary-900"
-                    placeholderTextColor="#7a978b"
-                  />
-                  <View className="flex-row gap-2">
+                <View className="gap-4">
+                  <View>
+                    <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">Street / Village / House No</Text>
                     <TextInput
-                      value={form.district}
-                      onChangeText={(v) => setForm(f => ({ ...f, district: v }))}
-                      placeholder="District"
-                      className="flex-1 rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm text-primary-900"
-                      placeholderTextColor="#7a978b"
-                    />
-                    <TextInput
-                      value={form.state}
-                      onChangeText={(v) => setForm(f => ({ ...f, state: v }))}
-                      placeholder="State"
-                      className="flex-1 rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm text-primary-900"
+                      value={form.address}
+                      onChangeText={(v) => setForm(f => ({ ...f, address: v }))}
+                      placeholder="Enter address"
+                      className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
                       placeholderTextColor="#7a978b"
                     />
                   </View>
-                  <TextInput
-                    value={form.pincode}
-                    onChangeText={(v) => setForm(f => ({ ...f, pincode: v.replace(/\D/g, '') }))}
-                    placeholder="Pincode"
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    className="rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm text-primary-900"
-                    placeholderTextColor="#7a978b"
-                  />
+                  <View className="flex-row gap-2">
+                    <View className="flex-1">
+                      <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">District</Text>
+                      <TextInput
+                        value={form.district}
+                        onChangeText={(v) => setForm(f => ({ ...f, district: v }))}
+                        placeholder="District"
+                        className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
+                        placeholderTextColor="#7a978b"
+                      />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">State</Text>
+                      <TextInput
+                        value={form.state}
+                        onChangeText={(v) => setForm(f => ({ ...f, state: v }))}
+                        placeholder="State"
+                        className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
+                        placeholderTextColor="#7a978b"
+                      />
+                    </View>
+                  </View>
+                  <View>
+                    <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">Pincode</Text>
+                    <TextInput
+                      value={form.pincode}
+                      onChangeText={(v) => setForm(f => ({ ...f, pincode: v.replace(/\D/g, '') }))}
+                      placeholder="400001"
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
+                      placeholderTextColor="#7a978b"
+                    />
+                  </View>
                 </View>
               </View>
 

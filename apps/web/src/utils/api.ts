@@ -376,7 +376,12 @@ export const storefrontApi = {
     const response = await api.post<{ success: boolean; message: string }>('/auth/logout');
     return response.data;
   },
+  deleteAccount: async () => {
+    const response = await api.delete<{ success: boolean; message: string }>('/auth/me');
+    return response.data;
+  },
   dailyCheckIn: async () => {
+
     const response = await api.post<ApiResponse<{ loyaltyPoints: number; checkInHistory: string[] }>>('/loyalty/checkin');
     return response.data;
   },

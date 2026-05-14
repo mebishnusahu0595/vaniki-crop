@@ -407,7 +407,13 @@ export const storefrontApi = {
       method: 'POST',
     });
   },
+  deleteAccount: async () => {
+    return request<{ success: boolean; message: string }>('/auth/me', {
+      method: 'DELETE',
+    });
+  },
   dailyCheckIn: async () => {
+
     return request<{ loyaltyPoints: number; checkInHistory: string[] }>('/loyalty/checkin', {
       method: 'POST',
     });

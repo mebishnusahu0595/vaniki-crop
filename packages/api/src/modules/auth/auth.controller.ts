@@ -395,3 +395,23 @@ export async function toggleWishlist(req: Request, res: Response, next: NextFunc
     next(error);
   }
 }
+
+/**
+ * DELETE /api/auth/me
+ * Deletes the authenticated user's account.
+ */
+export async function deleteMe(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await authService.deleteAccount(req.userId!);
+
+    res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
+
+    res.status(200).json({
+      success: true,
+      message: 'Your account has been deleted successfully.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

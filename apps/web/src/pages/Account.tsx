@@ -254,7 +254,24 @@ const Account: React.FC = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    const isConfirmed = window.confirm(
+      'Are you sure you want to delete your account? This action is permanent and cannot be undone.'
+    );
+    if (!isConfirmed) return;
+
+    try {
+      await storefrontApi.deleteAccount();
+      toast.success('Your account has been deleted successfully.');
+      logout();
+      navigate('/login');
+    } catch {
+      toast.error('Failed to delete account. Please try again.');
+    }
+  };
+
   const handleCopyReferralLink = async () => {
+
     if (!user?.referralCode) {
       toast.error(t('accountPage.referralUnavailable'));
       return;
@@ -532,10 +549,20 @@ const Account: React.FC = () => {
                 <input value={profileData.pincode} onChange={(event) => setProfileData((current) => ({ ...current, pincode: event.target.value }))} placeholder={t('accountPage.pincode')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900" />
                 <input value={profileData.landmark} onChange={(event) => setProfileData((current) => ({ ...current, landmark: event.target.value }))} placeholder={t('accountPage.landmark')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900" />
               </div>
-              <button className="rounded-full bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white">
-                {isSavingProfile ? t('accountPage.saving') : t('accountPage.saveProfile')}
-              </button>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <button type="submit" className="rounded-full bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white">
+                  {isSavingProfile ? t('accountPage.saving') : t('accountPage.saveProfile')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  className="rounded-full bg-red-50 px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-red-600 transition hover:bg-red-100"
+                >
+                  Delete Account
+                </button>
+              </div>
             </form>
+
           )}
 
           {activeTab === 'password' && (

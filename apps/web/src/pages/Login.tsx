@@ -163,72 +163,87 @@ const Login: React.FC = () => {
           className="space-y-3"
         >
           <div id="recaptcha-container"></div>
-          <div className="flex gap-2">
-            <input
-              required
-              value={mobile}
-              onChange={(event) => setMobile(event.target.value.replace(/\D/g, '').slice(0, 10))}
-              placeholder={t('authPages.mobileNumber')}
-              disabled={!!confirmationResult}
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 font-semibold text-primary-900 disabled:opacity-50"
-            />
-            {loginMethod === 'otp' && !confirmationResult && (
-              <button
-                type="button"
-                disabled={isSendingOtp}
-                onClick={async () => {
-                  if (!/^[6-9]\d{9}$/.test(mobile)) {
-                    toast.error('Enter a valid 10-digit mobile number');
-                    return;
-                  }
-                  setIsSendingOtp(true);
-                  try {
-                    const verifier = setupRecaptcha('recaptcha-container');
-                    if (!verifier) throw new Error('Failed to initialize reCAPTCHA');
-                    const result = await signInWithPhoneNumber(auth, `+91${mobile}`, verifier);
-                    setConfirmationResult(result);
-                    toast.success('OTP sent successfully');
-                  } catch (error) {
-                    toast.error('Failed to send OTP');
-                  } finally {
-                    setIsSendingOtp(false);
-                  }
-                }}
-                className="whitespace-nowrap rounded-2xl bg-primary-100 px-4 text-xs font-black uppercase tracking-wider text-primary"
-              >
-                {isSendingOtp ? 'Sending...' : 'Send OTP'}
-              </button>
-            )}
+          <div className="flex flex-col gap-1.5">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
+              {t('authPages.mobileNumber')}
+            </label>
+            <div className="flex gap-2">
+              <input
+                required
+                value={mobile}
+                onChange={(event) => setMobile(event.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="9876543210"
+                disabled={!!confirmationResult}
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 font-semibold text-primary-900 disabled:opacity-50"
+              />
+              {loginMethod === 'otp' && !confirmationResult && (
+                <button
+                  type="button"
+                  disabled={isSendingOtp}
+                  onClick={async () => {
+                    if (!/^[6-9]\d{9}$/.test(mobile)) {
+                      toast.error('Enter a valid 10-digit mobile number');
+                      return;
+                    }
+                    setIsSendingOtp(true);
+                    try {
+                      const verifier = setupRecaptcha('recaptcha-container');
+                      if (!verifier) throw new Error('Failed to initialize reCAPTCHA');
+                      const result = await signInWithPhoneNumber(auth, `+91${mobile}`, verifier);
+                      setConfirmationResult(result);
+                      toast.success('OTP sent successfully');
+                    } catch (error) {
+                      toast.error('Failed to send OTP');
+                    } finally {
+                      setIsSendingOtp(false);
+                    }
+                  }}
+                  className="whitespace-nowrap rounded-2xl bg-primary-100 px-4 text-xs font-black uppercase tracking-wider text-primary"
+                >
+                  {isSendingOtp ? 'Sending...' : 'Send OTP'}
+                </button>
+              )}
+            </div>
           </div>
 
           {loginMethod === 'password' ? (
-            <div className="relative">
-              <input
-                required
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder={t('authPages.password')}
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 pr-11 font-semibold text-primary-900"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((current) => !current)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
-                aria-label={showPassword ? t('authPages.hidePassword') : t('authPages.showPassword')}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+            <div className="flex flex-col gap-1.5">
+              <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
+                {t('authPages.password')}
+              </label>
+              <div className="relative">
+                <input
+                  required
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 pr-11 font-semibold text-primary-900"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
+                  aria-label={showPassword ? t('authPages.hidePassword') : t('authPages.showPassword')}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
           ) : (
             confirmationResult && (
-              <input
-                required
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="6-Digit OTP"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-center text-2xl font-black tracking-[0.5em] text-primary-900"
-              />
+              <div className="flex flex-col gap-1.5">
+                <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60 text-center">
+                  6-Digit OTP
+                </label>
+                <input
+                  required
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="000000"
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-center text-2xl font-black tracking-[0.5em] text-primary-900"
+                />
+              </div>
             )
           )}
 
@@ -293,13 +308,18 @@ const Login: React.FC = () => {
           className="space-y-4"
         >
           <div id="forgot-recaptcha-container"></div>
-          <input
-            required
-            value={forgotIdentifier}
-            onChange={(event) => setForgotIdentifier(event.target.value.replace(/\D/g, '').slice(0, 10))}
-            placeholder={t('authPages.mobileNumber')}
-            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-          />
+          <div className="flex flex-col gap-1.5">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
+              {t('authPages.mobileNumber')}
+            </label>
+            <input
+              required
+              value={forgotIdentifier}
+              onChange={(event) => setForgotIdentifier(event.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="9876543210"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+            />
+          </div>
           <button
             disabled={isSubmitting}
             className="w-full rounded-full bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary-600"
@@ -337,30 +357,40 @@ const Login: React.FC = () => {
           <p className="px-1 text-xs font-semibold text-primary/60">
             {t('authPages.otpSentTo')} {forgotIdentifier}
           </p>
-          <input
-            required
-            maxLength={6}
-            value={otpCode}
-            onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="6-Digit OTP"
-            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-center text-2xl font-black tracking-[0.5em] text-primary-900"
-          />
-          <div className="relative">
+          <div className="flex flex-col gap-1.5">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60 text-center">
+              6-Digit OTP
+            </label>
             <input
               required
-              type={showPassword ? 'text' : 'password'}
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              placeholder={t('authPages.newPassword')}
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 pr-11 font-semibold text-primary-900"
+              maxLength={6}
+              value={otpCode}
+              onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-center text-2xl font-black tracking-[0.5em] text-primary-900"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword((current) => !current)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
+              {t('authPages.newPassword')}
+            </label>
+            <div className="relative">
+              <input
+                required
+                type={showPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 pr-11 font-semibold text-primary-900"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
           <button
             disabled={isSubmitting}

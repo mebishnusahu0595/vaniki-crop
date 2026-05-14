@@ -186,7 +186,31 @@ export default function AccountScreen() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action is permanent and cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await storefrontApi.deleteAccount();
+              logout();
+              router.replace('/(auth)/login');
+            } catch (caughtError) {
+              Alert.alert('Error', caughtError instanceof Error ? caughtError.message : 'Failed to delete account.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
+
     <Screen>
       <View className="flex-row items-center justify-between">
         <View>
@@ -618,7 +642,15 @@ export default function AccountScreen() {
               <Text className="text-center text-[10px] font-black uppercase tracking-[1.4px] text-primary-900">Privacy Policy</Text>
             </Pressable>
           </View>
+
+          <Pressable
+            onPress={handleDeleteAccount}
+            className="mt-4 rounded-full bg-red-50 px-5 py-4"
+          >
+            <Text className="text-center text-xs font-black uppercase tracking-[2px] text-red-600">Delete Account</Text>
+          </Pressable>
         </View>
+
       ) : null}
 
       {activeTab === 'password' ? (
