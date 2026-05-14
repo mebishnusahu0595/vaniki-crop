@@ -355,7 +355,7 @@ export default function AccountScreen() {
 
                     return (
                       <Pressable
-                        key={`${typeof item.productId === 'string' ? item.productId : item.productId.id}-${index}`}
+                        key={`${(typeof item.productId === 'object' ? (item.productId as any)?.id : item.productId) || index}-${index}`}
                         onPress={() => product?.slug && router.push(`/product/${product.slug}` as any)}
                         disabled={!product?.slug}
                         className="flex-row gap-3 rounded-[22px] border border-primary-100 bg-white p-3"

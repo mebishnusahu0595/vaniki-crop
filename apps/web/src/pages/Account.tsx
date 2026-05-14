@@ -772,7 +772,7 @@ const Account: React.FC = () => {
                     const canOpenProduct = Boolean(product?.slug);
 
                     return (
-                      <div key={`${typeof item.productId === 'string' ? item.productId : item.productId.id}-${index}`} className="rounded-[1.5rem] border border-primary-100 bg-primary-50/50 p-4">
+                      <div key={`${(typeof item.productId === 'object' ? (item.productId as any)?.id : item.productId) || index}-${index}`} className="rounded-[1.5rem] border border-primary-100 bg-primary-50/50 p-4">
                         <div className="flex gap-4">
                           {imageUrl ? (
                             <button
