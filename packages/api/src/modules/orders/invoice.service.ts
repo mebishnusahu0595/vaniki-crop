@@ -155,10 +155,19 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
                 const pId = item.productId?._id || item.productId;
                 const vId = item.variantId?._id || item.variantId;
                 
-                if (pId && vId) {
+                if (pId) {
                   const p = await Product.findById(pId).select('variants').lean();
                   if (p?.variants) {
-                    const variant = p.variants.find((v: any) => String(v._id || v.id) === String(vId));
+                    // 1. Try ID match
+                    let variant = p.variants.find((v: any) => String(v._id || v.id) === String(vId));
+                    
+                    // 2. Fallback to label match (handles stale variant IDs)
+                    if (!variant && item.variantLabel) {
+                      variant = p.variants.find((v: any) => 
+                        v.label?.toLowerCase().trim() === item.variantLabel.toLowerCase().trim()
+                      );
+                    }
+
                     if (variant?.hsnCode) item.hsnCode = variant.hsnCode;
                   }
                 }
