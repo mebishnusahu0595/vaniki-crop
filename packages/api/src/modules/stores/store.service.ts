@@ -91,6 +91,11 @@ export async function createStore(data: any) {
     throw new AppError('Assigned user must have "storeAdmin" role', 400);
   }
 
+  if (admin?.dealerProfile) {
+    data.gstNumber = admin.dealerProfile.gstNumber;
+    data.sgstNumber = admin.dealerProfile.sgstNumber;
+  }
+
   const store = await Store.create(data);
   return store;
 }
@@ -103,6 +108,10 @@ export async function updateStore(id: string, data: any) {
     const admin = await User.findById(data.adminId);
     if (!admin || admin.role !== 'storeAdmin') {
       throw new AppError('Invalid admin assigned to store', 400);
+    }
+    if (admin.dealerProfile) {
+      data.gstNumber = admin.dealerProfile.gstNumber;
+      data.sgstNumber = admin.dealerProfile.sgstNumber;
     }
   }
 

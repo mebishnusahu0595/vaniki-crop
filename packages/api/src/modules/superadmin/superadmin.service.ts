@@ -451,6 +451,12 @@ export async function createStore(input: Record<string, any>) {
     throw new AppError('This admin already manages an active store', 400);
   }
 
+  const adminUser = await User.findById(input.adminId);
+  if (adminUser?.dealerProfile) {
+    input.gstNumber = adminUser.dealerProfile.gstNumber;
+    input.sgstNumber = adminUser.dealerProfile.sgstNumber;
+  }
+
   const store = await Store.create(input);
   await store.populate('adminId', 'name email mobile isActive');
   return store;
@@ -459,6 +465,11 @@ export async function createStore(input: Record<string, any>) {
 export async function updateStore(storeId: string, input: Record<string, any>) {
   if (input.adminId) {
     await ensureStoreAdminUser(input.adminId);
+    const adminUser = await User.findById(input.adminId);
+    if (adminUser?.dealerProfile) {
+      input.gstNumber = adminUser.dealerProfile.gstNumber;
+      input.sgstNumber = adminUser.dealerProfile.sgstNumber;
+    }
   }
 
   const store = await Store.findByIdAndUpdate(storeId, input, {
@@ -489,9 +500,16 @@ export async function toggleStoreActive(storeId: string, isActive: boolean) {
 export async function reassignStoreAdmin(storeId: string, adminId: string) {
   await ensureStoreAdminUser(adminId);
 
+  const adminUser = await User.findById(adminId);
+  const updateData: any = { adminId };
+  if (adminUser?.dealerProfile) {
+    updateData.gstNumber = adminUser.dealerProfile.gstNumber;
+    updateData.sgstNumber = adminUser.dealerProfile.sgstNumber;
+  }
+
   const store = await Store.findByIdAndUpdate(
     storeId,
-    { adminId },
+    updateData,
     { new: true, runValidators: true },
   ).populate('adminId', 'name email mobile isActive');
 
@@ -824,7 +842,12 @@ export async function updateAdmin(adminId: string, input: Record<string, any>, f
   }
 
   if (input.approvalStatus !== undefined || input.isActive !== undefined) {
-    await Store.updateMany({ adminId: admin._id }, { isActive: admin.isActive });
+    const storeUpdate: any = { isActive: admin.isActive };
+    if (admin.dealerProfile) {
+      storeUpdate.gstNumber = admin.dealerProfile.gstNumber;
+      storeUpdate.sgstNumber = admin.dealerProfile.sgstNumber;
+    }
+    await Store.updateMany({ adminId: admin._id }, storeUpdate);
   }
 
   const assignedStore = await getAssignedStore(admin._id as mongoose.Types.ObjectId);
@@ -858,7 +881,12 @@ export async function approveAdmin(adminId: string, approvalStatus: 'approved' |
   admin.isActive = approvalStatus === 'approved';
   await admin.save();
 
-  await Store.updateMany({ adminId: admin._id }, { isActive: admin.isActive });
+  const storeUpdate: any = { isActive: admin.isActive };
+  if (admin.dealerProfile) {
+    storeUpdate.gstNumber = admin.dealerProfile.gstNumber;
+    storeUpdate.sgstNumber = admin.dealerProfile.sgstNumber;
+  }
+  await Store.updateMany({ adminId: admin._id }, storeUpdate);
 
   const assignedStore = await getAssignedStore(admin._id as mongoose.Types.ObjectId);
   return toAdminAccountResponse(admin, assignedStore);

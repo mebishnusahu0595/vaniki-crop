@@ -393,6 +393,8 @@ export async function dealerSignup(input: DealerSignupInput, file?: Express.Mult
       type: 'Point',
       coordinates: [longitude, latitude],
     },
+    gstNumber: gstNumber.trim().toUpperCase(),
+    sgstNumber: sgstNumber.trim().toUpperCase(),
     deliveryRadius: 10,
   });
 
