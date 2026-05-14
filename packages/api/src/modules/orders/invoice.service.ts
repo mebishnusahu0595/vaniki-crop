@@ -145,22 +145,22 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
       // Fetch missing HSN codes and Global GST if needed
       let globalGst = '-';
       try {
+        const items = order.items || [];
         const [settings] = await Promise.all([
           SiteSetting.findOne().lean(),
-          ...order.items.map(async (item: any) => {
+          ...items.map(async (item: any) => {
             if (!item.hsnCode && item.productId) {
-              const variants = (item.productId as any).variants;
-              if (variants) {
-                const variant = variants.find((v: any) => (v._id?.toString() || v.id?.toString()) === item.variantId?.toString());
-                if (variant?.hsnCode) item.hsnCode = variant.hsnCode;
+              const variants = (item.productId as any).variants || [];
+              const vId = (item.variantId?._id || item.variantId)?.toString();
+              let foundV = variants.find((v: any) => (v._id?.toString() || v.id?.toString()) === vId);
+              
+              if (!foundV?.hsnCode) {
+                const pId = (item.productId as any)._id || item.productId;
+                const p = await Product.findById(pId).select('variants').lean();
+                foundV = p?.variants?.find((v: any) => (v._id?.toString() || v.id?.toString()) === vId);
               }
-              if (!item.hsnCode) {
-                const p = await Product.findById((item.productId as any)._id || item.productId).select('variants').lean();
-                if (p?.variants) {
-                  const variant = p.variants.find((v: any) => (v._id?.toString() || v.id?.toString()) === item.variantId?.toString());
-                  if (variant?.hsnCode) item.hsnCode = variant.hsnCode;
-                }
-              }
+
+              if (foundV?.hsnCode) item.hsnCode = foundV.hsnCode;
             }
           })
         ]);
