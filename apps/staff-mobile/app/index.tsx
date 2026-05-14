@@ -171,7 +171,7 @@ function TaskCard({ task }: { task: DeliveryTask }) {
         <TextInput
           value={otp}
           onChangeText={(value) => setOtp(value.replace(/\D/g, '').slice(0, 6))}
-          placeholder="Enter customer OTP"
+          placeholder="OTP"
           keyboardType="number-pad"
           maxLength={6}
           className="mt-3 rounded-[20px] bg-primary-50 px-4 py-4 text-center text-2xl font-black tracking-[8px] text-primary-900"

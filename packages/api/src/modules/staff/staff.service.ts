@@ -295,7 +295,7 @@ export async function markTaskCompleted(staffId: string, orderId: string, payloa
     timestamp: new Date(),
   });
 
-  await order.save();
+  await order.save({ validateBeforeSave: false });
   return getStaffTask(staffId, orderId);
 }
 
@@ -335,7 +335,7 @@ export async function deliverTask(
     timestamp: new Date(),
   });
 
-  await order.save();
+  await order.save({ validateBeforeSave: false });
   return getStaffTask(staffId, orderId);
 }
 
@@ -358,6 +358,6 @@ export async function cancelTask(staffId: string, orderId: string, payload: { re
     timestamp: new Date(),
   });
 
-  await order.save();
+  await order.save({ validateBeforeSave: false });
   return getStaffTask(staffId, orderId);
 }
