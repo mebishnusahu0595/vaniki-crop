@@ -620,6 +620,13 @@ export default function StoresPage() {
                 <FileText size={14} />
                 Manage B2B Invoices
               </button>
+              <button
+                onClick={() => navigate(`/orders?storeId=${selectedStore.id}`)}
+                className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-slate-700 transition hover:bg-primary-50"
+              >
+                <FileText size={14} />
+                Customer Invoices
+              </button>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               <div className="rounded-2xl bg-primary-50 px-4 py-3">

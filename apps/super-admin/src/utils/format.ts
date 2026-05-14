@@ -34,7 +34,7 @@ export function formatAddress(address?: Partial<Address> | null) {
 }
 
 export function parseVariantLabel(label: string) {
-  const match = label.match(/^(\d+(?:\.\d+)?)\s*(ml|liter|gm|kg|packet|piece|l|g)?$/i);
+  const match = label.match(/^(\d+(?:\.\d+)?)\s*(ml|liter|litre|gm|gram|kg|kilogram|packet|piece|l|g|pkt|pc|pcs)?$/i);
   if (!match) {
     return { quantity: '', unit: 'piece' };
   }
@@ -43,17 +43,17 @@ export function parseVariantLabel(label: string) {
   return {
     quantity: match[1],
     unit:
-      unit === 'l' || unit === 'liter'
+      unit === 'l' || unit === 'liter' || unit === 'litre'
         ? 'Liter'
-        : unit === 'g' || unit === 'gm'
+        : unit === 'g' || unit === 'gm' || unit === 'gram'
           ? 'gm'
-          : unit === 'kg'
+          : unit === 'kg' || unit === 'kilogram'
             ? 'KG'
             : unit === 'ml'
               ? 'ml'
-              : unit === 'packet'
+              : unit === 'packet' || unit === 'pkt'
                 ? 'Packet'
-                : unit === 'piece'
+                : unit === 'piece' || unit === 'pc' || unit === 'pcs'
                   ? 'piece'
                   : 'Liter',
   };

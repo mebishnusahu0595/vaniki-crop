@@ -411,6 +411,8 @@ export async function createProduct(
     metaDescription: input.metaDescription,
     loyaltyPointEligible: input.loyaltyPointEligible || false,
     maxLoyaltyPoints: input.maxLoyaltyPoints || 0,
+    petiSize: input.petiSize || 12,
+    petiUnit: input.petiUnit || 'Liter',
     images,
   });
 
@@ -521,6 +523,8 @@ export async function updateProduct(
   if (input.metaDescription !== undefined) product.metaDescription = input.metaDescription;
   if (input.loyaltyPointEligible !== undefined) product.loyaltyPointEligible = input.loyaltyPointEligible;
   if (input.maxLoyaltyPoints !== undefined) product.maxLoyaltyPoints = input.maxLoyaltyPoints;
+  if (input.petiSize !== undefined) product.petiSize = input.petiSize;
+  if (input.petiUnit !== undefined) product.petiUnit = input.petiUnit as any;
 
   // Store assignment (only super admin can change stores)
   if (userRole === 'superAdmin') {
