@@ -81,7 +81,9 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
     try {
       const isA5 = (options.size || 'A5') === 'A5';
       console.log(`[PDF] Generating invoice in ${isA5 ? 'A5' : 'A4'} format for order: ${order.orderNumber}`);
-      const pageMargin = isA5 ? 24 : 36;
+      
+      // Optimization: Smaller margins for A5 to maximize horizontal space
+      const pageMargin = isA5 ? 20 : 36;
       const doc = new PDFDocument({ margin: pageMargin, size: isA5 ? 'A5' : 'A4', layout: 'portrait' });
       const buffers: Buffer[] = [];
       doc.on('data', buffers.push.bind(buffers));
@@ -102,39 +104,45 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
       const storeTax = Number(store.cgst || 0) + Number(store.sgst || 0) > 0
         ? { cgst: Number(store.cgst || 0), sgst: Number(store.sgst || 0) }
         : undefined;
-      const columnGap = isA5 ? 12 : 20;
-      const detailColumnWidth = (contentWidth - columnGap) / 2;
-      const detailRightX = pageMargin + detailColumnWidth + columnGap;
 
-      const headerHeight = isA5 ? 50 : 70;
+      // Header - Compact for A5
+      const headerHeight = isA5 ? 45 : 70;
       doc.rect(0, 0, pageWidth, headerHeight).fill('#143D2E');
-      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(isA5 ? 14 : 18).text('TAX INVOICE', pageMargin, isA5 ? 15 : 20);
-      doc.font('Helvetica').fontSize(isA5 ? 7 : 8).text('Original for Recipient', pageMargin, isA5 ? 32 : 42);
+      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(isA5 ? 12 : 18).text('TAX INVOICE', pageMargin, isA5 ? 12 : 20);
+      doc.font('Helvetica').fontSize(isA5 ? 6 : 8).text('Original for Recipient', pageMargin, isA5 ? 28 : 42);
       
       const sellerName = order.isB2B ? 'Vaniki Crop' : (store.name || 'Vaniki Crop Store');
       const sellerEmail = order.isB2B ? 'teams@vanikicrop.com' : (store.email || 'teams@vanikicrop.com');
       const sellerPhone = order.isB2B ? '9406160185' : (store.phone || '9406160185');
 
-      doc.font('Helvetica-Bold').fontSize(isA5 ? 9 : 10).text('Vaniki Crop', pageWidth - pageMargin - 200, isA5 ? 18 : 22, { width: 200, align: 'right' });
-      doc.font('Helvetica').fontSize(isA5 ? 6.5 : 7.5).text(`${sellerEmail} | ${sellerPhone}`, pageWidth - pageMargin - 200, isA5 ? 30 : 36, { width: 200, align: 'right' });
+      doc.font('Helvetica-Bold').fontSize(isA5 ? 8 : 10).text('Vaniki Crop', pageWidth - pageMargin - 150, isA5 ? 15 : 22, { width: 150, align: 'right' });
+      doc.font('Helvetica').fontSize(isA5 ? 6 : 7.5).text(`${sellerEmail} | ${sellerPhone}`, pageWidth - pageMargin - 150, isA5 ? 26 : 36, { width: 150, align: 'right' });
 
-      const addressTop = isA5 ? 65 : 85;
-      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 8 : 9).text('Sold By', pageMargin, addressTop);
-      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 7.5 : 8.5)
-        .text(sellerName, pageMargin, addressTop + 13, { width: detailColumnWidth });
-      doc.font('Helvetica').fontSize(isA5 ? 7 : 8)
-        .text(formatAddress(store.address), pageMargin, addressTop + 24, { width: detailColumnWidth })
-        .text(`Contact: ${sellerPhone}`, pageMargin, addressTop + (isA5 ? 42 : 46), { width: detailColumnWidth })
-        .text(`GSTIN: ${store.gstNumber || store.sgstNumber || '-'}`, pageMargin, addressTop + (isA5 ? 51 : 57), { width: detailColumnWidth });
+      // Addresses - Reduced vertical gap
+      const addressTop = isA5 ? 58 : 85;
+      const columnGap = isA5 ? 12 : 20;
+      const detailColumnWidth = (contentWidth - columnGap) / 2;
+      const detailRightX = pageMargin + detailColumnWidth + columnGap;
 
-      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 8 : 9).text(order.isB2B ? 'Bill To' : 'Bill To / Ship To', detailRightX, addressTop);
-      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 7.5 : 8.5)
-        .text(order.shippingAddress?.name || customer.name || 'Customer', detailRightX, addressTop + 13, { width: detailColumnWidth });
-      doc.font('Helvetica').fontSize(isA5 ? 7 : 8)
-        .text(`Mobile: ${order.shippingAddress?.mobile || customer.mobile || '-'}`, detailRightX, addressTop + 24, { width: detailColumnWidth })
-        .text(formatAddress(deliveryAddress), detailRightX, addressTop + 35, { width: detailColumnWidth });
+      // Sold By
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 7.5 : 9).text('Sold By', pageMargin, addressTop);
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 7 : 8.5)
+        .text(sellerName, pageMargin, addressTop + (isA5 ? 11 : 13), { width: detailColumnWidth });
+      doc.font('Helvetica').fontSize(isA5 ? 6.5 : 8)
+        .text(formatAddress(store.address), pageMargin, addressTop + (isA5 ? 21 : 24), { width: detailColumnWidth })
+        .text(`Contact: ${sellerPhone}`, pageMargin, addressTop + (isA5 ? 38 : 46), { width: detailColumnWidth })
+        .text(`GSTIN: ${store.gstNumber || store.sgstNumber || '-'}`, pageMargin, addressTop + (isA5 ? 47 : 57), { width: detailColumnWidth });
 
-      const infoTop = isA5 ? 135 : 165;
+      // Bill To
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 7.5 : 9).text(order.isB2B ? 'Bill To' : 'Bill To / Ship To', detailRightX, addressTop);
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 7 : 8.5)
+        .text(order.shippingAddress?.name || customer.name || 'Customer', detailRightX, addressTop + (isA5 ? 11 : 13), { width: detailColumnWidth });
+      doc.font('Helvetica').fontSize(isA5 ? 6.5 : 8)
+        .text(`Mobile: ${order.shippingAddress?.mobile || customer.mobile || '-'}`, detailRightX, addressTop + (isA5 ? 21 : 24), { width: detailColumnWidth })
+        .text(formatAddress(deliveryAddress), detailRightX, addressTop + (isA5 ? 31 : 35), { width: detailColumnWidth });
+
+      // Order Info Box - Optimized height
+      const infoTop = addressTop + (isA5 ? 65 : 85);
       const infoRows = order.isB2B ? [
         ['Invoice Number', invoiceNumber],
         ['Invoice Date', order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : '-'],
@@ -148,48 +156,78 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
         ['Payment', `${String(order.paymentMethod || '-').toUpperCase()} / ${order.paymentStatus || '-'}`],
       ];
 
-      const infoBoxHeight = isA5 ? 35 : 50;
-      doc.roundedRect(pageMargin, infoTop - 8, contentWidth, infoBoxHeight, 4).lineWidth(0.5).strokeColor('#E5E7EB').stroke();
+      const infoBoxHeight = isA5 ? 32 : 50;
+      doc.roundedRect(pageMargin, infoTop - 6, contentWidth, infoBoxHeight, 4).lineWidth(0.5).strokeColor('#E5E7EB').stroke();
+      
+      const columnsCount = 3;
+      const colWidth = contentWidth / columnsCount;
       infoRows.forEach(([label, value], index) => {
-        const columnsCount = order.isB2B ? 3 : 3;
         const column = index % columnsCount;
         const row = Math.floor(index / columnsCount);
-        const columnWidth = contentWidth / columnsCount;
-        const x = pageMargin + 12 + column * columnWidth;
-        const y = infoTop + row * (isA5 ? 16 : 22);
+        const x = pageMargin + 10 + column * colWidth;
+        const y = infoTop + row * (isA5 ? 14 : 22);
         doc.fillColor('#6B7280').font('Helvetica').fontSize(isA5 ? 5 : 6).text(label.toUpperCase(), x, y);
-        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 7 : 8).text(String(value), x, y + (isA5 ? 7 : 9), { width: columnWidth - 18 });
+        doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 6.5 : 8).text(String(value), x, y + (isA5 ? 6 : 9), { width: colWidth - 15 });
       });
 
-      const tableTop = isA5 ? 185 : 235;
+      // Table - Dynamic Column Sizing
+      const tableTop = infoTop + infoBoxHeight + (isA5 ? 12 : 25);
+      
+      // Column Weights (Total = 100)
+      const colWeights = {
+        idx: 4,
+        product: 26,
+        hsn: 9,
+        pack: 12,
+        qty: 6,
+        taxable: 9,
+        taxP: 6,
+        taxAmt: 9,
+        total: 10
+      };
+
+      const getColX = (index: number) => {
+        const weights = [colWeights.idx, colWeights.product, colWeights.hsn, colWeights.pack, colWeights.qty, colWeights.taxable, colWeights.taxP, colWeights.taxAmt, colWeights.taxP, colWeights.taxAmt, colWeights.total];
+        let x = pageMargin;
+        for (let i = 0; i < index; i++) {
+          x += (weights[i] / 100) * contentWidth;
+        }
+        return x;
+      };
+
+      const getColWidth = (index: number) => {
+        const weights = [colWeights.idx, colWeights.product, colWeights.hsn, colWeights.pack, colWeights.qty, colWeights.taxable, colWeights.taxP, colWeights.taxAmt, colWeights.taxP, colWeights.taxAmt, colWeights.total];
+        return (weights[index] / 100) * contentWidth;
+      };
+
       const columns = [
-        { label: '#', x: pageMargin, width: isA5 ? 12 : 14, align: 'left' as const },
-        { label: 'Product', x: pageMargin + (isA5 ? 12 : 14), width: isA5 ? 80 : 105, align: 'left' as const },
-        { label: 'HSN', x: pageMargin + (isA5 ? 92 : 120), width: isA5 ? 35 : 38, align: 'left' as const },
-        { label: 'Pack', x: pageMargin + (isA5 ? 127 : 160), width: isA5 ? 45 : 48, align: 'left' as const },
-        { label: 'Qty', x: pageMargin + (isA5 ? 172 : 210), width: isA5 ? 18 : 22, align: 'right' as const },
-        { label: 'Taxable', x: pageMargin + (isA5 ? 190 : 238), width: isA5 ? 38 : 50, align: 'right' as const },
-        { label: 'CGST %', x: pageMargin + (isA5 ? 228 : 294), width: isA5 ? 24 : 30, align: 'right' as const },
-        { label: 'CGST Amt', x: pageMargin + (isA5 ? 252 : 328), width: isA5 ? 32 : 44, align: 'right' as const },
-        { label: 'SGST %', x: pageMargin + (isA5 ? 284 : 378), width: isA5 ? 24 : 30, align: 'right' as const },
-        { label: 'SGST Amt', x: pageMargin + (isA5 ? 308 : 412), width: isA5 ? 32 : 44, align: 'right' as const },
-        { label: 'Total', x: pageMargin + (isA5 ? 340 : 462), width: isA5 ? 40 : 60, align: 'right' as const },
+        { label: '#', x: getColX(0), width: getColWidth(0), align: 'left' as const },
+        { label: 'Product', x: getColX(1), width: getColWidth(1), align: 'left' as const },
+        { label: 'HSN', x: getColX(2), width: getColWidth(2), align: 'left' as const },
+        { label: 'Pack', x: getColX(3), width: getColWidth(3), align: 'left' as const },
+        { label: 'Qty', x: getColX(4), width: getColWidth(4), align: 'right' as const },
+        { label: 'Taxable', x: getColX(5), width: getColWidth(5), align: 'right' as const },
+        { label: 'CGST%', x: getColX(6), width: getColWidth(6), align: 'right' as const },
+        { label: 'CGST', x: getColX(7), width: getColWidth(7), align: 'right' as const },
+        { label: 'SGST%', x: getColX(8), width: getColWidth(8), align: 'right' as const },
+        { label: 'SGST', x: getColX(9), width: getColWidth(9), align: 'right' as const },
+        { label: 'Total', x: getColX(10), width: getColWidth(10), align: 'right' as const },
       ];
 
       const drawTableHeader = (headerTop: number) => {
-        doc.moveTo(pageMargin, headerTop - 10).lineTo(rightEdge, headerTop - 10).lineWidth(1).strokeColor('#111827').stroke();
+        doc.moveTo(pageMargin, headerTop - 8).lineTo(rightEdge, headerTop - 8).lineWidth(0.8).strokeColor('#111827').stroke();
         columns.forEach((column) => {
-          doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 6.5 : 7.5).text(column.label, column.x, headerTop - 2, {
+          doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 5.5 : 7.5).text(column.label, column.x, headerTop - 2, {
             width: column.width,
             align: column.align,
           });
         });
-        doc.moveTo(pageMargin, headerTop + (isA5 ? 10 : 14)).lineTo(rightEdge, headerTop + (isA5 ? 10 : 14)).lineWidth(0.5).strokeColor('#111827').stroke();
+        doc.moveTo(pageMargin, headerTop + (isA5 ? 8 : 14)).lineTo(rightEdge, headerTop + (isA5 ? 8 : 14)).lineWidth(0.4).strokeColor('#111827').stroke();
       };
 
       drawTableHeader(tableTop);
 
-      let currentTop = tableTop + (isA5 ? 15 : 20);
+      let currentTop = tableTop + (isA5 ? 12 : 20);
       let subtotalNet = 0;
       let subtotalTax = 0;
       let subtotalGross = 0;
@@ -201,8 +239,8 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
       order.items.forEach((item: any, index: number) => {
         if (currentTop > pageHeight - 80) {
           doc.addPage();
-          drawTableHeader(pageMargin + 15);
-          currentTop = pageMargin + 35;
+          drawTableHeader(pageMargin + 12);
+          currentTop = pageMargin + 28;
         }
 
         const tax = getLineItemTax(item, storeTax, order.isB2B);
@@ -217,7 +255,7 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
         subtotalSgst += tax.sgstAmount;
 
         const productName = String(item.productName || 'Product').replace(/\(.*\)/, '').trim();
-        const rowHeight = isA5 ? 14 : 18;
+        const rowHeight = isA5 ? 12 : 18;
 
         const values = [
           String(index + 1),
@@ -236,7 +274,7 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
         columns.forEach((column, columnIndex) => {
           doc.fillColor('#111827')
             .font(columnIndex === 1 ? 'Helvetica-Bold' : 'Helvetica')
-            .fontSize(columnIndex === 1 ? (isA5 ? 6.5 : 7.5) : (isA5 ? 6 : 7))
+            .fontSize(columnIndex === 1 ? (isA5 ? 6 : 7.5) : (isA5 ? 5.5 : 7))
             .text(values[columnIndex], column.x, currentTop, {
               width: column.width,
               align: column.align,
@@ -245,26 +283,27 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
         });
 
         currentTop += rowHeight;
-        doc.moveTo(pageMargin, currentTop - 2).lineTo(rightEdge, currentTop - 2).lineWidth(0.2).strokeColor('#E5E7EB').stroke();
+        doc.moveTo(pageMargin, currentTop - 1).lineTo(rightEdge, currentTop - 1).lineWidth(0.1).strokeColor('#E5E7EB').stroke();
       });
 
+      // Summary Section
       const deliveryCharge = order.isB2B ? 0 : (order.serviceMode === 'pickup' ? 0 : Number(order.deliveryCharge || 0));
       const discount = order.isB2B ? 0 : (Number(order.couponDiscount || 0) + Number(order.loyaltyDiscount || 0) + Number(order.discount || 0));
       const expectedTotal = Math.max(0, subtotalGross - discount + deliveryCharge);
       const payableTotal = Number(order.totalAmount || expectedTotal);
       
-      const footerTop = pageHeight - pageMargin - (isA5 ? 18 : 24);
-      const summaryReservedHeight = isA5 ? 80 : 112;
-      let summaryTop = currentTop + 6;
+      const footerTop = pageHeight - pageMargin - (isA5 ? 12 : 24);
+      const summaryReservedHeight = isA5 ? 70 : 112;
+      let summaryTop = currentTop + 8;
       
       if (summaryTop > footerTop - summaryReservedHeight) {
         doc.addPage();
-        summaryTop = pageMargin + 15;
+        summaryTop = pageMargin + 12;
       }
 
-      const summaryWidth = isA5 ? 200 : 260;
+      const summaryWidth = isA5 ? 180 : 260;
       const summaryX = pageWidth - pageMargin - summaryWidth;
-      const valueX = pageWidth - pageMargin - (isA5 ? 80 : 100);
+      const valueX = pageWidth - pageMargin - (isA5 ? 70 : 100);
       const summaryRows = [
         ['Taxable Value', subtotalNet],
         [`CGST ${formatRate(summaryCgstRate)}%`, subtotalCgst],
@@ -276,25 +315,22 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
         if (order.couponDiscount > 0) summaryRows.push(['Coupon Discount', -order.couponDiscount]);
         if (order.loyaltyDiscount > 0) summaryRows.push(['Loyalty Discount', -order.loyaltyDiscount]);
         if (order.discount > 0 && !(order.couponDiscount || order.loyaltyDiscount)) summaryRows.push(['Other Discount', -order.discount]);
-        
         summaryRows.push([order.serviceMode === 'pickup' ? 'Delivery Charge (Pickup)' : 'Delivery Charge', deliveryCharge]);
       }
 
-      doc.fillColor('#111827').font('Helvetica').fontSize(isA5 ? 7 : 8);
+      doc.fillColor('#111827').font('Helvetica').fontSize(isA5 ? 6.5 : 8);
       summaryRows.forEach(([label, value], index) => {
-        const y = summaryTop + index * (isA5 ? 10 : 12);
-        doc.text(String(label), summaryX, y, { width: isA5 ? 120 : 160 });
-        doc.text(formatMoney(Number(value)), valueX, y, { width: isA5 ? 80 : 100, align: 'right' });
+        const y = summaryTop + index * (isA5 ? 9 : 12);
+        doc.text(String(label), summaryX, y, { width: isA5 ? 110 : 160 });
+        doc.text(formatMoney(Number(value)), valueX, y, { width: isA5 ? 70 : 100, align: 'right' });
       });
 
-      const totalLineY = summaryTop + summaryRows.length * (isA5 ? 10 : 12) + 4;
+      const totalLineY = summaryTop + summaryRows.length * (isA5 ? 9 : 12) + 2;
       doc.moveTo(summaryX, totalLineY).lineTo(rightEdge, totalLineY).lineWidth(1).strokeColor('#111827').stroke();
-      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 9 : 10.5).text('TOTAL PAYABLE', summaryX, totalLineY + 6);
-      doc.text(formatMoney(payableTotal), valueX - 5, totalLineY + 6, { width: isA5 ? 85 : 105, align: 'right' });
-      doc.moveTo(summaryX, totalLineY + (isA5 ? 18 : 22)).lineTo(rightEdge, totalLineY + (isA5 ? 18 : 22)).lineWidth(1).strokeColor('#111827').stroke();
+      doc.fillColor('#111827').font('Helvetica-Bold').fontSize(isA5 ? 8 : 10.5).text('TOTAL PAYABLE', summaryX, totalLineY + 5);
+      doc.text(formatMoney(payableTotal), valueX - 5, totalLineY + 5, { width: isA5 ? 75 : 105, align: 'right' });
+      doc.moveTo(summaryX, totalLineY + (isA5 ? 15 : 22)).lineTo(rightEdge, totalLineY + (isA5 ? 15 : 22)).lineWidth(1).strokeColor('#111827').stroke();
 
-      doc.moveTo(pageMargin, footerTop).lineTo(rightEdge, footerTop).lineWidth(0.5).strokeColor('#E5E7EB').stroke();
-      
       doc.end();
     } catch (error) {
       reject(error);
