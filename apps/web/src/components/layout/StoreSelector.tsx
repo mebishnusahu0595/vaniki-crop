@@ -30,6 +30,7 @@ interface StoreSelectorProps {
 const emptyAddress: Address = {
   street: '',
   city: '',
+  district: '',
   state: '',
   pincode: '',
   landmark: '',

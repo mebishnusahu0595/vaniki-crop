@@ -74,6 +74,7 @@ const Account: React.FC = () => {
     mobile: user?.mobile || '',
     street: user?.savedAddress?.street || '',
     city: user?.savedAddress?.city || '',
+    district: user?.savedAddress?.district || '',
     state: user?.savedAddress?.state || '',
     pincode: user?.savedAddress?.pincode || '',
     landmark: user?.savedAddress?.landmark || '',
@@ -195,6 +196,7 @@ const Account: React.FC = () => {
         savedAddress: {
           street: profileData.street,
           city: profileData.city,
+          district: profileData.district,
           state: profileData.state,
           pincode: profileData.pincode,
           landmark: profileData.landmark,
@@ -544,6 +546,7 @@ const Account: React.FC = () => {
                 <input value={profileData.mobile} onChange={(event) => setProfileData((current) => ({ ...current, mobile: event.target.value }))} placeholder={t('accountPage.mobileNumber')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900" />
                 <input value={profileData.email} onChange={(event) => setProfileData((current) => ({ ...current, email: event.target.value }))} placeholder={t('accountPage.emailAddress')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 sm:col-span-2" />
                 <input value={profileData.street} onChange={(event) => setProfileData((current) => ({ ...current, street: event.target.value }))} placeholder={t('accountPage.streetAddress')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 sm:col-span-2" />
+                <input value={profileData.district} onChange={(event) => setProfileData((current) => ({ ...current, district: event.target.value }))} placeholder={t('accountPage.district') || 'District'} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900" />
                 <input value={profileData.city} onChange={(event) => setProfileData((current) => ({ ...current, city: event.target.value }))} placeholder={t('accountPage.city')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900" />
                 <input value={profileData.state} onChange={(event) => setProfileData((current) => ({ ...current, state: event.target.value }))} placeholder={t('accountPage.state')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900" />
                 <input value={profileData.pincode} onChange={(event) => setProfileData((current) => ({ ...current, pincode: event.target.value }))} placeholder={t('accountPage.pincode')} className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900" />

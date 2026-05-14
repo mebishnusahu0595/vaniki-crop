@@ -3,6 +3,7 @@ export type ServiceMode = 'delivery' | 'pickup';
 export interface Address {
   street: string;
   city: string;
+  district: string;
   state: string;
   pincode: string;
   landmark?: string;

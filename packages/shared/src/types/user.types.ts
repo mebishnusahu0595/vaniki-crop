@@ -5,6 +5,7 @@ export type UserRole = 'customer' | 'admin' | 'super-admin';
 export interface Address {
   street: string;
   city: string;
+  district: string;
   state: string;
   pincode: string;
 }

@@ -2,6 +2,7 @@ export interface PincodeData {
   district: string;
   state: string;
   area: string;
+  block: string;
 }
 
 export async function lookupPincode(pincode: string): Promise<PincodeData | null> {
@@ -17,6 +18,7 @@ export async function lookupPincode(pincode: string): Promise<PincodeData | null
         district: postOffice.District,
         state: postOffice.State,
         area: postOffice.Name,
+        block: postOffice.Block,
       };
     }
   } catch (error) {
