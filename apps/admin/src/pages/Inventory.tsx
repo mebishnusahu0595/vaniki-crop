@@ -141,13 +141,10 @@ export default function InventoryPage() {
                     </div>
                   )}
                   <div>
-                    <p className="font-black text-slate-900 leading-tight">{product.name}</p>
+                    <p className="font-black text-slate-900 leading-tight">
+                      {product.name} {product.shortDescription && `(${product.shortDescription})`}
+                    </p>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 mt-0.5">{product.slug}</p>
-                    {product.shortDescription && (
-                      <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-500 line-clamp-2 max-w-lg">
-                        {product.shortDescription}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
@@ -162,7 +159,7 @@ export default function InventoryPage() {
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-black text-slate-900">{variant.label}</p>
-                          <p className="text-xs text-slate-500">{currencyFormatter.format(variant.price)}</p>
+                          <p className="text-xs text-slate-500">{currencyFormatter.format(variant.dealerPrice ?? variant.price)}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
