@@ -45,8 +45,11 @@ export default function InventoryPage() {
     if (!searchValue) return rows;
 
     return rows.filter((product) => {
-      return product.name.toLowerCase().includes(searchValue)
-        || product.slug.toLowerCase().includes(searchValue);
+      return (
+        product.name.toLowerCase().includes(searchValue) ||
+        product.slug.toLowerCase().includes(searchValue) ||
+        product.shortDescription?.toLowerCase().includes(searchValue)
+      );
     });
   }, [inventoryQuery.data, inventorySearch]);
 
