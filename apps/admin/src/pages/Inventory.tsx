@@ -152,7 +152,7 @@ export default function InventoryPage() {
                 </div>
               </div>
 
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
                 {product.variants.map((variant) => {
                   const key = `${product.id}:${variant.id}`;
                   const quantity = inventoryDraft[key] ?? 0;
