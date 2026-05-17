@@ -57,27 +57,7 @@ function generateOtp(): string {
   return crypto.randomInt(1000, 9999).toString();
 }
 
-function buildReferralCode(name: string, mobile: string): string {
-  const initial = name.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1) || 'V';
-  const mobileSeed = mobile.slice(-3);
-  return `${initial}${mobileSeed}`;
-}
-
-async function generateUniqueReferralCode(name: string, mobile: string): Promise<string> {
-  let candidate = buildReferralCode(name, mobile);
-  let attempt = 0;
-
-  while (await User.exists({ referralCode: candidate }) || await Staff.exists({ referralCode: candidate })) {
-    attempt += 1;
-    const initial = name.charAt(0).toUpperCase() || 'V';
-    const randomSuffix = Math.floor(100 + Math.random() * 900); // 3 digits
-    candidate = `${initial}${randomSuffix}`;
-    if (attempt > 10) break; // Safety break
-  }
-
-  return candidate;
-}
-
+import { generateUniqueReferralCode } from '../../utils/referral.helpers.js';
 /**
  * Sends OTP via MSG91 API.
  * In development mode, logs to console instead of calling the API.

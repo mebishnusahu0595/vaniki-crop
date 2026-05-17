@@ -226,7 +226,19 @@ userSchema.index({ mobile: 1 }, { unique: true });
 userSchema.index({ email: 1 });
 userSchema.index({ referralCode: 1 }, { unique: true, sparse: true });
 
+import { generateUniqueReferralCode } from '../utils/referral.helpers.js';
+
 // ─── Hooks ───────────────────────────────────────────────────────────────
+
+userSchema.pre('validate', async function (this: any) {
+  if (!this.referralCode) {
+    try {
+      this.referralCode = await generateUniqueReferralCode(this.name, this.mobile);
+    } catch (error) {
+      console.error('Error generating referral code for user:', error);
+    }
+  }
+});
 
 /**
  * Pre-save hook: hashes the password with bcrypt (12 salt rounds)
