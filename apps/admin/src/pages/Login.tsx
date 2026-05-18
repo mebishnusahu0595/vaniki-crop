@@ -246,7 +246,7 @@ export default function LoginPage() {
                 onClick={() => {
                   setMode('login');
                 }}
-                className="text-xs font-black uppercase tracking-[0.15em] text-primary-600 hover:text-primary-800"
+                className="inline-flex items-center gap-2 rounded-full bg-primary-500 px-4 py-1.5 text-xs font-black uppercase tracking-[0.15em] text-white shadow-sm transition hover:bg-primary-600"
               >
                 Back to Login
               </button>
@@ -263,14 +263,14 @@ export default function LoginPage() {
             {mode === 'signup' ? 'Fill dealer details to request account activation.' : 'Sign in to manage your store operations.'}
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3.5">
             <p className="text-xs font-black uppercase tracking-[0.15em] text-primary-700">
               {mode === 'signup' ? 'Dealer Signup Active' : 'Dealer Login Active'}
             </p>
             <button
               type="button"
               onClick={() => setMode((current) => (current === 'signup' ? 'login' : 'signup'))}
-              className="text-xs font-black uppercase tracking-[0.14em] text-slate-600 underline-offset-4 transition hover:text-slate-900 hover:underline"
+              className="rounded-full bg-primary-600 px-4 py-2.5 text-xs font-black uppercase tracking-[0.15em] text-white shadow-sm transition hover:bg-primary-700 hover:shadow"
             >
               {mode === 'signup' ? 'Already approved? Switch to login' : 'Need an account? Switch to signup'}
             </button>
