@@ -1,0 +1,17 @@
+# Ignore huge dependencies and cache folders in the monorepo
+node_modules/
+.turbo/
+dist/
+backups/
+apps/mobile/node_modules/
+apps/web/node_modules/
+apps/admin/node_modules/
+apps/super-admin/node_modules/
+packages/api/node_modules/
+packages/ui/node_modules/
+packages/shared/node_modules/
+.expo/
+*.tar.gz
+*.zip
+*.tgz
+NGINX
