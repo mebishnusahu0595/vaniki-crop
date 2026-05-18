@@ -11,10 +11,12 @@ import { Staff } from '../../models/Staff.model.js';
 import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
 import { ProductRequest } from '../../models/ProductRequest.model.js';
+import { NotificationCampaign } from '../../models/NotificationCampaign.model.js';
 import { Testimonial } from '../../models/Testimonial.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { StoreSecret } from '../../models/StoreSecret.model.js';
 import * as orderService from '../orders/order.service.js';
+import { sendExpoPushNotification } from '../../utils/expoPush.js';
 
 const STORE_COLORS = ['#2D6A4F', '#52B788', '#40916C', '#74C69D', '#95D5B2', '#1B4332', '#0B6E4F', '#6A994E'];
 
@@ -1043,6 +1045,86 @@ export async function listCustomers(query: Record<string, any>) {
   });
 
   return createPaginationResponse(processedRows, totalCount, page, limit);
+}
+
+export async function listNotifications(query: Record<string, any>) {
+  const { page, limit, skip } = parsePagination(query);
+  const [campaigns, total] = await Promise.all([
+    NotificationCampaign.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('createdBy', 'name mobile')
+      .lean(),
+    NotificationCampaign.countDocuments(),
+  ]);
+
+  return createPaginationResponse(
+    campaigns.map((campaign: any) => ({
+      ...campaign,
+      id: campaign._id?.toString(),
+      createdBy: campaign.createdBy
+        ? {
+          id: campaign.createdBy._id?.toString(),
+          name: campaign.createdBy.name,
+          mobile: campaign.createdBy.mobile,
+        }
+        : undefined,
+    })),
+    total,
+    page,
+    limit,
+  );
+}
+
+export async function sendNotification(
+  input: {
+    title: string;
+    body: string;
+    link?: string;
+    targetAudience?: 'allCustomers';
+  },
+  createdBy: string,
+) {
+  const recipients = await User.find({
+    role: 'customer',
+    isActive: true,
+    expoPushToken: { $type: 'string', $ne: '' },
+  }).select('expoPushToken').lean();
+
+  let sentCount = 0;
+  let failedCount = 0;
+  const link = input.link?.trim();
+
+  for (const recipient of recipients) {
+    const token = recipient.expoPushToken;
+    if (!token) continue;
+
+    try {
+      await sendExpoPushNotification({
+        to: token,
+        title: input.title,
+        body: input.body,
+        data: link ? { link } : undefined,
+      });
+      sentCount += 1;
+    } catch {
+      failedCount += 1;
+    }
+  }
+
+  const campaign = await NotificationCampaign.create({
+    title: input.title,
+    body: input.body,
+    link,
+    targetAudience: input.targetAudience || 'allCustomers',
+    totalRecipients: recipients.length,
+    sentCount,
+    failedCount,
+    createdBy,
+  });
+
+  return campaign.toJSON();
 }
 
 export async function listOrders(query: Record<string, any>) {

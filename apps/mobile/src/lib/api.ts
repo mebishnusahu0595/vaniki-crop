@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../config/api';
 import { resolveMediaUrl } from '../utils/media';
 import type {
   AuthUser,
+  Address,
   Category,
   CouponValidation,
   HomepageData,
@@ -16,6 +17,7 @@ import type {
   SearchResult,
   ServiceMode,
   Store,
+  StoreLocation,
 } from '../types/storefront';
 
 interface RequestOptions extends RequestInit {

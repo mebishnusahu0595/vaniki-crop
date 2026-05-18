@@ -22,6 +22,7 @@ import LoyaltyPage from './pages/Loyalty';
 import ReferralPage from './pages/Referral';
 import StaffPage from './pages/Staff';
 import InvoicesPage from './pages/Invoices';
+import NotificationsPage from './pages/Notifications';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/coupons" element={<CouponsPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/banners" element={<BannersPage />} />

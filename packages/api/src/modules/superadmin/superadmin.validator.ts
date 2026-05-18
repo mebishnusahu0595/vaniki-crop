@@ -165,6 +165,27 @@ export const customerQuerySchema = z.object({
   }),
 });
 
+export const notificationQuerySchema = z.object({
+  query: z.object({
+    page: z.preprocess(emptyToUndefined, z.string().optional()),
+    limit: z.preprocess(emptyToUndefined, z.string().optional()),
+  }),
+});
+
+export const sendNotificationSchema = z.object({
+  body: z.object({
+    title: z.string().trim().min(2).max(80),
+    body: z.string().trim().min(3).max(220),
+    link: z
+      .preprocess(emptyToUndefined, z.string().trim().max(500).optional())
+      .refine((value) => {
+        if (!value) return true;
+        return value.startsWith('/') || /^https?:\/\/[^\s]+$/i.test(value);
+      }, 'Link must be an app path or http(s) URL'),
+    targetAudience: z.enum(['allCustomers']).default('allCustomers'),
+  }),
+});
+
 export const orderQuerySchema = z.object({
   query: z.object({
     search: z.preprocess(emptyToUndefined, z.string().optional()),

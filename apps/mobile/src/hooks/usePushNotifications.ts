@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { Platform, Linking } from 'react-native';
+import { router } from 'expo-router';
 import { storefrontApi } from '../lib/api';
 
 Notifications.setNotificationHandler({
@@ -18,10 +20,39 @@ export function usePushNotifications(enabled: boolean) {
   const [pushToken, setPushToken] = useState<string | null>(null);
 
   useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      const link = typeof data?.link === 'string'
+        ? data.link
+        : typeof data?.url === 'string'
+          ? data.url
+          : '';
+
+      if (!link) return;
+
+      if (/^https?:\/\//i.test(link)) {
+        void Linking.openURL(link);
+        return;
+      }
+
+      router.push(link.startsWith('/') ? (link as any) : (`/${link}` as any));
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
     if (!enabled) return;
 
     const register = async () => {
       if (!Device.isDevice) return;
+
+      if (Platform.OS === 'android') {
+        await Notifications.setNotificationChannelAsync('orders', {
+          name: 'Orders and updates',
+          importance: Notifications.AndroidImportance.DEFAULT,
+        });
+      }
 
       const permission = await Notifications.getPermissionsAsync();
       let finalStatus = permission.status;

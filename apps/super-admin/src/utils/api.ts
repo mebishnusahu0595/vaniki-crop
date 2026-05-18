@@ -10,6 +10,7 @@ import type {
   Coupon,
   Customer,
   DashboardAnalytics,
+  NotificationCampaign,
   Order,
   PaginationMeta,
   Payment,
@@ -342,6 +343,19 @@ export const adminApi = {
   customers: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<Customer[]>>('/superadmin/customers', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
+  },
+  notifications: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<NotificationCampaign[]>>('/superadmin/notifications', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
+  sendNotification: async (payload: {
+    title: string;
+    body: string;
+    link?: string;
+    targetAudience: 'allCustomers';
+  }) => {
+    const response = await api.post<ApiResponse<NotificationCampaign>>('/superadmin/notifications', payload);
+    return response.data.data;
   },
   coupons: async () => {
     const response = await api.get<ApiResponse<Coupon[]>>('/coupons/admin');

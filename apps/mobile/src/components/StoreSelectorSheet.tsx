@@ -24,6 +24,7 @@ import { useFocusAwareScroll } from '../hooks/useFocusAwareScroll';
 const emptyAddress: Address = {
   street: '',
   city: '',
+  district: '',
   state: '',
   pincode: '',
   landmark: '',

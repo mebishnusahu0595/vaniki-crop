@@ -271,6 +271,24 @@ export interface Customer {
   mostBoughtCategory?: string;
 }
 
+export interface NotificationCampaign {
+  id: string;
+  title: string;
+  body: string;
+  link?: string;
+  targetAudience: 'allCustomers';
+  totalRecipients: number;
+  sentCount: number;
+  failedCount: number;
+  createdBy?: {
+    id?: string;
+    name?: string;
+    mobile?: string;
+  };
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface AdminSearchResults {
   orders: Array<Pick<Order, 'id' | 'orderNumber' | 'status' | 'totalAmount' | 'createdAt'>>;
   products: Array<Pick<Product, 'id' | 'name' | 'slug' | 'images' | 'isActive'>>;

@@ -127,6 +127,24 @@ export async function listCustomers(req: Request, res: Response, next: NextFunct
   }
 }
 
+export async function listNotifications(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await superAdminService.listNotifications(req.query);
+    res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function sendNotification(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.sendNotification(req.body, req.userId!);
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listOrders(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await superAdminService.listOrders(req.query);

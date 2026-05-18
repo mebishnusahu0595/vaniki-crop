@@ -1,6 +1,7 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const { withNativeWind } = require('nativewind/metro');
 const path = require('path');
+const fs = require('fs');
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, '../..');
@@ -42,6 +43,20 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       filePath: compatEntry,
       type: 'sourceFile',
     };
+  }
+
+  if (
+    moduleName.startsWith('.')
+    && moduleName.endsWith('.js')
+    && context.originModulePath?.includes(`${path.sep}packages${path.sep}shared${path.sep}src${path.sep}`)
+  ) {
+    const tsSourcePath = path.resolve(path.dirname(context.originModulePath), moduleName.replace(/\.js$/, '.ts'));
+    if (fs.existsSync(tsSourcePath)) {
+      return {
+        filePath: tsSourcePath,
+        type: 'sourceFile',
+      };
+    }
   }
 
   return context.resolveRequest(context, moduleName, platform);

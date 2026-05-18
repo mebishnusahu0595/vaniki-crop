@@ -670,6 +670,7 @@ export default function AccountScreen() {
                   savedAddress: {
                     street: profile.street,
                     city: profile.city,
+                    district: profile.city,
                     state: profile.state,
                     pincode: profile.pincode,
                     landmark: profile.landmark,

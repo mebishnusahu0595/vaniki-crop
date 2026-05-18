@@ -1,0 +1,48 @@
+{
+  "id": "e5d39444-f2a3-49b8-89a6-f5785dad8e65",
+  "status": "ERRORED",
+  "platform": "ANDROID",
+  "error": {
+    "errorCode": "EAS_BUILD_UNKNOWN_GRADLE_ERROR",
+    "message": "Gradle build failed with unknown error. See logs for the \"Run gradlew\" phase for more information."
+  },
+  "artifacts": {},
+  "fingerprint": {
+    "id": "019e399e-ad06-7b45-8509-4e73dd75311e",
+    "hash": "f4942e5e7053987d811a4481d22a0d6950ade609"
+  },
+  "initiatingActor": {
+    "id": "9ca8e554-b46c-4b98-aab1-5ed18b44a5a5",
+    "displayName": "bishnusahu059595595"
+  },
+  "logFiles": [
+    "https://storage.googleapis.com/eas-workflows-production/logs/deaff7c7-4be6-47f8-bb65-42f960b53238/e5d39444-f2a3-49b8-89a6-f5785dad8e65/2026-05-18T05%3A46%3A02Z-a4a0b86f-3f6a-4b1b-a6a2-ab27dee66c08.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260518%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260518T054848Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=66580922d90fa4aa5831725541acb4ee6511824970128c7b9f1eae803b353edd54de4cb5630e6996a853f1b8180a014de6f9e3f6c1677af1a1b3f54fb5c5dd5dbcb5014f62f9dce3e143e220cf69e9c86b16fbf6ef8384254a6161f83389056d94c0f94ce173646834bce75645304eec713efe39b3fce5f09b9ef765b02715c8b64ec0eb5b0ae6395b7bbe953c5bb9c9fe374783cd7b86c143a7949a32fc69eedfaa8d3131c887ea74f8e3d0a0fb834294a8916801e70f5fcf4305dbb3073cba68f08dbcffaa16610d0d26c3babc254329d439bcd90aefdd2316a183cdfd25c4a97cff0cb4437332ea11facd022bef4ff71a7c05fd9f80d624773a6ce0aac5b7"
+  ],
+  "project": {
+    "id": "deaff7c7-4be6-47f8-bb65-42f960b53238",
+    "name": "vaniki-dealers",
+    "slug": "vaniki-dealers",
+    "ownerAccount": {
+      "id": "6377a2a2-bbb7-45ac-9058-03da3097d978",
+      "name": "bishnusahu059595595"
+    }
+  },
+  "distribution": "INTERNAL",
+  "buildProfile": "preview",
+  "sdkVersion": "55.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "1",
+  "gitCommitHash": "c00689402d82a6a12a14c3c2afe3e01705fa56fd",
+  "gitCommitMessage": "fix: update referral code logic to be 4 characters everywhere",
+  "priority": "NORMAL_PLUS",
+  "createdAt": "2026-05-18T05:46:00.805Z",
+  "updatedAt": "2026-05-18T05:48:49.914Z",
+  "completedAt": "2026-05-18T05:48:49.743Z",
+  "expirationDate": "2026-06-01T05:46:00.831Z",
+  "isForIosSimulator": false,
+  "metrics": {
+    "buildWaitTime": 1264,
+    "buildQueueTime": 4749,
+    "buildDuration": 162925
+  }
+}

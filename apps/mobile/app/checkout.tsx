@@ -357,7 +357,7 @@ export default function CheckoutScreen() {
                     if (result) {
                       setState(result.state);
                       setDistrict(result.district);
-                      setCity(result.block || result.district);
+                      setCity(result.area || result.district);
                     }
                   }
                 }}
