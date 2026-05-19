@@ -159,13 +159,13 @@ export default function DashboardPage() {
         {/* Dynamic Period Revenue */}
         <div className="rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-900 to-primary-950 p-6 text-white shadow-xl">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-400">Period Gross Revenue</span>
-            <div className="rounded-xl bg-primary-800/40 p-2 text-primary-400">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Period Gross Revenue</span>
+            <div className="rounded-xl bg-primary-800/40 p-2 text-emerald-400">
               <TrendingUp size={16} />
             </div>
           </div>
           <h3 className="mt-4 text-3xl font-black">{currencyFormatter.format(totalPeriodSales)}</h3>
-          <p className="mt-2 text-xs font-semibold text-slate-400">
+          <p className="mt-2 text-xs font-semibold text-primary-200/80">
             Accumulated sales over last {range === '7d' ? '7 days' : '30 days'}
           </p>
         </div>
