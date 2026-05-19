@@ -1,0 +1,9 @@
+# Exclude node_modules and Expo build caches
+node_modules/
+.expo/
+dist/
+build/
+*.apk
+*.tgz
+*.tar.gz
+backups/

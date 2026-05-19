@@ -77,16 +77,23 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity 
-            className="w-full bg-primary-500 rounded-lg py-3.5 items-center mt-2"
+            className="w-full bg-[#1b4d3a] rounded-xl py-3.5 items-center mt-2"
             onPress={handleLogin}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white font-semibold text-base">Sign In</Text>
+              <Text className="text-white font-black text-base">Sign In</Text>
             )}
           </TouchableOpacity>
+
+          <View className="flex-row justify-center items-center mt-4">
+            <Text className="text-sm text-slate-500 font-semibold">New Dealer? </Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
+              <Text className="text-sm text-emerald-800 font-black">Register Here</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>
