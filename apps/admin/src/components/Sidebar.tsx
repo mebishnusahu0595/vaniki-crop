@@ -8,6 +8,7 @@ import {
   FileText,
   X,
   Wallet,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink } from 'react-router-dom';
@@ -21,6 +22,7 @@ interface SidebarNavItem {
 }
 
 const navItems: SidebarNavItem[] = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/orders', label: 'Orders', icon: ShoppingCart },
   { to: '/inventory', label: 'Inventory', icon: PackageSearch },
   { to: '/invoices', label: 'Invoices', icon: FileText },
