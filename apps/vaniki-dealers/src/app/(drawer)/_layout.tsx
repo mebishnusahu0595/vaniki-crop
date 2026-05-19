@@ -56,12 +56,12 @@ export default function DrawerLayout() {
         ),
       }}
     >
-      {/* Redirect target (hidden from drawer UI) */}
       <Drawer.Screen 
         name="index" 
         options={{ 
-          drawerItemStyle: { display: 'none' },
-          headerShown: false,
+          title: 'Dashboard', 
+          drawerLabel: 'Dashboard',
+          drawerIcon: ({ color, size }) => <Icon name="grid" size={size} color={color} />
         }} 
       />
 
