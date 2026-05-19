@@ -81,7 +81,12 @@ api.interceptors.response.use(
 
 export const adminApi = {
   dealerSignup: async (payload: FormData) => {
-    const response = await api.post<{ success: boolean; message: string }>('/auth/dealer-signup', payload);
+    const response = await api.post<{ success: boolean; message: string }>('/auth/dealer-signup', payload, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      transformRequest: (data) => data,
+    });
     return response.data;
   },
   login: async (payload: { mobile: string; password: string }) => {

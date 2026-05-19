@@ -9,10 +9,13 @@ import {
   ActivityIndicator,
   ScrollView,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { adminApi } from '../../utils/api';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 
 const Icon = Feather as any;
 
@@ -21,7 +24,11 @@ const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 export default function SignupScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
+  
+  // Feedback States
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [successMsg, setSuccessMsg] = useState('');
 
   // Form states
@@ -33,39 +40,156 @@ export default function SignupScreen() {
   const [gstNumber, setGstNumber] = useState('');
   const [sgstNumber, setSgstNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  
+  // Image State
+  const [selectedImage, setSelectedImage] = useState<{ uri: string; name: string; type: string } | null>(null);
 
-  const handleSignup = async () => {
-    // Validations
-    if (!name || !mobile || !storeName || !storeLocation || !gstNumber || !sgstNumber || !password) {
-      setError('Please fill in all mandatory fields.');
-      return;
+  // 1. Native Geolocation & Address Suggestion
+  const handleDetectLocation = async () => {
+    setLocating(true);
+    setError('');
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setError('Location permission is required to detect coordinates.');
+        setLocating(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const { latitude: lat, longitude: lng } = location.coords;
+      setLatitude(lat);
+      setLongitude(lng);
+
+      // Perform Address Reverse Geocoding for automatic address suggestion!
+      const [addressDetails] = await Location.reverseGeocodeAsync({
+        latitude: lat,
+        longitude: lng,
+      });
+
+      if (addressDetails) {
+        const parts = [
+          addressDetails.streetNumber,
+          addressDetails.street,
+          addressDetails.name,
+          addressDetails.subregion,
+          addressDetails.city,
+          addressDetails.district,
+          addressDetails.region,
+          addressDetails.postalCode,
+        ].filter(Boolean);
+
+        const suggestedAddress = parts.join(', ');
+        if (suggestedAddress) {
+          setStoreLocation(suggestedAddress);
+        } else {
+          setStoreLocation(`Detected at Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
+        }
+      } else {
+        setStoreLocation(`Detected at Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Unable to retrieve your current location.');
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  // 2. Native Image Picker Flow
+  const handleSelectImage = async () => {
+    setError('');
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        setError('Storage permissions are required to upload a profile image.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        
+        // Extract native parameters for multipart file creation
+        const uri = asset.uri;
+        const fileType = asset.mimeType || 'image/jpeg';
+        const fileName = asset.fileName || `dealer_${Date.now()}.jpg`;
+
+        setSelectedImage({
+          uri,
+          name: fileName,
+          type: fileType,
+        });
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to open image gallery.');
+    }
+  };
+
+  // 3. Complete validations
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!name.trim()) errors.name = 'Full name is required';
+    
+    if (!mobile.trim()) {
+      errors.mobile = 'Mobile number is required';
+    } else if (!/^[6-9]\d{9}$/.test(mobile.trim())) {
+      errors.mobile = 'Enter a valid 10-digit Indian mobile number';
     }
 
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      setError('Please enter a valid 10-digit Indian mobile number.');
-      return;
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      errors.email = 'Enter a valid email address';
     }
+
+    if (!storeName.trim()) errors.storeName = 'Store name is required';
+    if (!storeLocation.trim()) errors.storeLocation = 'Store address is required';
 
     const gstUpper = gstNumber.toUpperCase().trim();
     const sgstUpper = sgstNumber.toUpperCase().trim();
 
-    if (!GSTIN_PATTERN.test(gstUpper)) {
-      setError('Enter a valid GSTIN (example: 27ABCDE1234F1Z5).');
-      return;
+    if (!gstUpper) {
+      errors.gstNumber = 'GST number is required';
+    } else if (!GSTIN_PATTERN.test(gstUpper)) {
+      errors.gstNumber = 'Enter a valid 15-digit GSTIN (e.g., 27ABCDE1234F1Z5)';
     }
 
-    if (!GSTIN_PATTERN.test(sgstUpper)) {
-      setError('Enter a valid SGSTIN (example: 27ABCDE1234F1Z5).');
-      return;
+    if (!sgstUpper) {
+      errors.sgstNumber = 'SGST number is required';
+    } else if (!GSTIN_PATTERN.test(sgstUpper)) {
+      errors.sgstNumber = 'Enter a valid 15-digit SGSTIN (e.g., 27ABCDE1234F1Z5)';
     }
 
-    if (gstUpper.slice(0, 2) !== sgstUpper.slice(0, 2)) {
-      setError('SGST state code prefix must match GST state code prefix.');
-      return;
+    if (gstUpper && sgstUpper && gstUpper.slice(0, 2) !== sgstUpper.slice(0, 2)) {
+      errors.sgstNumber = 'SGST state code must match GST state code';
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (!password) {
+      errors.password = 'Password is required';
+    } else if (password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!selectedImage) {
+      errors.image = 'Store profile photo is required';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSignup = async () => {
+    if (!validateForm()) {
+      setError('Please resolve all validation errors highlighted below.');
       return;
     }
 
@@ -82,19 +206,23 @@ export default function SignupScreen() {
       }
       payload.append('storeName', storeName.trim());
       payload.append('storeLocation', storeLocation.trim());
-      payload.append('longitude', '78.9629'); // Default Indian coordinates
-      payload.append('latitude', '20.5937');
-      payload.append('gstNumber', gstUpper);
-      payload.append('sgstNumber', sgstUpper);
+      
+      // Send location coordinates
+      payload.append('longitude', String(longitude ?? 78.9629));
+      payload.append('latitude', String(latitude ?? 20.5937));
+      
+      payload.append('gstNumber', gstNumber.toUpperCase().trim());
+      payload.append('sgstNumber', sgstNumber.toUpperCase().trim());
       payload.append('password', password);
 
-      // Multi-part photo payload using external URI mapping (avoids native plugin requirements)
-      const mockPhoto = {
-        uri: 'https://vanikicrop.com/assets/images/logo.png',
-        type: 'image/png',
-        name: 'dealer-photo.png',
-      };
-      payload.append('profileImage', mockPhoto as any);
+      // Append selected profile image using the native standard file object schema
+      if (selectedImage) {
+        payload.append('profileImage', {
+          uri: Platform.OS === 'android' ? selectedImage.uri : selectedImage.uri.replace('file://', ''),
+          name: selectedImage.name,
+          type: selectedImage.type,
+        } as any);
+      }
 
       await adminApi.dealerSignup(payload);
       setSuccessMsg('Registration request submitted! Please wait for Super Admin approval before logging in.');
@@ -156,99 +284,196 @@ export default function SignupScreen() {
 
           {/* Form */}
           {!successMsg && (
-            <View className="bg-white p-6 rounded-[2rem] shadow-sm border border-emerald-50 space-y-4">
+            <View className="bg-white p-6 rounded-[2rem] shadow-sm border border-emerald-50 space-y-5">
+              
+              {/* Image Picker */}
+              <View className="items-center pb-2">
+                <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 align-self-start w-full text-left">Store Profile Photo *</Text>
+                
+                {selectedImage ? (
+                  <View className="relative w-28 h-28 rounded-2xl border-2 border-emerald-500 overflow-hidden shadow-inner bg-slate-100">
+                    <Image source={{ uri: selectedImage.uri }} className="w-full h-full object-cover" />
+                    <TouchableOpacity
+                      onPress={handleSelectImage}
+                      className="absolute bottom-0 right-0 left-0 bg-emerald-900/80 py-1.5 items-center"
+                    >
+                      <Text className="text-[10px] font-black text-white uppercase tracking-wider">Change</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={handleSelectImage}
+                    className="w-full h-24 border border-dashed border-slate-300 rounded-xl justify-center items-center bg-slate-50"
+                  >
+                    <Icon name="camera" size={24} color="#64748b" />
+                    <Text className="text-xs font-bold text-slate-500 mt-1">Select Store Image</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {fieldErrors.image ? (
+                  <Text className="text-rose-600 text-xs font-semibold mt-1.5 w-full text-left">{fieldErrors.image}</Text>
+                ) : null}
+              </View>
+
               {/* Dealer Name */}
               <View>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Dealer Name *</Text>
                 <TextInput
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
+                    fieldErrors.name ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                  }`}
                   placeholder="Enter your full name"
                   value={name}
                   onChangeText={setName}
                 />
+                {fieldErrors.name ? (
+                  <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.name}</Text>
+                ) : null}
               </View>
 
               {/* Mobile Number */}
               <View>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Mobile Number *</Text>
                 <TextInput
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
+                    fieldErrors.mobile ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                  }`}
                   placeholder="Enter 10-digit mobile"
                   value={mobile}
                   onChangeText={setMobile}
                   keyboardType="numeric"
                 />
+                {fieldErrors.mobile ? (
+                  <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.mobile}</Text>
+                ) : null}
               </View>
 
               {/* Email */}
               <View>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Email Address</Text>
                 <TextInput
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
+                    fieldErrors.email ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                  }`}
                   placeholder="Enter email (optional)"
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
+                {fieldErrors.email ? (
+                  <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.email}</Text>
+                ) : null}
               </View>
 
               {/* Store Name */}
               <View>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Store Name *</Text>
                 <TextInput
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
+                    fieldErrors.storeName ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                  }`}
                   placeholder="Enter store designation"
                   value={storeName}
                   onChangeText={setStoreName}
                 />
+                {fieldErrors.storeName ? (
+                  <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.storeName}</Text>
+                ) : null}
               </View>
 
               {/* Store Location */}
               <View>
-                <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Store Address *</Text>
+                <View className="flex-row items-center justify-between mb-1.5">
+                  <Text className="text-xs font-black uppercase tracking-wider text-slate-500">Store Address *</Text>
+                  
+                  {/* Live Detect Location Button */}
+                  <TouchableOpacity
+                    onPress={handleDetectLocation}
+                    disabled={locating}
+                    className="flex-row items-center bg-emerald-50 px-3 py-1 rounded-full"
+                  >
+                    {locating ? (
+                      <ActivityIndicator size="small" color="#047857" className="mr-1" />
+                    ) : (
+                      <Icon name="map-pin" size={10} color="#047857" className="mr-1" />
+                    )}
+                    <Text className="text-[10px] font-black text-emerald-800 uppercase">
+                      {locating ? 'Detecting...' : 'Detect GPS Location'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                
                 <TextInput
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
-                  placeholder="Enter detailed store address"
+                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
+                    fieldErrors.storeLocation ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                  }`}
+                  placeholder="Enter detailed address or auto-detect GPS"
                   value={storeLocation}
                   onChangeText={setStoreLocation}
+                  multiline
                 />
+                
+                {fieldErrors.storeLocation ? (
+                  <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.storeLocation}</Text>
+                ) : null}
+                
+                {latitude && longitude ? (
+                  <Text className="text-[10px] font-bold text-slate-400 mt-1">
+                    Geo Coordinates Captured: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                  </Text>
+                ) : null}
               </View>
 
               {/* GST Number */}
               <View>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">GST Number *</Text>
                 <TextInput
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold uppercase"
+                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold uppercase ${
+                    fieldErrors.gstNumber ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                  }`}
                   placeholder="27ABCDE1234F1Z5"
                   value={gstNumber}
                   onChangeText={setGstNumber}
                   autoCapitalize="characters"
                 />
+                {fieldErrors.gstNumber ? (
+                  <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.gstNumber}</Text>
+                ) : null}
               </View>
 
               {/* SGST Number */}
               <View>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">SGST Number *</Text>
                 <TextInput
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold uppercase"
+                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold uppercase ${
+                    fieldErrors.sgstNumber ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                  }`}
                   placeholder="27ABCDE1234F1Z5"
                   value={sgstNumber}
                   onChangeText={setSgstNumber}
                   autoCapitalize="characters"
                 />
+                {fieldErrors.sgstNumber ? (
+                  <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.sgstNumber}</Text>
+                ) : null}
               </View>
 
               {/* Password */}
               <View>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Secure Password *</Text>
                 <TextInput
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold"
+                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
+                    fieldErrors.password ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                  }`}
                   placeholder="Minimum 6 characters"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
                 />
+                {fieldErrors.password ? (
+                  <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.password}</Text>
+                ) : null}
               </View>
 
               {/* Submit Button */}
