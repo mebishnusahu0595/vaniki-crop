@@ -17,7 +17,7 @@ import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { StatCard } from '../components/StatCard';
 import { adminApi } from '../utils/api';
-import { currencyFormatter, formatDate, formatDateTime } from '../utils/format';
+import { currencyFormatter, formatDateTime } from '../utils/format';
 
 export default function DashboardPage() {
   const [range, setRange] = useState<'7d' | '30d'>('7d');
@@ -56,7 +56,7 @@ export default function DashboardPage() {
   const eligibleOrdersCount = eligibleOrdersQuery.data?.length ?? 0;
 
   // Referral count
-  const referralCount = referralsQuery.data?.data?.length ?? referralsQuery.data?.length ?? 0;
+  const referralCount = referralsQuery.data?.data?.length ?? 0;
 
   // CSV Report Generator
   const handleDownloadReport = () => {
