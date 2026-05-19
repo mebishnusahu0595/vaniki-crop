@@ -130,7 +130,11 @@ export default function ProductRequestsScreen() {
       items: batchItems.map(item => ({
         productId: item.product.id,
         requestedPack: item.variant.label,
-        petiQuantity: item.petiQuantity
+        petiQuantity: item.petiQuantity,
+        price: item.variant.dealerPrice || item.variant.price,
+        dealerPrice: item.variant.dealerPrice,
+        offerPrice: item.variant.offerPrice,
+        hsnCode: item.product.hsnCode
       }))
     };
 
@@ -176,12 +180,53 @@ export default function ProductRequestsScreen() {
               onPress={() => setProductModalVisible(true)}
               className="flex-row justify-between items-center bg-zinc-50 border border-zinc-200 rounded-2xl py-4 px-4 active:bg-zinc-100"
             >
-              <Text className="text-zinc-800 font-bold text-sm">
-                {selectedProduct ? selectedProduct.name : 'Choose product...'}
+              <Text className="text-zinc-800 font-bold text-sm flex-1 mr-2" numberOfLines={1}>
+                {selectedProduct ? `${selectedProduct.name} ${selectedProduct.shortDescription ? `(${selectedProduct.shortDescription})` : ''}` : 'Choose product...'}
               </Text>
               <Icon name="chevron-down" size={16} color="#71717A" />
             </TouchableOpacity>
           </View>
+
+          {/* Product Info & Pricing Card */}
+          {selectedProduct && (
+            <View className="bg-emerald-50/50 rounded-[1.5rem] p-4 border border-emerald-100">
+              <Text className="text-base font-black text-emerald-900 leading-tight">
+                {selectedProduct.name}
+              </Text>
+              {selectedProduct.shortDescription ? (
+                <Text className="mt-1 text-xs font-medium text-emerald-700 opacity-80">
+                  {selectedProduct.shortDescription}
+                </Text>
+              ) : null}
+              {selectedProduct.hsnCode ? (
+                <Text className="mt-2 text-[9px] font-black text-emerald-600 bg-emerald-100 w-fit px-2 py-0.5 rounded-md border border-emerald-200">
+                  HSN: {selectedProduct.hsnCode}
+                </Text>
+              ) : null}
+
+              <View className="mt-4 pt-4 border-t border-emerald-200/50">
+                <Text className="text-[9px] font-black uppercase tracking-wider text-emerald-600 mb-3">Product Pricing Information</Text>
+                
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row pb-1">
+                  {selectedProduct.variants.map((v: any) => (
+                    <View key={v.id} className="rounded-xl bg-white p-3 border border-emerald-100 mr-3 min-w-[140px]">
+                      <Text className="text-xs font-black text-slate-900 mb-2">{v.label}</Text>
+                      <View className="space-y-1.5">
+                        <View className="flex-row justify-between items-center gap-3">
+                          <Text className="text-[9px] font-bold text-slate-500 uppercase">Price (Dealer)</Text>
+                          <Text className="text-[10px] font-black text-emerald-700">₹{v.dealerPrice || v.price || 'N/A'}</Text>
+                        </View>
+                        <View className="flex-row justify-between items-center gap-3">
+                          <Text className="text-[9px] font-bold text-slate-500 uppercase">Offer Price</Text>
+                          <Text className="text-[10px] font-black text-emerald-600">₹{v.offerPrice || 'N/A'}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          )}
 
           {/* Variant Selector */}
           {selectedProduct && (
@@ -254,9 +299,17 @@ export default function ProductRequestsScreen() {
             {batchItems.map((item, idx) => (
               <View key={idx} className="flex-row justify-between items-center bg-white border border-zinc-100 rounded-3xl p-5 mb-3 shadow-sm">
                 <View className="flex-1 mr-3">
-                  <Text className="text-zinc-900 font-black text-base">{item.product.name}</Text>
-                  <Text className="text-zinc-500 font-bold text-xs mt-1">
-                    Pack: {item.variant.label} · Qty: {item.petiQuantity} Peti
+                  <Text className="text-zinc-900 font-black text-base leading-tight">{item.product.name}</Text>
+                  <Text className="text-[10px] font-bold text-emerald-600 mt-1">
+                    {item.variant.label}
+                    {item.variant.dealerPrice || item.variant.price ? ` • Dealer: ₹${item.variant.dealerPrice || item.variant.price}` : ''}
+                    {item.variant.offerPrice ? ` • Offer: ₹${item.variant.offerPrice}` : ''}
+                  </Text>
+                  <Text className="mt-1 text-[10px] text-zinc-500 italic" numberOfLines={1}>
+                    {item.product.hsnCode ? `HSN: ${item.product.hsnCode} • ` : ''}{item.product.shortDescription}
+                  </Text>
+                  <Text className="text-zinc-500 font-bold text-xs mt-2">
+                    Qty: <Text className="text-zinc-800">{item.petiQuantity} Peti</Text>
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -363,7 +416,9 @@ export default function ProductRequestsScreen() {
                   }}
                   className="py-4 border-b border-zinc-100 active:bg-zinc-50"
                 >
-                  <Text className="text-zinc-800 font-bold text-sm">{item.name}</Text>
+                  <Text className="text-zinc-800 font-bold text-sm">
+                    {item.name} {item.shortDescription ? <Text className="text-zinc-500 font-medium">({item.shortDescription})</Text> : null}
+                  </Text>
                 </TouchableOpacity>
               )}
             />
