@@ -320,7 +320,7 @@ export default function DashboardScreen() {
                 </View>
               </View>
             ))}
-          </div>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
