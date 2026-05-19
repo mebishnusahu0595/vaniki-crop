@@ -144,9 +144,8 @@ export default function ProductRequestsScreen() {
   // Calculations for summary card
   const totalPeti = batchItems.reduce((sum, item) => sum + item.petiQuantity, 0);
   const totalVolume = batchItems.reduce((sum, item) => {
-    const pSize = item.product.petiSize || 0;
-    const vQty = parseFloat(item.variant.label) || 1; // Parse volume e.g. "5 Liter"
-    return sum + (item.petiQuantity * pSize * vQty);
+    const pSize = item.product.petiSize || 12;
+    return sum + (item.petiQuantity * pSize);
   }, 0);
 
   return (
@@ -245,7 +244,7 @@ export default function ProductRequestsScreen() {
           )}
 
           {/* Peti Quantity Input */}
-          {selectedVariant && (
+          {selectedProduct && (
             <View className="flex-row gap-4 items-end">
               <View className="flex-1">
                 <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Peti Quantity</Text>
@@ -273,19 +272,19 @@ export default function ProductRequestsScreen() {
           <View className="bg-emerald-950 rounded-[2rem] p-6 text-white shadow-xl mt-6">
             <View className="flex-row items-center gap-2 mb-4">
               <Icon name="info" size={16} color="#34D399" />
-              <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Request Volume Summary</Text>
+              <Text className="text-xs font-black uppercase text-emerald-400">Request Volume Summary</Text>
             </View>
             <View className="flex-row justify-between items-center">
-              <View>
-                <Text className="text-[9px] font-black uppercase tracking-wider text-emerald-300">Total Staged</Text>
+              <View className="flex-1">
+                <Text className="text-[9px] font-black uppercase text-emerald-300">Total Staged</Text>
                 <Text className="text-2xl font-black text-white mt-1">
-                  {totalPeti} <Text className="text-xs font-semibold uppercase tracking-wider">Petis</Text>
+                  {totalPeti} <Text className="text-xs font-bold text-emerald-200">Petis</Text>
                 </Text>
               </View>
-              <View className="border-l border-white/10 pl-6 items-end">
-                <Text className="text-[9px] font-black uppercase tracking-wider text-emerald-300">Estimated Volume</Text>
+              <View className="border-l border-white/10 pl-6 items-end flex-1">
+                <Text className="text-[9px] font-black uppercase text-emerald-300">Estimated Volume</Text>
                 <Text className="text-2xl font-black text-white mt-1">
-                  {totalVolume.toFixed(1)} <Text className="text-xs font-semibold uppercase tracking-wider">L/Kg</Text>
+                  {totalVolume} <Text className="text-xs font-bold text-emerald-200">Liters/Kg</Text>
                 </Text>
               </View>
             </View>
