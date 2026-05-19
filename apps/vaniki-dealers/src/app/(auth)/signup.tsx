@@ -40,6 +40,7 @@ export default function SignupScreen() {
   const [gstNumber, setGstNumber] = useState('');
   const [sgstNumber, setSgstNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   
@@ -462,15 +463,20 @@ export default function SignupScreen() {
               {/* Password */}
               <View>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Secure Password *</Text>
-                <TextInput
-                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
-                    fieldErrors.password ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
-                  }`}
-                  placeholder="Minimum 6 characters"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                />
+                <View className={`flex-row items-center bg-slate-50 border rounded-xl px-4 ${
+                  fieldErrors.password ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                }`}>
+                  <TextInput
+                    className="flex-1 py-3 text-slate-900 text-sm font-semibold"
+                    placeholder="Minimum 6 characters"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(p => !p)} className="p-1">
+                    <Icon name={showPassword ? 'eye-off' : 'eye'} size={18} color="#9CA3AF" />
+                  </TouchableOpacity>
+                </View>
                 {fieldErrors.password ? (
                   <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.password}</Text>
                 ) : null}

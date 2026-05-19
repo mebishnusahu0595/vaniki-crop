@@ -3,10 +3,14 @@ import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform
 import { useAdminAuthStore } from '../../store/useAdminAuthStore';
 import { adminApi } from '../../utils/api';
 import { useRouter } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
+
+const Icon = Feather as any;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -67,13 +71,18 @@ export default function LoginScreen() {
 
           <View>
             <Text className="text-sm font-medium text-gray-700 mb-1">Password</Text>
-            <TextInput
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-900"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-lg px-4">
+              <TextInput
+                className="flex-1 py-3 text-gray-900"
+                placeholder="Enter your password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(p => !p)} className="p-1">
+                <Icon name={showPassword ? 'eye-off' : 'eye'} size={18} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <TouchableOpacity 

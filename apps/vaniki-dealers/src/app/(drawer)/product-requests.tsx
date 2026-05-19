@@ -131,6 +131,8 @@ export default function ProductRequestsScreen() {
         productId: item.product.id,
         requestedPack: item.variant.label,
         petiQuantity: item.petiQuantity,
+        quantity: item.petiQuantity * (item.product.petiSize || 12),
+        requestedQuantity: item.petiQuantity * (item.product.petiSize || 12),
         price: item.variant.dealerPrice || item.variant.price,
         dealerPrice: item.variant.dealerPrice,
         offerPrice: item.variant.offerPrice,
@@ -272,20 +274,22 @@ export default function ProductRequestsScreen() {
           <View className="bg-emerald-950 rounded-[2rem] p-6 text-white shadow-xl mt-6">
             <View className="flex-row items-center gap-2 mb-4">
               <Icon name="info" size={16} color="#34D399" />
-              <Text className="text-xs font-black uppercase text-emerald-400">Request Volume Summary</Text>
+              <Text className="text-xs font-bold uppercase text-emerald-400" style={{ includeFontPadding: false }}>Request Volume Summary</Text>
             </View>
             <View className="flex-row justify-between items-center">
               <View className="flex-1">
-                <Text className="text-[9px] font-black uppercase text-emerald-300">Total Staged</Text>
-                <Text className="text-2xl font-black text-white mt-1">
-                  {totalPeti} <Text className="text-xs font-bold text-emerald-200">Petis</Text>
-                </Text>
+                <Text className="text-[9px] font-bold uppercase text-emerald-300" style={{ includeFontPadding: false }}>Total Staged</Text>
+                <View className="flex-row items-baseline mt-1 gap-1">
+                  <Text className="text-2xl font-extrabold text-white" style={{ includeFontPadding: false }}>{totalPeti}</Text>
+                  <Text className="text-xs font-bold text-emerald-200" style={{ includeFontPadding: false }}>Petis</Text>
+                </View>
               </View>
               <View className="border-l border-white/10 pl-6 items-end flex-1">
-                <Text className="text-[9px] font-black uppercase text-emerald-300">Estimated Volume</Text>
-                <Text className="text-2xl font-black text-white mt-1">
-                  {totalVolume} <Text className="text-xs font-bold text-emerald-200">Liters/Kg</Text>
-                </Text>
+                <Text className="text-[9px] font-bold uppercase text-emerald-300" style={{ includeFontPadding: false }}>Estimated Volume</Text>
+                <View className="flex-row items-baseline mt-1 gap-1">
+                  <Text className="text-2xl font-extrabold text-white" style={{ includeFontPadding: false }}>{totalVolume}</Text>
+                  <Text className="text-xs font-bold text-emerald-200" style={{ includeFontPadding: false }}>Liters/Kg</Text>
+                </View>
               </View>
             </View>
           </View>
