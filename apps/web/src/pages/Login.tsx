@@ -207,12 +207,12 @@ const Login: React.FC = () => {
               }}
               className="text-sm font-medium text-primary-900/60 transition hover:text-primary"
             >
-              {t('authPages.forgotPasswordLink')}
+              {t('authPages.forgotPassword')}
             </button>
             <p className="text-sm font-medium text-primary-900/60">
-              {t('authPages.notRegistered')}{' '}
+              {t('authPages.newHere')}{' '}
               <Link to="/signup" className="font-black text-primary hover:underline">
-                {t('authPages.signupLink')}
+                {t('authPages.createAccount')}
               </Link>
             </p>
           </div>
@@ -290,13 +290,13 @@ const Login: React.FC = () => {
             otpSent && (
               <div className="flex flex-col gap-1.5 animate-fadeIn">
                 <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60 text-center">
-                  6-Digit OTP
+                  {t('authPages.enterOtp')}
                 </label>
                 <input
                   required
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="000000"
+                  placeholder="0000"
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-center text-2xl font-black tracking-[0.5em] text-primary-900"
                 />
               </div>
@@ -367,14 +367,14 @@ const Login: React.FC = () => {
           </p>
           <div className="flex flex-col gap-1.5 animate-fadeIn">
             <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60 text-center">
-              6-Digit OTP
+              {t('authPages.enterOtp')}
             </label>
             <input
               required
               maxLength={6}
               value={otpCode}
               onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="000000"
+              placeholder="0000"
               className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-center text-2xl font-black tracking-[0.5em] text-primary-900"
             />
           </div>

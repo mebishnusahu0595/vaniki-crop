@@ -38,14 +38,27 @@ export async function validateOtpViaMessageCentral(verificationId: string, otp: 
 
   try {
     const response = await fetch(url, {
-      method: 'POST',
+      method: 'GET',
       headers: {
         'authToken': authToken,
         'accept': '*/*'
       }
     });
 
-    const data = await response.json() as any;
+    const responseText = await response.text();
+    if (!responseText) {
+      console.error('MessageCentral validate OTP returned empty response, status:', response.status);
+      return false;
+    }
+
+    let data: any;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('MessageCentral validate OTP failed to parse JSON response:', responseText, parseError);
+      return false;
+    }
+
     if (data.responseCode !== 200) {
       console.error('MessageCentral validate OTP error:', data);
       return false;

@@ -19,8 +19,9 @@ const passwordSchema = z
 
 const otpSchema = z
   .string()
-  .length(4, 'OTP must be exactly 4 digits')
-  .regex(/^\d{4}$/, 'OTP must contain only digits');
+  .min(4, 'OTP must be at least 4 digits')
+  .max(6, 'OTP must be at most 6 digits')
+  .regex(/^\d{4,6}$/, 'OTP must contain only digits');
 
 const referralCodeSchema = z
   .string()
