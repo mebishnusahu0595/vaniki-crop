@@ -462,6 +462,19 @@ export interface Testimonial {
   createdAt: string;
 }
 
+export interface DealerPromotion {
+  id: string;
+  title: string;
+  description: string;
+  image?: {
+    url: string;
+    publicId: string;
+  };
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
 export interface SiteSettings {
   id: string;
   platformName: string;

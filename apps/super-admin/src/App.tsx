@@ -23,6 +23,7 @@ import ReferralPage from './pages/Referral';
 import StaffPage from './pages/Staff';
 import InvoicesPage from './pages/Invoices';
 import NotificationsPage from './pages/Notifications';
+import DealersPromotionsPage from './pages/DealersPromotions';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
           <Route path="/coupons" element={<CouponsPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/banners" element={<BannersPage />} />
+          <Route path="/dealers-promotions" element={<DealersPromotionsPage />} />
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/testimonials" element={<TestimonialsPage />} />
           <Route path="/loyalty" element={<LoyaltyPage />} />

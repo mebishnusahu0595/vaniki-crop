@@ -19,6 +19,7 @@ import {
   UserCheck,
   Bike,
   FileText,
+  Megaphone,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink } from 'react-router-dom';
@@ -47,6 +48,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/coupons', label: 'Coupons', icon: BadgePercent },
   { to: '/banners', label: 'Global Banners', icon: GalleryVerticalEnd },
   { to: '/testimonials', label: 'Testimonials', icon: MessageSquare },
+  { to: '/dealers-promotions', label: 'Dealers Promotions', icon: Megaphone },
   { to: '/loyalty', label: 'Loyalty Points', icon: Coins },
   { to: '/staff', label: 'Staff', icon: Bike },
   { to: '/referrals', label: 'Referrals & Staff', icon: UserCheck },

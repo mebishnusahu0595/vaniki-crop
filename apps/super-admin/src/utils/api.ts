@@ -25,6 +25,7 @@ import type {
   StaffDetail,
   StaffMember,
   Testimonial,
+  DealerPromotion,
 } from '../types/admin';
 
 export interface ApiResponse<T, TSummary = PaymentSummary> {
@@ -638,5 +639,21 @@ export const adminApi = {
   getWhatsAppReferrals: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<any[]>>('/superadmin/whatsapp-referrals', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
+  },
+  promotions: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<DealerPromotion[]>>('/promotions/admin', { params });
+    return response.data;
+  },
+  createPromotion: async (payload: FormData) => {
+    const response = await api.post<ApiResponse<DealerPromotion>>('/promotions/admin', payload);
+    return response.data.data;
+  },
+  updatePromotion: async (id: string, payload: FormData) => {
+    const response = await api.put<ApiResponse<DealerPromotion>>(`/promotions/admin/${id}`, payload);
+    return response.data.data;
+  },
+  deletePromotion: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/promotions/admin/${id}`);
+    return response.data;
   },
 };

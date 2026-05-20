@@ -8,12 +8,14 @@ import {
   RefreshControl,
   SafeAreaView,
   Dimensions,
+  Image,
 } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { adminApi } from '../../utils/api';
 import { currencyFormatter, formatDateTime } from '../../utils/format';
 import { Feather } from '@expo/vector-icons';
+import { resolveMediaUrl } from '../../utils/media';
 
 const Icon = Feather as any;
 
@@ -40,15 +42,22 @@ export default function DashboardScreen() {
     queryFn: () => adminApi.referrals(),
   });
 
+  // Promotions Query
+  const promotionsQuery = useQuery({
+    queryKey: ['admin-promotions'],
+    queryFn: adminApi.promotions,
+  });
+
   const onRefresh = useCallback(async () => {
     await Promise.all([
       analyticsQuery.refetch(),
       eligibleOrdersQuery.refetch(),
       referralsQuery.refetch(),
+      promotionsQuery.refetch(),
     ]);
-  }, [analyticsQuery, eligibleOrdersQuery, referralsQuery]);
+  }, [analyticsQuery, eligibleOrdersQuery, referralsQuery, promotionsQuery]);
 
-  const isRefreshing = analyticsQuery.isFetching || eligibleOrdersQuery.isFetching || referralsQuery.isFetching;
+  const isRefreshing = analyticsQuery.isFetching || eligibleOrdersQuery.isFetching || referralsQuery.isFetching || promotionsQuery.isFetching;
 
   if (analyticsQuery.isLoading || !analyticsQuery.data) {
     return (
@@ -112,6 +121,43 @@ export default function DashboardScreen() {
             ))}
           </View>
         </View>
+
+        {/* Promotions Section */}
+        {promotionsQuery.data?.data && promotionsQuery.data.data.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-[10px] font-black uppercase tracking-widest text-emerald-800 mb-2">Dealer Special Announcements</Text>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              className="rounded-[2rem] overflow-hidden"
+              style={{ width: Dimensions.get('window').width - 32 }}
+            >
+              {promotionsQuery.data.data.map((promo) => (
+                <View
+                  key={promo.id}
+                  style={{ width: Dimensions.get('window').width - 32 }}
+                  className="bg-emerald-950 rounded-[2rem] overflow-hidden relative aspect-[2.4/1]"
+                >
+                  {promo.image?.url ? (
+                    <Image
+                      source={{ uri: resolveMediaUrl(promo.image.url, promo.image.publicId) }}
+                      className="absolute inset-0 w-full h-full opacity-65"
+                      resizeMode="cover"
+                    />
+                  ) : null}
+                  {/* Absolute overlay container */}
+                  <View className="absolute inset-x-0 bottom-0 bg-slate-950/60 p-4 justify-end">
+                    <Text className="text-white text-sm font-black leading-tight drop-shadow-md">{promo.title}</Text>
+                    <Text className="text-emerald-300 text-[11px] font-bold mt-1 drop-shadow-sm" numberOfLines={2}>
+                      {promo.description}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Primary Stats Grid */}
         <View className="mb-6 flex-row flex-wrap justify-between gap-y-3">
