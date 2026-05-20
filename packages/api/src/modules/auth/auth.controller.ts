@@ -124,6 +124,26 @@ export async function loginWithOtp(req: Request, res: Response, next: NextFuncti
 }
 
 /**
+ * POST /api/auth/send-login-otp
+ * Sends OTP to a registered mobile number for direct login.
+ */
+export async function sendLoginOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await authService.sendLoginOtp(req.body);
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP has been sent to your registered mobile number.',
+      data: {
+        verificationId: result.verificationId,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * POST /api/auth/refresh
  * Uses the refresh token from the httpOnly cookie to issue a new token pair.
  */
@@ -174,12 +194,12 @@ export async function logout(req: Request, res: Response, next: NextFunction): P
  */
 export async function forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    await authService.forgotPassword(req.body);
+    const result = await authService.forgotPassword(req.body);
 
-    // Always return success to prevent enumeration
     res.status(200).json({
       success: true,
-      message: 'If an account exists, an OTP has been sent to the registered mobile and/or email.',
+      message: 'OTP has been sent to the registered mobile number.',
+      verificationId: result?.verificationId,
     });
   } catch (error) {
     next(error);

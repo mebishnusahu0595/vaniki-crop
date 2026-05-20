@@ -111,6 +111,7 @@ export const loginOtpSchema = z.object({
   body: z.object({
     mobile: mobileSchema,
     otp: otpSchema,
+    verificationId: z.string().optional(),
   }),
 });
 
@@ -135,6 +136,7 @@ export const resetPasswordSchema = z.object({
     email: z.string().trim().email('Please provide a valid email address').optional(),
     otp: otpSchema,
     newPassword: passwordSchema,
+    verificationId: z.string().optional(),
   }).refine(data => data.mobile || data.email, {
     message: 'Either mobile or email is required',
   }),

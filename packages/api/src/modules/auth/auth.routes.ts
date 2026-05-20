@@ -16,6 +16,8 @@ import {
   toggleWishlistSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  sendOtpSchema,
+  loginOtpSchema,
 } from './auth.validator.js';
 
 const router: Router = Router();
@@ -47,6 +49,12 @@ router.post('/dealer-signup', upload.single('profileImage'), validate(dealerSign
 
 /** POST /api/auth/login — Login with mobile + password */
 router.post('/login', loginRateLimiter, validate(loginSchema), authController.login);
+
+/** POST /api/auth/send-login-otp — Send OTP for login */
+router.post('/send-login-otp', validate(sendOtpSchema), authController.sendLoginOtp);
+
+/** POST /api/auth/login-otp — Login with mobile + OTP */
+router.post('/login-otp', loginRateLimiter, validate(loginOtpSchema), authController.loginWithOtp);
 
 /** POST /api/auth/refresh — Refresh access token using httpOnly cookie */
 router.post('/refresh', authController.refresh);

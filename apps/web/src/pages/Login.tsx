@@ -10,8 +10,6 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
 import type { AuthUser } from '../types/storefront';
-import { auth } from '../config/firebase';
-import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -32,30 +30,14 @@ const Login: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
-  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [loginVerificationId, setLoginVerificationId] = useState<string | null>(null);
+  const [forgotVerificationId, setForgotVerificationId] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
 
-  const setupRecaptcha = (elementId: string) => {
-    if (recaptchaVerifier) return recaptchaVerifier;
-    try {
-      const verifier = new RecaptchaVerifier(auth, elementId, {
-        size: 'invisible',
-        callback: () => {},
-      });
-      setRecaptchaVerifier(verifier);
-      return verifier;
-    } catch (error) {
-      console.error('Recaptcha init failed:', error);
-      return null;
-    }
-  };
-
   const [forgotIdentifier, setForgotIdentifier] = useState('');
-
   const [newPassword, setNewPassword] = useState('');
-
 
   useEffect(() => {
     if (isAuthenticated) navigate(redirect, { replace: true });
@@ -89,7 +71,103 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleSendLoginOtp = async () => {
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+      toast.error('Enter a valid 10-digit mobile number');
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      const result = await storefrontApi.sendLoginOtp({ mobile });
+      setLoginVerificationId(result.verificationId);
+      setOtpSent(true);
+      toast.success('OTP sent successfully');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to send OTP'));
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
 
+  const handleLoginWithOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginVerificationId) {
+      toast.error('Please send OTP first');
+      return;
+    }
+    if (otpCode.length < 4) {
+      toast.error('Please enter a valid OTP');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const result = await storefrontApi.loginWithOtp({
+        mobile,
+        otp: otpCode,
+        verificationId: loginVerificationId,
+      });
+      await applySession(result.user, result.accessToken);
+      toast.success(t('authPages.welcomeBack'));
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Invalid OTP or session expired.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!/^[6-9]\d{9}$/.test(forgotIdentifier)) {
+      toast.error('Enter a valid 10-digit mobile number');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const result = await storefrontApi.forgotPassword({ mobile: forgotIdentifier });
+      if (result.verificationId) {
+        setForgotVerificationId(result.verificationId);
+        setAuthMode('reset');
+        setOtpCode('');
+        toast.success('OTP sent successfully');
+      } else {
+        toast.error('Failed to initiate password reset.');
+      }
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to send OTP'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotVerificationId) {
+      toast.error('Session expired. Please request OTP again.');
+      return;
+    }
+    if (otpCode.length < 4) {
+      toast.error('Please enter a valid OTP');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await storefrontApi.resetPassword({
+        mobile: forgotIdentifier,
+        otp: otpCode,
+        newPassword,
+        verificationId: forgotVerificationId,
+      });
+      toast.success(t('authPages.resetSuccess') || 'Password reset successfully.');
+      setAuthMode('login');
+      setForgotVerificationId(null);
+      setOtpCode('');
+      setNewPassword('');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, t('authPages.resetFailed')));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const getShellProps = () => {
     switch (authMode) {
@@ -119,15 +197,33 @@ const Login: React.FC = () => {
       compactMobile
       footer={
         authMode === 'login' ? (
-          <p className="text-sm font-medium text-primary-900/60">
-            {t('authPages.newHere')}{' '}
-            <Link to="/signup" className="font-black text-primary">
-              {t('authPages.createAccount')}
-            </Link>
-          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('forgot');
+                setForgotVerificationId(null);
+                setOtpCode('');
+              }}
+              className="text-sm font-medium text-primary-900/60 transition hover:text-primary"
+            >
+              {t('authPages.forgotPasswordLink')}
+            </button>
+            <p className="text-sm font-medium text-primary-900/60">
+              {t('authPages.notRegistered')}{' '}
+              <Link to="/signup" className="font-black text-primary hover:underline">
+                {t('authPages.signupLink')}
+              </Link>
+            </p>
+          </div>
         ) : (
           <button
-            onClick={() => setAuthMode('login')}
+            type="button"
+            onClick={() => {
+              setAuthMode('login');
+              setForgotVerificationId(null);
+              setOtpCode('');
+            }}
             className="text-sm font-black uppercase tracking-wider text-primary hover:underline"
           >
             {t('authPages.backToLogin')}
@@ -137,32 +233,9 @@ const Login: React.FC = () => {
     >
       {authMode === 'login' && (
         <form 
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (loginMethod === 'password') {
-              handleSubmit(e);
-            } else {
-              if (!confirmationResult) {
-                toast.error('Please send OTP first');
-                return;
-              }
-              setIsSubmitting(true);
-              try {
-                const userCredential = await confirmationResult.confirm(otpCode);
-                const idToken = await userCredential.user.getIdToken();
-                const loginResult = await storefrontApi.firebaseLogin(idToken);
-                await applySession(loginResult.user, loginResult.accessToken);
-                toast.success(t('authPages.welcomeBack'));
-              } catch (error) {
-                toast.error('Invalid OTP or session expired.');
-              } finally {
-                setIsSubmitting(false);
-              }
-            }
-          }} 
+          onSubmit={loginMethod === 'password' ? handleSubmit : handleLoginWithOtp} 
           className="space-y-3"
         >
-          <div id="recaptcha-container"></div>
           <div className="flex flex-col gap-1.5">
             <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
               {t('authPages.mobileNumber')}
@@ -173,31 +246,14 @@ const Login: React.FC = () => {
                 value={mobile}
                 onChange={(event) => setMobile(event.target.value.replace(/\D/g, '').slice(0, 10))}
                 placeholder="9876543210"
-                disabled={!!confirmationResult}
+                disabled={otpSent}
                 className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 font-semibold text-primary-900 disabled:opacity-50"
               />
-              {loginMethod === 'otp' && !confirmationResult && (
+              {loginMethod === 'otp' && !otpSent && (
                 <button
                   type="button"
                   disabled={isSendingOtp}
-                  onClick={async () => {
-                    if (!/^[6-9]\d{9}$/.test(mobile)) {
-                      toast.error('Enter a valid 10-digit mobile number');
-                      return;
-                    }
-                    setIsSendingOtp(true);
-                    try {
-                      const verifier = setupRecaptcha('recaptcha-container');
-                      if (!verifier) throw new Error('Failed to initialize reCAPTCHA');
-                      const result = await signInWithPhoneNumber(auth, `+91${mobile}`, verifier);
-                      setConfirmationResult(result);
-                      toast.success('OTP sent successfully');
-                    } catch (error) {
-                      toast.error('Failed to send OTP');
-                    } finally {
-                      setIsSendingOtp(false);
-                    }
-                  }}
+                  onClick={handleSendLoginOtp}
                   className="whitespace-nowrap rounded-2xl bg-primary-100 px-4 text-xs font-black uppercase tracking-wider text-primary"
                 >
                   {isSendingOtp ? 'Sending...' : 'Send OTP'}
@@ -231,8 +287,8 @@ const Login: React.FC = () => {
               </div>
             </div>
           ) : (
-            confirmationResult && (
-              <div className="flex flex-col gap-1.5">
+            otpSent && (
+              <div className="flex flex-col gap-1.5 animate-fadeIn">
                 <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60 text-center">
                   6-Digit OTP
                 </label>
@@ -252,25 +308,17 @@ const Login: React.FC = () => {
               type="button"
               onClick={() => {
                 setLoginMethod(loginMethod === 'password' ? 'otp' : 'password');
-                setConfirmationResult(null);
+                setLoginVerificationId(null);
+                setOtpSent(false);
                 setOtpCode('');
               }}
               className="text-xs font-black uppercase tracking-wider text-primary/60 hover:text-primary"
             >
               {loginMethod === 'password' ? 'OTP Login' : 'Password Login'}
             </button>
-            {loginMethod === 'password' && (
-              <button
-                type="button"
-                onClick={() => setAuthMode('forgot')}
-                className="text-xs font-black uppercase tracking-wider text-primary/60 hover:text-primary"
-              >
-                {t('authPages.forgotPassword')}
-              </button>
-            )}
           </div>
           <button
-            disabled={isSubmitting || (loginMethod === 'otp' && !confirmationResult)}
+            disabled={isSubmitting || (loginMethod === 'otp' && !otpSent)}
             className="w-full rounded-full bg-primary px-6 py-2.5 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary-600 disabled:opacity-50"
           >
             {isSubmitting ? t('authPages.signingIn') : t('authPages.login')}
@@ -285,29 +333,9 @@ const Login: React.FC = () => {
 
       {authMode === 'forgot' && (
         <form 
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!/^[6-9]\d{9}$/.test(forgotIdentifier)) {
-              toast.error('Enter a valid 10-digit mobile number');
-              return;
-            }
-            setIsSubmitting(true);
-            try {
-              const verifier = setupRecaptcha('forgot-recaptcha-container');
-              if (!verifier) throw new Error('Failed to initialize reCAPTCHA');
-              const result = await signInWithPhoneNumber(auth, `+91${forgotIdentifier}`, verifier);
-              setConfirmationResult(result);
-              setAuthMode('reset');
-              toast.success('OTP sent successfully');
-            } catch (error) {
-              toast.error('Failed to send OTP');
-            } finally {
-              setIsSubmitting(false);
-            }
-          }} 
+          onSubmit={handleForgotSendOtp} 
           className="space-y-4"
         >
-          <div id="forgot-recaptcha-container"></div>
           <div className="flex flex-col gap-1.5">
             <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
               {t('authPages.mobileNumber')}
@@ -331,33 +359,13 @@ const Login: React.FC = () => {
 
       {authMode === 'reset' && (
         <form 
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!confirmationResult) {
-              toast.error('Session expired. Please request OTP again.');
-              return;
-            }
-            setIsSubmitting(true);
-            try {
-              const userCredential = await confirmationResult.confirm(otpCode);
-              const idToken = await userCredential.user.getIdToken();
-              await storefrontApi.firebaseResetPassword({ idToken, newPassword });
-              toast.success(t('authPages.resetSuccess') || 'Password reset successfully.');
-              setAuthMode('login');
-              setConfirmationResult(null);
-              setOtpCode('');
-            } catch (error) {
-              toast.error(t('authPages.resetFailed'));
-            } finally {
-              setIsSubmitting(false);
-            }
-          }} 
+          onSubmit={handleResetPassword} 
           className="space-y-4"
         >
           <p className="px-1 text-xs font-semibold text-primary/60">
             {t('authPages.otpSentTo')} {forgotIdentifier}
           </p>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5 animate-fadeIn">
             <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60 text-center">
               6-Digit OTP
             </label>

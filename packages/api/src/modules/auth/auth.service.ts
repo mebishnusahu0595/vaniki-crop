@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, type IUser } from '../../models/User.model.js';
+import { sendOtpViaMessageCentral, validateOtpViaMessageCentral } from '../../utils/messageCentral.js';
 import { Staff } from '../../models/Staff.model.js';
 import { firebaseAdmin } from '../../config/firebase.js';
 import { Product } from '../../models/Product.model.js';
@@ -417,18 +418,40 @@ export async function login(
 }
 
 /**
+/**
+ * Sends OTP to a registered mobile number for login verification.
+ * Only allows registered users. Unregistered users receive a 404.
+ */
+export async function sendLoginOtp(input: { mobile: string }): Promise<{ verificationId: string }> {
+  const { mobile } = input;
+
+  const user = await User.findOne({ mobile });
+  if (!user) {
+    throw new AppError('No account found with this mobile number. Please register first.', 404);
+  }
+
+  if (!user.isActive) {
+    throw new AppError('Your account has been deactivated. Contact support.', 403);
+  }
+
+  const verificationId = await sendOtpViaMessageCentral(mobile);
+  return { verificationId };
+}
+
+/**
  * Authenticates a user with mobile and OTP.
- * @param input - { mobile, otp }
+ * Supporting both Message Central validation (via verificationId) and database OTP fallback.
+ * @param input - { mobile, otp, verificationId }
  * @returns Authenticated user and token pair
  */
 export async function loginWithOtp(
-  input: LoginOtpInput,
+  input: any,
 ): Promise<{ user: IUser; tokens: TokenPair }> {
-  const { mobile, otp } = input;
+  const { mobile, otp, verificationId } = input;
 
   const user = await User.findOne({ mobile }).select('+otp +otpExpiry');
   if (!user) {
-    throw new AppError('No account found with this mobile number', 404);
+    throw new AppError('No account found with this mobile number. Please register first.', 404);
   }
 
   if (!user.isActive) {
@@ -442,22 +465,33 @@ export async function loginWithOtp(
     throw new AppError('Your dealer account is pending super admin approval.', 403);
   }
 
-  if (!user.otp || !user.otpExpiry) {
-    throw new AppError('No OTP requested. Please request a new one.', 400);
+  let isOtpValid = false;
+
+  if (verificationId) {
+    // Validate using Message Central CPaaS
+    isOtpValid = await validateOtpViaMessageCentral(verificationId, otp);
+  } else {
+    // Database validation fallback
+    if (!user.otp || !user.otpExpiry) {
+      throw new AppError('No OTP requested. Please request a new one.', 400);
+    }
+
+    if (user.otpExpiry < new Date()) {
+      throw new AppError('OTP has expired. Please request a new one.', 400);
+    }
+
+    isOtpValid = await bcrypt.compare(otp, user.otp);
   }
 
-  if (user.otpExpiry < new Date()) {
-    throw new AppError('OTP has expired. Please request a new one.', 400);
-  }
-
-  const isOtpValid = await bcrypt.compare(otp, user.otp);
   if (!isOtpValid) {
     throw new AppError('Invalid OTP', 400);
   }
 
-  user.otp = undefined;
-  user.otpExpiry = undefined;
-  await user.save({ validateBeforeSave: false });
+  if (!verificationId) {
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    await user.save({ validateBeforeSave: false });
+  }
 
   const tokens = await generateTokenPair(user);
   return { user, tokens };
@@ -577,22 +611,30 @@ export async function logout(userId: string): Promise<void> {
 
 /**
  * Initiates a forgot-password flow by sending an OTP to the mobile number or email.
+ * For mobile numbers, uses Message Central and returns a verificationId.
+ * For emails, falls back to SMTP.
+ * Enforces checking for registered users, throwing a 404 if not registered.
  * @param input - { mobile, email }
  */
-export async function forgotPassword(input: any): Promise<void> {
+export async function forgotPassword(input: any): Promise<{ verificationId?: string }> {
   const { mobile, email } = input;
 
   const query: any = {};
   if (mobile) query.mobile = mobile;
   else if (email) query.email = email;
-  else return;
+  else throw new AppError('Mobile or email is required', 400);
 
   const user = await User.findOne(query);
   if (!user) {
-    // Don't reveal whether the user exists — silently return
-    return;
+    throw new AppError('No account found with this mobile number. Please register first.', 404);
   }
 
+  if (mobile) {
+    const verificationId = await sendOtpViaMessageCentral(mobile);
+    return { verificationId };
+  }
+
+  // Email fallback
   const otp = generateOtp();
   const hashedOtp = await bcrypt.hash(otp, 10);
 
@@ -600,12 +642,6 @@ export async function forgotPassword(input: any): Promise<void> {
   user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
   await user.save({ validateBeforeSave: false });
 
-  // Send via SMS if mobile is provided
-  if (user.mobile) {
-    await sendOtpViaMSG91(user.mobile, otp);
-  }
-
-  // Send via Email if user has an email
   if (user.email) {
     addEmailToQueue({
       to: user.email,
@@ -613,14 +649,17 @@ export async function forgotPassword(input: any): Promise<void> {
       html: passwordResetOtpTemplate(user, otp),
     });
   }
+
+  return {};
 }
 
 /**
  * Resets a user's password after verifying the OTP.
- * @param input - { mobile, email, otp, newPassword }
+ * Supports Message Central OTP validation (via verificationId) and database fallback.
+ * @param input - { mobile, email, otp, newPassword, verificationId }
  */
 export async function resetPassword(input: any): Promise<void> {
-  const { mobile, email, otp, newPassword } = input;
+  const { mobile, email, otp, newPassword, verificationId } = input;
 
   const query: any = {};
   if (mobile) query.mobile = mobile;
@@ -629,25 +668,36 @@ export async function resetPassword(input: any): Promise<void> {
 
   const user = await User.findOne(query).select('+otp +otpExpiry +password');
   if (!user) {
-    throw new AppError('No account found with this identifier', 404);
+    throw new AppError('No account found with this mobile number. Please register first.', 404);
   }
 
-  if (!user.otp || !user.otpExpiry) {
-    throw new AppError('No OTP requested. Please request a new one.', 400);
+  let isOtpValid = false;
+
+  if (verificationId) {
+    isOtpValid = await validateOtpViaMessageCentral(verificationId, otp);
+  } else {
+    if (!user.otp || !user.otpExpiry) {
+      throw new AppError('No OTP requested. Please request a new one.', 400);
+    }
+
+    if (user.otpExpiry < new Date()) {
+      throw new AppError('OTP has expired. Please request a new one.', 400);
+    }
+
+    isOtpValid = await bcrypt.compare(otp, user.otp);
   }
 
-  if (user.otpExpiry < new Date()) {
-    throw new AppError('OTP has expired. Please request a new one.', 400);
-  }
-
-  const isOtpValid = await bcrypt.compare(otp, user.otp);
   if (!isOtpValid) {
     throw new AppError('Invalid OTP', 400);
   }
 
   user.password = newPassword; // bcrypt pre-save hook will hash it
-  user.otp = undefined;
-  user.otpExpiry = undefined;
+  
+  if (!verificationId) {
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+  }
+  
   user.refreshToken = undefined; // Invalidate all sessions
   await user.save();
 }

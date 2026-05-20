@@ -345,12 +345,20 @@ export const storefrontApi = {
     return response.data;
   },
   forgotPassword: async (payload: { mobile?: string; email?: string }) => {
-    const response = await api.post<{ success: boolean; message: string }>('/auth/forgot-password', payload);
+    const response = await api.post<{ success: boolean; message: string; verificationId?: string }>('/auth/forgot-password', payload);
     return response.data;
   },
-  resetPassword: async (payload: { mobile?: string; email?: string; otp: string; newPassword: string }) => {
+  resetPassword: async (payload: { mobile?: string; email?: string; otp: string; newPassword: string; verificationId?: string }) => {
     const response = await api.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
     return response.data;
+  },
+  sendLoginOtp: async (payload: { mobile: string }) => {
+    const response = await api.post<ApiResponse<{ verificationId: string }>>('/auth/send-login-otp', payload);
+    return response.data.data;
+  },
+  loginWithOtp: async (payload: { mobile: string; otp: string; verificationId?: string }) => {
+    const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/login-otp', payload);
+    return response.data.data;
   },
   firebaseLogin: async (idToken: string) => {
     const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/firebase-login', { idToken });
