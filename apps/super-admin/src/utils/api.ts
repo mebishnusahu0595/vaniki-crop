@@ -345,6 +345,10 @@ export const adminApi = {
     const response = await api.get<ApiResponse<Customer[]>>('/superadmin/customers', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
   },
+  adjustCustomerLoyalty: async (id: string, loyaltyPoints: number) => {
+    const response = await api.patch<ApiResponse<Customer>>(`/superadmin/customers/${id}/loyalty`, { loyaltyPoints });
+    return response.data.data;
+  },
   notifications: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<NotificationCampaign[]>>('/superadmin/notifications', { params });
     return { data: response.data.data, pagination: response.data.pagination! };

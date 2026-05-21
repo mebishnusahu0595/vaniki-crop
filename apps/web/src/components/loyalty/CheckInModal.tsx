@@ -9,14 +9,26 @@ export const CheckInModal: React.FC = () => {
   const { user, isAuthenticated, updateUser, showLoyaltyModal, setShowLoyaltyModal } = useAuthStore();
   const [isClaiming, setIsClaiming] = useState(false);
   const [isClaimed, setIsClaimed] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState<number | null>(null);
+
+  const closeModal = () => {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+    try {
+      localStorage.setItem(`dismissedCheckIn_${today}`, 'true');
+    } catch (e) {
+      console.error(e);
+    }
+    setShowLoyaltyModal(false);
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
 
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
     const lastCheckIn = user.lastCheckIn ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(user.lastCheckIn)) : '';
+    const isDismissed = localStorage.getItem(`dismissedCheckIn_${today}`);
 
-    if (lastCheckIn !== today) {
+    if (lastCheckIn !== today && !isDismissed) {
       // Small delay to ensure layout is ready
       const timer = setTimeout(() => setShowLoyaltyModal(true), 1500);
       return () => clearTimeout(timer);
@@ -33,9 +45,10 @@ export const CheckInModal: React.FC = () => {
           checkInHistory: response.data.checkInHistory,
           lastCheckIn: new Date().toISOString(),
         });
+        setPointsEarned(response.data.pointsEarned || 1);
         setIsClaimed(true);
         setTimeout(() => {
-          setShowLoyaltyModal(false);
+          closeModal();
         }, 2000);
       }
     } catch (error) {
@@ -54,7 +67,7 @@ export const CheckInModal: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => setShowLoyaltyModal(false)}
+          onClick={closeModal}
           className="absolute inset-0 bg-primary-900/40 backdrop-blur-md"
         />
 
@@ -71,7 +84,7 @@ export const CheckInModal: React.FC = () => {
             </div>
             
             <button
-              onClick={() => setShowLoyaltyModal(false)}
+              onClick={closeModal}
               className="absolute right-4 top-4 rounded-full bg-white/20 p-2 text-white transition hover:bg-white/30"
             >
               <X size={20} />
@@ -145,7 +158,7 @@ export const CheckInModal: React.FC = () => {
                   </p>
                   <button
                     onClick={() => {
-                      setShowLoyaltyModal(false);
+                      closeModal();
                       window.location.href = '/login?redirect=' + window.location.pathname;
                     }}
                     className="w-full rounded-[1.5rem] bg-primary-900 py-4 text-sm font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary-900/20 transition hover:-translate-y-1 hover:bg-primary"
@@ -160,7 +173,7 @@ export const CheckInModal: React.FC = () => {
                   className="group relative w-full overflow-hidden rounded-[1.5rem] bg-primary-900 py-4 text-sm font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary-900/20 transition hover:-translate-y-1 hover:bg-primary"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    {isClaiming ? 'Claiming...' : 'Claim 1 Point'}
+                    {isClaiming ? 'Claiming...' : 'Claim Daily Reward'}
                   </span>
                   <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
                 </button>
@@ -171,7 +184,7 @@ export const CheckInModal: React.FC = () => {
                   className="flex flex-col items-center justify-center gap-3 rounded-[1.5rem] bg-emerald-50 py-4 text-emerald-700"
                 >
                   <CheckCircle2 size={32} />
-                  <p className="text-sm font-black uppercase tracking-[0.15em]">Point Claimed Successfully!</p>
+                  <p className="text-sm font-black uppercase tracking-[0.15em]">{pointsEarned} Points Claimed Successfully!</p>
                 </motion.div>
               )}
             </div>

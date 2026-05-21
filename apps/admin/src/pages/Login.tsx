@@ -131,12 +131,29 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const setSession = useAdminAuthStore((state) => state.setSession);
   const requestedMode = (searchParams.get('mode') === 'login' ? 'login' : 'signup') as 'signup' | 'login';
-  const [mode, setMode] = useState<'signup' | 'login'>(requestedMode);
+  const [mode, setMode] = useState<'signup' | 'login' | 'forgot' | 'reset'>(requestedMode);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupMessage, setSignupMessage] = useState('');
   const [signupImageFile, setSignupImageFile] = useState<File | null>(null);
   const [signupImagePreview, setSignupImagePreview] = useState('');
+
+  // Signup Mobile Verification States
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isMobileVerified, setIsMobileVerified] = useState(false);
+  const [otpCodeSignup, setOtpCodeSignup] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
+  // Forgot / Reset Password States
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [forgotVerificationId, setForgotVerificationId] = useState<string | null>(null);
+  const [forgotError, setForgotError] = useState('');
+  const [forgotMessage, setForgotMessage] = useState('');
+  const [isForgotSubmitting, setIsForgotSubmitting] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -254,33 +271,39 @@ export default function LoginPage() {
           </div>
           
           <p className="mt-4 text-xs font-black uppercase tracking-[0.22em] text-primary-500">
-            {mode === 'signup' ? 'Dealer Onboarding' : 'Login'}
+            {mode === 'signup' ? 'Dealer Onboarding' : mode === 'forgot' ? 'Forgot Password' : mode === 'reset' ? 'Reset Password' : 'Login'}
           </p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900">
-            {mode === 'signup' ? 'Register your dealer account' : 'Welcome back'}
+            {mode === 'signup' ? 'Register your dealer account' : mode === 'forgot' ? 'Recover your account' : mode === 'reset' ? 'Create new password' : 'Welcome back'}
           </h2>
           <p className="mt-3 text-sm leading-7 text-slate-500">
-            {mode === 'signup' ? 'Fill dealer details to request account activation.' : 'Sign in to manage your store operations.'}
+            {mode === 'signup' ? 'Fill dealer details to request account activation.' : mode === 'forgot' ? 'Request password reset OTP.' : mode === 'reset' ? 'Verify OTP and set your new password.' : 'Sign in to manage your store operations.'}
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3.5">
-            <p className="text-xs font-black uppercase tracking-[0.15em] text-primary-700">
-              {mode === 'signup' ? 'Dealer Signup Active' : 'Dealer Login Active'}
-            </p>
-            <button
-              type="button"
-              onClick={() => setMode((current) => (current === 'signup' ? 'login' : 'signup'))}
-              className="rounded-full bg-primary-600 px-4 py-2.5 text-xs font-black uppercase tracking-[0.15em] text-white shadow-sm transition hover:bg-primary-700 hover:shadow"
-            >
-              {mode === 'signup' ? 'Already approved? Switch to login' : 'Need an account? Switch to signup'}
-            </button>
-          </div>
+          {(mode === 'signup' || mode === 'login') && (
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3.5">
+              <p className="text-xs font-black uppercase tracking-[0.15em] text-primary-700">
+                {mode === 'signup' ? 'Dealer Signup Active' : 'Dealer Login Active'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setMode((current) => (current === 'signup' ? 'login' : 'signup'))}
+                className="rounded-full bg-primary-600 px-4 py-2.5 text-xs font-black uppercase tracking-[0.15em] text-white shadow-sm transition hover:bg-primary-700 hover:shadow"
+              >
+                {mode === 'signup' ? 'Already approved? Switch to login' : 'Need an account? Switch to signup'}
+              </button>
+            </div>
+          )}
 
           {mode === 'signup' ? (
             <form
               onSubmit={handleSignupSubmit(async (values) => {
                 try {
                   setSignupMessage('');
+                  if (!isMobileVerified) {
+                    setSignupError('root', { message: 'Please verify your mobile number first.' });
+                    return;
+                  }
                   if (!signupImageFile) {
                     setSignupError('root', { message: 'Dealer profile photo is required.' });
                     return;
@@ -313,42 +336,137 @@ export default function LoginPage() {
             >
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Mobile Number</label>
+                  <div className="flex gap-2">
+                    <input
+                      {...registerSignup('mobile')}
+                      disabled={isMobileVerified}
+                      inputMode="numeric"
+                      maxLength={10}
+                      onInput={(event) => {
+                        event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
+                      }}
+                      className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-slate-900 disabled:opacity-60"
+                      placeholder="9876543210"
+                    />
+                    {!isMobileVerified && (
+                      <button
+                        type="button"
+                        disabled={isSendingOtp || getValues('mobile')?.length !== 10}
+                        onClick={async () => {
+                          const mobileVal = getValues('mobile');
+                          if (!/^[6-9]\d{9}$/.test(mobileVal)) {
+                            setSignupError('mobile', { message: 'Enter a valid 10-digit mobile number' });
+                            return;
+                          }
+                          setSignupError('mobile', { message: '' });
+                          setIsSendingOtp(true);
+                          try {
+                            await adminApi.sendOtp({ mobile: mobileVal });
+                            setIsOtpSent(true);
+                            setSignupMessage('OTP sent successfully');
+                          } catch (error) {
+                            setSignupError('root', {
+                              message: error instanceof Error ? error.message : 'Failed to send OTP',
+                            });
+                          } finally {
+                            setIsSendingOtp(false);
+                          }
+                        }}
+                        className="whitespace-nowrap rounded-2xl bg-primary-500 px-4 text-xs font-black uppercase tracking-wider text-white hover:bg-primary-600 disabled:opacity-50"
+                      >
+                        {isSendingOtp ? 'Sending...' : isOtpSent ? 'Resend' : 'Send OTP'}
+                      </button>
+                    )}
+                  </div>
+                  {signupErrors.mobile ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.mobile.message}</p> : null}
+                  {isMobileVerified && (
+                    <span className="mt-1 block text-xs font-bold text-emerald-600">✓ Mobile Verified</span>
+                  )}
+                </div>
+
+                <div>
                   <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Name</label>
-                  <input {...registerSignup('name')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" placeholder="Dealer name" />
+                  <input
+                    {...registerSignup('name')}
+                    disabled={!isMobileVerified}
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 disabled:opacity-50"
+                    placeholder="Dealer name"
+                  />
                   {signupErrors.name ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.name.message}</p> : null}
                 </div>
-                <div>
-                  <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Mobile Number</label>
-                  <input
-                    {...registerSignup('mobile')}
-                    inputMode="numeric"
-                    maxLength={10}
-                    onInput={(event) => {
-                      event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
-                    }}
-                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-                    placeholder="9876543210"
-                  />
-                  {signupErrors.mobile ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.mobile.message}</p> : null}
-                </div>
               </div>
+
+              {isOtpSent && !isMobileVerified && (
+                <div className="rounded-2xl border border-primary-100 bg-primary-50/50 p-4 space-y-3">
+                  <label className="block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Enter 4-Digit OTP</label>
+                  <div className="flex gap-2">
+                    <input
+                      required
+                      maxLength={4}
+                      value={otpCodeSignup}
+                      onChange={(event) => setOtpCodeSignup(event.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="0000"
+                      className="w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 font-semibold text-slate-900 text-center tracking-[0.5em]"
+                    />
+                    <button
+                      type="button"
+                      disabled={isVerifyingOtp || otpCodeSignup.length !== 4}
+                      onClick={async () => {
+                        const mobileVal = getValues('mobile');
+                        setIsVerifyingOtp(true);
+                        try {
+                          await adminApi.verifyOtp({ mobile: mobileVal, otp: otpCodeSignup });
+                          setIsMobileVerified(true);
+                          setSignupError('root', { message: '' });
+                          setSignupMessage('Mobile number verified successfully');
+                        } catch (error) {
+                          setSignupError('root', {
+                            message: error instanceof Error ? error.message : 'Invalid OTP',
+                          });
+                        } finally {
+                          setIsVerifyingOtp(false);
+                        }
+                      }}
+                      className="whitespace-nowrap rounded-2xl bg-primary-500 px-4 text-xs font-black uppercase tracking-wider text-white hover:bg-primary-600 disabled:opacity-50"
+                    >
+                      {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Email</label>
-                  <input {...registerSignup('email')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" placeholder="dealer@example.com" />
+                  <input
+                    {...registerSignup('email')}
+                    disabled={!isMobileVerified}
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 disabled:opacity-50"
+                    placeholder="dealer@example.com"
+                  />
                   {signupErrors.email ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.email.message}</p> : null}
                 </div>
                 <div>
                   <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Store Name</label>
-                  <input {...registerSignup('storeName')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" placeholder="My Agro Store" />
+                  <input
+                    {...registerSignup('storeName')}
+                    disabled={!isMobileVerified}
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 disabled:opacity-50"
+                    placeholder="My Agro Store"
+                  />
                   {signupErrors.storeName ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.storeName.message}</p> : null}
                 </div>
               </div>
 
               <div>
                 <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Store Location</label>
-                <input {...registerSignup('storeLocation')} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" placeholder="Area / Landmark / Address" />
+                <input
+                  {...registerSignup('storeLocation')}
+                  disabled={!isMobileVerified}
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 disabled:opacity-50"
+                  placeholder="Area / Landmark / Address"
+                />
                 {signupErrors.storeLocation ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.storeLocation.message}</p> : null}
               </div>
 
@@ -359,7 +477,8 @@ export default function LoginPage() {
                     type="number"
                     step="0.000001"
                     {...registerSignup('longitude', { valueAsNumber: true })}
-                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                    disabled={!isMobileVerified}
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 disabled:opacity-50"
                     placeholder="77.5946"
                   />
                   {signupErrors.longitude ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.longitude.message}</p> : null}
@@ -370,7 +489,8 @@ export default function LoginPage() {
                     type="number"
                     step="0.000001"
                     {...registerSignup('latitude', { valueAsNumber: true })}
-                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                    disabled={!isMobileVerified}
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 disabled:opacity-50"
                     placeholder="12.9716"
                   />
                   {signupErrors.latitude ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.latitude.message}</p> : null}
@@ -379,6 +499,7 @@ export default function LoginPage() {
 
               <button
                 type="button"
+                disabled={!isMobileVerified}
                 onClick={() => {
                   if (!navigator.geolocation) {
                     setSignupError('root', { message: 'Geolocation is not supported on this device/browser.' });
@@ -403,7 +524,7 @@ export default function LoginPage() {
                     { enableHighAccuracy: true, timeout: 10000 },
                   );
                 }}
-                className="inline-flex items-center gap-2 rounded-2xl border border-primary-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.15em] text-primary-700"
+                className="inline-flex items-center gap-2 rounded-2xl border border-primary-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.15em] text-primary-700 disabled:opacity-50"
               >
                 <LocateFixed size={14} />
                 Detect Location
@@ -414,9 +535,10 @@ export default function LoginPage() {
                   <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">GST No.</label>
                   <input
                     {...registerSignup('gstNumber')}
+                    disabled={!isMobileVerified}
                     maxLength={15}
                     autoCapitalize="characters"
-                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 uppercase"
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 uppercase disabled:opacity-50"
                     placeholder="27ABCDE1234F1Z5"
                   />
                   {signupErrors.gstNumber ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.gstNumber.message}</p> : null}
@@ -425,9 +547,10 @@ export default function LoginPage() {
                   <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">SGST No.</label>
                   <input
                     {...registerSignup('sgstNumber')}
+                    disabled={!isMobileVerified}
                     maxLength={15}
                     autoCapitalize="characters"
-                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 uppercase"
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 uppercase disabled:opacity-50"
                     placeholder="27ABCDE1234F1Z5"
                   />
                   {signupErrors.sgstNumber ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.sgstNumber.message}</p> : null}
@@ -439,6 +562,7 @@ export default function LoginPage() {
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
+                  disabled={!isMobileVerified}
                   onChange={(event) => {
                     const file = event.target.files?.[0] || null;
                     handleSignupImageSelection(file);
@@ -449,7 +573,7 @@ export default function LoginPage() {
                       });
                     }
                   }}
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm"
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm disabled:opacity-50"
                 />
                 {signupImagePreview ? (
                   <img src={signupImagePreview} alt="Dealer preview" className="mt-3 h-24 w-24 rounded-2xl object-cover" />
@@ -462,13 +586,15 @@ export default function LoginPage() {
                   <input
                     type={showSignupPassword ? 'text' : 'password'}
                     {...registerSignup('password')}
-                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 pr-12"
+                    disabled={!isMobileVerified}
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 pr-12 disabled:opacity-50"
                     placeholder="Create password"
                   />
                   <button
                     type="button"
+                    disabled={!isMobileVerified}
                     onClick={() => setShowSignupPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 disabled:opacity-50"
                   >
                     {showSignupPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -490,11 +616,184 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={isSignupSubmitting}
+                disabled={isSignupSubmitting || !isMobileVerified}
                 className="w-full rounded-2xl bg-primary-500 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-200"
               >
                 {isSignupSubmitting ? 'Submitting...' : 'Submit Signup'}
               </button>
+            </form>
+          ) : mode === 'forgot' ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!/^[6-9]\d{9}$/.test(forgotIdentifier)) {
+                  setForgotError('Enter a valid 10-digit mobile number');
+                  return;
+                }
+                setForgotError('');
+                setIsForgotSubmitting(true);
+                try {
+                  const result = await adminApi.forgotPassword({ mobile: forgotIdentifier });
+                  if (result.success) {
+                    // Let's check how the verificationId is retrieved. The custom verificationId is optional or saved.
+                    // If backend returns verificationId, use it. In MSG91/MessageCentral, verificationId or sessionId is returned.
+                    // In api.ts forgotPassword doesn't define output types but returns response.data which has { success, message, verificationId }
+                    const verificationId = (result as any).verificationId || 'custom-otp';
+                    setForgotVerificationId(verificationId);
+                    setMode('reset');
+                    setOtpCode('');
+                    setForgotMessage('OTP sent successfully');
+                  } else {
+                    setForgotError(result.message || 'Failed to initiate password reset.');
+                  }
+                } catch (error) {
+                  setForgotError(error instanceof Error ? error.message : 'Failed to send OTP');
+                } finally {
+                  setIsForgotSubmitting(false);
+                }
+              }}
+              className="mt-6 space-y-5"
+            >
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Mobile Number</label>
+                <input
+                  required
+                  value={forgotIdentifier}
+                  onChange={(event) => setForgotIdentifier(event.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="9876543210"
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300"
+                />
+              </div>
+
+              {forgotError ? (
+                <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600 animate-fadeIn">
+                  {forgotError}
+                </p>
+              ) : null}
+
+              {forgotMessage ? (
+                <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 animate-fadeIn">
+                  {forgotMessage}
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={isForgotSubmitting}
+                className="w-full rounded-2xl bg-primary-500 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-200"
+              >
+                {isForgotSubmitting ? 'Sending OTP...' : 'Send OTP'}
+              </button>
+
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-600 transition"
+                >
+                  Back to Login
+                </button>
+              </div>
+            </form>
+          ) : mode === 'reset' ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (otpCode.length < 4) {
+                  setForgotError('Please enter a valid OTP');
+                  return;
+                }
+                if (newPassword.length < 6) {
+                  setForgotError('Password must be at least 6 characters');
+                  return;
+                }
+                setForgotError('');
+                setIsForgotSubmitting(true);
+                try {
+                  await adminApi.resetPassword({
+                    mobile: forgotIdentifier,
+                    otp: otpCode,
+                    newPassword,
+                    verificationId: forgotVerificationId || undefined,
+                  });
+                  setForgotMessage('Password reset successfully. Please login.');
+                  setMode('login');
+                  setForgotVerificationId(null);
+                  setOtpCode('');
+                  setNewPassword('');
+                } catch (error) {
+                  setForgotError(error instanceof Error ? error.message : 'Reset failed');
+                } finally {
+                  setIsForgotSubmitting(false);
+                }
+              }}
+              className="mt-6 space-y-5"
+            >
+              <p className="text-xs font-semibold text-slate-500 text-center">
+                OTP sent to {forgotIdentifier}
+              </p>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500 text-center">Enter 4-Digit OTP</label>
+                <input
+                  required
+                  maxLength={4}
+                  value={otpCode}
+                  onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="0000"
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 text-center text-xl font-bold tracking-[0.5em] text-slate-900 outline-none transition focus:border-primary-300"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">New Password</label>
+                <div className="relative">
+                  <input
+                    required
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-sm font-medium text-slate-900 outline-none transition focus:border-primary-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((current) => !current)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition hover:text-slate-700"
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {forgotError ? (
+                <p className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-600 animate-fadeIn">
+                  {forgotError}
+                </p>
+              ) : null}
+
+              {forgotMessage ? (
+                <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 animate-fadeIn">
+                  {forgotMessage}
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={isForgotSubmitting}
+                className="w-full rounded-2xl bg-primary-500 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-200"
+              >
+                {isForgotSubmitting ? 'Resetting Password...' : 'Reset Password'}
+              </button>
+
+              <div className="text-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => setMode('forgot')}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-600 transition"
+                >
+                  Resend OTP
+                </button>
+              </div>
             </form>
           ) : (
             <form
@@ -531,7 +830,21 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Password</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('forgot');
+                      setForgotError('');
+                      setForgotMessage('');
+                      setForgotVerificationId(null);
+                    }}
+                    className="text-xs font-bold text-primary-600 hover:text-primary-700 transition"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type={showLoginPassword ? 'text' : 'password'}
@@ -556,6 +869,12 @@ export default function LoginPage() {
                   {loginErrors.root.message}
                 </p>
               ) : null}
+
+              {forgotMessage && (
+                <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 animate-fadeIn">
+                  {forgotMessage}
+                </p>
+              )}
 
               <button
                 type="submit"

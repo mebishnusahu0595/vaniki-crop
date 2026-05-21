@@ -321,11 +321,24 @@ export const storefrontApi = {
       user: normalizeAuthUser(response.data.user as AuthUserLike),
     };
   },
+  sendOtp: async (payload: { mobile: string }) => {
+    return request<{ success: boolean; message: string }>('/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  verifyOtp: async (payload: { mobile: string; otp: string }) => {
+    return request<{ success: boolean; message: string }>('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
   signup: async (payload: { 
     name: string; 
     email?: string; 
     mobile: string; 
     password: string; 
+    otp: string;
     address?: string;
     district?: string;
     state?: string;
@@ -415,8 +428,7 @@ export const storefrontApi = {
     });
   },
   dailyCheckIn: async () => {
-
-    return request<{ loyaltyPoints: number; checkInHistory: string[] }>('/loyalty/checkin', {
+    return request<{ loyaltyPoints: number; checkInHistory: string[]; pointsEarned?: number }>('/loyalty/checkin', {
       method: 'POST',
     });
   },

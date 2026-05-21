@@ -52,6 +52,7 @@ router.patch('/admins/:id/approval', validate(approveAdminSchema), superAdminCon
 router.delete('/admins/:id', superAdminController.deleteAdmin);
 
 router.get('/customers', validate(customerQuerySchema), superAdminController.listCustomers);
+router.patch('/customers/:id/loyalty', superAdminController.adjustCustomerLoyalty);
 router.get('/notifications', validate(notificationQuerySchema), superAdminController.listNotifications);
 router.post('/notifications', validate(sendNotificationSchema), superAdminController.sendNotification);
 

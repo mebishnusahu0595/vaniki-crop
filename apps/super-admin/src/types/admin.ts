@@ -269,6 +269,9 @@ export interface Customer {
   district?: string;
   mostBoughtProduct?: string;
   mostBoughtCategory?: string;
+  loyaltyPoints?: number;
+  checkInHistory?: string[];
+  lastCheckIn?: string;
 }
 
 export interface NotificationCampaign {

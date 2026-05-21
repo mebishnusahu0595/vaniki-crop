@@ -3,6 +3,7 @@ import { Modal, View, Text, Pressable, StyleSheet, Dimensions } from 'react-nati
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../store/useAuthStore';
 import { storefrontApi } from '../lib/api';
 
@@ -12,6 +13,17 @@ export const CheckInModal = () => {
   const { user, token, setUser, showCheckInModal, setShowCheckInModal } = useAuthStore();
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState<number | null>(null);
+
+  const closeModal = async () => {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+    try {
+      await AsyncStorage.setItem(`dismissedCheckIn_${today}`, 'true');
+    } catch (e) {
+      console.error(e);
+    }
+    setShowCheckInModal(false);
+  };
 
   useEffect(() => {
     if (!token || !user) return;
@@ -19,10 +31,22 @@ export const CheckInModal = () => {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
     const lastCheckIn = user.lastCheckIn ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(user.lastCheckIn)) : '';
 
-    if (lastCheckIn !== today) {
-      const timer = setTimeout(() => setShowCheckInModal(true), 1500);
-      return () => clearTimeout(timer);
-    }
+    const checkDismissed = async () => {
+      try {
+        const isDismissed = await AsyncStorage.getItem(`dismissedCheckIn_${today}`);
+        if (lastCheckIn !== today && !isDismissed) {
+          setShowCheckInModal(true);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      void checkDismissed();
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, [token, user, setShowCheckInModal]);
 
   const handleClaim = async () => {
@@ -36,8 +60,11 @@ export const CheckInModal = () => {
           checkInHistory: response.data.checkInHistory,
           lastCheckIn: new Date().toISOString(),
         });
+        setPointsEarned(response.data.pointsEarned || 1);
         setClaimed(true);
-        setTimeout(() => setShowCheckInModal(false), 2000);
+        setTimeout(() => {
+          void closeModal();
+        }, 2000);
       }
     } catch (error) {
       console.error('Check-in error:', error);
@@ -51,7 +78,7 @@ export const CheckInModal = () => {
   return (
     <Modal transparent visible={showCheckInModal} animationType="fade">
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={() => setShowCheckInModal(false)} />
+        <Pressable style={styles.backdrop} onPress={closeModal} />
         <View style={styles.container}>
           <View style={styles.header}>
             <View style={styles.coinContainer}>
@@ -60,13 +87,13 @@ export const CheckInModal = () => {
             <Text style={styles.title}>Daily Rewards</Text>
             <Text style={styles.subtitle}>Collect points every day!</Text>
           </View>
-
+ 
           <View style={styles.content}>
             <View style={styles.progressHeader}>
               <Text style={styles.progressLabel}>Your Streak</Text>
               <MaterialCommunityIcons name="star-circle" size={24} color="#F59E0B" />
             </View>
-
+ 
             <View style={styles.streakContainer}>
               {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
                 const now = new Date();
@@ -80,7 +107,7 @@ export const CheckInModal = () => {
                 const dateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(dayDate);
                 
                 const isChecked = (user?.checkInHistory || []).some((d: string) => d.split('T')[0] === dateStr);
-
+ 
                 return (
                   <View key={i} style={[
                     styles.dayCircle, 
@@ -96,7 +123,7 @@ export const CheckInModal = () => {
                 );
               })}
             </View>
-
+ 
             {!token ? (
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ textAlign: 'center', color: '#64748B', fontSize: 13, marginBottom: 20, fontWeight: '600' }}>
@@ -104,7 +131,7 @@ export const CheckInModal = () => {
                 </Text>
                 <Pressable 
                   onPress={() => {
-                    setShowCheckInModal(false);
+                    void closeModal();
                     router.push('/(auth)/login');
                   }} 
                   style={styles.button}
@@ -118,17 +145,17 @@ export const CheckInModal = () => {
                 disabled={claiming}
                 style={[styles.button, claiming && styles.buttonDisabled]}
               >
-                <Text style={styles.buttonText}>{claiming ? 'CLAIMING...' : 'CLAIM 1 POINT'}</Text>
+                <Text style={styles.buttonText}>{claiming ? 'CLAIMING...' : 'CLAIM DAILY REWARD'}</Text>
               </Pressable>
             ) : (
               <View style={styles.claimedContainer}>
                 <Feather name="check-circle" size={24} color="#10B981" />
-                <Text style={styles.claimedText}>CLAIMED SUCCESSFULLY!</Text>
+                <Text style={styles.claimedText}>CLAIMED {pointsEarned} POINTS SUCCESSFULLY!</Text>
               </View>
             )}
           </View>
-
-          <Pressable onPress={() => setShowCheckInModal(false)} style={styles.closeButton}>
+ 
+          <Pressable onPress={closeModal} style={styles.closeButton}>
             <Feather name="x" size={20} color="#94A3B8" />
           </Pressable>
         </View>

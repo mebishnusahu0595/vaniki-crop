@@ -12,6 +12,7 @@ export const CheckInModal = () => {
   const { user, token, setUser, showCheckInModal, setShowCheckInModal } = useAuthStore();
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token || !user) return;
@@ -36,6 +37,7 @@ export const CheckInModal = () => {
           checkInHistory: response.data.checkInHistory,
           lastCheckIn: new Date().toISOString(),
         });
+        setPointsEarned(response.data.pointsEarned || 1);
         setClaimed(true);
         setTimeout(() => setShowCheckInModal(false), 2000);
       }
@@ -118,12 +120,12 @@ export const CheckInModal = () => {
                 disabled={claiming}
                 style={[styles.button, claiming && styles.buttonDisabled]}
               >
-                <Text style={styles.buttonText}>{claiming ? 'CLAIMING...' : 'CLAIM 1 POINT'}</Text>
+                <Text style={styles.buttonText}>{claiming ? 'CLAIMING...' : 'CLAIM DAILY REWARD'}</Text>
               </Pressable>
             ) : (
               <View style={styles.claimedContainer}>
                 <Feather name="check-circle" size={24} color="#10B981" />
-                <Text style={styles.claimedText}>CLAIMED SUCCESSFULLY!</Text>
+                <Text style={styles.claimedText}>CLAIMED {pointsEarned} POINTS SUCCESSFULLY!</Text>
               </View>
             )}
           </View>

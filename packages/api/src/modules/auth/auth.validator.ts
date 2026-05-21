@@ -52,6 +52,16 @@ export const sendOtpSchema = z.object({
 });
 
 /**
+ * Zod schema for POST /api/auth/verify-otp
+ */
+export const verifyOtpSchema = z.object({
+  body: z.object({
+    mobile: mobileSchema,
+    otp: otpSchema,
+  }),
+});
+
+/**
  * Zod schema for POST /api/auth/signup
  */
 export const signupSchema = z.object({
@@ -220,6 +230,7 @@ export const toggleWishlistSchema = z.object({
 // ─── Types ───────────────────────────────────────────────────────────────
 
 export type SendOtpInput = z.infer<typeof sendOtpSchema>['body'];
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>['body'];
 export type SignupInput = z.infer<typeof signupSchema>['body'];
 export type DealerSignupInput = z.infer<typeof dealerSignupSchema>['body'];
 export type LoginInput = z.infer<typeof loginSchema>['body'];

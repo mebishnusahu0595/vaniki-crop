@@ -35,6 +35,23 @@ export async function sendOtp(req: Request, res: Response, next: NextFunction): 
 }
 
 /**
+ * POST /api/auth/verify-otp
+ * Verifies a registration OTP.
+ */
+export async function verifyOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await authService.verifyOtp(req.body);
+
+    res.status(200).json({
+      success: true,
+      message: 'OTP verified successfully.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * POST /api/auth/signup
  * Registers a new user after OTP verification.
  * Returns access token in body + refresh token in httpOnly cookie.

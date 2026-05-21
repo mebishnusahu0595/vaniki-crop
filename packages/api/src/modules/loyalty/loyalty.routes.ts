@@ -11,29 +11,32 @@ const router = Router();
  */
 router.post('/checkin', requireAuth, async (req, res, next) => {
   try {
-    const user = await User.findById(req.userId);
-    if (!user) throw new AppError('User not found', 404);
-
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-    const lastCheckInStr = user.lastCheckIn 
-      ? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(user.lastCheckIn)
-      : '';
+    const randomPoints = Math.floor(Math.random() * 10) + 1; // Random points between 1 and 10
 
-    if (lastCheckInStr === today) {
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.userId, checkInHistory: { $ne: today } },
+      { 
+        $inc: { loyaltyPoints: randomPoints }, 
+        $set: { lastCheckIn: new Date() }, 
+        $addToSet: { checkInHistory: today } 
+      },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      const checkUser = await User.findById(req.userId);
+      if (!checkUser) throw new AppError('User not found', 404);
       return res.status(400).json({ success: false, message: 'Already checked in today' });
     }
 
-    user.loyaltyPoints += 1;
-    user.lastCheckIn = new Date();
-    user.checkInHistory.push(today);
-    await user.save();
-
     res.status(200).json({
       success: true,
-      message: 'Daily point added!',
+      message: 'Daily points added!',
       data: {
-        loyaltyPoints: user.loyaltyPoints,
-        checkInHistory: user.checkInHistory
+        loyaltyPoints: updatedUser.loyaltyPoints,
+        checkInHistory: updatedUser.checkInHistory,
+        pointsEarned: randomPoints
       }
     });
   } catch (error) {

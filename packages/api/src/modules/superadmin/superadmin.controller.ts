@@ -329,3 +329,12 @@ export async function listWhatsAppReferrals(req: Request, res: Response, next: N
     next(error);
   }
 }
+
+export async function adjustCustomerLoyalty(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.adjustCustomerLoyalty(req.params.id as string, req.body.loyaltyPoints);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}

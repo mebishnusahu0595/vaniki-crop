@@ -21,6 +21,8 @@ const Icon = Feather as any;
 
 const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
 
+import { Alert } from 'react-native';
+
 export default function SignupScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -30,6 +32,13 @@ export default function SignupScreen() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [successMsg, setSuccessMsg] = useState('');
+
+  // OTP Verification States
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isMobileVerified, setIsMobileVerified] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   // Form states
   const [name, setName] = useState('');
@@ -46,6 +55,43 @@ export default function SignupScreen() {
   
   // Image State
   const [selectedImage, setSelectedImage] = useState<{ uri: string; name: string; type: string } | null>(null);
+
+  const handleSendOtp = async () => {
+    if (!mobile || !/^[6-9]\d{9}$/.test(mobile.trim())) {
+      setError('Enter a valid 10-digit mobile number');
+      return;
+    }
+    setIsSendingOtp(true);
+    setError('');
+    try {
+      await adminApi.sendOtp({ mobile: mobile.trim() });
+      setIsOtpSent(true);
+      Alert.alert('Success', 'OTP sent successfully.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send OTP');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode || otpCode.length !== 4) {
+      Alert.alert('Invalid', 'Enter the 4-digit OTP.');
+      return;
+    }
+    setIsVerifyingOtp(true);
+    setError('');
+    try {
+      await adminApi.verifyOtp({ mobile: mobile.trim(), otp: otpCode });
+      setIsMobileVerified(true);
+      Alert.alert('Success', 'Mobile number verified successfully.');
+    } catch (err: any) {
+      setError(err.message || 'Invalid OTP.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
 
   // 1. Native Geolocation & Address Suggestion
   const handleDetectLocation = async () => {
@@ -189,6 +235,10 @@ export default function SignupScreen() {
   };
 
   const handleSignup = async () => {
+    if (!isMobileVerified) {
+      setError('Please verify your mobile number first.');
+      return;
+    }
     if (!validateForm()) {
       setError('Please resolve all validation errors highlighted below.');
       return;
@@ -202,6 +252,7 @@ export default function SignupScreen() {
       const payload = new FormData();
       payload.append('name', name.trim());
       payload.append('mobile', mobile.trim());
+      payload.append('otp', otpCode);
       if (email.trim()) {
         payload.append('email', email.trim().toLowerCase());
       }
@@ -288,13 +339,14 @@ export default function SignupScreen() {
             <View className="bg-white p-6 rounded-[2rem] shadow-sm border border-emerald-50 space-y-5">
               
               {/* Image Picker */}
-              <View className="items-center pb-2">
+              <View style={{ opacity: isMobileVerified ? 1 : 0.5 }} className="items-center pb-2">
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-2 align-self-start w-full text-left">Store Profile Photo *</Text>
                 
                 {selectedImage ? (
                   <View className="relative w-28 h-28 rounded-2xl border-2 border-emerald-500 overflow-hidden shadow-inner bg-slate-100">
                     <Image source={{ uri: selectedImage.uri }} className="w-full h-full object-cover" />
                     <TouchableOpacity
+                      disabled={!isMobileVerified}
                       onPress={handleSelectImage}
                       className="absolute bottom-0 right-0 left-0 bg-emerald-900/80 py-1.5 items-center"
                     >
@@ -303,7 +355,8 @@ export default function SignupScreen() {
                   </View>
                 ) : (
                   <TouchableOpacity
-                    onPress={handleSelectImage}
+                    disabled={!isMobileVerified}
+                    onPress={() => isMobileVerified && handleSelectImage()}
                     className="w-full h-24 border border-dashed border-slate-300 rounded-xl justify-center items-center bg-slate-50"
                   >
                     <Icon name="camera" size={24} color="#64748b" />
@@ -317,9 +370,10 @@ export default function SignupScreen() {
               </View>
 
               {/* Dealer Name */}
-              <View>
+              <View style={{ opacity: isMobileVerified ? 1 : 0.5 }}>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Dealer Name *</Text>
                 <TextInput
+                  editable={isMobileVerified}
                   className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
                     fieldErrors.name ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
                   }`}
@@ -335,24 +389,80 @@ export default function SignupScreen() {
               {/* Mobile Number */}
               <View>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Mobile Number *</Text>
-                <TextInput
-                  className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
-                    fieldErrors.mobile ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
-                  }`}
-                  placeholder="Enter 10-digit mobile"
-                  value={mobile}
-                  onChangeText={setMobile}
-                  keyboardType="numeric"
-                />
+                <View className="flex-row items-center gap-2">
+                  <TextInput
+                    className={`flex-1 bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
+                      fieldErrors.mobile ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
+                    }`}
+                    placeholder="Enter 10-digit mobile"
+                    value={mobile}
+                    onChangeText={(val) => {
+                      if (!isMobileVerified) {
+                        setMobile(val.replace(/\D/g, '').slice(0, 10));
+                      }
+                    }}
+                    editable={!isMobileVerified}
+                    keyboardType="numeric"
+                  />
+                  {isMobileVerified ? (
+                    <View className="rounded-xl bg-emerald-100 px-3 py-3 flex-row items-center gap-1.5 border border-emerald-200">
+                      <Icon name="check-circle" size={14} color="#059669" />
+                      <Text className="text-xs font-black uppercase text-emerald-700">Verified</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      disabled={isSendingOtp || !mobile || mobile.trim().length !== 10}
+                      onPress={handleSendOtp}
+                      className="rounded-xl bg-[#1b4d3a] px-4 py-3 justify-center items-center disabled:opacity-50"
+                    >
+                      {isSendingOtp ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text className="text-white font-black text-xs uppercase tracking-wider">
+                          {isOtpSent ? 'Resend' : 'Send OTP'}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
                 {fieldErrors.mobile ? (
                   <Text className="text-rose-600 text-xs font-semibold mt-1">{fieldErrors.mobile}</Text>
                 ) : null}
               </View>
 
+              {/* OTP Entry Field */}
+              {isOtpSent && !isMobileVerified && (
+                <View className="rounded-2xl border border-emerald-100 bg-emerald-50/20 p-4 space-y-3">
+                  <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1 text-center">Enter 4-Digit OTP</Text>
+                  <View className="flex-row items-center gap-2 justify-center">
+                    <TextInput
+                      value={otpCode}
+                      onChangeText={(val) => setOtpCode(val.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="0000"
+                      keyboardType="numeric"
+                      maxLength={4}
+                      className="w-32 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-center text-lg font-bold tracking-[8px] text-slate-900"
+                    />
+                    <TouchableOpacity
+                      disabled={isVerifyingOtp || otpCode.length !== 4}
+                      onPress={handleVerifyOtp}
+                      className="rounded-xl bg-emerald-600 px-5 py-3 justify-center items-center disabled:opacity-50"
+                    >
+                      {isVerifyingOtp ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text className="text-white font-black text-xs uppercase tracking-wider">Verify</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
               {/* Email */}
-              <View>
+              <View style={{ opacity: isMobileVerified ? 1 : 0.5 }}>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Email Address</Text>
                 <TextInput
+                  editable={isMobileVerified}
                   className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
                     fieldErrors.email ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
                   }`}
@@ -368,9 +478,10 @@ export default function SignupScreen() {
               </View>
 
               {/* Store Name */}
-              <View>
+              <View style={{ opacity: isMobileVerified ? 1 : 0.5 }}>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Store Name *</Text>
                 <TextInput
+                  editable={isMobileVerified}
                   className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
                     fieldErrors.storeName ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
                   }`}
@@ -384,14 +495,14 @@ export default function SignupScreen() {
               </View>
 
               {/* Store Location */}
-              <View>
+              <View style={{ opacity: isMobileVerified ? 1 : 0.5 }}>
                 <View className="flex-row items-center justify-between mb-1.5">
                   <Text className="text-xs font-black uppercase tracking-wider text-slate-500">Store Address *</Text>
                   
                   {/* Live Detect Location Button */}
                   <TouchableOpacity
-                    onPress={handleDetectLocation}
-                    disabled={locating}
+                    onPress={() => isMobileVerified && handleDetectLocation()}
+                    disabled={!isMobileVerified || locating}
                     className="flex-row items-center bg-emerald-50 px-3 py-1 rounded-full"
                   >
                     {locating ? (
@@ -406,6 +517,7 @@ export default function SignupScreen() {
                 </View>
                 
                 <TextInput
+                  editable={isMobileVerified}
                   className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold ${
                     fieldErrors.storeLocation ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
                   }`}
@@ -427,9 +539,10 @@ export default function SignupScreen() {
               </View>
 
               {/* GST Number */}
-              <View>
+              <View style={{ opacity: isMobileVerified ? 1 : 0.5 }}>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">GST Number *</Text>
                 <TextInput
+                  editable={isMobileVerified}
                   className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold uppercase ${
                     fieldErrors.gstNumber ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
                   }`}
@@ -444,9 +557,10 @@ export default function SignupScreen() {
               </View>
 
               {/* SGST Number */}
-              <View>
+              <View style={{ opacity: isMobileVerified ? 1 : 0.5 }}>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">SGST Number *</Text>
                 <TextInput
+                  editable={isMobileVerified}
                   className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 text-sm font-semibold uppercase ${
                     fieldErrors.sgstNumber ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
                   }`}
@@ -461,19 +575,20 @@ export default function SignupScreen() {
               </View>
 
               {/* Password */}
-              <View>
+              <View style={{ opacity: isMobileVerified ? 1 : 0.5 }}>
                 <Text className="text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">Secure Password *</Text>
                 <View className={`flex-row items-center bg-slate-50 border rounded-xl px-4 ${
                   fieldErrors.password ? 'border-rose-300 bg-rose-50/20' : 'border-slate-100'
                 }`}>
                   <TextInput
+                    editable={isMobileVerified}
                     className="flex-1 py-3 text-slate-900 text-sm font-semibold"
                     placeholder="Minimum 6 characters"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(p => !p)} className="p-1">
+                  <TouchableOpacity onPress={() => isMobileVerified && setShowPassword(p => !p)} disabled={!isMobileVerified} className="p-1">
                     <Icon name={showPassword ? 'eye-off' : 'eye'} size={18} color="#9CA3AF" />
                   </TouchableOpacity>
                 </View>
@@ -485,8 +600,9 @@ export default function SignupScreen() {
               {/* Submit Button */}
               <TouchableOpacity
                 onPress={handleSignup}
-                disabled={loading}
+                disabled={loading || !isMobileVerified}
                 className="w-full bg-[#1b4d3a] rounded-2xl py-4 items-center mt-4 shadow-sm"
+                style={{ opacity: isMobileVerified && !loading ? 1 : 0.5 }}
               >
                 {loading ? (
                   <ActivityIndicator color="white" />

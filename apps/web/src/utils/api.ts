@@ -328,7 +328,7 @@ export const storefrontApi = {
     const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/login', payload);
     return response.data.data;
   },
-  signup: async (payload: { name: string; email?: string; mobile: string; password: string; referralCode?: string }) => {
+  signup: async (payload: { name: string; email?: string; mobile: string; password: string; referralCode?: string; otp?: string }) => {
     const response = await api.post<ApiResponse<{ user: AuthUser; accessToken: string }>>('/auth/signup', payload);
     return response.data.data;
   },
@@ -389,8 +389,7 @@ export const storefrontApi = {
     return response.data;
   },
   dailyCheckIn: async () => {
-
-    const response = await api.post<ApiResponse<{ loyaltyPoints: number; checkInHistory: string[] }>>('/loyalty/checkin');
+    const response = await api.post<ApiResponse<{ loyaltyPoints: number; checkInHistory: string[]; pointsEarned?: number }>>('/loyalty/checkin');
     return response.data;
   },
   loyaltyData: async () => {

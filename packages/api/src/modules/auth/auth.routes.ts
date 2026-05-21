@@ -17,6 +17,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   sendOtpSchema,
+  verifyOtpSchema,
   loginOtpSchema,
 } from './auth.validator.js';
 
@@ -43,6 +44,12 @@ const loginRateLimiter = rateLimit({
 
 /** POST /api/auth/signup — Register with mobile + password */
 router.post('/signup', validate(signupSchema), authController.signup);
+
+/** POST /api/auth/send-otp — Send registration OTP */
+router.post('/send-otp', validate(sendOtpSchema), authController.sendOtp);
+
+/** POST /api/auth/verify-otp — Verify registration OTP */
+router.post('/verify-otp', validate(verifyOtpSchema), authController.verifyOtp);
 
 /** POST /api/auth/dealer-signup — Dealer self registration (pending approval) */
 router.post('/dealer-signup', upload.single('profileImage'), validate(dealerSignupSchema), authController.dealerSignup);

@@ -19,6 +19,7 @@ import TestimonialsPage from './pages/Testimonials';
 import ProductRequestsPage from './pages/ProductRequests';
 import SettlementsPage from './pages/Settlements';
 import LoyaltyPage from './pages/Loyalty';
+import UserLoyaltyPage from './pages/UserLoyalty';
 import ReferralPage from './pages/Referral';
 import StaffPage from './pages/Staff';
 import InvoicesPage from './pages/Invoices';
@@ -53,6 +54,7 @@ function App() {
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/testimonials" element={<TestimonialsPage />} />
           <Route path="/loyalty" element={<LoyaltyPage />} />
+          <Route path="/user-loyalty" element={<UserLoyaltyPage />} />
           <Route path="/referrals" element={<ReferralPage />} />
           <Route path="/staff" element={<StaffPage />} />
           <Route path="/staff/:id" element={<StaffPage />} />

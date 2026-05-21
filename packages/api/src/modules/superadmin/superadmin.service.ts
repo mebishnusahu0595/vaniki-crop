@@ -987,6 +987,9 @@ export async function listCustomers(query: Record<string, any>) {
         savedAddress: 1,
         orderItems: 1,
         lastOrder: 1,
+        loyaltyPoints: 1,
+        checkInHistory: 1,
+        lastCheckIn: 1,
       },
     },
     { $sort: { lastOrderDate: -1, name: 1 } as any },
@@ -1697,5 +1700,15 @@ export async function listWhatsAppReferrals(query: Record<string, any>) {
   });
 
   return createPaginationResponse(rows, total, page, limit);
+}
+
+export async function adjustCustomerLoyalty(customerId: string, loyaltyPoints: number) {
+  const user = await User.findById(customerId);
+  if (!user || user.role !== 'customer') {
+    throw new AppError('Customer not found', 404);
+  }
+  user.loyaltyPoints = loyaltyPoints;
+  await user.save();
+  return user;
 }
 // force push

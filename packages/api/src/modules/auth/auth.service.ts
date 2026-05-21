@@ -17,6 +17,7 @@ import type {
   ChangePasswordInput,
   DealerSignupInput,
   SendOtpInput,
+  VerifyOtpInput,
   SignupInput,
   LoginInput,
   LoginOtpInput,
@@ -139,6 +140,43 @@ export async function sendOtp(input: SendOtpInput): Promise<void> {
       subject: 'Your Vaniki Crop OTP',
       html: passwordResetOtpTemplate(existingUser, otp),
     });
+  }
+}
+
+/**
+ * Verifies a given 4-digit OTP for registration.
+ * Checks user document first, then temp store for new signups.
+ * Does not delete the cached OTP so the final signup flow can verify it as well.
+ */
+export async function verifyOtp(input: VerifyOtpInput): Promise<void> {
+  const { mobile, otp } = input;
+  const normalizedOtp = otp?.trim();
+
+  if (!normalizedOtp) {
+    throw new AppError('OTP is required', 400);
+  }
+
+  const existingUser = await User.findOne({ mobile }).select('+otp +otpExpiry');
+  let isOtpValid = false;
+
+  if (existingUser?.otp && existingUser?.otpExpiry) {
+    if (existingUser.otpExpiry < new Date()) {
+      throw new AppError('OTP has expired. Please request a new one.', 400);
+    }
+    isOtpValid = await bcrypt.compare(normalizedOtp, existingUser.otp);
+  } else {
+    // Check temp store for new signups
+    const tempOtp = otpStore[mobile];
+    if (tempOtp) {
+      if (tempOtp.otpExpiry < new Date()) {
+        throw new AppError('OTP has expired. Please request a new one.', 400);
+      }
+      isOtpValid = await bcrypt.compare(normalizedOtp, tempOtp.hashedOtp);
+    }
+  }
+
+  if (!isOtpValid) {
+    throw new AppError('Invalid OTP', 400);
   }
 }
 

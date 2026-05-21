@@ -81,6 +81,14 @@ api.interceptors.response.use(
 );
 
 export const adminApi = {
+  sendOtp: async (payload: { mobile: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/send-otp', payload);
+    return response.data;
+  },
+  verifyOtp: async (payload: { mobile: string; otp: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/verify-otp', payload);
+    return response.data;
+  },
   dealerSignup: async (payload: FormData) => {
     const response = await api.post<{ success: boolean; message: string }>('/auth/dealer-signup', payload, {
       headers: {
@@ -131,7 +139,7 @@ export const adminApi = {
     const response = await api.post<{ success: boolean; message: string }>('/auth/forgot-password', payload);
     return response.data;
   },
-  resetPassword: async (payload: { mobile?: string; email?: string; otp: string; newPassword: string }) => {
+  resetPassword: async (payload: { mobile?: string; email?: string; otp: string; newPassword: string; verificationId?: string }) => {
     const response = await api.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
     return response.data;
   },

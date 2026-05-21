@@ -200,6 +200,7 @@ const userSchema = new Schema<IUser>(
     refreshToken: { type: String, select: false },
     expoPushToken: { type: String, trim: true },
     loyaltyPoints: { type: Number, default: 0 },
+    lastCheckIn: { type: Date },
     preferredLanguage: { type: String, enum: ['en', 'hi'], default: 'hi' },
     referralSource: { type: String, trim: true },
     checkInHistory: [{ type: String }],

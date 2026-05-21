@@ -392,7 +392,7 @@ export const storefrontApi = {
     });
   },
   dailyCheckIn: async () => {
-    return request<{ loyaltyPoints: number; checkInHistory: string[] }>('/loyalty/checkin', {
+    return request<{ loyaltyPoints: number; checkInHistory: string[]; pointsEarned?: number }>('/loyalty/checkin', {
       method: 'POST',
     });
   },

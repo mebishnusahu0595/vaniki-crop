@@ -29,12 +29,8 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
-  const [loginVerificationId, setLoginVerificationId] = useState<string | null>(null);
   const [forgotVerificationId, setForgotVerificationId] = useState<string | null>(null);
-  const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   const [forgotIdentifier, setForgotIdentifier] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -66,50 +62,6 @@ const Login: React.FC = () => {
       toast.success(t('authPages.welcomeBack'));
     } catch (error) {
       toast.error(getApiErrorMessage(error, t('authPages.invalidCredentials')));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSendLoginOtp = async () => {
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      toast.error('Enter a valid 10-digit mobile number');
-      return;
-    }
-    setIsSendingOtp(true);
-    try {
-      const result = await storefrontApi.sendLoginOtp({ mobile });
-      setLoginVerificationId(result.verificationId);
-      setOtpSent(true);
-      toast.success('OTP sent successfully');
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Failed to send OTP'));
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  const handleLoginWithOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginVerificationId) {
-      toast.error('Please send OTP first');
-      return;
-    }
-    if (otpCode.length < 4) {
-      toast.error('Please enter a valid OTP');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const result = await storefrontApi.loginWithOtp({
-        mobile,
-        otp: otpCode,
-        verificationId: loginVerificationId,
-      });
-      await applySession(result.user, result.accessToken);
-      toast.success(t('authPages.welcomeBack'));
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Invalid OTP or session expired.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -233,92 +185,48 @@ const Login: React.FC = () => {
     >
       {authMode === 'login' && (
         <form 
-          onSubmit={loginMethod === 'password' ? handleSubmit : handleLoginWithOtp} 
+          onSubmit={handleSubmit} 
           className="space-y-3"
         >
           <div className="flex flex-col gap-1.5">
             <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
               {t('authPages.mobileNumber')}
             </label>
-            <div className="flex gap-2">
+            <input
+              required
+              value={mobile}
+              onChange={(event) => setMobile(event.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="9876543210"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 font-semibold text-primary-900 disabled:opacity-50"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
+              {t('authPages.password')}
+            </label>
+            <div className="relative">
               <input
                 required
-                value={mobile}
-                onChange={(event) => setMobile(event.target.value.replace(/\D/g, '').slice(0, 10))}
-                placeholder="9876543210"
-                disabled={otpSent}
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 font-semibold text-primary-900 disabled:opacity-50"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 pr-11 font-semibold text-primary-900"
               />
-              {loginMethod === 'otp' && !otpSent && (
-                <button
-                  type="button"
-                  disabled={isSendingOtp}
-                  onClick={handleSendLoginOtp}
-                  className="whitespace-nowrap rounded-2xl bg-primary-100 px-4 text-xs font-black uppercase tracking-wider text-primary"
-                >
-                  {isSendingOtp ? 'Sending...' : 'Send OTP'}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
+                aria-label={showPassword ? t('authPages.hidePassword') : t('authPages.showPassword')}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
-          {loginMethod === 'password' ? (
-            <div className="flex flex-col gap-1.5">
-              <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
-                {t('authPages.password')}
-              </label>
-              <div className="relative">
-                <input
-                  required
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 pr-11 font-semibold text-primary-900"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((current) => !current)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
-                  aria-label={showPassword ? t('authPages.hidePassword') : t('authPages.showPassword')}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-          ) : (
-            otpSent && (
-              <div className="flex flex-col gap-1.5 animate-fadeIn">
-                <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60 text-center">
-                  {t('authPages.enterOtp')}
-                </label>
-                <input
-                  required
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="0000"
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-2.5 text-center text-2xl font-black tracking-[0.5em] text-primary-900"
-                />
-              </div>
-            )
-          )}
-
-          <div className="flex items-center justify-between px-1">
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMethod(loginMethod === 'password' ? 'otp' : 'password');
-                setLoginVerificationId(null);
-                setOtpSent(false);
-                setOtpCode('');
-              }}
-              className="text-xs font-black uppercase tracking-wider text-primary/60 hover:text-primary"
-            >
-              {loginMethod === 'password' ? 'OTP Login' : 'Password Login'}
-            </button>
-          </div>
           <button
-            disabled={isSubmitting || (loginMethod === 'otp' && !otpSent)}
+            disabled={isSubmitting}
             className="w-full rounded-full bg-primary px-6 py-2.5 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary-600 disabled:opacity-50"
           >
             {isSubmitting ? t('authPages.signingIn') : t('authPages.login')}

@@ -4,7 +4,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import AuthShell from '../components/common/AuthShell';
-import { storefrontApi } from '../utils/api';
+import api, { storefrontApi } from '../utils/api';
 import { getApiErrorMessage } from '../utils/error';
 import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
@@ -37,6 +37,46 @@ const Signup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isMobileVerified, setIsMobileVerified] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
+  const handleSendOtp = async () => {
+    if (!/^[6-9]\d{9}$/.test(formData.mobile)) {
+      toast.error('Enter a valid 10-digit mobile number');
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      await api.post('/auth/send-otp', { mobile: formData.mobile });
+      setIsOtpSent(true);
+      toast.success('OTP sent successfully');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Failed to send OTP'));
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.length < 4) {
+      toast.error('Enter a valid OTP');
+      return;
+    }
+    setIsVerifyingOtp(true);
+    try {
+      await api.post('/auth/verify-otp', { mobile: formData.mobile, otp: otpCode });
+      setIsMobileVerified(true);
+      toast.success('Mobile number verified successfully');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Invalid OTP'));
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const applySession = useCallback(async (nextUser: AuthUser, accessToken: string) => {
     setAuth(nextUser, accessToken);
     const session = await storefrontApi.me();
@@ -53,10 +93,15 @@ const Signup: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!isMobileVerified) {
+      toast.error('Please verify your mobile number first');
+      return;
+    }
     setIsSubmitting(true);
     try {
       const result = await storefrontApi.signup({
         ...formData,
+        otp: otpCode,
         referralCode: formData.referralCode || undefined,
       });
       await applySession(result.user, result.accessToken);
@@ -110,14 +155,55 @@ const Signup: React.FC = () => {
           <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
             {t('authPages.mobileNumber')}
           </label>
-          <input
-            required
-            value={formData.mobile}
-            onChange={(event) => setFormData((current) => ({ ...current, mobile: event.target.value }))}
-            placeholder="9876543210"
-            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
-          />
+          <div className="flex gap-2">
+            <input
+              required
+              disabled={isMobileVerified}
+              value={formData.mobile}
+              onChange={(event) => setFormData((current) => ({ ...current, mobile: event.target.value.replace(/\D/g, '').slice(0, 10) }))}
+              placeholder="9876543210"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 disabled:opacity-60"
+            />
+            {!isMobileVerified && (
+              <button
+                type="button"
+                disabled={isSendingOtp || formData.mobile.length !== 10}
+                onClick={handleSendOtp}
+                className="whitespace-nowrap rounded-2xl bg-primary px-4 text-xs font-black uppercase tracking-wider text-white hover:bg-primary-600 disabled:opacity-50"
+              >
+                {isSendingOtp ? 'Sending...' : isOtpSent ? 'Resend' : 'Send OTP'}
+              </button>
+            )}
+          </div>
+          {isMobileVerified && (
+            <span className="ml-1 text-xs font-semibold text-emerald-600">✓ Mobile Verified</span>
+          )}
         </div>
+
+        {isOtpSent && !isMobileVerified && (
+          <div className="flex flex-col gap-1.5 animate-fadeIn">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
+              Enter 4-Digit OTP
+            </label>
+            <div className="flex gap-2">
+              <input
+                required
+                value={otpCode}
+                onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="1234"
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+              />
+              <button
+                type="button"
+                disabled={isVerifyingOtp || otpCode.length < 4}
+                onClick={handleVerifyOtp}
+                className="whitespace-nowrap rounded-2xl bg-emerald-600 px-4 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
@@ -126,10 +212,11 @@ const Signup: React.FC = () => {
             </label>
             <input
               required
+              disabled={!isMobileVerified}
               value={formData.address}
               onChange={(event) => setFormData((current) => ({ ...current, address: event.target.value }))}
               placeholder="123 Green Street"
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 disabled:opacity-50"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -138,6 +225,7 @@ const Signup: React.FC = () => {
             </label>
             <input
               required
+              disabled={!isMobileVerified}
               maxLength={6}
               value={formData.pincode}
               onChange={async (event) => {
@@ -156,7 +244,7 @@ const Signup: React.FC = () => {
                 }
               }}
               placeholder="400001"
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 disabled:opacity-50"
             />
           </div>
 
@@ -166,9 +254,10 @@ const Signup: React.FC = () => {
             </label>
             <select
               required
+              disabled={!isMobileVerified}
               value={formData.state}
               onChange={(event) => setFormData((current) => ({ ...current, state: event.target.value, district: '' }))}
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 disabled:opacity-50"
             >
               <option value="">Select State</option>
               {INDIAN_STATES.map(state => (
@@ -184,9 +273,10 @@ const Signup: React.FC = () => {
             {STATE_DISTRICTS[formData.state] ? (
               <select
                 required
+                disabled={!isMobileVerified}
                 value={formData.district}
                 onChange={(event) => setFormData((current) => ({ ...current, district: event.target.value }))}
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 disabled:opacity-50"
               >
                 <option value="">Select District</option>
                 {STATE_DISTRICTS[formData.state].map(district => (
@@ -196,10 +286,11 @@ const Signup: React.FC = () => {
             ) : (
               <input
                 required
+                disabled={!isMobileVerified}
                 value={formData.district}
                 onChange={(event) => setFormData((current) => ({ ...current, district: event.target.value }))}
                 placeholder="District Name"
-                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900"
+                className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-primary-900 disabled:opacity-50"
               />
             )}
           </div>
@@ -212,16 +303,18 @@ const Signup: React.FC = () => {
           <div className="relative">
             <input
               required
+              disabled={!isMobileVerified}
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
               placeholder="••••••••"
-              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 pr-11 font-semibold text-primary-900"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 pr-11 font-semibold text-primary-900 disabled:opacity-50"
             />
             <button
               type="button"
+              disabled={!isMobileVerified}
               onClick={() => setShowPassword((current) => !current)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-900/55 transition hover:text-primary-900 disabled:opacity-50"
               aria-label={showPassword ? t('authPages.hidePassword') : t('authPages.showPassword')}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -233,14 +326,15 @@ const Signup: React.FC = () => {
             {t('authPages.referralCodeOptional')}
           </label>
           <input
+            disabled={!isMobileVerified}
             value={formData.referralCode}
             onChange={(event) => setFormData((current) => ({ ...current, referralCode: event.target.value.toUpperCase() }))}
             placeholder="REFCODE123"
-            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold uppercase tracking-[0.12em] text-primary-900"
+            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold uppercase tracking-[0.12em] text-primary-900 disabled:opacity-50"
           />
         </div>
         <button
-          disabled={isSubmitting}
+          disabled={isSubmitting || !isMobileVerified}
           className="w-full rounded-full bg-primary px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-100"
         >
           {isSubmitting ? t('authPages.creatingAccount') : t('authPages.createAccountButton')}
