@@ -138,12 +138,13 @@ export default function LoginPage() {
   const [signupImageFile, setSignupImageFile] = useState<File | null>(null);
   const [signupImagePreview, setSignupImagePreview] = useState('');
 
-  // Signup Mobile Verification States
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [isMobileVerified, setIsMobileVerified] = useState(false);
-  const [otpCodeSignup, setOtpCodeSignup] = useState('');
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  // Signup Mobile Verification States (OTP temporarily disabled)
+  // const [isOtpSent, setIsOtpSent] = useState(false);
+  const isMobileVerified = true; // OTP disabled: always treat mobile as verified
+  // const [isMobileVerified, setIsMobileVerified] = useState(false);
+  // const [otpCodeSignup, setOtpCodeSignup] = useState('');
+  // const [isSendingOtp, setIsSendingOtp] = useState(false);
+  // const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
   // Forgot / Reset Password States
   const [forgotIdentifier, setForgotIdentifier] = useState('');
@@ -300,10 +301,11 @@ export default function LoginPage() {
               onSubmit={handleSignupSubmit(async (values) => {
                 try {
                   setSignupMessage('');
-                  if (!isMobileVerified) {
-                    setSignupError('root', { message: 'Please verify your mobile number first.' });
-                    return;
-                  }
+                  // OTP check disabled temporarily
+                  // if (!isMobileVerified) {
+                  //   setSignupError('root', { message: 'Please verify your mobile number first.' });
+                  //   return;
+                  // }
                   if (!signupImageFile) {
                     setSignupError('root', { message: 'Dealer profile photo is required.' });
                     return;
@@ -349,6 +351,7 @@ export default function LoginPage() {
                       className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-semibold text-slate-900 disabled:opacity-60"
                       placeholder="9876543210"
                     />
+                    {/* OTP send button temporarily disabled
                     {!isMobileVerified && (
                       <button
                         type="button"
@@ -378,6 +381,7 @@ export default function LoginPage() {
                         {isSendingOtp ? 'Sending...' : isOtpSent ? 'Resend' : 'Send OTP'}
                       </button>
                     )}
+                    */}
                   </div>
                   {signupErrors.mobile ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.mobile.message}</p> : null}
                   {isMobileVerified && (
@@ -397,6 +401,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {/* OTP input block temporarily disabled
               {isOtpSent && !isMobileVerified && (
                 <div className="rounded-2xl border border-primary-100 bg-primary-50/50 p-4 space-y-3">
                   <label className="block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Enter 4-Digit OTP</label>
@@ -435,6 +440,7 @@ export default function LoginPage() {
                   </div>
                 </div>
               )}
+              */}
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
