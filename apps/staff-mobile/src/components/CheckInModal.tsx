@@ -42,7 +42,8 @@ export const CheckInModal = () => {
         setTimeout(() => setShowCheckInModal(false), 2000);
       }
     } catch (error) {
-      console.error('Check-in error:', error);
+      // Already checked in today (400) — just close the modal
+      setShowCheckInModal(false);
     } finally {
       setClaiming(false);
     }

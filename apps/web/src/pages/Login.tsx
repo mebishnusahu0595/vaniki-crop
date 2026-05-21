@@ -288,7 +288,7 @@ const Login: React.FC = () => {
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="ml-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-900/60">
-              {t('authPages.newPassword')}
+              New Password
             </label>
             <div className="relative">
               <input

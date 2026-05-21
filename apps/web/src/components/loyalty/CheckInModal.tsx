@@ -52,7 +52,8 @@ export const CheckInModal: React.FC = () => {
         }, 2000);
       }
     } catch (error) {
-      console.error('Check-in failed:', error);
+      // Already checked in today (400) — just close the modal
+      closeModal();
     } finally {
       setIsClaiming(false);
     }
