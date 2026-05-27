@@ -37,7 +37,7 @@ const TermsConditions: React.FC = () => {
       {/* Hero banner */}
       <section className="surface-card overflow-hidden bg-[linear-gradient(135deg,_rgba(20,61,46,1),_rgba(8,32,24,0.96))] px-6 py-10 text-white sm:px-10">
         <p className="section-kicker text-primary-200">Legal</p>
-        <h1 className="mt-4 max-w-4xl font-heading text-5xl">Terms &amp; Conditions</h1>
+        <h1 className="mt-4 max-w-4xl font-sans text-5xl font-black tracking-tight">Terms &amp; Conditions</h1>
         <p className="mt-5 max-w-3xl text-base font-medium leading-8 text-white/75">
           VANIKI CROP SCIENCE PRIVATE LIMITED &mdash; Effective Date: October 10, 2025
         </p>
