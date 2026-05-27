@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Scale } from 'lucide-react';
 
 const SectionTitle: React.FC<{ num: string; children: React.ReactNode }> = ({ num, children }) => (
-  <h2 className="mb-3 mt-8 flex items-start gap-3 text-xl font-black text-primary-900 first:mt-0">
+  <h2 className="mb-3 mt-8 flex items-start gap-3 text-xl font-sans font-black text-primary-900 first:mt-0">
     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-black text-primary">
       {num}
     </span>
@@ -12,7 +12,7 @@ const SectionTitle: React.FC<{ num: string; children: React.ReactNode }> = ({ nu
 );
 
 const SubTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <h3 className="mb-2 mt-5 text-base font-bold text-primary-900">{children}</h3>
+  <h3 className="mb-2 mt-5 text-base font-sans font-bold text-primary-900">{children}</h3>
 );
 
 const Para: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -56,7 +56,7 @@ const TermsConditions: React.FC = () => {
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary-500">
               VANIKI CROP SCIENCE PRIVATE LIMITED
             </p>
-            <h2 className="text-xl font-black text-primary-900">Terms &amp; Conditions of Sale and Use</h2>
+            <h2 className="text-xl font-sans font-black text-primary-900">Terms &amp; Conditions of Sale and Use</h2>
           </div>
         </div>
 

@@ -12,11 +12,11 @@ const tabs: { id: PolicyTab; label: string; icon: React.ElementType }[] = [
 ];
 
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <h2 className="mb-3 mt-8 text-xl font-black text-primary-900 first:mt-0">{children}</h2>
+  <h2 className="mb-3 mt-8 text-xl font-sans font-black text-primary-900 first:mt-0">{children}</h2>
 );
 
 const SubTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <h3 className="mb-2 mt-5 text-base font-bold text-primary-900">{children}</h3>
+  <h3 className="mb-2 mt-5 text-base font-sans font-bold text-primary-900">{children}</h3>
 );
 
 const Para: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -344,7 +344,7 @@ const Policies: React.FC = () => {
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-primary-500">
               VANIKI CROP SCIENCE PRIVATE LIMITED
             </p>
-            <h2 className="text-xl font-black text-primary-900">{activeTabData.label} Policy</h2>
+            <h2 className="text-xl font-sans font-black text-primary-900">{activeTabData.label} Policy</h2>
           </div>
         </div>
 
