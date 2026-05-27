@@ -30,6 +30,7 @@ const resources = {
         contact: 'Contact',
         cart: 'Cart',
         account: 'Account',
+        policies: 'Policies',
       },
       header: {
         delivery: 'Delivery',
@@ -526,6 +527,7 @@ const resources = {
         contact: 'संपर्क',
         cart: 'कार्ट',
         account: 'अकाउंट',
+        policies: 'नीतियां',
       },
       header: {
         delivery: 'डिलीवरी',

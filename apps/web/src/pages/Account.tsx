@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2, LogOut, FileText } from 'lucide-react';
@@ -377,6 +377,13 @@ const Account: React.FC = () => {
               </button>
             ))}
             <div className="pt-4 mt-4 border-t border-primary-50">
+              <Link
+                to="/policies"
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black uppercase tracking-[0.16em] text-primary-900/65 hover:bg-primary-50"
+              >
+                <FileText size={16} />
+                <span>Policies</span>
+              </Link>
               <button
                 onClick={() => {
                   storefrontApi.logout().catch(() => {});

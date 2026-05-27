@@ -75,6 +75,7 @@ const Footer: React.FC = () => {
                 { label: t('footer.myAccount'), href: '/account' },
                 { label: t('footer.orderTracking'), href: '/account' },
                 { label: 'Privacy Policy', href: '/privacy-policy' },
+                { label: 'Policies', href: '/policies' },
               ].map((link) => (
                 <li key={link.href + link.label}>
                   <Link
@@ -122,6 +123,12 @@ const Footer: React.FC = () => {
               className="text-[10px] font-bold uppercase tracking-widest text-primary-100/25 transition-colors hover:text-primary-300"
             >
               Privacy Policy
+            </Link>
+            <Link
+              to="/policies"
+              className="text-[10px] font-bold uppercase tracking-widest text-primary-100/25 transition-colors hover:text-primary-300"
+            >
+              Policies
             </Link>
             <Link
               to="/contact"
