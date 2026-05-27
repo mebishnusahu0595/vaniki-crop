@@ -63,6 +63,7 @@ const SmoothScroll: React.FC = () => {
       syncTouch: false,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
     });
+    (window as any).lenis = lenis;
 
     const updateLenisFrame = (time: number) => {
       lenis.raf(time * 1000);
@@ -86,6 +87,7 @@ const SmoothScroll: React.FC = () => {
       observer.disconnect();
       gsap.ticker.remove(updateLenisFrame);
       lenis.destroy();
+      delete (window as any).lenis;
     };
   }, []);
 
@@ -110,7 +112,25 @@ const ScrollToTop: React.FC = () => {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    // Scroll immediately
     window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    if ((window as any).lenis) {
+      (window as any).lenis.scrollTo(0, { immediate: true });
+    }
+
+    // Scroll again after page transition completes (Framer motion exit transition is ~200ms)
+    const timer = setTimeout(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      if ((window as any).lenis) {
+        (window as any).lenis.scrollTo(0, { immediate: true });
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
   }, [pathname]);
 
   return null;

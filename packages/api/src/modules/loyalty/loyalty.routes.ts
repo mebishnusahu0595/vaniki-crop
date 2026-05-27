@@ -12,7 +12,16 @@ const router = Router();
 router.post('/checkin', requireAuth, async (req, res, next) => {
   try {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-    const randomPoints = Math.floor(Math.random() * 10) + 1; // Random points between 1 and 10
+    
+    let randomPoints: number;
+    const roll = Math.random();
+    if (roll < 0.7) {
+      // 70% chance: 1 to 5 points
+      randomPoints = Math.floor(Math.random() * 5) + 1;
+    } else {
+      // 30% chance (approx 2-3 times a week): 5 to 10 points
+      randomPoints = Math.floor(Math.random() * 6) + 5;
+    }
 
     const updatedUser = await User.findOneAndUpdate(
       { _id: req.userId, checkInHistory: { $ne: today } },

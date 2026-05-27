@@ -9,11 +9,11 @@ const Footer: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <footer className="overflow-hidden border-t border-primary-800 bg-primary-900 pt-20 pb-28 text-white lg:pb-12">
+    <footer className="overflow-hidden border-t border-primary-800 bg-primary-900 pt-10 pb-24 md:pt-16 md:pb-12 text-white">
       <div className="container mx-auto px-6">
-        <div className="grid grid-cols-2 gap-12 sm:gap-16 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-8 sm:gap-12 md:gap-16 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
-            <Link to="/" className="group mb-8 flex items-center space-x-3">
+            <Link to="/" className="group mb-4 md:mb-8 flex items-center space-x-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-white shadow-lg shadow-primary/20 ring-4 ring-primary/5 transition-transform group-hover:rotate-12">
                 V
               </div>
@@ -24,10 +24,10 @@ const Footer: React.FC = () => {
                 </span>
               </div>
             </Link>
-            <p className="mb-10 max-w-xs text-sm font-medium leading-relaxed text-primary-100/55">
+            <p className="mb-6 md:mb-10 max-w-xs text-xs md:text-sm font-medium leading-relaxed text-primary-100/55">
               {t('aboutPage.story')}
             </p>
-            <div className="space-y-3 text-sm font-semibold text-primary-100/70">
+            <div className="space-y-2 md:space-y-3 text-xs md:text-sm font-semibold text-primary-100/70">
               <div className="flex items-center gap-3">
                 <Phone size={16} className="text-primary-300" />
                 <span>{siteContent.brand.supportPhone}</span>
@@ -46,8 +46,8 @@ const Footer: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="mb-8 text-xs font-black uppercase tracking-[0.2em] text-primary-400">{t('footer.products')}</h3>
-            <ul className="space-y-5">
+            <h3 className="mb-4 md:mb-8 text-xs font-black uppercase tracking-[0.2em] text-primary-400">{t('footer.products')}</h3>
+            <ul className="space-y-3 md:space-y-5">
               {[
                 { label: t('footer.insecticides'), href: '/products?category=insecticides' },
                 { label: t('footer.fungicides'), href: '/products?category=fungicides' },
@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
                 <li key={link.href}>
                   <Link
                     to={link.href}
-                    className="text-sm font-bold uppercase tracking-widest text-primary-100 transition-colors hover:text-primary-300"
+                    className="text-xs md:text-sm font-bold uppercase tracking-widest text-primary-100 transition-colors hover:text-primary-300"
                   >
                     {link.label}
                   </Link>
@@ -67,8 +67,8 @@ const Footer: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="mb-8 text-xs font-black uppercase tracking-[0.2em] text-primary-400">{t('footer.company')}</h3>
-            <ul className="space-y-5">
+            <h3 className="mb-4 md:mb-8 text-xs font-black uppercase tracking-[0.2em] text-primary-400">{t('footer.company')}</h3>
+            <ul className="space-y-3 md:space-y-5">
               {[
                 { label: t('footer.aboutUs'), href: '/about' },
                 { label: t('footer.contact'), href: '/contact' },
@@ -82,7 +82,7 @@ const Footer: React.FC = () => {
                 <li key={link.href + link.label}>
                   <Link
                     to={link.href}
-                    className="text-sm font-bold uppercase tracking-widest text-primary-100 transition-colors hover:text-primary-300"
+                    className="text-xs md:text-sm font-bold uppercase tracking-widest text-primary-100 transition-colors hover:text-primary-300"
                   >
                     {link.label}
                   </Link>
@@ -92,8 +92,8 @@ const Footer: React.FC = () => {
           </div>
 
           <div>
-            <h3 className="mb-8 text-xs font-black uppercase tracking-[0.2em] text-primary-400">{t('footer.support')}</h3>
-            <div className="space-y-5 text-sm font-medium text-primary-100/70">
+            <h3 className="mb-4 md:mb-8 text-xs font-black uppercase tracking-[0.2em] text-primary-400">{t('footer.support')}</h3>
+            <div className="space-y-3 md:space-y-5 text-xs md:text-sm font-medium text-primary-100/70">
               <div className="flex items-start gap-3">
                 <MapPin size={16} className="mt-1 shrink-0 text-primary-300" />
                 <p>{t('footer.supportDesc')}</p>
@@ -109,7 +109,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-20 flex flex-col items-center justify-between space-y-4 border-t border-primary-800 pt-8 sm:flex-row sm:space-y-0">
+        <div className="mt-10 flex flex-col items-center justify-between space-y-4 border-t border-primary-800 pt-6 sm:flex-row sm:space-y-0 md:mt-20 md:pt-8">
           <p className="text-[10px] font-bold uppercase tracking-widest text-primary-100/25">
             © 2026 {siteContent.brand.name}. {t('footer.rightsReserved')}
           </p>
