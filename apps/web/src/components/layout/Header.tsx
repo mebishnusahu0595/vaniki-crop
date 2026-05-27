@@ -27,6 +27,7 @@ const desktopLinks = [
   { labelKey: 'nav.compare', href: '/compare' },
   { labelKey: 'nav.about', href: '/about' },
   { labelKey: 'nav.contact', href: '/contact' },
+  { labelKey: 'nav.dealers', href: '/dealers' },
   { labelKey: 'nav.policies', href: '/policies' },
   { labelKey: 'nav.terms', href: '/terms' },
 ];

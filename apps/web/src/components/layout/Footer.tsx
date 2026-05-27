@@ -74,6 +74,7 @@ const Footer: React.FC = () => {
                 { label: t('footer.contact'), href: '/contact' },
                 { label: t('footer.myAccount'), href: '/account' },
                 { label: t('footer.orderTracking'), href: '/account' },
+                { label: 'Dealer App', href: '/dealers' },
                 { label: 'Privacy Policy', href: '/privacy-policy' },
                 { label: 'Policies', href: '/policies' },
                 { label: 'Terms & Conditions', href: '/terms' },

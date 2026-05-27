@@ -32,6 +32,7 @@ const resources = {
         account: 'Account',
         policies: 'Policies',
         terms: 'Terms',
+        dealers: 'Dealer App',
       },
       header: {
         delivery: 'Delivery',
@@ -530,6 +531,7 @@ const resources = {
         account: 'अकाउंट',
         policies: 'नीतियां',
         terms: 'नियम व शर्तें',
+        dealers: 'डीलर ऐप',
       },
       header: {
         delivery: 'डिलीवरी',
