@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2, LogOut, FileText } from 'lucide-react';
+import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2, LogOut, FileText, Scale } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
@@ -383,6 +383,13 @@ const Account: React.FC = () => {
               >
                 <FileText size={16} />
                 <span>Policies</span>
+              </Link>
+              <Link
+                to="/terms"
+                className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-black uppercase tracking-[0.16em] text-primary-900/65 hover:bg-primary-50"
+              >
+                <Scale size={16} />
+                <span>Terms</span>
               </Link>
               <button
                 onClick={() => {

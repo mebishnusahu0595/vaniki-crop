@@ -28,6 +28,7 @@ const desktopLinks = [
   { labelKey: 'nav.about', href: '/about' },
   { labelKey: 'nav.contact', href: '/contact' },
   { labelKey: 'nav.policies', href: '/policies' },
+  { labelKey: 'nav.terms', href: '/terms' },
 ];
 
 interface FlyingCartItem {

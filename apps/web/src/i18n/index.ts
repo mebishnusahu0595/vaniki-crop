@@ -31,6 +31,7 @@ const resources = {
         cart: 'Cart',
         account: 'Account',
         policies: 'Policies',
+        terms: 'Terms',
       },
       header: {
         delivery: 'Delivery',
@@ -528,6 +529,7 @@ const resources = {
         cart: 'कार्ट',
         account: 'अकाउंट',
         policies: 'नीतियां',
+        terms: 'नियम व शर्तें',
       },
       header: {
         delivery: 'डिलीवरी',
