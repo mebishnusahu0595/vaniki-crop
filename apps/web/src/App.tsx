@@ -33,6 +33,7 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Policies = lazy(() => import('./pages/Policies'));
 const TermsConditions = lazy(() => import('./pages/TermsConditions'));
 const Dealers = lazy(() => import('./pages/Dealers'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 // Register GSAP Plugins
 gsap.registerPlugin(ScrollTrigger);
@@ -224,6 +225,7 @@ const AnimatedRoutes = () => {
             <Route path="/policies" element={<PageFrame><Policies /></PageFrame>} />
             <Route path="/terms" element={<PageFrame><TermsConditions /></PageFrame>} />
             <Route path="/dealers" element={<PageFrame><Dealers /></PageFrame>} />
+            <Route path="*" element={<PageFrame><NotFound /></PageFrame>} />
           </Route>
         </Routes>
       </AnimatePresence>
