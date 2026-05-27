@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -19,8 +19,8 @@
   --color-accent: #f97316;
   --color-ink: #143d2e;
 
-  --font-sans: 'Outfit', 'system-ui', sans-serif;
-  --font-heading: 'DM Serif Display', 'Georgia', serif;
+  --font-sans: 'Inter', 'system-ui', sans-serif;
+  --font-heading: 'Inter', 'system-ui', sans-serif;
 }
 
 @layer base {
@@ -50,8 +50,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
-    letter-spacing: -0.03em;
+    font-family: var(--font-sans);
+    letter-spacing: -0.02em;
   }
 
   .lenis.lenis-smooth {
