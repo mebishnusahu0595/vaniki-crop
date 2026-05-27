@@ -152,7 +152,7 @@ export default function ProductRequestsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-zinc-50">
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} className="flex-1">
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} className="flex-1" style={{ overflow: 'visible' }}>
         
         {/* Form Container */}
         <View className="bg-white border border-zinc-100 rounded-[2rem] p-5 shadow-sm space-y-4">
@@ -271,24 +271,26 @@ export default function ProductRequestsScreen() {
 
         {/* Batch Summary Card */}
         {batchItems.length > 0 && (
-          <View className="bg-emerald-950 rounded-[2rem] p-6 text-white shadow-xl mt-6">
-            <View className="flex-row items-center gap-2 mb-4">
-              <Icon name="info" size={16} color="#34D399" />
-              <Text className="text-xs font-bold uppercase text-emerald-400" style={{ includeFontPadding: false }}>Request Volume Summary</Text>
-            </View>
-            <View className="flex-row justify-between items-center">
-              <View className="flex-1">
-                <Text className="text-[9px] font-bold uppercase text-emerald-300" style={{ includeFontPadding: false }}>Total Staged</Text>
-                <View className="flex-row items-baseline mt-1 gap-1">
-                  <Text className="text-2xl font-extrabold text-white" style={{ includeFontPadding: false }}>{totalPeti}</Text>
-                  <Text className="text-xs font-bold text-emerald-200" style={{ includeFontPadding: false }}>Petis</Text>
-                </View>
+          <View className="mt-6" style={{ marginHorizontal: 2 }}>
+            <View className="bg-emerald-950 rounded-3xl overflow-hidden" style={{ elevation: 6, padding: 24 }}>
+              <View className="flex-row items-center gap-2 mb-4">
+                <Icon name="info" size={16} color="#34D399" />
+                <Text className="text-xs font-bold uppercase text-emerald-400" style={{ includeFontPadding: false }}>Request Volume Summary</Text>
               </View>
-              <View className="border-l border-white/10 pl-6 items-end flex-1">
-                <Text className="text-[9px] font-bold uppercase text-emerald-300" style={{ includeFontPadding: false }}>Estimated Volume</Text>
-                <View className="flex-row items-baseline mt-1 gap-1">
-                  <Text className="text-2xl font-extrabold text-white" style={{ includeFontPadding: false }}>{totalVolume}</Text>
-                  <Text className="text-xs font-bold text-emerald-200" style={{ includeFontPadding: false }}>Liters/Kg</Text>
+              <View className="flex-row justify-between items-center">
+                <View style={{ flex: 1 }}>
+                  <Text className="text-[9px] font-bold uppercase text-emerald-300" style={{ includeFontPadding: false }}>Total Staged</Text>
+                  <View className="flex-row items-baseline mt-1 gap-1">
+                    <Text className="text-2xl font-extrabold text-white" style={{ includeFontPadding: false }}>{totalPeti}</Text>
+                    <Text className="text-xs font-bold text-emerald-200" style={{ includeFontPadding: false }}>Petis</Text>
+                  </View>
+                </View>
+                <View style={{ flex: 1, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.1)', paddingLeft: 24, alignItems: 'flex-end' }}>
+                  <Text className="text-[9px] font-bold uppercase text-emerald-300" style={{ includeFontPadding: false }}>Estimated Volume</Text>
+                  <View className="flex-row items-baseline mt-1 gap-1">
+                    <Text className="text-2xl font-extrabold text-white" style={{ includeFontPadding: false }}>{totalVolume}</Text>
+                    <Text className="text-xs font-bold text-emerald-200" style={{ includeFontPadding: false }}>Liters/Kg</Text>
+                  </View>
                 </View>
               </View>
             </View>

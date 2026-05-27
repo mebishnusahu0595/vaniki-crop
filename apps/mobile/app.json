@@ -37,7 +37,14 @@
           "android": {
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
-            "buildToolsVersion": "35.0.0"
+            "buildToolsVersion": "35.0.0",
+            "extraGradleProperties": [
+              {"name": "org.gradle.jvmargs", "value": "-Xmx1200m -XX:MaxMetaspaceSize=256m -XX:+UseParallelGC"},
+              {"name": "org.gradle.parallel", "value": "false"},
+              {"name": "org.gradle.workers.max", "value": "1"},
+              {"name": "reactNativeArchitectures", "value": "arm64-v8a"},
+              {"name": "org.gradle.java.home", "value": "/usr/lib/jvm/java-17-openjdk-amd64"}
+            ]
           }
         }
       ],

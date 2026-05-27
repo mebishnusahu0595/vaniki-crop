@@ -515,7 +515,30 @@ export async function updateProduct(
   if (input.description !== undefined) product.description = input.description;
   if (input.shortDescription !== undefined) product.shortDescription = input.shortDescription;
   if (input.category !== undefined) product.category = input.category as any;
-  if (input.variants !== undefined) product.variants = input.variants as any;
+  if (input.variants !== undefined) {
+    const existingVariantsMap = new Map(
+      product.variants.map((v: any) => [v.label, v])
+    );
+    input.variants = input.variants.map((v: any) => {
+      const existing = existingVariantsMap.get(v.label);
+      if (userRole !== 'superAdmin') {
+        // Store admins cannot modify adminPrice and offerPrice
+        return {
+          ...v,
+          adminPrice: existing ? existing.adminPrice : undefined,
+          offerPrice: existing ? existing.offerPrice : undefined,
+        };
+      } else {
+        // Super admins can modify, but if they sent undefined, preserve existing
+        return {
+          ...v,
+          adminPrice: v.adminPrice !== undefined ? v.adminPrice : (existing ? existing.adminPrice : undefined),
+          offerPrice: v.offerPrice !== undefined ? v.offerPrice : (existing ? existing.offerPrice : undefined),
+        };
+      }
+    });
+    product.variants = input.variants as any;
+  }
   if (input.tags !== undefined) product.tags = input.tags as any;
   if (input.isActive !== undefined) product.isActive = input.isActive;
   if (input.isFeatured !== undefined) product.isFeatured = input.isFeatured;
