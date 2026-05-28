@@ -12,6 +12,8 @@ export default function InventoryPage() {
   const queryClient = useQueryClient();
   const [inventorySearch, setInventorySearch] = useState(searchParams.get('inventory') || '');
   const [prevInventoryParam, setPrevInventoryParam] = useState(searchParams.get('inventory'));
+  
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   const [inventoryDraft, setInventoryDraft] = useState<Record<string, number>>({});
   const [prevInventoryData, setPrevInventoryData] = useState<DealerInventoryProduct[] | null>(null);
@@ -19,6 +21,11 @@ export default function InventoryPage() {
   const inventoryQuery = useQuery({
     queryKey: ['admin-dealer-inventory'],
     queryFn: adminApi.inventoryProducts,
+  });
+
+  const categoriesQuery = useQuery({
+    queryKey: ['admin-product-categories'],
+    queryFn: () => adminApi.categories({ limit: 100 }),
   });
 
   // Sync state with URL params during render
@@ -42,16 +49,19 @@ export default function InventoryPage() {
   const filteredInventory = useMemo(() => {
     const rows = inventoryQuery.data || [];
     const searchValue = inventorySearch.trim().toLowerCase();
-    if (!searchValue) return rows;
 
     return rows.filter((product) => {
-      return (
+      const prodCategoryId = product.category?.id || (product.category as any)?._id;
+      const categoryMatch = !selectedCategory || prodCategoryId === selectedCategory;
+
+      const searchMatch = !searchValue ||
         product.name.toLowerCase().includes(searchValue) ||
         product.slug.toLowerCase().includes(searchValue) ||
-        product.shortDescription?.toLowerCase().includes(searchValue)
-      );
+        product.shortDescription?.toLowerCase().includes(searchValue);
+
+      return categoryMatch && searchMatch;
     });
-  }, [inventoryQuery.data, inventorySearch]);
+  }, [inventoryQuery.data, inventorySearch, selectedCategory]);
 
   const changedInventoryEntries = useMemo(() => {
     if (!inventoryQuery.data) {
@@ -111,20 +121,43 @@ export default function InventoryPage() {
           </button>
         </div>
 
-        <div className="mt-4">
-          <label
-            htmlFor="inventory-search"
-            className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
-          >
-            Search Inventory
-          </label>
-          <input
-            id="inventory-search"
-            value={inventorySearch}
-            onChange={(event) => setInventorySearch(event.target.value)}
-            placeholder="Search inventory products"
-            className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
-          />
+        <div className="mt-4 grid gap-4 md:grid-cols-[1.5fr_1fr]">
+          <div>
+            <label
+              htmlFor="inventory-search"
+              className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+            >
+              Search Inventory
+            </label>
+            <input
+              id="inventory-search"
+              value={inventorySearch}
+              onChange={(event) => setInventorySearch(event.target.value)}
+              placeholder="Search inventory products"
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-slate-800 outline-none focus:ring-2 focus:ring-primary-500 transition"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="inventory-category"
+              className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+            >
+              Filter by Category
+            </label>
+            <select
+              id="inventory-category"
+              value={selectedCategory}
+              onChange={(event) => setSelectedCategory(event.target.value)}
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-slate-800 outline-none focus:ring-2 focus:ring-primary-500 transition font-semibold"
+            >
+              <option value="">All Categories</option>
+              {categoriesQuery.data?.data.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="mt-4 space-y-4">

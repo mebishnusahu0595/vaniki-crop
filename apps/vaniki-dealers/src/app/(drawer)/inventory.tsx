@@ -26,6 +26,8 @@ export default function InventoryScreen() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   
+  const [selectedCategory, setSelectedCategory] = useState('');
+
   // Draft quantity state mapping "productId-variantId" -> number
   const [draft, setDraft] = useState<Record<string, number>>({});
 
@@ -33,6 +35,12 @@ export default function InventoryScreen() {
     queryKey: ['admin-inventory'],
     queryFn: adminApi.inventoryProducts,
   });
+
+  const { data: categoriesData } = useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: () => adminApi.categories({ limit: 100 }),
+  });
+  const categories = categoriesData?.data || [];
 
   const updateInventoryMutation = useMutation({
     mutationFn: (entries: Array<{ productId: string; variantId: string; quantity: number }>) => 
@@ -86,10 +94,13 @@ export default function InventoryScreen() {
     updateInventoryMutation.mutate(entries);
   };
 
-  // Filter products based on search term
-  const filteredProducts = inventory.filter(product => 
-    product.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter products based on search term and category
+  const filteredProducts = inventory.filter(product => {
+    const prodCategoryId = product.category?.id || (product.category as any)?._id;
+    const categoryMatch = !selectedCategory || prodCategoryId === selectedCategory;
+    const searchMatch = product.name.toLowerCase().includes(search.toLowerCase());
+    return categoryMatch && searchMatch;
+  });
 
   return (
     <SafeAreaView className="flex-1 bg-zinc-50">
@@ -98,22 +109,54 @@ export default function InventoryScreen() {
         className="flex-1"
       >
         {/* Search Header */}
-        <View className="bg-white px-4 py-4 border-b border-zinc-100 shadow-sm">
-          <View className="flex-row items-center bg-zinc-100 rounded-2xl px-4 py-3">
-            <Icon name="search" size={18} color="#71717A" />
-            <TextInput
-              placeholder="Search inventory products..."
-              placeholderTextColor="#A1A1AA"
-              value={search}
-              onChangeText={setSearch}
-              className="flex-1 ml-2 text-zinc-900 font-semibold text-sm"
-            />
-            {search ? (
-              <TouchableOpacity onPress={() => setSearch('')}>
-                <Icon name="x-circle" size={16} color="#A1A1AA" />
-              </TouchableOpacity>
-            ) : null}
+        <View className="bg-white border-b border-zinc-100 shadow-sm">
+          <View className="px-4 pt-4 pb-2">
+            <View className="flex-row items-center bg-zinc-100 rounded-2xl px-4 py-3">
+              <Icon name="search" size={18} color="#71717A" />
+              <TextInput
+                placeholder="Search inventory products..."
+                placeholderTextColor="#A1A1AA"
+                value={search}
+                onChangeText={setSearch}
+                className="flex-1 ml-2 text-zinc-900 font-semibold text-sm"
+              />
+              {search ? (
+                <TouchableOpacity onPress={() => setSearch('')}>
+                  <Icon name="x-circle" size={16} color="#A1A1AA" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
+
+          {/* Horizontal Category Scroll */}
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={[{ id: '', name: 'All' }, ...categories]}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, paddingTop: 4 }}
+            renderItem={({ item }) => {
+              const isActive = selectedCategory === item.id;
+              return (
+                <TouchableOpacity
+                  onPress={() => setSelectedCategory(item.id)}
+                  className={`px-4 py-2 rounded-full mr-2.5 border ${
+                    isActive
+                      ? 'bg-emerald-800 border-emerald-800'
+                      : 'bg-zinc-100 border-zinc-200'
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-black uppercase tracking-wider ${
+                      isActive ? 'text-white' : 'text-zinc-500'
+                    }`}
+                  >
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
+          />
         </View>
 
         {/* Inventory List */}

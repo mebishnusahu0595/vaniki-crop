@@ -36,6 +36,7 @@ export default function ProductRequestsScreen() {
   const [selectedProduct, setSelectedProduct] = useState<DealerInventoryProduct | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<DealerInventoryVariant | null>(null);
   const [petiQtyInput, setPetiQtyInput] = useState<string>('1');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   // Modals visibility
   const [garageModalVisible, setGarageModalVisible] = useState(false);
@@ -52,6 +53,17 @@ export default function ProductRequestsScreen() {
   const { data: inventory = [], isLoading: loadingInventory } = useQuery({
     queryKey: ['admin-inventory-products'],
     queryFn: adminApi.inventoryProducts,
+  });
+
+  const { data: categoriesData } = useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: () => adminApi.categories({ limit: 100 }),
+  });
+  const categories = categoriesData?.data || [];
+
+  const filteredInventoryForModal = inventory.filter(product => {
+    const prodCategoryId = product.category?.id || (product.category as any)?._id;
+    return !selectedCategory || prodCategoryId === selectedCategory;
   });
 
   // Create Product Request Mutation
@@ -409,8 +421,41 @@ export default function ProductRequestsScreen() {
         >
           <View className="bg-white rounded-3xl w-full max-h-[70%] border border-zinc-200 shadow-2xl p-6">
             <Text className="text-zinc-900 font-black text-base mb-4 uppercase tracking-wider">Select Product</Text>
+            
+            {/* Horizontal Category Selector in Modal */}
+            <View className="mb-4">
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={[{ id: '', name: 'All' }, ...categories]}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ paddingBottom: 4 }}
+                renderItem={({ item }) => {
+                  const isActive = selectedCategory === item.id;
+                  return (
+                    <TouchableOpacity
+                      onPress={() => setSelectedCategory(item.id)}
+                      className={`px-3 py-1.5 rounded-full mr-2 border ${
+                        isActive
+                          ? 'bg-emerald-800 border-emerald-800'
+                          : 'bg-zinc-100 border-zinc-200'
+                      }`}
+                    >
+                      <Text
+                        className={`text-[10px] font-black uppercase tracking-wider ${
+                          isActive ? 'text-white' : 'text-zinc-500'
+                        }`}
+                      >
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
+
             <FlatList
-              data={inventory}
+              data={filteredInventoryForModal}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <TouchableOpacity

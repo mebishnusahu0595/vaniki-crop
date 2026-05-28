@@ -106,6 +106,7 @@ export interface DealerInventoryProduct {
   name: string;
   slug: string;
   image?: string;
+  category?: { id: string; name: string } | null;
   shortDescription?: string;
   petiSize?: number;
   petiUnit?: 'Liter' | 'Kg';

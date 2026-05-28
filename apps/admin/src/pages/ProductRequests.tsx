@@ -24,6 +24,7 @@ interface CartItem {
 export default function ProductRequestsPage() {
   const queryClient = useQueryClient();
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [requestedPack, setRequestedPack] = useState('');
   const [garageName, setGarageName] = useState('');
@@ -38,10 +39,24 @@ export default function ProductRequestsPage() {
     queryFn: adminApi.inventoryProducts,
   });
 
+  const categoriesQuery = useQuery({
+    queryKey: ['admin-product-categories'],
+    queryFn: () => adminApi.categories({ limit: 100 }),
+  });
+
   const garagesQuery = useQuery({
     queryKey: ['admin-garages'],
     queryFn: adminApi.garages,
   });
+
+  const filteredProducts = useMemo(() => {
+    const products = inventoryQuery.data || [];
+    if (!selectedCategory) return products;
+    return products.filter((product) => {
+      const prodCategoryId = product.category?.id || (product.category as any)?._id;
+      return prodCategoryId === selectedCategory;
+    });
+  }, [inventoryQuery.data, selectedCategory]);
 
   // Auto-select first garage when data loads
   useState(() => {
@@ -162,6 +177,28 @@ export default function ProductRequestsPage() {
 
               <div>
                 <label className="mb-2 block text-sm font-bold text-slate-700">
+                  Filter by Category
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setSelectedProductId('');
+                    setRequestedPack('');
+                  }}
+                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition font-semibold"
+                >
+                  <option value="">All Categories</option>
+                  {categoriesQuery.data?.data.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-slate-700">
                   Select Product
                 </label>
                 <select
@@ -173,7 +210,7 @@ export default function ProductRequestsPage() {
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition"
                 >
                   <option value="">Choose product</option>
-                  {inventoryQuery.data?.map((product) => (
+                  {filteredProducts.map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name} {product.shortDescription ? `(${product.shortDescription})` : ''}
                     </option>
