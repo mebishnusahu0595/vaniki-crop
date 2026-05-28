@@ -537,7 +537,7 @@ export default function AdminsPage() {
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-      <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5">
+      <div className="rounded-[1.75rem] border border-primary-100 bg-white p-5 xl:sticky xl:top-6 self-start">
         <PageHeader
           title="All Admins"
           subtitle="Create, edit, approve/reject, deactivate, and delete store-admin accounts."
