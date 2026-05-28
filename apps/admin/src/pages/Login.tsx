@@ -342,7 +342,7 @@ export default function LoginPage() {
                   <div className="flex gap-2">
                     <input
                       {...registerSignup('mobile')}
-                      disabled={isMobileVerified}
+                      disabled={isSignupSubmitting}
                       inputMode="numeric"
                       maxLength={10}
                       onInput={(event) => {
