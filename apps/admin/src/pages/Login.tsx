@@ -384,9 +384,9 @@ export default function LoginPage() {
                     */}
                   </div>
                   {signupErrors.mobile ? <p className="mt-1 text-xs font-semibold text-rose-600">{signupErrors.mobile.message}</p> : null}
-                  {isMobileVerified && (
+                  {/* isMobileVerified && (
                     <span className="mt-1 block text-xs font-bold text-emerald-600">✓ Mobile Verified</span>
-                  )}
+                  ) */}
                 </div>
 
                 <div>
@@ -567,7 +567,7 @@ export default function LoginPage() {
                 <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Dealer Photo</label>
                 <input
                   type="file"
-                  accept="image/png,image/jpeg,image/webp"
+                  accept="image/*"
                   disabled={!isMobileVerified}
                   onChange={(event) => {
                     const file = event.target.files?.[0] || null;
