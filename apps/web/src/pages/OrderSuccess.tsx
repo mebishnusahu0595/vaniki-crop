@@ -1,8 +1,31 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2 } from 'lucide-react';
+import { storefrontApi } from '../utils/api';
 
 const OrderSuccess: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+
+  const { data: order } = useQuery({
+    queryKey: ['storefront-order-detail', id],
+    queryFn: () => storefrontApi.orderDetail(id!),
+    enabled: !!id,
+  });
+
+  useEffect(() => {
+    if (order) {
+      if (typeof window !== 'undefined' && (window as any).gtag) {
+        (window as any).gtag('event', 'conversion', {
+          'send_to': 'AW-18196181898/Ld6WCLT7prUcEIrnzuRD',
+          'value': order.totalAmount,
+          'currency': 'INR',
+          'transaction_id': order.orderNumber || id
+        });
+      }
+    }
+  }, [order, id]);
+
   return (
     <div className="container mx-auto flex min-h-[70vh] items-center justify-center px-4 py-10 sm:px-6">
       <div className="surface-card max-w-2xl p-8 text-center sm:p-12">
@@ -14,6 +37,11 @@ const OrderSuccess: React.FC = () => {
         <p className="mt-4 text-base font-medium leading-8 text-primary-900/60">
           Your order is confirmed. We will start processing it right away.
         </p>
+        {order && (
+          <div className="mt-6 rounded-2xl bg-primary-50/50 p-4 border border-primary-100 text-sm font-semibold text-primary-900/80">
+            Order Number: <span className="font-bold text-primary-900">{order.orderNumber}</span> • Total Paid: <span className="font-bold text-primary-900">₹{order.totalAmount}</span>
+          </div>
+        )}
 
         <div className="mx-auto mt-8 flex w-full max-w-xs flex-col gap-3">
           <Link
