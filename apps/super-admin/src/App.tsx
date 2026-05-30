@@ -25,6 +25,7 @@ import StaffPage from './pages/Staff';
 import InvoicesPage from './pages/Invoices';
 import NotificationsPage from './pages/Notifications';
 import DealersPromotionsPage from './pages/DealersPromotions';
+import WebsiteAnalyticsPage from './pages/WebsiteAnalytics';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
         <Route element={<AdminLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/analytics" element={<WebsiteAnalyticsPage />} />
           <Route path="/stores" element={<StoresPage />} />
           <Route path="/admins" element={<AdminsPage />} />
           <Route path="/product-requests" element={<ProductRequestsPage />} />

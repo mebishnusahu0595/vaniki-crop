@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Review } from '../../models/Review.model.js';
+import { PageView } from '../../models/PageView.model.js';
 import { redisConnection } from '../../config/redis.js';
 
 const ANALYTICS_CACHE_TTL = 300; // 5 minutes in seconds
@@ -229,4 +230,156 @@ export async function getStoreAdminAnalytics(storeId: string, query: Record<stri
   await redisConnection.setex(cacheKey, ANALYTICS_CACHE_TTL, JSON.stringify(result));
 
   return result;
+}
+
+/**
+ * Record a new page view log, dynamically resolving product detail page views
+ */
+export async function recordPageView(payload: {
+  url: string;
+  visitorId: string;
+  userAgent?: string;
+  device: 'mobile' | 'desktop' | 'tablet' | 'unknown';
+  ip?: string;
+}) {
+  const { url, visitorId, userAgent, device, ip } = payload;
+
+  let productId: string | null = null;
+
+  // Resolve product ID automatically if it's a product page URL (e.g. /product/super-grow)
+  if (url.startsWith('/product/')) {
+    const parts = url.split('/');
+    const slugWithParams = parts[2] || '';
+    const slug = slugWithParams.split('?')[0].split('#')[0]; // strip query or hash
+    if (slug) {
+      const product = await Product.findOne({ slug }).select('_id');
+      if (product) {
+        productId = product._id.toString();
+      }
+    }
+  }
+
+  const pageView = new PageView({
+    url,
+    visitorId,
+    productId,
+    userAgent,
+    device,
+    ip,
+  });
+
+  await pageView.save();
+  return pageView;
+}
+
+/**
+ * Super Admin Global Website Traffic & Visitor Analytics
+ */
+export async function getWebsiteReporting() {
+  const cacheKey = 'analytics:superadmin:website-reporting';
+  const cachedData = await redisConnection.get(cacheKey);
+  if (cachedData) return JSON.parse(cachedData);
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOf30DaysAgo = new Date(startOfToday);
+  startOf30DaysAgo.setDate(startOf30DaysAgo.getDate() - 30);
+
+  // 1. General Traffic Stats Overview
+  const [totalViews, uniqueVisitors, totalProductViews, viewsToday] = await Promise.all([
+    PageView.countDocuments(),
+    PageView.distinct('visitorId').then((arr) => arr.length),
+    PageView.countDocuments({ productId: { $ne: null } }),
+    PageView.countDocuments({ createdAt: { $gte: startOfToday } }),
+  ]);
+
+  // 2. Timeline Daily View Counter (last 30 days)
+  const timelineAgg = await PageView.aggregate([
+    { $match: { createdAt: { $gte: startOf30DaysAgo } } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+        views: { $sum: 1 },
+        visitors: { $addToSet: '$visitorId' },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const timelinePoints = timelineAgg.map((point) => ({
+    date: point._id,
+    views: point.views,
+    visitors: point.visitors.length,
+  }));
+
+  // 3. Top Pages (most visited URLs)
+  const topPagesAgg = await PageView.aggregate([
+    {
+      $group: {
+        _id: '$url',
+        views: { $sum: 1 },
+        visitors: { $addToSet: '$visitorId' },
+      },
+    },
+    { $sort: { views: -1 } },
+    { $limit: 15 },
+  ]);
+
+  const topPages = topPagesAgg.map((page) => ({
+    url: page._id,
+    views: page.views,
+    visitors: page.visitors.length,
+  }));
+
+  // 4. Top Viewed Products (aggregate product view counts and lookup detail)
+  const topProductsAgg = await PageView.aggregate([
+    { $match: { productId: { $ne: null } } },
+    {
+      $group: {
+        _id: '$productId',
+        views: { $sum: 1 },
+        visitors: { $addToSet: '$visitorId' },
+      },
+    },
+    { $sort: { views: -1 } },
+    { $limit: 10 },
+  ]);
+
+  const productIds = topProductsAgg.map((p) => p._id);
+  const products = await Product.find({ _id: { $in: productIds } })
+    .select('name images slug shortDescription')
+    .lean();
+
+  const topViewedProducts = topProductsAgg
+    .map((item) => {
+      const product = products.find((p) => p._id.toString() === item._id.toString());
+      if (!product) return null;
+      return {
+        id: product._id.toString(),
+        name: product.name,
+        image: product.images?.[0]?.url || '',
+        slug: product.slug,
+        shortDescription: product.shortDescription || '',
+        views: item.views,
+        visitors: item.visitors.length,
+      };
+    })
+    .filter(Boolean);
+
+  const report = {
+    stats: {
+      totalViews,
+      uniqueVisitors,
+      totalProductViews,
+      viewsToday,
+    },
+    timeline: timelinePoints,
+    topPages,
+    topViewedProducts,
+  };
+
+  // Cache website analytics for 3 minutes
+  await redisConnection.setex(cacheKey, 180, JSON.stringify(report));
+
+  return report;
 }

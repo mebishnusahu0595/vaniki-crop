@@ -509,3 +509,40 @@ export interface PaymentSummary {
   totalFailed: number;
   totalRefunded: number;
 }
+
+export interface WebsiteReportingStats {
+  totalViews: number;
+  uniqueVisitors: number;
+  totalProductViews: number;
+  viewsToday: number;
+}
+
+export interface WebsiteReportingTimelinePoint {
+  date: string;
+  views: number;
+  visitors: number;
+}
+
+export interface WebsiteReportingTopPage {
+  url: string;
+  views: number;
+  visitors: number;
+}
+
+export interface WebsiteReportingTopProduct {
+  id: string;
+  name: string;
+  image: string;
+  slug: string;
+  shortDescription: string;
+  views: number;
+  visitors: number;
+}
+
+export interface WebsiteReporting {
+  stats: WebsiteReportingStats;
+  timeline: WebsiteReportingTimelinePoint[];
+  topPages: WebsiteReportingTopPage[];
+  topViewedProducts: WebsiteReportingTopProduct[];
+}
+

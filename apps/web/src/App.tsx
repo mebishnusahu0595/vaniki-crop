@@ -253,9 +253,31 @@ const AnimatedRoutes = () => {
   );
 };
 
+const AnalyticsTracker: React.FC = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let visitorId = localStorage.getItem('vaniki_visitor_id');
+    if (!visitorId) {
+      visitorId = 'visitor_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('vaniki_visitor_id', visitorId);
+    }
+
+    storefrontApi.recordPageView({
+      url: location.pathname + location.search,
+      visitorId,
+    });
+  }, [location.pathname, location.search]);
+
+  return null;
+};
+
 const App: React.FC = () => {
   return (
     <Router>
+      <AnalyticsTracker />
       <ScrollToTop />
       <SmoothScroll />
       <RefreshScrollTriggersOnRouteChange />

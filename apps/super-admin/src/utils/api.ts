@@ -26,6 +26,7 @@ import type {
   StaffMember,
   Testimonial,
   DealerPromotion,
+  WebsiteReporting,
 } from '../types/admin';
 
 export interface ApiResponse<T, TSummary = PaymentSummary> {
@@ -275,6 +276,10 @@ export const adminApi = {
   },
   analytics: async (range: '30d' | '60d' | '90d') => {
     const response = await api.get<ApiResponse<DashboardAnalytics>>('/superadmin/analytics', { params: { range } });
+    return response.data.data;
+  },
+  websiteReporting: async (): Promise<WebsiteReporting> => {
+    const response = await api.get<ApiResponse<WebsiteReporting>>('/analytics/website-reporting');
     return response.data.data;
   },
   search: async (q: string): Promise<AdminSearchResults> => {

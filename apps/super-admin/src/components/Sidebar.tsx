@@ -21,6 +21,7 @@ import {
   FileText,
   Megaphone,
   Award,
+  LineChart,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink } from 'react-router-dom';
@@ -35,6 +36,7 @@ interface SidebarNavItem {
 
 const navItems: SidebarNavItem[] = [
   { to: '/dashboard', label: 'Global Analytics', icon: Home },
+  { to: '/analytics', label: 'Website Traffic', icon: LineChart },
   { to: '/stores', label: 'All Stores', icon: Boxes },
   { to: '/admins', label: 'All Admins', icon: Users },
   { to: '/product-requests', label: 'Product Requests', icon: ClipboardList },

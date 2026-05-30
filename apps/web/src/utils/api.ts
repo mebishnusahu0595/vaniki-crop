@@ -396,6 +396,14 @@ export const storefrontApi = {
     const response = await api.get<ApiResponse<{ loyaltyPoints: number; checkInHistory: string[]; lastCheckIn?: string }>>('/loyalty/data');
     return response.data.data;
   },
+  recordPageView: async (payload: { url: string; visitorId: string }) => {
+    try {
+      const response = await api.post('/analytics/pageview', payload);
+      return response.data;
+    } catch (e) {
+      console.error('Analytics pageview error:', e);
+    }
+  },
 };
 
 export default api;
