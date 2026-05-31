@@ -1,0 +1,29 @@
+# Vaniki Crop Science
+
+> Vaniki Crop Science is India's leading digital platform for premium crop protection, agro-chemicals, and essential farm products. Offering direct delivery from local stores with dynamic routing, professional agronomy advice, and verified insecticides, fungicides, herbicides, and bio pesticides.
+
+## Core Navigation
+* [Storefront Home](https://vanikicrop.com/) - Main web storefront.
+* [All Products](https://vanikicrop.com/products) - Filterable catalog of all crop protection variants.
+* [Product Categories](https://vanikicrop.com/categories) - High-level chemical and biological categories.
+* [About Us](https://vanikicrop.com/about) - Vaniki's mission to support agriculture.
+* [Contact Us](https://vanikicrop.com/contact) - Contact form and agronomist support line.
+* [Store Policies](https://vanikicrop.com/policies) - Shipping rates, delivery radius, and refund policies.
+* [Terms of Sale](https://vanikicrop.com/terms) - Retail conditions and statutory compliances.
+
+## Crop Protection Categories
+* [Insecticides](https://vanikicrop.com/products?category=insecticides) - Systemic and contact solutions for control of sucking and chewing pests.
+* [Herbicides](https://vanikicrop.com/products?category=herbicides) - Selective and non-selective weed control solutions.
+* [Fungicides](https://vanikicrop.com/products?category=fungicides) - Preventive and curative disease control for blight, mildew, and rot.
+* [Bio Pesticides](https://vanikicrop.com/products?category=bio-pesticides) - Eco-friendly, low-residue pest repellents suitable for sustainable farming.
+
+## Featured Catalog Summary
+* [Imidacloprid 17.8% SL](https://vanikicrop.com/product/imidacloprid-17-8-sl-insecticide) - Systemic insecticide for cotton, paddy, and pulses. Controls aphids, whiteflies, and jassids.
+* [Chlorpyrifos 20% EC](https://vanikicrop.com/product/chlorpyrifos-20-ec) - Termite and soil stem-borer contact stomach insecticide.
+* [Mancozeb 75% WP](https://vanikicrop.com/product/mancozeb-75-wp-fungicide) - Protective broad-spectrum preventive fungicide for leaf spots and mildews.
+* [Metalaxyl + Mancozeb](https://vanikicrop.com/product/metalaxyl-mancozeb-fungicide) - Nursery damping-off and downy mildew systemic/contact dual-mode formulation.
+* [Glyphosate 41% SL](https://vanikicrop.com/product/glyphosate-41-sl-herbicide) - Non-selective herbicide for broad weed control in bunds and non-crop lines.
+* [Neem Oil 3000 PPM](https://vanikicrop.com/product/neem-oil-3000-ppm-bio-pesticide) - Botanical pest repellent for Integrated Pest Management (IPM).
+
+## LLM Search Mirror
+* [LLM Full Database Mirror](https://vanikicrop.com/llms-full.txt) - The complete markdown database containing the full catalog, active ingredients, dosage rates, package listings, and agronomy FAQs.

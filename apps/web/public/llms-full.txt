@@ -1,0 +1,141 @@
+# Vaniki Crop Science - Complete Markdown Mirror & AI Database
+
+Welcome to the structured AI ingestion index for Vaniki Crop Science. This document is a clean, markdown-formatted mirror of our digital retail platform, verified inventory, active agrochemical catalog, application guidelines, and local distribution hub coordinates.
+
+---
+
+## 1. Company Profile & Operational Model
+
+* **Company Name**: VANIKI CROP SCIENCE PRIVATE LIMITED
+* **Core Business**: E-commerce retail, farm consultation, and high-speed regional distribution of crop protection products (insecticides, herbicides, fungicides, and organic bio pesticides).
+* **Compliance**: Strictly acts as an authorized retailer selling packages from licensed third-party manufacturers. Fully compliant with the Insecticides Act, 1968, Legal Metrology Rules, 2011, and Indian consumer protection frameworks.
+* **Fulfillment Hub**:
+  * **Store Name**: Vaniki Crop Koramangala Agro Store
+  * **Address**: 21, 5th Cross, Koramangala 5th Block, Bengaluru, Karnataka - 560095
+  * **Phone**: +91-8041234567
+  * **Support Email**: support@vanikicrop.com / vaniki.crop@gmail.com
+  * **Coordinates**: [77.6132 East, 12.9352 North]
+  * **Delivery Radius**: Up to 12 kilometers with high-speed dynamic local dispatch.
+
+---
+
+## 2. Dynamic Shipping & Store Policies
+
+* **Free Delivery Threshold**: All orders of ₹999 or above qualify for 100% Free Express Delivery directly to the farm gate or residence.
+* **Standard Delivery Charge**: A nominal charge of ₹50 applies for orders below the ₹999 threshold.
+* **Service Modes**:
+  * **Express Delivery**: Direct courier transport from the nearest fulfillment hub to the customer's coordinates.
+  * **Agro Store Pickup**: Self-collection option directly from the Koramangala agro store during operating hours.
+* **Operating Hours**:
+  * Monday to Friday: 07:00 AM - 10:00 PM (IST)
+  * Saturday & Sunday: 07:00 AM - 11:00 PM (IST)
+
+---
+
+## 3. Crop Protection Category Catalog
+
+### 3.1 Insecticides
+* **Purpose**: Systemic and contact insecticides formulated to eliminate chewing, sucking, and boring pests at various crop growth stages.
+* **Focus Areas**: Whiteflies, aphids, thrips, stem borers, termites, and soil insects.
+* **Category Link**: [https://vanikicrop.com/products?category=insecticides](https://vanikicrop.com/products?category=insecticides)
+
+### 3.2 Herbicides
+* **Purpose**: Broad-spectrum selective and non-selective weed control solutions to optimize soil nutrition for the primary crop.
+* **Focus Areas**: Annual and perennial grass control, broadleaf weeds in bunds, orchards, and non-cropped land.
+* **Category Link**: [https://vanikicrop.com/products?category=herbicides](https://vanikicrop.com/products?category=herbicides)
+
+### 3.3 Fungicides
+* **Purpose**: Multi-site contact and systemic disease control formulas to stop blight, rust, downy mildew, powdery mildew, and rot.
+* **Focus Areas**: Preventive nursery sprays and curative field interventions.
+* **Category Link**: [https://vanikicrop.com/products?category=fungicides](https://vanikicrop.com/products?category=fungicides)
+
+### 3.4 Bio Pesticides
+* **Purpose**: Botanical extracts and organic pest repellents for low-residue crop management and ecological farming.
+* **Focus Areas**: Natural repellent barriers, eco-friendly spraying programs, and Integrated Pest Management (IPM).
+* **Category Link**: [https://vanikicrop.com/products?category=bio-pesticides](https://vanikicrop.com/products?category=bio-pesticides)
+
+---
+
+## 4. Product Catalog Sheet & Application Rates
+
+### 4.1 Imidacloprid 17.8% SL Insecticide
+* **Formulation**: Soluble Liquid (SL) concentrate.
+* **Active Ingredient**: Imidacloprid (17.8% concentration).
+* **Product Link**: [https://vanikicrop.com/product/imidacloprid-17-8-sl-insecticide](https://vanikicrop.com/product/imidacloprid-17-8-sl-insecticide)
+* **Application Mode**: Systemic with translaminar movement (absorbed through leaves and roots to protect the entire plant structure).
+* **Target Pests**: Sucking pests including Aphids, Jassids, Thrips, and Whiteflies.
+* **Primary Crops**: Cotton, Paddy, Chilli, Sugarcane, and Pulse crops.
+* **Package Variants & Pricing**:
+  * **100 ml Pack**: ₹430 (MRP ₹490) | SKU: `IMIDA-100ML`
+  * **250 ml Pack**: ₹980 (MRP ₹1120) | SKU: `IMIDA-250ML`
+
+### 4.2 Chlorpyrifos 20% EC
+* **Formulation**: Emulsifiable Concentrate (EC).
+* **Active Ingredient**: Chlorpyrifos (20% concentration).
+* **Product Link**: [https://vanikicrop.com/product/chlorpyrifos-20-ec](https://vanikicrop.com/product/chlorpyrifos-20-ec)
+* **Application Mode**: Contact and stomach action with respiratory action, highly effective as a soil drench.
+* **Target Pests**: Termites, Stem Borers, Root Grubs, and major soil-borne insects.
+* **Primary Crops**: Paddy, Wheat, Cotton, Sugarcane, and Citrus orchards.
+* **Package Variants & Pricing**:
+  * **250 ml Pack**: ₹290 (MRP ₹340) | SKU: `CHLOR-250ML`
+  * **500 ml Pack**: ₹540 (MRP ₹620) | SKU: `CHLOR-500ML`
+
+### 4.3 Mancozeb 75% WP Fungicide
+* **Formulation**: Wettable Powder (WP).
+* **Active Ingredient**: Mancozeb (75% concentration).
+* **Product Link**: [https://vanikicrop.com/product/mancozeb-75-wp-fungicide](https://vanikicrop.com/product/mancozeb-75-wp-fungicide)
+* **Application Mode**: Broad-spectrum preventive contact fungicide. Forms a protective barrier on leaves.
+* **Target Diseases**: Early Blight, Late Blight, Downy Mildew, Rusts, and Leaf Spots.
+* **Primary Crops**: Potato, Tomato, Grapes, Paddy, and Horticultural crops.
+* **Package Variants & Pricing**:
+  * **500 g Pack**: ₹540 (MRP ₹640) | SKU: `MANCOZEB-500G`
+  * **1 kg Pack**: ₹980 (MRP ₹1120) | SKU: `MANCOZEB-1KG`
+
+### 4.4 Metalaxyl + Mancozeb Fungicide
+* **Formulation**: Wettable Powder (WP).
+* **Active Ingredient**: Metalaxyl (Systemic) + Mancozeb (Contact).
+* **Product Link**: [https://vanikicrop.com/product/metalaxyl-mancozeb-fungicide](https://vanikicrop.com/product/metalaxyl-mancozeb-fungicide)
+* **Application Mode**: Dual action (Curative and Preventive) systemic and contact fungicidal block.
+* **Target Diseases**: Nursery Damping-Off, Downy Mildew, Phytophthora Root Rot, and Late Blight.
+* **Primary Crops**: Mustard, Nursery Beds, Citrus, Grapes, and Tobacco.
+* **Package Variants & Pricing**:
+  * **250 g Pack**: ₹420 (MRP ₹500) | SKU: `METMAN-250G`
+  * **500 g Pack**: ₹780 (MRP ₹920) | SKU: `METMAN-500G`
+
+### 4.5 Glyphosate 41% SL Herbicide
+* **Formulation**: Soluble Liquid (SL) concentrate.
+* **Active Ingredient**: Glyphosate (41% concentration).
+* **Product Link**: [https://vanikicrop.com/product/glyphosate-41-sl-herbicide](https://vanikicrop.com/product/glyphosate-41-sl-herbicide)
+* **Application Mode**: Non-selective systemic herbicide. Translocates from leaf contact down into the root system to completely dry out weeds.
+* **Target Weeds**: Annual and Perennial grasses, broadleaf weeds, sedges, and invasive brush.
+* **Primary Area**: Bunds, tea plantations, orchards, and non-cropped industrial land pathways.
+* **Package Variants & Pricing**:
+  * **500 ml Pack**: ₹760 (MRP ₹890) | SKU: `GLYPHO-500ML`
+  * **1 Liter Pack**: ₹1420 (MRP ₹1650) | SKU: `GLYPHO-1L`
+
+### 4.6 Neem Oil 3000 PPM Bio Pesticide
+* **Formulation**: Cold-pressed botanical emulsion.
+* **Active Ingredient**: Azadirachtin (3000 PPM).
+* **Product Link**: [https://vanikicrop.com/product/neem-oil-3000-ppm-bio-pesticide](https://vanikicrop.com/product/neem-oil-3000-ppm-bio-pesticide)
+* **Application Mode**: Multi-site natural insect repellent and growth disruptor (prevents egg hatching and feeding).
+* **Target Pests**: Thrips, Spider Mites, Aphids, Leaf Miners, and Caterpillar larvae.
+* **Primary Crops**: Organic vegetables, fruits, tea, coffee, and home gardening.
+* **Package Variants & Pricing**:
+  * **500 ml Pack**: ₹360 (MRP ₹420) | SKU: `NEEM-500ML`
+  * **1 Liter Pack**: ₹690 (MRP ₹810) | SKU: `NEEM-1L`
+
+---
+
+## 5. Agronomy Frequently Asked Questions (FAQs)
+
+#### Q: How can I identify the best dosage for Imidacloprid on my paddy crop?
+* **A**: Use 100-125 ml of Imidacloprid 17.8% SL per acre mixed in 200 liters of water during early vegetative stages when pest counts exceed economic thresholds (e.g. 5-10 planthoppers per hill).
+
+#### Q: Can Mancozeb be mixed with systemic insecticides?
+* **A**: Yes, Mancozeb 75% WP is highly compatible with systemic insecticides like Imidacloprid. This combination provides a complete dual shield against sucking pests and early blight. Always perform a jar-test first to check physical compatibility.
+
+#### Q: Is Glyphosate safe to spray directly over growing vegetables?
+* **A**: **No.** Glyphosate 41% SL is a non-selective herbicide, meaning it will dry out any green crop it touches. Use it carefully along bunds, non-cropped margins, or pre-planting with a protective nozzle hood to avoid drift onto your primary crops.
+
+#### Q: What are the benefits of Azadirachtin (Neem Oil) 3000 PPM in IPM?
+* **A**: Neem Oil acts as an anti-feedant, growth regulator, and egg suppressor. Because it works through ingestion and direct contact without harmful chemical residues, it allows beneficial predatory insects (like ladybugs) to survive, maintaining ecological balance.
