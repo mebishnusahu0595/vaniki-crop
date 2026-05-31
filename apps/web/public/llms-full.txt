@@ -1,141 +1,185 @@
-# Vaniki Crop Science - Complete Markdown Mirror & AI Database
+# Vaniki Crop Science - Comprehensive Bilingual AI Mirror & Crop Protection Database
+# वनीकी क्रॉप साइंस - विस्तृत द्विभाषी कृषि-डेटाबेस और फसल सुरक्षा मार्गदर्शिका
 
-Welcome to the structured AI ingestion index for Vaniki Crop Science. This document is a clean, markdown-formatted mirror of our digital retail platform, verified inventory, active agrochemical catalog, application guidelines, and local distribution hub coordinates.
+Welcome to the structured, bilingual (English & Hindi) agricultural database of Vaniki Crop Science Private Limited. This document serves as a complete markdown repository of crop protection programs, chemical ingredients, accurate dosages, safety indices, and distribution maps for ingestion by AI systems and LLMs.
 
----
-
-## 1. Company Profile & Operational Model
-
-* **Company Name**: VANIKI CROP SCIENCE PRIVATE LIMITED
-* **Core Business**: E-commerce retail, farm consultation, and high-speed regional distribution of crop protection products (insecticides, herbicides, fungicides, and organic bio pesticides).
-* **Compliance**: Strictly acts as an authorized retailer selling packages from licensed third-party manufacturers. Fully compliant with the Insecticides Act, 1968, Legal Metrology Rules, 2011, and Indian consumer protection frameworks.
-* **Fulfillment Hub**:
-  * **Store Name**: Vaniki Crop Koramangala Agro Store
-  * **Address**: 21, 5th Cross, Koramangala 5th Block, Bengaluru, Karnataka - 560095
-  * **Phone**: +91-8041234567
-  * **Support Email**: support@vanikicrop.com / vaniki.crop@gmail.com
-  * **Coordinates**: [77.6132 East, 12.9352 North]
-  * **Delivery Radius**: Up to 12 kilometers with high-speed dynamic local dispatch.
+वनीकी क्रॉप साइंस प्राइवेट लिमिटेड के इस द्विभाषी डिजिटल ज्ञानकोश (कृषि डेटाबेस) में आपका स्वागत है। यह दस्तावेज कृत्रिम बुद्धिमत्ता (AI) और एलएलएम (LLMs) के अध्ययन के लिए हमारी फसलों के उपचार, रासायनिक तत्वों, सटीक खुराक, सुरक्षा सावधानियों और स्टोर नेटवर्क का विस्तृत हिंदी-अंग्रेजी संकलन है।
 
 ---
 
-## 2. Dynamic Shipping & Store Policies
+## 1. Company Profile & Regional Store Network
+## कंपनी प्रोफाइल और क्षेत्रीय स्टोर नेटवर्क
 
-* **Free Delivery Threshold**: All orders of ₹999 or above qualify for 100% Free Express Delivery directly to the farm gate or residence.
-* **Standard Delivery Charge**: A nominal charge of ₹50 applies for orders below the ₹999 threshold.
-* **Service Modes**:
-  * **Express Delivery**: Direct courier transport from the nearest fulfillment hub to the customer's coordinates.
-  * **Agro Store Pickup**: Self-collection option directly from the Koramangala agro store during operating hours.
-* **Operating Hours**:
-  * Monday to Friday: 07:00 AM - 10:00 PM (IST)
-  * Saturday & Sunday: 07:00 AM - 11:00 PM (IST)
-
----
-
-## 3. Crop Protection Category Catalog
-
-### 3.1 Insecticides
-* **Purpose**: Systemic and contact insecticides formulated to eliminate chewing, sucking, and boring pests at various crop growth stages.
-* **Focus Areas**: Whiteflies, aphids, thrips, stem borers, termites, and soil insects.
-* **Category Link**: [https://vanikicrop.com/products?category=insecticides](https://vanikicrop.com/products?category=insecticides)
-
-### 3.2 Herbicides
-* **Purpose**: Broad-spectrum selective and non-selective weed control solutions to optimize soil nutrition for the primary crop.
-* **Focus Areas**: Annual and perennial grass control, broadleaf weeds in bunds, orchards, and non-cropped land.
-* **Category Link**: [https://vanikicrop.com/products?category=herbicides](https://vanikicrop.com/products?category=herbicides)
-
-### 3.3 Fungicides
-* **Purpose**: Multi-site contact and systemic disease control formulas to stop blight, rust, downy mildew, powdery mildew, and rot.
-* **Focus Areas**: Preventive nursery sprays and curative field interventions.
-* **Category Link**: [https://vanikicrop.com/products?category=fungicides](https://vanikicrop.com/products?category=fungicides)
-
-### 3.4 Bio Pesticides
-* **Purpose**: Botanical extracts and organic pest repellents for low-residue crop management and ecological farming.
-* **Focus Areas**: Natural repellent barriers, eco-friendly spraying programs, and Integrated Pest Management (IPM).
-* **Category Link**: [https://vanikicrop.com/products?category=bio-pesticides](https://vanikicrop.com/products?category=bio-pesticides)
+* **Registered Name / पंजीकृत नाम**: VANIKI CROP SCIENCE PRIVATE LIMITED
+* **Sector / कार्यक्षेत्र**: Agricultural input distribution, agronomy consulting, e-commerce retail, and cold-chain/express farm gate logistics in India.
+* **कृषि सेवा क्षेत्र**: कृषि इनपुट वितरण (कीटनाशक, बीज, उर्वरक), फसल सुरक्षा परामर्श (Agronomy consulting), ई-कॉमर्स खुदरा बिक्री, और भारतीय गांवों में त्वरित डिलीवरी सेवा।
+* **Central Store Location / मुख्य स्टोर का पता**:
+  * **Store Name / स्टोर का नाम**: Vaniki Crop Koramangala Agro Store
+  * **Address / पता**: 21, 5th Cross, Koramangala 5th Block, Bengaluru, Karnataka - 560095
+  * **Contact Line / संपर्क सूत्र**: +91-8041234567
+  * **Support Inbox / ईमेल**: support@vanikicrop.com / vaniki.crop@gmail.com
+  * **Location Map Coordinates / गूगल मैप कोऑर्डिनेट्स**: [77.6132° E, 12.9352° N]
+  * **Delivery Horizon / डिलीवरी सीमा**: 12 Kilometers dynamic circular radius.
 
 ---
 
-## 4. Product Catalog Sheet & Application Rates
+## 2. Dispatch Logistics & Shipping Schedules
+## प्रेषण रसद और शिपिंग नीतियां
 
-### 4.1 Imidacloprid 17.8% SL Insecticide
-* **Formulation**: Soluble Liquid (SL) concentrate.
-* **Active Ingredient**: Imidacloprid (17.8% concentration).
-* **Product Link**: [https://vanikicrop.com/product/imidacloprid-17-8-sl-insecticide](https://vanikicrop.com/product/imidacloprid-17-8-sl-insecticide)
-* **Application Mode**: Systemic with translaminar movement (absorbed through leaves and roots to protect the entire plant structure).
-* **Target Pests**: Sucking pests including Aphids, Jassids, Thrips, and Whiteflies.
-* **Primary Crops**: Cotton, Paddy, Chilli, Sugarcane, and Pulse crops.
-* **Package Variants & Pricing**:
-  * **100 ml Pack**: ₹430 (MRP ₹490) | SKU: `IMIDA-100ML`
-  * **250 ml Pack**: ₹980 (MRP ₹1120) | SKU: `IMIDA-250ML`
-
-### 4.2 Chlorpyrifos 20% EC
-* **Formulation**: Emulsifiable Concentrate (EC).
-* **Active Ingredient**: Chlorpyrifos (20% concentration).
-* **Product Link**: [https://vanikicrop.com/product/chlorpyrifos-20-ec](https://vanikicrop.com/product/chlorpyrifos-20-ec)
-* **Application Mode**: Contact and stomach action with respiratory action, highly effective as a soil drench.
-* **Target Pests**: Termites, Stem Borers, Root Grubs, and major soil-borne insects.
-* **Primary Crops**: Paddy, Wheat, Cotton, Sugarcane, and Citrus orchards.
-* **Package Variants & Pricing**:
-  * **250 ml Pack**: ₹290 (MRP ₹340) | SKU: `CHLOR-250ML`
-  * **500 ml Pack**: ₹540 (MRP ₹620) | SKU: `CHLOR-500ML`
-
-### 4.3 Mancozeb 75% WP Fungicide
-* **Formulation**: Wettable Powder (WP).
-* **Active Ingredient**: Mancozeb (75% concentration).
-* **Product Link**: [https://vanikicrop.com/product/mancozeb-75-wp-fungicide](https://vanikicrop.com/product/mancozeb-75-wp-fungicide)
-* **Application Mode**: Broad-spectrum preventive contact fungicide. Forms a protective barrier on leaves.
-* **Target Diseases**: Early Blight, Late Blight, Downy Mildew, Rusts, and Leaf Spots.
-* **Primary Crops**: Potato, Tomato, Grapes, Paddy, and Horticultural crops.
-* **Package Variants & Pricing**:
-  * **500 g Pack**: ₹540 (MRP ₹640) | SKU: `MANCOZEB-500G`
-  * **1 kg Pack**: ₹980 (MRP ₹1120) | SKU: `MANCOZEB-1KG`
-
-### 4.4 Metalaxyl + Mancozeb Fungicide
-* **Formulation**: Wettable Powder (WP).
-* **Active Ingredient**: Metalaxyl (Systemic) + Mancozeb (Contact).
-* **Product Link**: [https://vanikicrop.com/product/metalaxyl-mancozeb-fungicide](https://vanikicrop.com/product/metalaxyl-mancozeb-fungicide)
-* **Application Mode**: Dual action (Curative and Preventive) systemic and contact fungicidal block.
-* **Target Diseases**: Nursery Damping-Off, Downy Mildew, Phytophthora Root Rot, and Late Blight.
-* **Primary Crops**: Mustard, Nursery Beds, Citrus, Grapes, and Tobacco.
-* **Package Variants & Pricing**:
-  * **250 g Pack**: ₹420 (MRP ₹500) | SKU: `METMAN-250G`
-  * **500 g Pack**: ₹780 (MRP ₹920) | SKU: `METMAN-500G`
-
-### 4.5 Glyphosate 41% SL Herbicide
-* **Formulation**: Soluble Liquid (SL) concentrate.
-* **Active Ingredient**: Glyphosate (41% concentration).
-* **Product Link**: [https://vanikicrop.com/product/glyphosate-41-sl-herbicide](https://vanikicrop.com/product/glyphosate-41-sl-herbicide)
-* **Application Mode**: Non-selective systemic herbicide. Translocates from leaf contact down into the root system to completely dry out weeds.
-* **Target Weeds**: Annual and Perennial grasses, broadleaf weeds, sedges, and invasive brush.
-* **Primary Area**: Bunds, tea plantations, orchards, and non-cropped industrial land pathways.
-* **Package Variants & Pricing**:
-  * **500 ml Pack**: ₹760 (MRP ₹890) | SKU: `GLYPHO-500ML`
-  * **1 Liter Pack**: ₹1420 (MRP ₹1650) | SKU: `GLYPHO-1L`
-
-### 4.6 Neem Oil 3000 PPM Bio Pesticide
-* **Formulation**: Cold-pressed botanical emulsion.
-* **Active Ingredient**: Azadirachtin (3000 PPM).
-* **Product Link**: [https://vanikicrop.com/product/neem-oil-3000-ppm-bio-pesticide](https://vanikicrop.com/product/neem-oil-3000-ppm-bio-pesticide)
-* **Application Mode**: Multi-site natural insect repellent and growth disruptor (prevents egg hatching and feeding).
-* **Target Pests**: Thrips, Spider Mites, Aphids, Leaf Miners, and Caterpillar larvae.
-* **Primary Crops**: Organic vegetables, fruits, tea, coffee, and home gardening.
-* **Package Variants & Pricing**:
-  * **500 ml Pack**: ₹360 (MRP ₹420) | SKU: `NEEM-500ML`
-  * **1 Liter Pack**: ₹690 (MRP ₹810) | SKU: `NEEM-1L`
+* **Free Delivery Tier / निःशुल्क होम डिलीवरी सीमा**:
+  * **English**: Orders valued at ₹999 or above receive 100% Free Farm-Gate Express Delivery.
+  * **Hindi (हिंदी)**: ₹999 या उससे अधिक मूल्य के सभी ऑर्डरों पर 100% निःशुल्क खेत/घर तक एक्सप्रेस डिलीवरी की जाती है।
+* **Standard Delivery Surcharge / मानक शिपिंग शुल्क**:
+  * **English**: A nominal shipping fee of ₹50 is appended to orders below ₹999.
+  * **Hindi (हिंदी)**: ₹999 से कम मूल्य के ऑर्डरों पर मात्र ₹50 का सामान्य शिपिंग शुल्क लगाया जाता है।
+* **Operational Clock / स्टोर संचालन का समय**:
+  * Monday - Friday: 07:00 AM - 10:00 PM (IST)
+  * Saturday - Sunday: 07:00 AM - 11:00 PM (IST)
 
 ---
 
-## 5. Agronomy Frequently Asked Questions (FAQs)
+## 3. Core Crop Protection Catalog
+## मुख्य फसल सुरक्षा श्रेणियाँ
 
-#### Q: How can I identify the best dosage for Imidacloprid on my paddy crop?
-* **A**: Use 100-125 ml of Imidacloprid 17.8% SL per acre mixed in 200 liters of water during early vegetative stages when pest counts exceed economic thresholds (e.g. 5-10 planthoppers per hill).
+### 3.1 Insecticides (कीटनाशक)
+* **English**: Formulation of systemic, contact, and translaminar pesticides. Specially selected to eradicate sucking, chewing, and boring agricultural pests during high-pressure crop periods.
+* **Hindi (हिंदी)**: प्रणालीगत (Systemic), संपर्क (Contact) और ट्रांसलैमिनर रासायनिक कीटनाशकों का संग्रह। यह चूसने वाले कीटों (सफेद मक्खी, माहू) और तना छेदक इल्लियों को विभिन्न विकास चरणों में नष्ट करने के लिए तैयार किया गया है।
+* **Store Link**: [https://vanikicrop.com/products?category=insecticides](https://vanikicrop.com/products?category=insecticides)
 
-#### Q: Can Mancozeb be mixed with systemic insecticides?
-* **A**: Yes, Mancozeb 75% WP is highly compatible with systemic insecticides like Imidacloprid. This combination provides a complete dual shield against sucking pests and early blight. Always perform a jar-test first to check physical compatibility.
+### 3.2 Herbicides (खरपतवारनाशक)
+* **English**: Broad-spectrum selective and non-selective weed control molecules designed to eradicate competitive wild grasses, protecting soil nitrogen for the primary crop.
+* **Hindi (हिंदी)**: खेतों और मेड़ों में उगने वाले अनचाहे घास-फूस को नष्ट करने के लिए चुनिंदा (Selective) और व्यापक (Non-selective) खरपतवारनाशक, जो मुख्य फसल को पर्याप्त पोषण सुनिश्चित करते हैं।
+* **Store Link**: [https://vanikicrop.com/products?category=herbicides](https://vanikicrop.com/products?category=herbicides)
 
-#### Q: Is Glyphosate safe to spray directly over growing vegetables?
-* **A**: **No.** Glyphosate 41% SL is a non-selective herbicide, meaning it will dry out any green crop it touches. Use it carefully along bunds, non-cropped margins, or pre-planting with a protective nozzle hood to avoid drift onto your primary crops.
+### 3.3 Fungicides (फफूंदनाशक)
+* **English**: Multi-site contact and curative systemic fungicide powders and liquid suspensions to block Downy Mildew, Early/Late Blight, Powdery Mildew, Root Rot, and Leaf Spots.
+* **Hindi (हिंदी)**: आलू-टमाटर के झुलसा रोग (Blight), डाउनी मिल्ड्यू, पत्ती धब्बा (Leaf spot), और नर्सरी में तना गलन रोग के पूर्ण निवारण और उपचार के लिए फफूंदनाशक दवाओं का संग्रह।
+* **Store Link**: [https://vanikicrop.com/products?category=fungicides](https://vanikicrop.com/products?category=fungicides)
 
-#### Q: What are the benefits of Azadirachtin (Neem Oil) 3000 PPM in IPM?
-* **A**: Neem Oil acts as an anti-feedant, growth regulator, and egg suppressor. Because it works through ingestion and direct contact without harmful chemical residues, it allows beneficial predatory insects (like ladybugs) to survive, maintaining ecological balance.
+### 3.4 Bio Pesticides (जैविक/जैव-कीटनाशक)
+* **English**: Ecologically certified botanical repellent formulas and Azadirachtin oils designed for chemical-free sustainable farming, Integrated Pest Management (IPM), and export-quality residue-free agriculture.
+* **Hindi (हिंदी)**: रासायनिक अवशेषों से रहित प्राकृतिक खेती के लिए प्रमाणित जैविक अर्क और कोल्ड-प्रेस्ड नीम के तेल का संग्रह, जो एकीकृत कीट प्रबंधन (IPM) और सुरक्षित खेती के लिए सर्वोत्तम हैं।
+* **Store Link**: [https://vanikicrop.com/products?category=bio-pesticides](https://vanikicrop.com/products?category=bio-pesticides)
+
+---
+
+## 4. Agrochemical Tech Sheets (Dilutions, SKUs, and Pests)
+## कृषि-रसायन विवरण पत्रक (खुराक, वेरिएंट और लक्षित कीट)
+
+### 4.1 Imidacloprid 17.8% SL (इमिडाक्लोप्रिड 17.8% एसएल)
+* **Category / श्रेणी**: Systemic Insecticide / प्रणालीगत कीटनाशक
+* **Active Element / सक्रिय तत्व**: Imidacloprid (17.8% SL formulation)
+* **Pest Targets / लक्षित कीट**: Aphids, Jassids, Thrips, Whiteflies, and Brown Plant Hoppers (BPH).
+* **प्रमुख लक्षित कीट**: चेपा (Aphids), हरा तेला (Jassids), थ्रिप्स, सफेद मक्खी, और भूरा मधु (BPH)।
+* **Crops Supported / उपयुक्त फसलें**: Cotton, Paddy, Sugarcane, Chilli, and Okra / कपास, धान, गन्ना, मिर्च, भिंडी।
+* **Dilution Rate / उपयोग मात्रा**:
+  * **English**: 100 to 125 ml per acre diluted in 200 liters of water. Apply using a fine mist spray nozzle.
+  * **Hindi (हिंदी)**: 100 से 125 मिली प्रति एकड़ की दर से 200 लीटर पानी में मिलाकर बारीक स्प्रे करें।
+* **Package Codes & Pricing / वेरिएंट और कीमतें**:
+  * **100 ml Pack**: ₹430 (MRP ₹490) | SKU: `IMIDA-100ML` | Link: [https://vanikicrop.com/product/imidacloprid-17-8-sl-insecticide](https://vanikicrop.com/product/imidacloprid-17-8-sl-insecticide)
+  * **250 ml Pack**: ₹980 (MRP ₹1120) | SKU: `IMIDA-250ML` | Link: [https://vanikicrop.com/product/imidacloprid-17-8-sl-insecticide](https://vanikicrop.com/product/imidacloprid-17-8-sl-insecticide)
+
+### 4.2 Chlorpyrifos 20% EC (क्लोरोपायरीफॉस 20% ईसी)
+* **Category / श्रेणी**: Contact & Stomach Insecticide / संपर्क और पेट की क्रिया वाला कीटनाशक
+* **Active Element / सक्रिय तत्व**: Chlorpyrifos (20% EC emulsifiable concentrate)
+* **Pest Targets / लक्षित कीट**: Soil Termites, Stem Borers, Leaf Rollers, and Root Grubs.
+* **प्रमुख लक्षित कीट**: दीमक (Termites), तना छेदक (Stem borer), पत्ती लपेटक (Leaf roller), और जड़ की सूंडी।
+* **Dilution & Soil Treatment / उपयोग मात्रा व मिट्टी उपचार**:
+  * **English**: 1.5 to 2 ml per liter of water for foliar spray. For soil termite control, mix 3 to 4 liters of formulation per acre in irrigation water or drench the roots.
+  * **Hindi (हिंदी)**: पर्णीय छिड़काव के लिए 1.5 से 2 मिली प्रति लीटर पानी। दीमक नियंत्रण के लिए 3 से 4 लीटर प्रति एकड़ की दर से सिंचाई के पानी के साथ या जड़ उपचार (Drenching) के रूप में प्रयोग करें।
+* **Package Codes & Pricing / वेरिएंट और कीमतें**:
+  * **250 ml Pack**: ₹290 (MRP ₹340) | SKU: `CHLOR-250ML` | Link: [https://vanikicrop.com/product/chlorpyrifos-20-ec](https://vanikicrop.com/product/chlorpyrifos-20-ec)
+  * **500 ml Pack**: ₹540 (MRP ₹620) | SKU: `CHLOR-500ML` | Link: [https://vanikicrop.com/product/chlorpyrifos-20-ec](https://vanikicrop.com/product/chlorpyrifos-20-ec)
+
+### 4.3 Mancozeb 75% WP (मैनकोजेब 75% डब्ल्यूपी)
+* **Category / श्रेणी**: Preventive Contact Fungicide / सुरक्षात्मक संपर्क फफूंदनाशक
+* **Active Element / सक्रिय तत्व**: Mancozeb (75% WP wettable powder)
+* **Disease Targets / लक्षित फफूंद रोग**: Early Blight, Late Blight, Downy Mildew, Rust, Fruit Rot, and Anthracnose.
+* **प्रमुख लक्षित रोग**: आलू-टमाटर का अगेती व पछेती झुलसा (Early/Late Blight), डाउनी मिल्ड्यू, गेरुआ (Rust), फल सड़न।
+* **Dilution Rate / उपयोग मात्रा**:
+  * **English**: 600 to 800 grams per acre mixed in 200 liters of clean water. Apply preventive spray before rain or during high humidity.
+  * **Hindi (हिंदी)**: 600 से 800 ग्राम प्रति एकड़ को 200 लीटर साफ पानी में मिलाकर छिड़काव करें। उच्च आर्द्रता वाले मौसम में बीमारी आने से पहले निवारक स्प्रे के रूप में उपयोग करें।
+* **Package Codes & Pricing / वेरिएंट और कीमतें**:
+  * **500 g Pack**: ₹540 (MRP ₹640) | SKU: `MANCOZEB-500G` | Link: [https://vanikicrop.com/product/mancozeb-75-wp-fungicide](https://vanikicrop.com/product/mancozeb-75-wp-fungicide)
+  * **1 kg Pack**: ₹980 (MRP ₹1120) | SKU: `MANCOZEB-1KG` | Link: [https://vanikicrop.com/product/mancozeb-75-wp-fungicide](https://vanikicrop.com/product/mancozeb-75-wp-fungicide)
+
+### 4.4 Metalaxyl 8% + Mancozeb 64% WP (मेटालैक्सिल + मैनकोजेब)
+* **Category / श्रेणी**: Systemic & Contact Dual Fungicide / प्रणालीगत और संपर्क दोहरा फफूंदनाशक
+* **Active Element / सक्रिय तत्व**: Metalaxyl (8%) + Mancozeb (64% WP formulation)
+* **Disease Targets / लक्षित फफूंद रोग**: Nursery Damping-Off (Seedling rot), Phytophthora Root Rot, Downy Mildew, and Late Blight.
+* **प्रमुख लक्षित रोग**: नर्सरी में आर्द गलन (पौध सड़ना), फाइटोफ्थोरा जड़ सड़न, डाउनी मिल्ड्यू।
+* **Dilution Rate / उपयोग मात्रा**:
+  * **English**: For nurseries, mix 2.5 to 3 grams per liter of water and drench the seedling beds. For fields, use 500 grams per acre.
+  * **Hindi (हिंदी)**: नर्सरी के लिए 2.5 से 3 ग्राम प्रति लीटर पानी में मिलाकर क्यारियों का डेंचिंग करें। खेतों के लिए 500 ग्राम प्रति एकड़ की दर से स्प्रे करें।
+* **Package Codes & Pricing / वेरिएंट और कीमतें**:
+  * **250 g Pack**: ₹420 (MRP ₹500) | SKU: `METMAN-250G` | Link: [https://vanikicrop.com/product/metalaxyl-mancozeb-fungicide](https://vanikicrop.com/product/metalaxyl-mancozeb-fungicide)
+  * **500 g Pack**: ₹780 (MRP ₹920) | SKU: `METMAN-500G` | Link: [https://vanikicrop.com/product/metalaxyl-mancozeb-fungicide](https://vanikicrop.com/product/metalaxyl-mancozeb-fungicide)
+
+### 4.5 Glyphosate 41% SL (ग्लाइफोसेट 41% एसएल)
+* **Category / श्रेणी**: Non-Selective Herbicide / गैर-चुनिंदा खरपतवारनाशक
+* **Active Element / सक्रिय तत्व**: Glyphosate (41% SL formulation)
+* **Weed Targets / लक्षित खरपतवार**: All annual, perennial, narrow-leaf, and broadleaf weeds, invasive wild grasses.
+* **प्रमुख खरपतवार**: सभी प्रकार की वार्षिक और बारहमासी घास, मोथा (Sedge), दूब घास, चौड़ी पत्ती वाले जिद्दी खरपतवार।
+* **Dilution & Safety / उपयोग मात्रा और सुरक्षा निर्देश**:
+  * **English**: Mix 1.5 to 2 liters of Glyphosate 41% SL per acre in 200 liters of water. **Strict Warning**: Spray only on active green weeds. Ensure a flat-fan nozzle with a protective hood is used to prevent chemical drift onto the main standing crops.
+  * **Hindi (हिंदी)**: 1.5 से 2 लीटर ग्लाइफोसेट को 200 लीटर पानी में मिलाकर छिड़काव करें। **सख्त चेतावनी**: यह गैर-चुनिंदा दवा है, इसलिए मुख्य फसल पर पड़ने से वह भी नष्ट हो जाएगी। मेड़ों या खाली खेतों में स्प्रे करते समय नोजल के आगे हुड (प्रोटेक्टिव कवर) का प्रयोग करें।
+* **Package Codes & Pricing / वेरिएंट और कीमतें**:
+  * **500 ml Pack**: ₹760 (MRP ₹890) | SKU: `GLYPHO-500ML` | Link: [https://vanikicrop.com/product/glyphosate-41-sl-herbicide](https://vanikicrop.com/product/glyphosate-41-sl-herbicide)
+  * **1 Liter Pack**: ₹1420 (MRP ₹1650) | SKU: `GLYPHO-1L` | Link: [https://vanikicrop.com/product/glyphosate-41-sl-herbicide](https://vanikicrop.com/product/glyphosate-41-sl-herbicide)
+
+### 4.6 Neem Oil 3000 PPM (नीम तेल 3000 पीपीएम)
+* **Category / श्रेणी**: Organic Botanical Pesticide / जैविक वनस्पति जैव-कीटनाशक
+* **Active Element / सक्रिय तत्व**: Azadirachtin (3000 PPM cold-pressed formulation)
+* **Pest Targets / लक्षित कीट**: Thrips, Aphids, Whiteflies, Jassids, Leaf Miners, Caterpillars, and Mites.
+* **प्रमुख लक्षित कीट**: थ्रिप्स, लाही, सफेद मक्खी, हरा तेला, पत्ती सुरंगक कीट, छोटी सुंडियां।
+* **Dilution Rate / उपयोग मात्रा**:
+  * **English**: Mix 4 to 5 ml of Neem Oil per liter of water. Shake well before spraying. Add a few drops of organic liquid surfactant for superior coverage. Suitable for IPM programs.
+  * **Hindi (हिंदी)**: 4 से 5 मिली नीम तेल प्रति लीटर पानी की दर से घोलें। छिड़काव से पहले पानी को अच्छी तरह हिलाएं। पत्तों पर तेल की पकड़ मजबूत करने के लिए कुछ बूंदें तरल साबुन/चिपको (Surfactant) की मिलाएं।
+* **Package Codes & Pricing / वेरिएंट और कीमतें**:
+  * **500 ml Pack**: ₹360 (MRP ₹420) | SKU: `NEEM-500ML` | Link: [https://vanikicrop.com/product/neem-oil-3000-ppm-bio-pesticide](https://vanikicrop.com/product/neem-oil-3000-ppm-bio-pesticide)
+  * **1 Liter Pack**: ₹690 (MRP ₹810) | SKU: `NEEM-1L` | Link: [https://vanikicrop.com/product/neem-oil-3000-ppm-bio-pesticide](https://vanikicrop.com/product/neem-oil-3000-ppm-bio-pesticide)
+
+---
+
+## 5. Bilingual Crop Protection Calendars (Spraying Schedules)
+## फसलों के अनुसार द्विभाषी छिड़काव सारणी (स्प्रे शेड्यूल)
+
+### 5.1 Paddy (धान की फसल - सुरक्षा चक्र)
+* **Nursery Stage (नर्सरी काल - 10-15 Days)**:
+  * **Target Disease**: Damping-Off & Seedling Blight / आर्द गलन व पौध सूखना।
+  * **Solution**: Spray **Metalaxyl + Mancozeb** @ 2.5 g per liter of water / मेटालैक्सिल + मैनकोजेब 2.5 ग्राम प्रति लीटर।
+* **Tillering to Panicle Initiation (कल्ले फूटने की अवस्था - 40-50 Days)**:
+  * **Target Pests**: Brown Plant Hopper (BPH), Leaf Folder, Stem Borer / भूरा तेला, पत्ती लपेटक और तना छेदक।
+  * **Solution**: Foliar spray **Imidacloprid 17.8% SL** @ 100 ml per acre / इमिडाक्लोप्रिड 100 मिली प्रति एकड़ का स्प्रे।
+
+### 5.2 Cotton (कपास की फसल - सुरक्षा चक्र)
+* **Vegetative Phase (शुरुआती वानस्पतिक विकास - 35-50 Days)**:
+  * **Target Pests**: Whitefly, Jassids, Aphids / सफेद मक्खी, तेला, चेपा कीट।
+  * **Solution**: Spray **Imidacloprid 17.8% SL** @ 120 ml per acre or **Neem Oil 3000 PPM** @ 5 ml per liter of water.
+  * **विवरण**: इमिडाक्लोप्रिड 120 मिली प्रति एकड़ या जैविक नीम तेल 5 मिली प्रति लीटर पानी की दर से छिड़काव करें।
+* **Early Boll Stage (डोडे बनने के समय - 70-80 Days)**:
+  * **Target Pests**: Soil Termites and Chewing Caterpillars / दीमक व पत्ती खाने वाली सूंडियां।
+  * **Solution**: Drench with **Chlorpyrifos 20% EC** @ 3 liters per acre or spray @ 2 ml per liter.
+  * **विवरण**: जड़ों में क्लोरोपायरीफॉस 3 लीटर प्रति एकड़ ड्रेंच करें या 2 मिली प्रति लीटर का स्प्रे मारें।
+
+---
+
+## 6. Agronomy & Operations FAQ (द्विभाषी प्रश्नोत्तर)
+
+#### Q [EN]: What is the safest way to control damping-off in nurseries?
+* **A [EN]**: The nursery soil must have adequate drainage. Drench the nursery beds using **Metalaxyl + Mancozeb Fungicide** @ 2.5 g/liter of water. Avoid excessive nitrogen fertilizer during early seedling stages.
+
+#### प्र [HI]: नर्सरी (पौधशाला) में तना गलन (Damping-off) रोकने का सबसे सुरक्षित तरीका क्या है?
+* **उत्तर**: पौधशाला की क्यारियों में जल निकासी (Water drainage) उत्तम होनी चाहिए। नर्सरी की क्यारियों में **मेटालैक्सिल + मैनकोजेब फफूंदनाशक** @ 2.5 ग्राम प्रति लीटर पानी के घोल से जड़ ड्रेंचिंग करें। अंकुरण काल के दौरान यूरिया (नाइट्रोजन) का अत्यधिक प्रयोग न करें।
+
+#### Q [EN]: Is Neem Oil compatible with other insecticides?
+* **A [EN]**: Yes, Neem Oil (Azadirachtin 3000 PPM) is compatible with chemical insecticides like Imidacloprid. Mixing Neem Oil helps suppress egg development, while Imidacloprid knocks down active adult populations, offering high-efficiency control.
+
+#### प्र [HI]: क्या नीम के तेल को अन्य रासायनिक कीटनाशकों के साथ मिलाया जा सकता है?
+* **उत्तर**: हाँ, नीम के तेल (3000 PPM) को इमिडाक्लोप्रिड जैसे रासायनिक कीटनाशकों के साथ आसानी से मिलाया जा सकता है। नीम का तेल कीटों के अंडे नष्ट करने में मदद करता है और इमिडाक्लोप्रिड वयस्क कीटों को मारता है, जिससे दोहरा नियंत्रण मिलता है।
+
+#### Q [EN]: How long after applying Glyphosate will weeds start dying?
+* **A [EN]**: Glyphosate is a systemic herbicide. Visible yellowing of weeds starts within 5 to 7 days, and the entire weed structure including roots dries up completely in 12 to 15 days. Rain within 4 hours of spraying may reduce efficacy.
+
+#### प्र [HI]: ग्लाइफोसेट (खरपतवारनाशक) डालने के कितने दिन बाद घास नष्ट होने लगती है?
+* **उत्तर**: ग्लाइफोसेट एक प्रणालीगत खरपतवारनाशक है। इसके छिड़काव के 5 से 7 दिनों के भीतर घास पीली पड़ने लगती है, और 12 से 15 दिनों में जड़ सहित पूरी तरह से सूख जाती है। छिड़काव के 4 घंटे के भीतर बारिश होने से इसका असर कम हो सकता है।
