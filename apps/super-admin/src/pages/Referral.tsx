@@ -95,6 +95,7 @@ function StaffReferrals() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortByReferrals, setSortByReferrals] = useState<'default' | 'asc' | 'desc'>('default');
   
   const [showPassword, setShowPassword] = useState(false);
   
@@ -156,11 +157,19 @@ function StaffReferrals() {
     }
   });
 
-  const filteredStaff = staffQuery.data?.filter((s) => 
+  const rawStaff = staffQuery.data?.filter((s) => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.mobile.includes(searchTerm) ||
     s.referralCode.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+
+  const filteredStaff = [...rawStaff].sort((a, b) => {
+    const countA = a.referralCount ?? 0;
+    const countB = b.referralCount ?? 0;
+    if (sortByReferrals === 'asc') return countA - countB;
+    if (sortByReferrals === 'desc') return countB - countA;
+    return 0;
+  });
 
   if (staffQuery.isLoading) return <LoadingBlock label="Loading staff data..." />;
 
@@ -168,24 +177,39 @@ function StaffReferrals() {
     <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-500">
       {/* Staff List */}
       <div className="lg:col-span-1 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="relative flex-1 mr-2">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search staff..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500/20"
-            />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div className="relative flex-1 mr-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search staff..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500/20"
+              />
+            </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500 text-white shadow-lg shadow-primary-500/20 hover:bg-primary-600 shrink-0"
+              title="Add Staff"
+            >
+              <UserPlus size={18} />
+            </button>
           </div>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-500 text-white shadow-lg shadow-primary-500/20 hover:bg-primary-600"
-            title="Add Staff"
-          >
-            <UserPlus size={18} />
-          </button>
+
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Sort By Referrals:</span>
+            <select
+              value={sortByReferrals}
+              onChange={(e) => setSortByReferrals(e.target.value as 'default' | 'asc' | 'desc')}
+              className="rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            >
+              <option value="default">Default</option>
+              <option value="asc">Low to High</option>
+              <option value="desc">High to Low</option>
+            </select>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
