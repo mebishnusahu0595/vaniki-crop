@@ -73,7 +73,22 @@ export default function OrdersPage() {
   const [paymentStatus, setPaymentStatus] = useState('');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 350);
-  const today = new Date().toLocaleDateString('en-CA');
+  const formatDateToYYYYMMDD = (d: Date) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const parseYYYYMMDD = (str: string) => {
+    const parts = str.split('-').map(Number);
+    if (parts.length === 3) {
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    return new Date();
+  };
+
+  const today = formatDateToYYYYMMDD(new Date());
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -81,17 +96,17 @@ export default function OrdersPage() {
   const [note, setNote] = useState('');
 
   const handlePrevDay = () => {
-    const current = new Date(startDate);
+    const current = parseYYYYMMDD(startDate);
     current.setDate(current.getDate() - 1);
-    const dateStr = current.toLocaleDateString('en-CA');
+    const dateStr = formatDateToYYYYMMDD(current);
     setStartDate(dateStr);
     setEndDate(dateStr);
   };
 
   const handleNextDay = () => {
-    const current = new Date(startDate);
+    const current = parseYYYYMMDD(startDate);
     current.setDate(current.getDate() + 1);
-    const dateStr = current.toLocaleDateString('en-CA');
+    const dateStr = formatDateToYYYYMMDD(current);
     setStartDate(dateStr);
     setEndDate(dateStr);
   };
