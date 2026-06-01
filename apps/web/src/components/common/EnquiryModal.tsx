@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ClipboardList, Send, Loader2 } from 'lucide-react';
+import { X, ClipboardList, Send, Loader2, ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { storefrontApi } from '../../utils/api';
 import type { Category } from '../../types/storefront';
+import { cn } from '../../utils/cn';
 
 export const EnquiryModal: React.FC = () => {
   const { setShowLoyaltyModal } = useAuthStore();
@@ -14,6 +15,7 @@ export const EnquiryModal: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     // 1. Fetch categories
@@ -107,7 +109,7 @@ export const EnquiryModal: React.FC = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={handleDismiss}
-          className="absolute inset-0 bg-primary-900/45 backdrop-blur-md"
+          className="absolute inset-0 bg-emerald-950/60 backdrop-blur-sm"
         />
 
         {/* Modal Container */}
@@ -115,26 +117,26 @@ export const EnquiryModal: React.FC = () => {
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-primary-800 bg-[linear-gradient(135deg,_#113125,_#051510)] shadow-2xl text-white"
+          className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-emerald-800/40 bg-[linear-gradient(135deg,_#09261a,_#020b08)] shadow-2xl text-white"
         >
           {/* Header Banner */}
-          <div className="relative p-6 pb-4 flex flex-col items-center justify-center text-center border-b border-primary-800">
+          <div className="relative p-6 pb-4 flex flex-col items-center justify-center text-center border-b border-emerald-850/40">
             {/* Dismiss Button */}
             <button
               type="button"
               onClick={handleDismiss}
-              className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-primary-200 transition hover:bg-white/20 hover:text-white"
+              className="absolute right-4 top-4 rounded-full bg-white/5 p-2 text-emerald-200/80 transition hover:bg-white/10 hover:text-white"
               aria-label="Close modal"
             >
               <X size={18} />
             </button>
 
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-lg ring-4 ring-primary/10">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg ring-4 ring-emerald-500/20">
               <ClipboardList size={22} />
             </div>
             
             <h2 className="text-xl font-black tracking-wide text-white">Quick Enquiry</h2>
-            <p className="mt-1 text-xs font-semibold text-primary-200/70">
+            <p className="mt-1 text-xs font-semibold text-emerald-200/60">
               Share details so our agricultural experts can assist you better!
             </p>
           </div>
@@ -148,7 +150,7 @@ export const EnquiryModal: React.FC = () => {
             )}
 
             <div>
-              <label htmlFor="enquiry-name" className="block text-[10px] font-black uppercase tracking-[0.18em] text-primary-400 mb-1.5">
+              <label htmlFor="enquiry-name" className="block text-[10px] font-black uppercase tracking-[0.18em] text-emerald-400 mb-1.5">
                 Full Name
               </label>
               <input
@@ -158,12 +160,12 @@ export const EnquiryModal: React.FC = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your name"
-                className="w-full rounded-xl border border-primary-800 bg-primary-950/50 px-4 py-3 text-sm text-white placeholder-primary-200/30 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition"
+                className="w-full rounded-xl border border-emerald-800/40 bg-emerald-950/20 px-4 py-3 text-sm text-white placeholder-emerald-100/20 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
               />
             </div>
 
             <div>
-              <label htmlFor="enquiry-mobile" className="block text-[10px] font-black uppercase tracking-[0.18em] text-primary-400 mb-1.5">
+              <label htmlFor="enquiry-mobile" className="block text-[10px] font-black uppercase tracking-[0.18em] text-emerald-400 mb-1.5">
                 Mobile Number
               </label>
               <input
@@ -174,40 +176,65 @@ export const EnquiryModal: React.FC = () => {
                 value={mobile}
                 onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
                 placeholder="Enter 10-digit mobile number"
-                className="w-full rounded-xl border border-primary-800 bg-primary-950/50 px-4 py-3 text-sm text-white placeholder-primary-200/30 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition"
+                className="w-full rounded-xl border border-emerald-800/40 bg-emerald-950/20 px-4 py-3 text-sm text-white placeholder-emerald-100/20 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
               />
             </div>
 
             <div>
-              <label htmlFor="enquiry-category" className="block text-[10px] font-black uppercase tracking-[0.18em] text-primary-400 mb-1.5">
+              <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-emerald-400 mb-1.5">
                 Category
               </label>
-              <select
-                id="enquiry-category"
-                required
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full rounded-xl border border-primary-800 bg-primary-950 px-4 py-3 text-sm text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition cursor-pointer appearance-none"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2334d399' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
-                  backgroundPosition: 'right 1rem center',
-                  backgroundSize: '1.25rem',
-                  backgroundRepeat: 'no-repeat',
-                }}
-              >
-                <option value="" disabled className="bg-primary-950 text-primary-200/35">Select Category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.name} className="bg-primary-950 text-white">
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="w-full text-left rounded-xl border border-emerald-800/40 bg-emerald-950/20 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition cursor-pointer flex items-center justify-between"
+                >
+                  <span className={selectedCategory ? "text-white font-semibold" : "text-emerald-100/30"}>
+                    {selectedCategory || 'Select Category'}
+                  </span>
+                  <ChevronDown size={16} className={cn("text-emerald-400 transition-transform duration-200", dropdownOpen && "rotate-180")} />
+                </button>
+
+                <AnimatePresence>
+                  {dropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="absolute left-0 right-0 mt-1.5 z-20 max-h-56 overflow-y-auto rounded-xl border border-emerald-800/50 bg-[#061c14] py-1.5 shadow-2xl no-scrollbar"
+                      >
+                        {categories.map((category) => (
+                          <button
+                            key={category.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategory(category.name);
+                              setDropdownOpen(false);
+                            }}
+                            className={cn(
+                              "w-full text-left px-4 py-2.5 text-sm transition-colors duration-150 font-bold",
+                              selectedCategory === category.name
+                                ? "bg-emerald-600/90 text-white"
+                                : "text-emerald-100 hover:bg-emerald-950 hover:text-white"
+                            )}
+                          >
+                            {category.name}
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-6 w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary/20 transition hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-6 w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-500 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
@@ -224,8 +251,8 @@ export const EnquiryModal: React.FC = () => {
           </form>
 
           {/* Footer Notice */}
-          <div className="bg-primary-950/60 p-4 border-t border-primary-800/50 text-center">
-            <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-primary-200/40 leading-relaxed">
+          <div className="bg-emerald-950/40 p-4 border-t border-emerald-800/30 text-center">
+            <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-emerald-200/30 leading-relaxed">
               * Your privacy is our priority. Submission unlocks instant reward chimes.
             </p>
           </div>
