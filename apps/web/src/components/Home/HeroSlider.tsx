@@ -261,7 +261,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
 
             <div className="hero-cta mt-6 flex flex-wrap items-center gap-4">
               <Link
-                to={activeBanner.ctaLink && activeBanner.ctaLink !== '/products' ? activeBanner.ctaLink : '/products?page=1'}
+                to={activeBanner.ctaLink && !activeBanner.ctaLink.startsWith('/product') ? activeBanner.ctaLink : '/products?page=1'}
                 className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-primary-900 transition hover:bg-primary-50"
               >
                 <span>{displayCta}</span>
