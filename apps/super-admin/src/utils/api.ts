@@ -665,4 +665,8 @@ export const adminApi = {
     const response = await api.delete<{ success: boolean; message: string }>(`/promotions/admin/${id}`);
     return response.data;
   },
+  enquiries: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<any[]>>('/superadmin/enquiries', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
 };

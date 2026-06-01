@@ -100,5 +100,6 @@ router.get('/user-referrals', superAdminController.listUserReferrals);
 router.get('/user-referrals/:id', superAdminController.getUserReferralDetails);
 router.get('/whatsapp-referrals', superAdminController.listWhatsAppReferrals);
 router.get('/referral-stats', superAdminController.getReferralStats);
+router.get('/enquiries', superAdminController.listEnquiries);
 
 export default router;

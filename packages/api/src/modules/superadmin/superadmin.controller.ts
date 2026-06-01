@@ -338,3 +338,12 @@ export async function adjustCustomerLoyalty(req: Request, res: Response, next: N
     next(error);
   }
 }
+
+export async function listEnquiries(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await superAdminService.listEnquiries(req.query);
+    res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
+  } catch (error) {
+    next(error);
+  }
+}

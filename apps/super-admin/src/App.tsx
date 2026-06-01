@@ -26,6 +26,7 @@ import InvoicesPage from './pages/Invoices';
 import NotificationsPage from './pages/Notifications';
 import DealersPromotionsPage from './pages/DealersPromotions';
 import WebsiteAnalyticsPage from './pages/WebsiteAnalytics';
+import EnquiriesPage from './pages/Enquiries';
 
 function App() {
   return (
@@ -55,6 +56,7 @@ function App() {
           <Route path="/dealers-promotions" element={<DealersPromotionsPage />} />
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/testimonials" element={<TestimonialsPage />} />
+          <Route path="/enquiries" element={<EnquiriesPage />} />
           <Route path="/loyalty" element={<LoyaltyPage />} />
           <Route path="/user-loyalty" element={<UserLoyaltyPage />} />
           <Route path="/referrals" element={<ReferralPage />} />

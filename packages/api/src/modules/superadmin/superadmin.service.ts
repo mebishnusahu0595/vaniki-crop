@@ -15,6 +15,7 @@ import { NotificationCampaign } from '../../models/NotificationCampaign.model.js
 import { Testimonial } from '../../models/Testimonial.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { StoreSecret } from '../../models/StoreSecret.model.js';
+import { Enquiry } from '../../models/Enquiry.model.js';
 import * as orderService from '../orders/order.service.js';
 import { sendExpoPushNotification } from '../../utils/expoPush.js';
 
@@ -1710,5 +1711,26 @@ export async function adjustCustomerLoyalty(customerId: string, loyaltyPoints: n
   user.loyaltyPoints = loyaltyPoints;
   await user.save();
   return user;
+}
+
+export async function listEnquiries(query: Record<string, any>) {
+  const { page, limit, skip } = parsePagination(query);
+  const filter: Record<string, any> = {};
+
+  if (typeof query.search === 'string' && query.search.trim()) {
+    const searchRegex = new RegExp(query.search.trim(), 'i');
+    filter.$or = [{ name: searchRegex }, { mobile: searchRegex }, { category: searchRegex }];
+  }
+
+  const [rows, total] = await Promise.all([
+    Enquiry.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Enquiry.countDocuments(filter),
+  ]);
+
+  return createPaginationResponse(rows, total, page, limit);
 }
 // force push

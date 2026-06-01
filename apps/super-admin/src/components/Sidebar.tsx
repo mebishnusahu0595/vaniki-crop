@@ -51,6 +51,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/coupons', label: 'Coupons', icon: BadgePercent },
   { to: '/banners', label: 'Global Banners', icon: GalleryVerticalEnd },
   { to: '/testimonials', label: 'Testimonials', icon: MessageSquare },
+  { to: '/enquiries', label: 'Enquiry Forms', icon: ClipboardList },
   { to: '/dealers-promotions', label: 'Dealers Promotions', icon: Megaphone },
   { to: '/loyalty', label: 'Product Loyalty', icon: Coins },
   { to: '/user-loyalty', label: 'User Loyalty', icon: Award },

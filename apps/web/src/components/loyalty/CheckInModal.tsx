@@ -29,9 +29,15 @@ export const CheckInModal: React.FC = () => {
     const isDismissed = localStorage.getItem(`dismissedCheckIn_${today}`);
 
     if (lastCheckIn !== today && !isDismissed) {
-      // Small delay to ensure layout is ready
-      const timer = setTimeout(() => setShowLoyaltyModal(true), 1500);
-      return () => clearTimeout(timer);
+      const isEnquirySubmitted = localStorage.getItem('vaniki_enquiry_submitted') === 'true';
+      const isEnquiryDismissed = sessionStorage.getItem('vaniki_enquiry_dismissed') === 'true';
+
+      // Only launch daily rewards automatically if the enquiry modal has been resolved
+      if (isEnquirySubmitted || isEnquiryDismissed) {
+        // Wait at least 10 seconds before auto-displaying rewards modal
+        const timer = setTimeout(() => setShowLoyaltyModal(true), 10000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [isAuthenticated, user, setShowLoyaltyModal]);
 
