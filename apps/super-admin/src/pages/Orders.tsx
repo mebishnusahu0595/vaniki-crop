@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -12,25 +13,37 @@ function exportOrdersCsv(rows: Array<Record<string, unknown>>) {
 
   const headers = [
     'Order Number',
-    'Store',
-    'Customer',
-    'Status',
-    'Fulfillment',
+    'Store Name',
+    'Customer Name',
+    'Customer Mobile',
+    'Items Ordered',
+    'Order Status',
+    'Fulfillment Type',
     'Payment Status',
     'Payment Method',
-    'Amount',
-    'Created At',
+    'Subtotal (INR)',
+    'Discount (INR)',
+    'Delivery Charge (INR)',
+    'Total Amount (INR)',
+    'Shipping Address',
+    'Order Date & Time',
   ];
 
   const csvRows = rows.map((row) => [
     row.orderNumber,
     row.store,
-    row.customer,
+    row.customerName,
+    row.customerMobile,
+    row.items,
     row.status,
     row.serviceMode,
     row.paymentStatus,
     row.paymentMethod,
+    row.subtotal,
+    row.discount,
+    row.deliveryCharge,
     row.amount,
+    row.shippingAddress,
     row.createdAt,
   ]);
 
@@ -66,6 +79,27 @@ export default function OrdersPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [nextStatus, setNextStatus] = useState('confirmed');
   const [note, setNote] = useState('');
+
+  const handlePrevDay = () => {
+    const current = new Date(startDate);
+    current.setDate(current.getDate() - 1);
+    const dateStr = current.toLocaleDateString('en-CA');
+    setStartDate(dateStr);
+    setEndDate(dateStr);
+  };
+
+  const handleNextDay = () => {
+    const current = new Date(startDate);
+    current.setDate(current.getDate() + 1);
+    const dateStr = current.toLocaleDateString('en-CA');
+    setStartDate(dateStr);
+    setEndDate(dateStr);
+  };
+
+  const handleToday = () => {
+    setStartDate(today);
+    setEndDate(today);
+  };
 
   const storesQuery = useQuery({
     queryKey: ['super-admin-order-stores'],
@@ -108,17 +142,33 @@ export default function OrdersPage() {
   if (ordersQuery.isLoading && !ordersQuery.data) return <LoadingBlock label="Loading orders..." />;
 
   const exportRows =
-    ordersQuery.data?.data.map((order) => ({
-      orderNumber: order.orderNumber,
-      store: order.storeId?.name || 'Unknown Store',
-      customer: order.userId?.name || 'Customer',
-      status: order.status,
-      serviceMode: order.serviceMode === 'pickup' ? 'Pickup' : 'Delivery',
-      paymentStatus: order.paymentStatus,
-      paymentMethod: order.paymentMethod,
-      amount: order.totalAmount,
-      createdAt: formatDateTime(order.createdAt),
-    })) || [];
+    ordersQuery.data?.data.map((order) => {
+      const itemsList = order.items
+        .map((item) => `${item.productName} (${item.variantLabel}) x ${item.qty}`)
+        .join('; ');
+
+      const shippingAddrStr = order.shippingAddress
+        ? `${order.shippingAddress.street || ''}, ${order.shippingAddress.city || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`
+        : '';
+
+      return {
+        orderNumber: order.orderNumber,
+        store: order.storeId?.name || 'Unknown Store',
+        customerName: order.userId?.name || 'Customer',
+        customerMobile: order.userId?.mobile || order.shippingAddress?.mobile || '',
+        items: itemsList,
+        status: order.status,
+        serviceMode: order.serviceMode === 'pickup' ? 'Pickup' : 'Delivery',
+        paymentStatus: order.paymentStatus,
+        paymentMethod: order.paymentMethod === 'cod' ? 'COD' : 'Razorpay',
+        subtotal: order.subtotal,
+        discount: order.couponDiscount,
+        deliveryCharge: order.deliveryCharge,
+        amount: order.totalAmount,
+        shippingAddress: shippingAddrStr,
+        createdAt: formatDateTime(order.createdAt),
+      };
+    }) || [];
 
   return (
     <div className="space-y-6">
@@ -134,6 +184,39 @@ export default function OrdersPage() {
           </button>
         }
       />
+
+      {/* Day-by-Day Arrow Navigation Control */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-primary-100 bg-white p-4 shadow-[0_12px_40px_rgba(15,23,42,0.03)]">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrevDay}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary-100 bg-white text-slate-600 hover:bg-primary-50 hover:text-slate-900 transition"
+            title="Previous Day"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          
+          <button
+            onClick={handleToday}
+            className="rounded-2xl border border-primary-100 bg-white px-5 py-2 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 hover:text-slate-900 transition"
+          >
+            Today
+          </button>
+
+          <button
+            onClick={handleNextDay}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary-100 bg-white text-slate-600 hover:bg-primary-50 hover:text-slate-900 transition"
+            title="Next Day"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-primary-700">
+          <Calendar size={16} />
+          <span>Active Period: {startDate === endDate ? `${startDate}` : `${startDate} to ${endDate}`}</span>
+        </div>
+      </div>
 
       <div className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-white p-4 lg:grid-cols-6">
         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Order number" className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
