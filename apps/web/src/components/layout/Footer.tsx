@@ -99,9 +99,22 @@ const Footer: React.FC = () => {
                 <p>{t('footer.supportDesc')}</p>
               </div>
               <p>{t('contactPage.intro')}</p>
+              
+              {/* Google Maps Embed */}
+              <div className="overflow-hidden rounded-2xl border border-primary-800 shadow-inner">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d232.4697261253876!2d81.29279992822217!3d21.211392750021417!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a293d2419857e09%3A0x9611818434664bad!2sKrishi%20Upaj%20Mandi%20Durg%20Shops!5e0!3m2!1sen!2sin!4v1780288077115!5m2!1sen!2sin"
+                  className="w-full h-36 border-0"
+                  allowFullScreen={true}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Vaniki Crop Location Map"
+                />
+              </div>
+
               <Link
                 to="/contact"
-                className="inline-flex items-center rounded-full bg-primary px-5 py-2 text-xs font-black uppercase tracking-[0.2em] text-white"
+                className="inline-flex items-center rounded-full bg-primary px-5 py-2 text-xs font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-primary-600"
               >
                 {t('footer.contactUs')}
               </Link>
