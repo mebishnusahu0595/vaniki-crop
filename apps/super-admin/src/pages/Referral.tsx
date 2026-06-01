@@ -13,7 +13,9 @@ import {
   UserCheck,
   Package,
   Award,
-  Wallet
+  Wallet,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { adminApi } from '../utils/api';
 import { cn } from '../utils/cn';
@@ -94,6 +96,8 @@ function StaffReferrals() {
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
+  const [showPassword, setShowPassword] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     mobile: '',
@@ -126,6 +130,12 @@ function StaffReferrals() {
       toast.success('Staff added successfully');
       setIsAddModalOpen(false);
       setFormData({ name: '', mobile: '', email: '', password: '' });
+      setShowPassword(false);
+    },
+    onError: (error: any) => {
+      console.error('Error creating staff:', error);
+      const errMsg = error.response?.data?.error || error.message || 'Failed to create staff';
+      toast.error(errMsg);
     }
   });
 
@@ -411,20 +421,33 @@ function StaffReferrals() {
               </div>
               <div>
                 <label className="mb-2 block text-xs font-bold text-slate-500">Password</label>
-                <input
-                  required
-                  minLength={6}
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
+                <div className="relative">
+                  <input
+                    required
+                    minLength={6}
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-white pl-4 pr-11 py-3 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div className="mt-8 flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    setShowPassword(false);
+                  }}
                   className="flex-1 rounded-xl bg-slate-100 py-3 font-bold text-slate-600 hover:bg-slate-200"
                 >
                   Cancel
