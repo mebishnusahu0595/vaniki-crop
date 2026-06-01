@@ -14,6 +14,7 @@ export default function UserLoyaltyPage() {
   const [pointsInput, setPointsInput] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [sortByPoints, setSortByPoints] = useState<'default' | 'asc' | 'desc'>('default');
 
   const customersQuery = useQuery({
     queryKey: ['admin-customers', search],
@@ -61,7 +62,14 @@ export default function UserLoyaltyPage() {
 
   if (customersQuery.isLoading) return <LoadingBlock label="Loading user loyalty list..." />;
 
-  const customers = customersQuery.data?.data || [];
+  const rawCustomers = customersQuery.data?.data || [];
+  const customers = [...rawCustomers].sort((a, b) => {
+    const pointsA = a.loyaltyPoints ?? 0;
+    const pointsB = b.loyaltyPoints ?? 0;
+    if (sortByPoints === 'asc') return pointsA - pointsB;
+    if (sortByPoints === 'desc') return pointsB - pointsA;
+    return 0;
+  });
 
   return (
     <div className="space-y-6">
@@ -70,9 +78,9 @@ export default function UserLoyaltyPage() {
         subtitle="View and manually adjust loyalty points, streaks, and check-in history for all users."
       />
 
-      {/* Search Header */}
-      <div className="rounded-[1.75rem] border border-primary-100 bg-white p-6 shadow-sm">
-        <div className="relative max-w-md">
+      {/* Search & Sort Header */}
+      <div className="rounded-[1.75rem] border border-primary-100 bg-white p-6 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="relative w-full md:max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             value={search}
@@ -80,6 +88,19 @@ export default function UserLoyaltyPage() {
             placeholder="Search users by name or mobile number..."
             className="w-full rounded-2xl border border-primary-100 bg-primary-50 pl-11 pr-4 py-3 font-medium text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none transition-colors"
           />
+        </div>
+
+        <div className="w-full md:w-auto flex items-center gap-2">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">Sort By Points:</span>
+          <select
+            value={sortByPoints}
+            onChange={(e) => setSortByPoints(e.target.value as 'default' | 'asc' | 'desc')}
+            className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-slate-800 focus:border-primary focus:outline-none cursor-pointer"
+          >
+            <option value="default">Default</option>
+            <option value="asc">Low to High</option>
+            <option value="desc">High to Low</option>
+          </select>
         </div>
       </div>
 

@@ -471,6 +471,7 @@ function StaffReferrals() {
 function CustomerReferrals() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedReferrerId, setSelectedReferrerId] = useState<string | null>(null);
+  const [sortByPoints, setSortByPoints] = useState<'default' | 'asc' | 'desc'>('default');
 
   const referrersQuery = useQuery({
     queryKey: ['user-referrals', searchTerm],
@@ -483,7 +484,14 @@ function CustomerReferrals() {
     enabled: !!selectedReferrerId
   });
 
-  const filteredReferrers = referrersQuery.data?.data || [];
+  const rawReferrers = referrersQuery.data?.data || [];
+  const filteredReferrers = [...rawReferrers].sort((a, b) => {
+    const pointsA = a.loyaltyPoints ?? 0;
+    const pointsB = b.loyaltyPoints ?? 0;
+    if (sortByPoints === 'asc') return pointsA - pointsB;
+    if (sortByPoints === 'desc') return pointsB - pointsA;
+    return 0;
+  });
 
   if (referrersQuery.isLoading) return <LoadingBlock label="Loading user referrals..." />;
 
@@ -491,15 +499,30 @@ function CustomerReferrals() {
     <div className="grid gap-6 lg:grid-cols-3 animate-in fade-in duration-500">
       {/* Referrer List */}
       <div className="lg:col-span-1 space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input
-            type="text"
-            placeholder="Search referrers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500/20"
-          />
+        <div className="flex flex-col gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search referrers..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500/20"
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Sort By Points:</span>
+            <select
+              value={sortByPoints}
+              onChange={(e) => setSortByPoints(e.target.value as 'default' | 'asc' | 'desc')}
+              className="rounded-lg border border-slate-100 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            >
+              <option value="default">Default</option>
+              <option value="asc">Low to High</option>
+              <option value="desc">High to Low</option>
+            </select>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
