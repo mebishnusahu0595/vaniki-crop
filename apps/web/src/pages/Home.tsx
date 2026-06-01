@@ -91,7 +91,7 @@ const Home: React.FC = () => {
               <h2 className="section-title">{t('home.bestDeals')}</h2>
             </div>
             <Link
-              to="/products"
+              to="/products?page=1"
               className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-primary transition hover:text-primary-600"
             >
               <span>{t('home.exploreAllProducts')}</span>
@@ -140,7 +140,7 @@ const Home: React.FC = () => {
                 </p>
               </div>
               <Link
-                to="/products"
+                to="/products?page=1"
                 className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-primary-900 transition hover:bg-primary-50"
               >
                 {t('home.shopNow')}

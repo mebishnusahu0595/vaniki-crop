@@ -45,7 +45,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
               title: t('home.heroFallbackTitle'),
               subtitle: t('home.heroFallbackSubtitle'),
               ctaText: t('home.heroFallbackCta'),
-              ctaLink: '/products',
+              ctaLink: '/products?page=1',
               image: {
                 url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80',
                 mobileUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=900&q=80',
@@ -261,7 +261,7 @@ const HeroSlider: React.FC<HeroSliderProps> = ({ banners }) => {
 
             <div className="hero-cta mt-6 flex flex-wrap items-center gap-4">
               <Link
-                to={activeBanner.ctaLink || '/products'}
+                to={activeBanner.ctaLink && activeBanner.ctaLink !== '/products' ? activeBanner.ctaLink : '/products?page=1'}
                 className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.2em] text-primary-900 transition hover:bg-primary-50"
               >
                 <span>{displayCta}</span>
