@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ClipboardList, Send, Loader2, ChevronDown } from 'lucide-react';
+import { X, ClipboardList, Send, Loader2 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { storefrontApi } from '../../utils/api';
 import type { Category } from '../../types/storefront';
-import { cn } from '../../utils/cn';
 
 export const EnquiryModal: React.FC = () => {
   const { setShowLoyaltyModal } = useAuthStore();
@@ -15,7 +14,6 @@ export const EnquiryModal: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     // 1. Fetch categories
@@ -181,53 +179,32 @@ export const EnquiryModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-emerald-400 mb-1.5">
+              <label htmlFor="enquiry-category" className="block text-[10px] font-black uppercase tracking-[0.18em] text-emerald-400 mb-1.5">
                 Category
               </label>
               <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="w-full text-left rounded-xl border border-emerald-800/40 bg-emerald-950/20 px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition cursor-pointer flex items-center justify-between"
+                <select
+                  id="enquiry-category"
+                  required
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full rounded-xl border border-emerald-800/40 bg-[#04140e] px-4 py-3 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition cursor-pointer appearance-none pr-10 font-medium"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2310b981' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                    backgroundPosition: 'right 1rem center',
+                    backgroundSize: '1.25rem',
+                    backgroundRepeat: 'no-repeat',
+                  }}
                 >
-                  <span className={selectedCategory ? "text-white font-semibold" : "text-emerald-100/30"}>
-                    {selectedCategory || 'Select Category'}
-                  </span>
-                  <ChevronDown size={16} className={cn("text-emerald-400 transition-transform duration-200", dropdownOpen && "rotate-180")} />
-                </button>
-
-                <AnimatePresence>
-                  {dropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="absolute left-0 right-0 mt-1.5 z-20 max-h-56 overflow-y-auto rounded-xl border border-emerald-800/50 bg-[#061c14] py-1.5 shadow-2xl no-scrollbar"
-                      >
-                        {categories.map((category) => (
-                          <button
-                            key={category.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedCategory(category.name);
-                              setDropdownOpen(false);
-                            }}
-                            className={cn(
-                              "w-full text-left px-4 py-2.5 text-sm transition-colors duration-150 font-bold",
-                              selectedCategory === category.name
-                                ? "bg-emerald-600/90 text-white"
-                                : "text-emerald-100 hover:bg-emerald-950 hover:text-white"
-                            )}
-                          >
-                            {category.name}
-                          </button>
-                        ))}
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
+                  <option value="" disabled className="bg-[#04140e] text-emerald-100/30 font-medium">
+                    Select Category
+                  </option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.name} className="bg-[#04140e] text-white font-medium">
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
