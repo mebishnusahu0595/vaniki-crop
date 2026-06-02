@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -31,6 +31,7 @@ interface DraftItem {
 
 export default function ProductRequestsScreen() {
   const queryClient = useQueryClient();
+  const scrollViewRef = useRef<ScrollView>(null);
   const [selectedGarage, setSelectedGarage] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   
@@ -179,8 +180,6 @@ export default function ProductRequestsScreen() {
   };
 
   // Calculations for summary card
-  const totalPeti = batchItems.reduce((sum, item) => sum + item.petiQuantity, 0);
-  
   const totalVolumeText = useMemo(() => {
     const groups: Record<string, number> = {};
     batchItems.forEach(item => {
@@ -198,7 +197,11 @@ export default function ProductRequestsScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
       >
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80 }} className="flex-1">
+        <ScrollView 
+          ref={scrollViewRef}
+          contentContainerStyle={{ padding: 16, paddingBottom: batchItems.length > 0 ? 140 : 80 }} 
+          className="flex-1"
+        >
           {/* Main Form Box */}
           <View className="bg-white border border-zinc-100 rounded-[2rem] p-5 shadow-sm space-y-4 mb-4">
             <Text className="text-zinc-900 font-black text-base mb-2">Create Request</Text>
@@ -252,6 +255,33 @@ export default function ProductRequestsScreen() {
               />
             </View>
           </View>
+
+          {/* Staged Batch Summary Card (AT THE TOP) */}
+          {batchItems.length > 0 && (
+            <View className="mb-4" style={{ marginHorizontal: 2 }}>
+              <View className="bg-emerald-950 rounded-3xl overflow-hidden" style={{ elevation: 6, padding: 20 }}>
+                <View className="flex-row items-center gap-2 mb-4">
+                  <Icon name="info" size={16} color="#34D399" />
+                  <Text className="text-xs font-bold uppercase text-emerald-400">Request Volume Summary</Text>
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <View style={{ flex: 1 }}>
+                    <Text className="text-[9px] font-bold uppercase text-emerald-300">Total Items</Text>
+                    <View className="flex-row items-baseline mt-1 gap-1">
+                      <Text className="text-2xl font-extrabold text-white">{batchItems.length}</Text>
+                      <Text className="text-xs font-bold text-emerald-200">items</Text>
+                    </View>
+                  </View>
+                  <View style={{ flex: 1.5, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.1)', paddingLeft: 20, alignItems: 'flex-end' }}>
+                    <Text className="text-[9px] font-bold uppercase text-emerald-300">Estimated Volume</Text>
+                    <Text className="text-lg font-extrabold text-white mt-1 text-right" numberOfLines={2}>
+                      {totalVolumeText}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Product Cards Grid */}
           <View className="mb-6">
@@ -307,33 +337,6 @@ export default function ProductRequestsScreen() {
               </View>
             )}
           </View>
-
-          {/* Batch Summary Card */}
-          {batchItems.length > 0 && (
-            <View className="mb-6">
-              <View className="bg-emerald-950 rounded-[2rem] overflow-hidden" style={{ elevation: 6, padding: 20 }}>
-                <View className="flex-row items-center gap-2 mb-4">
-                  <Icon name="shopping-cart" size={16} color="#34D399" />
-                  <Text className="text-xs font-bold uppercase text-emerald-400">Request Volume Summary</Text>
-                </View>
-                <View className="flex-row justify-between items-center">
-                  <View style={{ flex: 1 }}>
-                    <Text className="text-[9px] font-bold uppercase text-emerald-300">Total Items</Text>
-                    <View className="flex-row items-baseline mt-1 gap-1">
-                      <Text className="text-2xl font-extrabold text-white">{batchItems.length}</Text>
-                      <Text className="text-xs font-bold text-emerald-200">items</Text>
-                    </View>
-                  </View>
-                  <View style={{ flex: 1.5, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.1)', paddingLeft: 20, alignItems: 'flex-end' }}>
-                    <Text className="text-[9px] font-bold uppercase text-emerald-300">Estimated Volume</Text>
-                    <Text className="text-lg font-extrabold text-white mt-1 text-right" numberOfLines={2}>
-                      {totalVolumeText}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          )}
 
           {/* Batch Staged Items List */}
           {batchItems.length > 0 && (
@@ -397,6 +400,37 @@ export default function ProductRequestsScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Floating Bottom Cart Bar */}
+      {batchItems.length > 0 && (
+        <TouchableOpacity
+          onPress={() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          }}
+          activeOpacity={0.9}
+          className="absolute bottom-6 left-6 right-6 bg-emerald-800 rounded-2xl flex-row justify-between items-center px-5 py-3.5 shadow-2xl border border-emerald-700/50"
+          style={{ elevation: 8 }}
+        >
+          <View className="flex-row items-center gap-3">
+            <View className="bg-emerald-950 p-2 rounded-xl relative">
+              <Icon name="shopping-cart" size={16} color="#fff" />
+              <View className="absolute -top-1.5 -right-1.5 bg-rose-500 rounded-full h-4 min-w-4 px-1 items-center justify-center border border-emerald-800">
+                <Text className="text-white text-[8px] font-black leading-none">{batchItems.length}</Text>
+              </View>
+            </View>
+            <View>
+              <Text className="text-[8px] font-bold uppercase text-emerald-200 tracking-wider">View Batch List</Text>
+              <Text className="text-white font-extrabold text-[11px] mt-0.5" numberOfLines={1}>
+                Volume: {totalVolumeText}
+              </Text>
+            </View>
+          </View>
+          <View className="bg-emerald-950/60 px-2.5 py-1.5 rounded-full flex-row items-center gap-1.5">
+            <Text className="text-emerald-100 text-[8px] font-black uppercase tracking-wider">Go to list</Text>
+            <Icon name="arrow-down" size={10} color="#fff" />
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Garage Dropdown Modal */}
       <Modal

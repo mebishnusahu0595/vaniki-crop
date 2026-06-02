@@ -312,7 +312,7 @@ export async function listDealerProductRequests(storeId: string, query: Record<s
 
   const [rows, total] = await Promise.all([
     ProductRequest.find(filter)
-      .populate('productId', 'name slug')
+      .populate('productId', 'name slug images shortDescription')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
