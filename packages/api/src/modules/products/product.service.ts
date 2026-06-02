@@ -18,8 +18,40 @@ import {
 } from '../../utils/pagination.js';
 import type { CreateProductInput, UpdateProductInput } from './product.validator.js';
 import { invalidateHomepageCache } from '../../utils/cache.helpers.js';
+import { User } from '../../models/User.model.js';
+import { sendExpoPushNotification } from '../../utils/expoPush.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
+
+async function notifyDealersOfProductChange(product: any, action: 'created' | 'updated') {
+  try {
+    const dealers = await User.find({
+      role: 'storeAdmin',
+      isActive: true,
+      expoPushToken: { $type: 'string', $ne: '' },
+    }).select('expoPushToken').lean();
+
+    if (dealers.length === 0) return;
+
+    const title = action === 'created' ? 'New Product Added' : 'Product Pricing/Info Updated';
+    const body = action === 'created'
+      ? `A new product "${product.name}" has been added. Check it out!`
+      : `Product "${product.name}" has been updated with new pricing or details.`;
+
+    for (const dealer of dealers) {
+      if (dealer.expoPushToken) {
+        await sendExpoPushNotification({
+          to: dealer.expoPushToken,
+          title,
+          body,
+          data: { productId: product._id?.toString() || product.id?.toString() },
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Failed to notify dealers of product change:', error);
+  }
+}
 
 /**
  * Generates a URL-safe slug from a string.
@@ -417,6 +449,7 @@ export async function createProduct(
   });
 
   await invalidateHomepageCache(storeIds);
+  notifyDealersOfProductChange(product, 'created').catch(err => console.error(err));
   return product.populate([
     { path: 'category', select: 'name slug' },
     { path: 'storeId', select: 'name' },
@@ -573,6 +606,7 @@ export async function updateProduct(
 
   await product.save();
   await invalidateHomepageCache(product.storeId.map(id => id.toString()));
+  notifyDealersOfProductChange(product, 'updated').catch(err => console.error(err));
 
   return product.populate([
     { path: 'category', select: 'name slug' },

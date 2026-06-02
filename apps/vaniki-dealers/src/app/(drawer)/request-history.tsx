@@ -138,7 +138,7 @@ export default function RequestHistoryScreen() {
                         <Text className="text-2xl font-black text-white">{selectedRequest.petiQuantity} <Text className="text-sm font-semibold uppercase text-emerald-300">Peti</Text></Text>
                       </View>
                       <View className="border-l border-white/10 pl-5 items-end">
-                        <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-1">Total Liters/Kg</Text>
+                        <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-1">Total {selectedRequest.petiUnit || 'Volume'}</Text>
                         <Text className="text-2xl font-black text-white">
                           {(Number(selectedRequest.petiQuantity || 0) * Number(selectedRequest.petiSize || 0)).toFixed(1)} <Text className="text-sm font-semibold uppercase text-emerald-300">{selectedRequest.petiUnit}</Text>
                         </Text>

@@ -1091,7 +1091,7 @@ export async function sendNotification(
   createdBy: string,
 ) {
   const recipients = await User.find({
-    role: 'customer',
+    role: { $in: ['customer', 'storeAdmin'] },
     isActive: true,
     expoPushToken: { $type: 'string', $ne: '' },
   }).select('expoPushToken').lean();

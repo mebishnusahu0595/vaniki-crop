@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -9,19 +9,24 @@ import {
   Modal, 
   FlatList,
   SafeAreaView,
-  Alert
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../utils/api';
+import { resolveMediaUrl } from '../../utils/media';
 import { Feather } from '@expo/vector-icons';
 import type { DealerInventoryProduct, DealerInventoryVariant } from '../../types/admin';
 
 const Icon = Feather as any;
+const ImageComponent = Image as any;
 
 interface DraftItem {
   product: DealerInventoryProduct;
   variant: DealerInventoryVariant;
   petiQuantity: number;
+  petiSize: number;
 }
 
 export default function ProductRequestsScreen() {
@@ -32,24 +37,24 @@ export default function ProductRequestsScreen() {
   // Staged batch items
   const [batchItems, setBatchItems] = useState<DraftItem[]>([]);
 
-  // Selection state for adding new items
+  // Selection state for customizing popup
   const [selectedProduct, setSelectedProduct] = useState<DealerInventoryProduct | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<DealerInventoryVariant | null>(null);
   const [petiQtyInput, setPetiQtyInput] = useState<string>('1');
+  const [petiSizeInput, setPetiSizeInput] = useState<string>('12');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   // Modals visibility
   const [garageModalVisible, setGarageModalVisible] = useState(false);
-  const [productModalVisible, setProductModalVisible] = useState(false);
-  const [variantModalVisible, setVariantModalVisible] = useState(false);
+  const [customizerModalVisible, setCustomizerModalVisible] = useState(false);
 
   // Fetch Garages
-  const { data: garages = [], isLoading: loadingGarages } = useQuery({
+  const { data: garages = [] } = useQuery({
     queryKey: ['admin-garages'],
     queryFn: adminApi.garages,
   });
 
-  // Fetch Inventory Products for selection
+  // Fetch Inventory Products
   const { data: inventory = [], isLoading: loadingInventory } = useQuery({
     queryKey: ['admin-inventory-products'],
     queryFn: adminApi.inventoryProducts,
@@ -61,10 +66,13 @@ export default function ProductRequestsScreen() {
   });
   const categories = categoriesData?.data || [];
 
-  const filteredInventoryForModal = inventory.filter(product => {
-    const prodCategoryId = product.category?.id || (product.category as any)?._id;
-    return !selectedCategory || prodCategoryId === selectedCategory;
-  });
+  // Filtered products list
+  const filteredProducts = useMemo(() => {
+    return inventory.filter(product => {
+      const prodCategoryId = product.category?.id || (product.category as any)?._id;
+      return !selectedCategory || prodCategoryId === selectedCategory;
+    });
+  }, [inventory, selectedCategory]);
 
   // Create Product Request Mutation
   const createRequestMutation = useMutation({
@@ -81,18 +89,29 @@ export default function ProductRequestsScreen() {
     }
   });
 
+  // Set default garage when garages load
+  useState(() => {
+    if (garages.length && !selectedGarage) {
+      setSelectedGarage(garages[0]);
+    }
+  });
+
+  if (garages.length && !selectedGarage) {
+    setSelectedGarage(garages[0]);
+  }
+
   const handleAddStagedItem = () => {
-    if (!selectedProduct) {
-      alert('Please select a product first.');
-      return;
-    }
-    if (!selectedVariant) {
-      alert('Please select a pack size variant.');
-      return;
-    }
+    if (!selectedProduct || !selectedVariant) return;
+
     const qty = parseInt(petiQtyInput, 10);
+    const pSize = parseInt(petiSizeInput, 10);
+
     if (isNaN(qty) || qty <= 0) {
       alert('Peti quantity must be at least 1.');
+      return;
+    }
+    if (isNaN(pSize) || pSize <= 0) {
+      alert('Peti size must be at least 1.');
       return;
     }
 
@@ -102,24 +121,27 @@ export default function ProductRequestsScreen() {
     );
 
     if (duplicateIdx > -1) {
-      // Add quantity to existing
+      // Add quantity and overwrite petiSize
       setBatchItems(prev => {
         const next = [...prev];
         next[duplicateIdx].petiQuantity += qty;
+        next[duplicateIdx].petiSize = pSize;
         return next;
       });
     } else {
       // Add new staged item
       setBatchItems(prev => [
         ...prev, 
-        { product: selectedProduct, variant: selectedVariant, petiQuantity: qty }
+        { product: selectedProduct, variant: selectedVariant, petiQuantity: qty, petiSize: pSize }
       ]);
     }
 
-    // Reset selection inputs
+    // Reset customization popup
     setSelectedProduct(null);
     setSelectedVariant(null);
     setPetiQtyInput('1');
+    setPetiSizeInput('12');
+    setCustomizerModalVisible(false);
   };
 
   const handleRemoveStagedItem = (index: number) => {
@@ -143,8 +165,9 @@ export default function ProductRequestsScreen() {
         productId: item.product.id,
         requestedPack: item.variant.label,
         petiQuantity: item.petiQuantity,
-        quantity: item.petiQuantity * (item.product.petiSize || 12),
-        requestedQuantity: item.petiQuantity * (item.product.petiSize || 12),
+        petiSize: item.petiSize,
+        quantity: item.petiQuantity * item.petiSize,
+        requestedQuantity: item.petiQuantity * item.petiSize,
         price: item.variant.dealerPrice || item.variant.price,
         dealerPrice: item.variant.dealerPrice,
         offerPrice: item.variant.offerPrice,
@@ -157,219 +180,223 @@ export default function ProductRequestsScreen() {
 
   // Calculations for summary card
   const totalPeti = batchItems.reduce((sum, item) => sum + item.petiQuantity, 0);
-  const totalVolume = batchItems.reduce((sum, item) => {
-    const pSize = item.product.petiSize || 12;
-    return sum + (item.petiQuantity * pSize);
-  }, 0);
+  
+  const totalVolumeText = useMemo(() => {
+    const groups: Record<string, number> = {};
+    batchItems.forEach(item => {
+      const unit = item.product.petiUnit || 'Liter';
+      const vol = item.petiQuantity * item.petiSize;
+      groups[unit] = (groups[unit] || 0) + vol;
+    });
+    const parts = Object.entries(groups).map(([unit, vol]) => `${vol} ${unit}`);
+    return parts.length > 0 ? parts.join(', ') : '0 Liter';
+  }, [batchItems]);
 
   return (
     <SafeAreaView className="flex-1 bg-zinc-50">
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} className="flex-1" style={{ overflow: 'visible' }}>
-        
-        {/* Form Container */}
-        <View className="bg-white border border-zinc-100 rounded-[2rem] p-5 shadow-sm space-y-4">
-          <Text className="text-zinc-900 font-black text-lg mb-2">Create Request</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className="flex-1"
+      >
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80 }} className="flex-1">
+          {/* Main Form Box */}
+          <View className="bg-white border border-zinc-100 rounded-[2rem] p-5 shadow-sm space-y-4 mb-4">
+            <Text className="text-zinc-900 font-black text-base mb-2">Create Request</Text>
 
-          {/* Garage Selector */}
-          <View>
-            <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Select Garage / Source Warehouse</Text>
-            <TouchableOpacity
-              onPress={() => setGarageModalVisible(true)}
-              className="flex-row justify-between items-center bg-zinc-50 border border-zinc-200 rounded-2xl py-4 px-4 active:bg-zinc-100"
-            >
-              <Text className="text-zinc-800 font-bold text-sm">
-                {selectedGarage || 'Choose target warehouse...'}
-              </Text>
-              <Icon name="chevron-down" size={16} color="#71717A" />
-            </TouchableOpacity>
-          </View>
-
-          <View className="h-px bg-zinc-100 my-2" />
-
-          {/* Staging Product Picker */}
-          <View>
-            <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Product Name</Text>
-            <TouchableOpacity
-              onPress={() => setProductModalVisible(true)}
-              className="flex-row justify-between items-center bg-zinc-50 border border-zinc-200 rounded-2xl py-4 px-4 active:bg-zinc-100"
-            >
-              <Text className="text-zinc-800 font-bold text-sm flex-1 mr-2" numberOfLines={1}>
-                {selectedProduct ? `${selectedProduct.name} ${selectedProduct.shortDescription ? `(${selectedProduct.shortDescription})` : ''}` : 'Choose product...'}
-              </Text>
-              <Icon name="chevron-down" size={16} color="#71717A" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Product Info & Pricing Card */}
-          {selectedProduct && (
-            <View className="bg-emerald-50/50 rounded-[1.5rem] p-4 border border-emerald-100">
-              <Text className="text-base font-black text-emerald-900 leading-tight">
-                {selectedProduct.name}
-              </Text>
-              {selectedProduct.shortDescription ? (
-                <Text className="mt-1 text-xs font-medium text-emerald-700 opacity-80">
-                  {selectedProduct.shortDescription}
-                </Text>
-              ) : null}
-              {selectedProduct.hsnCode ? (
-                <Text className="mt-2 text-[9px] font-black text-emerald-600 bg-emerald-100 w-fit px-2 py-0.5 rounded-md border border-emerald-200">
-                  HSN: {selectedProduct.hsnCode}
-                </Text>
-              ) : null}
-
-              <View className="mt-4 pt-4 border-t border-emerald-200/50">
-                <Text className="text-[9px] font-black uppercase tracking-wider text-emerald-600 mb-3">Product Pricing Information</Text>
-                
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row pb-1">
-                  {selectedProduct.variants.map((v: any) => (
-                    <View key={v.id} className="rounded-xl bg-white p-3 border border-emerald-100 mr-3 min-w-[140px]">
-                      <Text className="text-xs font-black text-slate-900 mb-2">{v.label}</Text>
-                      <View className="space-y-1.5">
-                        <View className="flex-row justify-between items-center gap-3">
-                          <Text className="text-[9px] font-bold text-slate-500 uppercase">Price (Dealer)</Text>
-                          <Text className="text-[10px] font-black text-emerald-700">₹{v.dealerPrice || v.price || 'N/A'}</Text>
-                        </View>
-                        <View className="flex-row justify-between items-center gap-3">
-                          <Text className="text-[9px] font-bold text-slate-500 uppercase">Offer Price</Text>
-                          <Text className="text-[10px] font-black text-emerald-600">₹{v.offerPrice || 'N/A'}</Text>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-            </View>
-          )}
-
-          {/* Variant Selector */}
-          {selectedProduct && (
+            {/* Garage Selector */}
             <View>
-              <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Pack Size Variant</Text>
+              <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Select Garage / Source Warehouse</Text>
               <TouchableOpacity
-                onPress={() => setVariantModalVisible(true)}
+                onPress={() => setGarageModalVisible(true)}
                 className="flex-row justify-between items-center bg-zinc-50 border border-zinc-200 rounded-2xl py-4 px-4 active:bg-zinc-100"
               >
                 <Text className="text-zinc-800 font-bold text-sm">
-                  {selectedVariant ? selectedVariant.label : 'Choose pack size...'}
+                  {selectedGarage || 'Choose target warehouse...'}
                 </Text>
                 <Icon name="chevron-down" size={16} color="#71717A" />
               </TouchableOpacity>
             </View>
-          )}
 
-          {/* Peti Quantity Input */}
-          {selectedProduct && (
-            <View className="flex-row gap-4 items-end">
-              <View className="flex-1">
-                <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Peti Quantity</Text>
-                <TextInput
-                  keyboardType="number-pad"
-                  value={petiQtyInput}
-                  onChangeText={setPetiQtyInput}
-                  placeholder="Enter number of Petis..."
-                  placeholderTextColor="#A1A1AA"
-                  className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
-                />
-              </View>
-              <TouchableOpacity
-                onPress={handleAddStagedItem}
-                className="bg-emerald-950 border border-emerald-950 px-5 h-12 rounded-2xl items-center justify-center active:scale-95"
-              >
-                <Text className="text-white font-black text-xs uppercase tracking-widest">Add Item</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
+            <View className="h-px bg-zinc-100 my-1" />
 
-        {/* Batch Summary Card */}
-        {batchItems.length > 0 && (
-          <View className="mt-6" style={{ marginHorizontal: 2 }}>
-            <View className="bg-emerald-950 rounded-3xl overflow-hidden" style={{ elevation: 6, padding: 24 }}>
-              <View className="flex-row items-center gap-2 mb-4">
-                <Icon name="info" size={16} color="#34D399" />
-                <Text className="text-xs font-bold uppercase text-emerald-400" style={{ includeFontPadding: false }}>Request Volume Summary</Text>
-              </View>
-              <View className="flex-row justify-between items-center">
-                <View style={{ flex: 1 }}>
-                  <Text className="text-[9px] font-bold uppercase text-emerald-300" style={{ includeFontPadding: false }}>Total Staged</Text>
-                  <View className="flex-row items-baseline mt-1 gap-1">
-                    <Text className="text-2xl font-extrabold text-white" style={{ includeFontPadding: false }}>{totalPeti}</Text>
-                    <Text className="text-xs font-bold text-emerald-200" style={{ includeFontPadding: false }}>Petis</Text>
-                  </View>
-                </View>
-                <View style={{ flex: 1, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.1)', paddingLeft: 24, alignItems: 'flex-end' }}>
-                  <Text className="text-[9px] font-bold uppercase text-emerald-300" style={{ includeFontPadding: false }}>Estimated Volume</Text>
-                  <View className="flex-row items-baseline mt-1 gap-1">
-                    <Text className="text-2xl font-extrabold text-white" style={{ includeFontPadding: false }}>{totalVolume}</Text>
-                    <Text className="text-xs font-bold text-emerald-200" style={{ includeFontPadding: false }}>Liters/Kg</Text>
-                  </View>
-                </View>
-              </View>
+            {/* Category selection scroll */}
+            <View>
+              <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Filter by Category</Text>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={[{ id: '', name: 'All' }, ...categories]}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ paddingBottom: 4 }}
+                renderItem={({ item }) => {
+                  const isActive = selectedCategory === item.id;
+                  return (
+                    <TouchableOpacity
+                      onPress={() => setSelectedCategory(item.id)}
+                      className={`px-4 py-2 rounded-full mr-2 border ${
+                        isActive
+                          ? 'bg-emerald-800 border-emerald-800'
+                          : 'bg-zinc-100 border-zinc-200'
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-black uppercase tracking-wider ${
+                          isActive ? 'text-white' : 'text-zinc-500'
+                        }`}
+                      >
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
             </View>
           </View>
-        )}
 
-        {/* Batch Staged Items List */}
-        {batchItems.length > 0 && (
-          <View className="mt-6">
-            <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-3 ml-2">Request Batch Items</Text>
-            {batchItems.map((item, idx) => (
-              <View key={idx} className="flex-row justify-between items-center bg-white border border-zinc-100 rounded-3xl p-5 mb-3 shadow-sm">
-                <View className="flex-1 mr-3">
-                  <Text className="text-zinc-900 font-black text-base leading-tight">{item.product.name}</Text>
-                  <Text className="text-[10px] font-bold text-emerald-600 mt-1">
-                    {item.variant.label}
-                    {item.variant.dealerPrice || item.variant.price ? ` • Dealer: ₹${item.variant.dealerPrice || item.variant.price}` : ''}
-                    {item.variant.offerPrice ? ` • Offer: ₹${item.variant.offerPrice}` : ''}
-                  </Text>
-                  <Text className="mt-1 text-[10px] text-zinc-500 italic" numberOfLines={1}>
-                    {item.product.hsnCode ? `HSN: ${item.product.hsnCode} • ` : ''}{item.product.shortDescription}
-                  </Text>
-                  <Text className="text-zinc-500 font-bold text-xs mt-2">
-                    Qty: <Text className="text-zinc-800">{item.petiQuantity} Peti</Text>
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => handleRemoveStagedItem(idx)}
-                  className="bg-rose-50 border border-rose-100 p-2.5 rounded-full"
-                >
-                  <Icon name="trash-2" size={14} color="#E11D48" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Request Notes */}
-        {batchItems.length > 0 && (
-          <View className="mt-6 bg-white border border-zinc-100 rounded-3xl p-5 shadow-sm">
-            <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Request Notes (Optional)</Text>
-            <TextInput
-              placeholder="Provide special instructions or delivery details..."
-              placeholderTextColor="#A1A1AA"
-              value={notes}
-              onChangeText={setNotes}
-              className="text-zinc-800 text-xs font-semibold h-20 p-2 border border-zinc-200 rounded-2xl"
-              multiline
-            />
-          </View>
-        )}
-
-        {/* Action Button */}
-        {batchItems.length > 0 && (
-          <TouchableOpacity
-            onPress={handleSubmitRequest}
-            disabled={createRequestMutation.isPending}
-            className="mt-6 w-full rounded-2xl bg-emerald-700 py-4 items-center justify-center shadow-lg active:scale-95 disabled:opacity-50"
-          >
-            {createRequestMutation.isPending ? (
-              <ActivityIndicator size="small" color="#fff" />
+          {/* Product Cards Grid */}
+          <View className="mb-6">
+            <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-3 ml-2">Choose Products below</Text>
+            {loadingInventory ? (
+              <ActivityIndicator size="small" color="#143D2E" className="my-6" />
             ) : (
-              <Text className="text-white font-black text-xs uppercase tracking-[0.2em]">Submit Stock Request</Text>
+              <View className="flex-row flex-wrap justify-between">
+                {filteredProducts.map((product) => (
+                  <TouchableOpacity
+                    key={product.id}
+                    onPress={() => {
+                      setSelectedProduct(product);
+                      const firstVariant = product.variants?.[0] || null;
+                      setSelectedVariant(firstVariant);
+                      setPetiQtyInput('1');
+                      setPetiSizeInput(String(product.petiSize || 12));
+                      setCustomizerModalVisible(true);
+                    }}
+                    activeOpacity={0.8}
+                    style={{ width: '48.5%' }}
+                    className="bg-white border border-zinc-100 rounded-3xl p-3 mb-3 shadow-sm overflow-hidden"
+                  >
+                    <View className="aspect-square w-full bg-zinc-50 border border-zinc-100 rounded-2xl overflow-hidden mb-3.5 flex justify-center items-center">
+                      {product.image ? (
+                        <ImageComponent
+                          source={{ uri: resolveMediaUrl(product.image) }}
+                          style={{ width: '100%', height: '100%' }}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <Icon name="package" size={28} color="#D4D4D8" />
+                      )}
+                    </View>
+                    <Text className="text-zinc-900 font-black text-xs leading-tight" numberOfLines={1}>
+                      {product.name}
+                    </Text>
+                    {product.shortDescription ? (
+                      <Text className="text-[10px] text-zinc-500 font-semibold mt-1" numberOfLines={2}>
+                        {product.shortDescription}
+                      </Text>
+                    ) : null}
+                    {product.petiSize ? (
+                      <Text className="text-[8px] text-emerald-800 font-black mt-2 bg-emerald-50 self-start px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        {product.petiSize} {product.petiUnit || 'Liter'} per Peti
+                      </Text>
+                    ) : null}
+                  </TouchableOpacity>
+                ))}
+                {filteredProducts.length === 0 && (
+                  <Text className="text-zinc-400 font-bold text-center w-full py-8">No products found in this category</Text>
+                )}
+              </View>
             )}
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+          </View>
+
+          {/* Batch Summary Card */}
+          {batchItems.length > 0 && (
+            <View className="mb-6">
+              <View className="bg-emerald-950 rounded-[2rem] overflow-hidden" style={{ elevation: 6, padding: 20 }}>
+                <View className="flex-row items-center gap-2 mb-4">
+                  <Icon name="shopping-cart" size={16} color="#34D399" />
+                  <Text className="text-xs font-bold uppercase text-emerald-400">Request Volume Summary</Text>
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <View style={{ flex: 1 }}>
+                    <Text className="text-[9px] font-bold uppercase text-emerald-300">Total Items</Text>
+                    <View className="flex-row items-baseline mt-1 gap-1">
+                      <Text className="text-2xl font-extrabold text-white">{batchItems.length}</Text>
+                      <Text className="text-xs font-bold text-emerald-200">items</Text>
+                    </View>
+                  </View>
+                  <View style={{ flex: 1.5, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.1)', paddingLeft: 20, alignItems: 'flex-end' }}>
+                    <Text className="text-[9px] font-bold uppercase text-emerald-300">Estimated Volume</Text>
+                    <Text className="text-lg font-extrabold text-white mt-1 text-right" numberOfLines={2}>
+                      {totalVolumeText}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Batch Staged Items List */}
+          {batchItems.length > 0 && (
+            <View className="mb-6">
+              <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-3 ml-2">Request Batch Items</Text>
+              {batchItems.map((item, idx) => (
+                <View key={idx} className="flex-row justify-between items-center bg-white border border-zinc-100 rounded-3xl p-5 mb-3 shadow-sm">
+                  <View className="flex-1 mr-3">
+                    <Text className="text-zinc-900 font-black text-sm leading-tight">{item.product.name}</Text>
+                    <Text className="text-[10px] font-bold text-emerald-600 mt-1">
+                      {item.variant.label}
+                      {item.variant.dealerPrice || item.variant.price ? ` • Dealer: ₹${item.variant.dealerPrice || item.variant.price}` : ''}
+                      {item.variant.offerPrice ? ` • Offer: ₹${item.variant.offerPrice}` : ''}
+                    </Text>
+                    <Text className="mt-1 text-[10px] text-zinc-500 italic" numberOfLines={1}>
+                      {item.product.hsnCode ? `HSN: ${item.product.hsnCode} • ` : ''}{item.product.shortDescription}
+                    </Text>
+                    <Text className="text-zinc-500 font-bold text-xs mt-2">
+                      Qty: <Text className="text-zinc-800">{item.petiQuantity} Peti ({item.petiQuantity * item.petiSize} {item.product.petiUnit || 'Liter'})</Text>
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveStagedItem(idx)}
+                    className="bg-rose-50 border border-rose-100 p-2.5 rounded-full"
+                  >
+                    <Icon name="trash-2" size={14} color="#E11D48" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Request Notes */}
+          {batchItems.length > 0 && (
+            <View className="bg-white border border-zinc-100 rounded-[2rem] p-5 shadow-sm space-y-3 mb-4">
+              <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-1">Request Notes (Optional)</Text>
+              <TextInput
+                placeholder="Provide special instructions or delivery details..."
+                placeholderTextColor="#A1A1AA"
+                value={notes}
+                onChangeText={setNotes}
+                className="text-zinc-800 text-xs font-semibold h-20 p-3 border border-zinc-200 rounded-2xl"
+                multiline
+              />
+            </View>
+          )}
+
+          {/* Submit Action Button */}
+          {batchItems.length > 0 && (
+            <TouchableOpacity
+              onPress={handleSubmitRequest}
+              disabled={createRequestMutation.isPending}
+              className="w-full rounded-2xl bg-emerald-700 py-4 items-center justify-center shadow-lg active:scale-95 disabled:opacity-50"
+            >
+              {createRequestMutation.isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text className="text-white font-black text-xs uppercase tracking-[0.2em]">Submit Stock Request</Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Garage Dropdown Modal */}
       <Modal
@@ -407,105 +434,129 @@ export default function ProductRequestsScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Product Dropdown Modal */}
+      {/* Product Customizer Popup Modal */}
       <Modal
-        visible={productModalVisible}
-        animationType="fade"
+        visible={customizerModalVisible}
+        animationType="slide"
         transparent={true}
-        onRequestClose={() => setProductModalVisible(false)}
+        onRequestClose={() => setCustomizerModalVisible(false)}
       >
         <TouchableOpacity 
           activeOpacity={1} 
-          onPress={() => setProductModalVisible(false)}
-          className="flex-1 bg-black/40 justify-center items-center p-6"
+          onPress={() => setCustomizerModalVisible(false)}
+          className="flex-1 bg-black/50 justify-end"
         >
-          <View className="bg-white rounded-3xl w-full max-h-[70%] border border-zinc-200 shadow-2xl p-6">
-            <Text className="text-zinc-900 font-black text-base mb-4 uppercase tracking-wider">Select Product</Text>
-            
-            {/* Horizontal Category Selector in Modal */}
-            <View className="mb-4">
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={[{ id: '', name: 'All' }, ...categories]}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingBottom: 4 }}
-                renderItem={({ item }) => {
-                  const isActive = selectedCategory === item.id;
-                  return (
-                    <TouchableOpacity
-                      onPress={() => setSelectedCategory(item.id)}
-                      className={`px-3 py-1.5 rounded-full mr-2 border ${
-                        isActive
-                          ? 'bg-emerald-800 border-emerald-800'
-                          : 'bg-zinc-100 border-zinc-200'
-                      }`}
-                    >
-                      <Text
-                        className={`text-[10px] font-black uppercase tracking-wider ${
-                          isActive ? 'text-white' : 'text-zinc-500'
-                        }`}
-                      >
-                        {item.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                }}
-              />
+          <TouchableOpacity
+            activeOpacity={1}
+            className="bg-white rounded-t-[3rem] p-6 border-t border-zinc-200 shadow-2xl space-y-6 max-h-[85%]"
+          >
+            {/* Header */}
+            <View className="flex-row items-center justify-between pb-3 border-b border-zinc-100">
+              <View className="flex-row items-center flex-1 mr-4">
+                <View className="h-12 w-12 bg-zinc-50 border border-zinc-100 rounded-xl overflow-hidden mr-3 justify-center items-center">
+                  {selectedProduct?.image ? (
+                    <ImageComponent
+                      source={{ uri: resolveMediaUrl(selectedProduct.image) }}
+                      style={{ width: '100%', height: '100%' }}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <Icon name="package" size={20} color="#D4D4D8" />
+                  )}
+                </View>
+                <View className="flex-1">
+                  <Text className="text-zinc-900 font-black text-sm leading-tight" numberOfLines={1}>
+                    {selectedProduct?.name}
+                  </Text>
+                  {selectedProduct?.shortDescription ? (
+                    <Text className="text-zinc-500 font-medium text-[10px] mt-0.5" numberOfLines={1}>
+                      {selectedProduct.shortDescription}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setCustomizerModalVisible(false)}
+                className="bg-zinc-100 p-2 rounded-full"
+              >
+                <Icon name="x" size={16} color="#71717A" />
+              </TouchableOpacity>
             </View>
 
-            <FlatList
-              data={filteredInventoryForModal}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSelectedProduct(item);
-                    setSelectedVariant(null); // Reset variant on change
-                    setProductModalVisible(false);
-                  }}
-                  className="py-4 border-b border-zinc-100 active:bg-zinc-50"
-                >
-                  <Text className="text-zinc-800 font-bold text-sm">
-                    {item.name} {item.shortDescription ? <Text className="text-zinc-500 font-medium">({item.shortDescription})</Text> : null}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
+            {/* Customizer content */}
+            <ScrollView showsVerticalScrollIndicator={false} className="space-y-5">
+              {/* Variant Selector */}
+              <View>
+                <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Select Pack Size (Variant)</Text>
+                <View className="flex-row flex-wrap">
+                  {selectedProduct?.variants.map((v) => {
+                    const isSelected = selectedVariant?.id === v.id;
+                    return (
+                      <TouchableOpacity
+                        key={v.id}
+                        onPress={() => setSelectedVariant(v)}
+                        className={`px-4 py-3 rounded-2xl mr-2.5 mb-2.5 border ${
+                          isSelected
+                            ? 'bg-emerald-800 border-emerald-800'
+                            : 'bg-zinc-50 border-zinc-200'
+                        }`}
+                      >
+                        <Text className={`font-bold text-xs ${isSelected ? 'text-white' : 'text-zinc-800'}`}>
+                          {v.label}
+                        </Text>
+                        <Text className={`text-[9px] mt-0.5 ${isSelected ? 'text-emerald-200' : 'text-zinc-400'}`}>
+                          ₹{v.dealerPrice || v.price} (Offer: ₹{v.offerPrice || 'N/A'})
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
 
-      {/* Variant Dropdown Modal */}
-      <Modal
-        visible={variantModalVisible}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setVariantModalVisible(false)}
-      >
-        <TouchableOpacity 
-          activeOpacity={1} 
-          onPress={() => setVariantModalVisible(false)}
-          className="flex-1 bg-black/40 justify-center items-center p-6"
-        >
-          <View className="bg-white rounded-3xl w-full max-h-[50%] border border-zinc-200 shadow-2xl p-6">
-            <Text className="text-zinc-900 font-black text-base mb-4 uppercase tracking-wider">Select Pack Variant</Text>
-            <FlatList
-              data={selectedProduct?.variants || []}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSelectedVariant(item);
-                    setVariantModalVisible(false);
-                  }}
-                  className="py-4 border-b border-zinc-100 active:bg-zinc-50"
-                >
-                  <Text className="text-zinc-800 font-bold text-sm">{item.label}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
+              {/* Peti Size and Peti Quantity inputs */}
+              <View className="flex-row gap-4">
+                <View className="flex-1">
+                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">
+                    Peti Size ({selectedProduct?.petiUnit || 'Liter'})
+                  </Text>
+                  <TextInput
+                    keyboardType="number-pad"
+                    value={petiSizeInput}
+                    onChangeText={setPetiSizeInput}
+                    className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                  />
+                </View>
+
+                <View className="flex-1">
+                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Peti Quantity</Text>
+                  <TextInput
+                    keyboardType="number-pad"
+                    value={petiQtyInput}
+                    onChangeText={setPetiQtyInput}
+                    className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                  />
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* Bottom Actions */}
+            <View className="flex-row gap-3 pt-3">
+              <TouchableOpacity
+                onPress={() => setCustomizerModalVisible(false)}
+                className="flex-1 border border-zinc-200 py-4 rounded-2xl items-center"
+              >
+                <Text className="text-zinc-500 font-bold text-xs uppercase tracking-wider">Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleAddStagedItem}
+                disabled={!selectedVariant || !petiQtyInput || !petiSizeInput}
+                className="flex-1 bg-emerald-800 py-4 rounded-2xl items-center shadow-lg active:scale-95 disabled:opacity-50"
+              >
+                <Text className="text-white font-black text-xs uppercase tracking-wider">Add to Batch</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 

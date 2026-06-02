@@ -342,4 +342,8 @@ export const adminApi = {
     const response = await api.get<ApiResponse<DealerPromotion[]>>('/promotions/dealers');
     return response.data;
   },
+  updatePushToken: async (pushToken: string) => {
+    const response = await api.patch<ApiResponse<any>>('/auth/push-token', { pushToken });
+    return response.data.data;
+  },
 };

@@ -266,7 +266,11 @@ export async function createDealerProductRequest(
       if (!productName) {
         productName = product.shortDescription || product.name;
       }
-      if (product.petiSize) petiSize = product.petiSize;
+      if (typeof item.petiSize === 'number' && item.petiSize > 0) {
+        petiSize = item.petiSize;
+      } else if (product.petiSize) {
+        petiSize = product.petiSize;
+      }
       if (product.petiUnit) petiUnit = product.petiUnit;
     }
 

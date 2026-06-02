@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShoppingCart, Truck, Plus, Trash2, Package } from 'lucide-react';
+import { ShoppingCart, Truck, Trash2, Package } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
+import { resolveMediaUrl } from '../utils/media';
 
 interface CartItem {
   id: string;
@@ -29,10 +30,12 @@ export default function ProductRequestsPage() {
   const [requestedPack, setRequestedPack] = useState('');
   const [garageName, setGarageName] = useState('');
   const [petiQuantity, setPetiQuantity] = useState<number | string>(1);
+  const [petiSize, setPetiSize] = useState<number | string>(12);
   const [requestNotes, setRequestNotes] = useState('');
   const [price, setPrice] = useState<number>(0);
   const [offerPrice, setOfferPrice] = useState<number>(0);
   const [hsnCode, setHsnCode] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const inventoryQuery = useQuery({
     queryKey: ['admin-dealer-inventory'],
@@ -82,7 +85,7 @@ export default function ProductRequestsPage() {
       productName: product.name,
       shortDescription: product.shortDescription || '',
       petiQuantity: Number(petiQuantity) || 1,
-      petiSize: product.petiSize || 12,
+      petiSize: Number(petiSize) || product.petiSize || 12,
       petiUnit: product.petiUnit || 'Liter',
       variantLabel: variant.label,
       variantId: variant.id,
@@ -96,9 +99,11 @@ export default function ProductRequestsPage() {
     setSelectedProductId('');
     setRequestedPack('');
     setPetiQuantity(1);
+    setPetiSize(12);
     setPrice(0);
     setOfferPrice(0);
     setHsnCode('');
+    setIsModalOpen(false);
   };
 
   const removeFromCart = (id: string) => {
@@ -113,6 +118,7 @@ export default function ProductRequestsPage() {
         items: cart.map(item => ({
           productId: item.productId,
           petiQuantity: item.petiQuantity,
+          petiSize: item.petiSize,
           requestedPack: item.variantLabel,
           price: item.price,
           dealerPrice: item.dealerPrice,
@@ -128,8 +134,15 @@ export default function ProductRequestsPage() {
     },
   });
 
-  const totalVolume = useMemo(() => {
-    return cart.reduce((acc, item) => acc + (item.petiQuantity * item.petiSize), 0);
+  const totalVolumeText = useMemo(() => {
+    const groups: Record<string, number> = {};
+    cart.forEach(item => {
+      const unit = item.petiUnit || 'Liter';
+      const volume = item.petiQuantity * item.petiSize;
+      groups[unit] = (groups[unit] || 0) + volume;
+    });
+    const parts = Object.entries(groups).map(([unit, vol]) => `${vol} ${unit}`);
+    return parts.length > 0 ? parts.join(', ') : '0 Liter';
   }, [cart]);
 
   if (inventoryQuery.isLoading) {
@@ -157,7 +170,7 @@ export default function ProductRequestsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="md:col-span-2">
+              <div>
                 <label className="mb-2 block text-sm font-bold text-slate-700">
                   Garage Name (Kahan se aaye material)
                 </label>
@@ -183,8 +196,6 @@ export default function ProductRequestsPage() {
                   value={selectedCategory}
                   onChange={(e) => {
                     setSelectedCategory(e.target.value);
-                    setSelectedProductId('');
-                    setRequestedPack('');
                   }}
                   className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition font-semibold"
                 >
@@ -196,143 +207,57 @@ export default function ProductRequestsPage() {
                   ))}
                 </select>
               </div>
+            </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-bold text-slate-700">
-                  Select Product
-                </label>
-                <select
-                  value={selectedProductId}
-                  onChange={(event) => {
-                    setSelectedProductId(event.target.value);
-                    setRequestedPack('');
-                  }}
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition"
-                >
-                  <option value="">Choose product</option>
-                  {filteredProducts.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.name} {product.shortDescription ? `(${product.shortDescription})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-bold text-slate-700">
-                  Select Pack Size
-                </label>
-                <select
-                  value={requestedPack}
-                  disabled={!selectedProductId}
-                  onChange={(e) => {
-                    const packLabel = e.target.value;
-                    setRequestedPack(packLabel);
-                    const product = inventoryQuery.data?.find(p => p.id === selectedProductId);
-                    const variant = product?.variants.find(v => v.label === packLabel);
-                    if (variant) {
-                      setPrice(variant.dealerPrice || variant.price || 0);
-                      setOfferPrice(variant.offerPrice || 0);
-                      setHsnCode(variant.hsnCode || product?.hsnCode || '');
-                    }
-                  }}
-                  className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500 transition disabled:opacity-50"
-                >
-                  <option value="">Choose pack</option>
-                  {inventoryQuery.data?.find(p => p.id === selectedProductId)?.variants.map(v => (
-                    <option key={v.id} value={v.label}>{v.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedProductId && (
-                <div className="md:col-span-2">
-                  <p className="mb-2 text-sm font-bold text-slate-700">Product Info</p>
-                  <div className="rounded-2xl bg-primary-50 p-4 border border-primary-100">
-                    <p className="text-lg font-black text-primary-900 leading-tight">
-                      {inventoryQuery.data?.find(p => p.id === selectedProductId)?.name}
-                    </p>
-                    <p className="mt-1 text-sm font-medium text-primary-700 opacity-80">
-                      {inventoryQuery.data?.find(p => p.id === selectedProductId)?.shortDescription}
-                    </p>
-                    {inventoryQuery.data?.find(p => p.id === selectedProductId)?.hsnCode && (
-                      <p className="mt-1 text-[11px] font-black text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-lg border border-emerald-100">
-                        HSN: {inventoryQuery.data?.find(p => p.id === selectedProductId)?.hsnCode}
+            {/* Grid display for category filtered products */}
+            <div className="mt-6 border-t border-primary-100 pt-6">
+              <h4 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-wider">Choose Products below</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    onClick={() => {
+                      setSelectedProductId(product.id);
+                      const firstVariant = product.variants?.[0];
+                      setRequestedPack(firstVariant?.label || '');
+                      setPrice(firstVariant?.dealerPrice || firstVariant?.price || 0);
+                      setOfferPrice(firstVariant?.offerPrice || 0);
+                      setHsnCode(firstVariant?.hsnCode || product.hsnCode || '');
+                      setPetiQuantity(1);
+                      setPetiSize(product.petiSize || 12);
+                      setIsModalOpen(true);
+                    }}
+                    className="group flex flex-col rounded-2xl border border-primary-100 bg-primary-50/10 p-3.5 transition-all hover:bg-white hover:shadow-lg hover:border-primary-300 cursor-pointer overflow-hidden relative"
+                  >
+                    <div className="aspect-square w-full bg-slate-50 border border-primary-50 rounded-xl overflow-hidden mb-3 relative flex items-center justify-center">
+                      {product.image ? (
+                        <img
+                          src={resolveMediaUrl(product.image)}
+                          alt={product.name}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <Package className="h-10 w-10 text-primary-200" strokeWidth={1} />
+                      )}
+                    </div>
+                    <p className="font-black text-xs text-slate-900 line-clamp-1 leading-tight">{product.name}</p>
+                    {product.shortDescription ? (
+                      <p className="text-[10px] text-slate-500 font-bold mt-1 line-clamp-2 leading-snug">{product.shortDescription}</p>
+                    ) : null}
+                    {product.petiSize ? (
+                      <p className="text-[9px] text-primary-700 font-black mt-auto bg-primary-50 self-start px-2 py-0.5 rounded-lg border border-primary-100">
+                        {product.petiSize} {product.petiUnit || 'Liter'} per Peti
                       </p>
-                    )}
-                    
-                    <div className="mt-4 pt-4 border-t border-primary-200/50">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-primary-600 mb-3">Product Pricing Information</p>
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {inventoryQuery.data?.find(p => p.id === selectedProductId)?.variants.map((v: any) => (
-                          <div key={v.id} className="rounded-xl bg-white/60 p-3 border border-primary-200/50">
-                            <p className="text-xs font-black text-slate-900 mb-2">{v.label}</p>
-                            <div className="space-y-1.5">
-                              <div className="flex justify-between text-[10px] font-bold">
-                                <span className="text-slate-500 uppercase">Price (Dealer)</span>
-                                <span className="text-primary-700">₹{v.dealerPrice || v.price || 'N/A'}</span>
-                              </div>
-                              <div className="flex justify-between text-[10px] font-bold">
-                                <span className="text-slate-500 uppercase">Offer Price</span>
-                                <span className="text-emerald-600">₹{v.offerPrice || 'N/A'}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    ) : null}
                   </div>
-                </div>
-              )}
-
-              {selectedProductId && (
-                <div className="md:col-span-2 rounded-2xl bg-primary-50/50 p-5 border border-primary-100 shadow-inner">
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <div>
-                      <label className="mb-2 block text-xs font-bold text-slate-500">Peti Quantity</label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={petiQuantity}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '') {
-                            setPetiQuantity('');
-                          } else {
-                            const num = parseInt(val);
-                            if (!isNaN(num)) {
-                              setPetiQuantity(num);
-                            }
-                          }
-                        }}
-                        className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-base font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-xs font-bold text-slate-500">Peti Size</label>
-                      <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-3 text-base font-black text-slate-500">
-                        {inventoryQuery.data?.find((p) => p.id === selectedProductId)?.petiSize || 12}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-xs font-bold text-slate-500">HSN Code</label>
-                      <div className="w-full rounded-xl border border-primary-100 bg-slate-100 px-3 py-3 text-base font-black text-slate-500">
-                        {hsnCode || 'N/A'}
-                      </div>
-                    </div>
+                ))}
+                {filteredProducts.length === 0 && (
+                  <div className="col-span-full py-12 flex flex-col items-center justify-center text-slate-300">
+                    <Package size={40} strokeWidth={1} />
+                    <p className="mt-2 text-xs font-bold uppercase tracking-widest text-center">No products found in this category.</p>
                   </div>
-                </div>
-              )}
-
-              <button
-                type="button"
-                disabled={!selectedProductId || !requestedPack}
-                onClick={addToCart}
-                className="md:col-span-2 flex items-center justify-center gap-2 w-full rounded-2xl bg-primary-500 py-4 text-sm font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary-500/20 hover:bg-primary-600 disabled:opacity-50 transition"
-              >
-                <Plus size={18} />
-                Add to Batch List
-              </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -367,7 +292,7 @@ export default function ProductRequestsPage() {
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Volume</p>
-                <p className="text-2xl font-black text-primary-400">{totalVolume} <span className="text-xs font-bold uppercase text-slate-500">Liters/Kg</span></p>
+                <p className="text-xl font-black text-primary-400">{totalVolumeText}</p>
               </div>
             </div>
           </div>
@@ -385,7 +310,7 @@ export default function ProductRequestsPage() {
                   <div>
                     <p className="font-black text-slate-900 leading-tight">{item.productName}</p>
                     <p className="text-[10px] font-bold text-primary-600 mt-0.5">
-                      {item.variantLabel} 
+                      {item.variantLabel}
                       {item.price ? ` • Dealer: ₹${item.price}` : ''}
                       {item.offerPrice ? ` • Offer: ₹${item.offerPrice}` : ''}
                     </p>
@@ -404,7 +329,7 @@ export default function ProductRequestsPage() {
             {cart.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-slate-300">
                 <Package size={40} strokeWidth={1} />
-                <p className="mt-2 text-xs font-bold uppercase tracking-widest text-center">Batch is empty.<br/>Add products to start.</p>
+                <p className="mt-2 text-xs font-bold uppercase tracking-widest text-center">Batch is empty.<br />Add products to start.</p>
               </div>
             )}
           </div>
@@ -423,6 +348,149 @@ export default function ProductRequestsPage() {
           </div>
         </div>
       </section>
+
+      {/* Custom Modal for Variant, Peti Size, and Peti Quantity selection */}
+      {isModalOpen && selectedProductId && (() => {
+        const product = inventoryQuery.data?.find(p => p.id === selectedProductId);
+        if (!product) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+            <div className="w-full max-w-lg rounded-[2.5rem] border border-primary-100 bg-white p-6 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSelectedProductId('');
+                }}
+                className="absolute right-6 top-6 rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition font-black text-lg"
+              >
+                ✕
+              </button>
+
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 bg-slate-50 border border-primary-50 rounded-xl overflow-hidden flex items-center justify-center">
+                  {product.image ? (
+                    <img src={resolveMediaUrl(product.image)} alt={product.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <Package className="h-8 w-8 text-primary-200" strokeWidth={1} />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 leading-tight">{product.name}</h3>
+                  {product.shortDescription ? (
+                    <p className="text-xs font-medium text-slate-500 mt-1">{product.shortDescription}</p>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-primary-100">
+                <div>
+                  <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                    Select Pack Size (Variant)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {product.variants.map((v) => {
+                      const isSelected = requestedPack === v.label;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => {
+                            setRequestedPack(v.label);
+                            setPrice(v.dealerPrice || v.price || 0);
+                            setOfferPrice(v.offerPrice || 0);
+                            setHsnCode(v.hsnCode || product.hsnCode || '');
+                          }}
+                          className={`rounded-xl border p-3 text-left transition-all ${
+                            isSelected
+                              ? 'border-primary-500 bg-primary-50 text-primary-900 font-black shadow-sm'
+                              : 'border-primary-100 hover:bg-primary-50/30 text-slate-700'
+                          }`}
+                        >
+                          <p className="text-xs font-bold">{v.label}</p>
+                          <p className="text-[10px] mt-1 opacity-80">
+                            ₹{v.dealerPrice || v.price || 'N/A'} (Offer: ₹{v.offerPrice || 'N/A'})
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                      Peti Size ({product.petiUnit || 'Liter'})
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={petiSize}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setPetiSize('');
+                        } else {
+                          const num = parseInt(val);
+                          if (!isNaN(num)) setPetiSize(num);
+                        }
+                      }}
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-sm font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+                      Peti Quantity
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={petiQuantity}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setPetiQuantity('');
+                        } else {
+                          const num = parseInt(val);
+                          if (!isNaN(num)) setPetiQuantity(num);
+                        }
+                      }}
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3 py-3 text-sm font-black text-slate-900 shadow-sm focus:ring-2 focus:ring-primary-500 outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                {hsnCode && (
+                  <p className="text-[10px] font-black text-emerald-600 bg-emerald-50 w-fit px-2 py-0.5 rounded-lg border border-emerald-100">
+                    HSN Code: {hsnCode}
+                  </p>
+                )}
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setSelectedProductId('');
+                  }}
+                  className="flex-1 rounded-2xl border border-primary-100 py-3.5 text-xs font-black uppercase tracking-wider text-slate-500 hover:bg-slate-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!requestedPack || !petiQuantity || !petiSize}
+                  onClick={addToCart}
+                  className="flex-1 rounded-2xl bg-primary-500 py-3.5 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-primary-500/20 hover:bg-primary-600 disabled:opacity-50 transition"
+                >
+                  Add to Batch List
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

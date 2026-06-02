@@ -1,17 +1,74 @@
 import { Drawer } from 'expo-router/drawer';
-import React from 'react';
-import { useColorScheme, TouchableOpacity, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { useColorScheme, TouchableOpacity, Text, View, Platform } from 'react-native';
 import { useAdminAuthStore } from '../../store/useAdminAuthStore';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { adminApi } from '../../utils/api';
 
 const Icon = Feather as any;
 const DrawerComponent = Drawer as any;
 
+// Configure Notification Handler
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+async function registerForPushNotificationsAsync() {
+  if (!Device.isDevice) {
+    console.log('Must use physical device for Push Notifications');
+    return null;
+  }
+
+  try {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      console.log('Failed to get push token for push notification!');
+      return null;
+    }
+
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      Constants?.easConfig?.projectId;
+
+    const tokenData = await Notifications.getExpoPushTokenAsync({
+      projectId,
+    });
+    return tokenData.data;
+  } catch (error) {
+    console.error('Error getting Expo push token:', error);
+    return null;
+  }
+}
+
 export default function DrawerLayout() {
   const colorScheme = useColorScheme();
-  const { clearSession } = useAdminAuthStore();
+  const { clearSession, token } = useAdminAuthStore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (token) {
+      registerForPushNotificationsAsync().then((pushToken) => {
+        if (pushToken) {
+          adminApi.updatePushToken(pushToken).catch((err) => {
+            console.error('Failed to update push token on backend:', err);
+          });
+        }
+      });
+    }
+  }, [token]);
 
   const handleLogout = () => {
     clearSession();

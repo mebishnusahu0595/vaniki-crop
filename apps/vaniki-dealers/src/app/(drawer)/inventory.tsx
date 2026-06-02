@@ -202,8 +202,13 @@ export default function InventoryScreen() {
                   </View>
                   <View className="flex-1">
                     <Text className="text-zinc-900 font-black text-base">{product.name}</Text>
+                    {product.shortDescription ? (
+                      <Text className="text-xs text-zinc-500 font-medium mt-0.5" numberOfLines={2}>
+                        {product.shortDescription}
+                      </Text>
+                    ) : null}
                     {product.petiSize ? (
-                      <Text className="text-[10px] text-emerald-800 font-black uppercase tracking-wider mt-1 bg-emerald-50 self-start px-2 py-0.5 rounded-full">
+                      <Text className="text-[10px] text-emerald-800 font-black uppercase tracking-wider mt-1.5 bg-emerald-50 self-start px-2 py-0.5 rounded-full">
                         {product.petiSize} {product.petiUnit || 'Liter'} per Peti
                       </Text>
                     ) : null}

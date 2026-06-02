@@ -13,3 +13,19 @@ pnpm build
 pm2 restart vaniki-api
 
 EAANrwacYACIBRUMgTzZCZBKm0vgcHpq6KkNIdoY2sFXISWxkJg6dUZB93y0Gu57C4cPf7O7i6m1m7vRVQkyDYwVfMcmtqbWdl3fdQPlZBxh3HUYj5iNocuYyTujWonCgp75N7xjZA36zSOiSukFWZAiO3tTggAgHJ9Ys6yKKlJwiw8iwVtarZBTMuEHEWZAxptYrCgZDZD
+
+
+
+Improve your return on investment by measuring conversions
+Set up a Google tag on your website to enable key features of your Google products, including conversion measurement. Learn more about Google tags
+Install manually Recommended
+Below is the Google tag for this account. Copy and paste it in the code of every page of your website, immediately after the <head> element. Don’t add more than one Google tag to each page.
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18196181898"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-18196181898');
+</script>
