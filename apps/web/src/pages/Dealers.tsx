@@ -11,9 +11,9 @@ import {
 
 const Dealers: React.FC = () => {
   const handleDownload = () => {
-    // Direct link to the APK in public directory
+    // Direct link to the APK in public directory with cache-busting query parameter
     const link = document.createElement('a');
-    link.href = '/vaniki-dealers-release.apk';
+    link.href = `/vaniki-dealers-release.apk?v=${Date.now()}`;
     link.download = 'vaniki-dealers-release.apk';
     document.body.appendChild(link);
     link.click();
