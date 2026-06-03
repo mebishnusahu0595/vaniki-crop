@@ -57,7 +57,8 @@ export async function listActiveStores() {
     isActive: true,
     adminId: { $in: approvedAdminIds },
   })
-    .select('name address phone location openHours adminId')
+    .select('name address phone location openHours adminId gstNumber sgstNumber panNumber')
+    .populate('adminId', 'name email mobile profileImage')
     .sort({ name: 1 });
 
   const hydratedStores = await Promise.all(stores.map((store) => repairStoreAddressIfNeeded(store)));
