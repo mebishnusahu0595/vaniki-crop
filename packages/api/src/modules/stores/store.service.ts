@@ -58,12 +58,27 @@ export async function listActiveStores() {
     adminId: { $in: approvedAdminIds },
   })
     .select('name address phone location openHours adminId gstNumber sgstNumber panNumber')
-    .populate('adminId', 'name email mobile profileImage')
+    .populate('adminId', 'name email mobile profileImage dealerProfile')
     .sort({ name: 1 });
 
-  const hydratedStores = await Promise.all(stores.map((store) => repairStoreAddressIfNeeded(store)));
+  const hydratedStores = await Promise.all(stores.map(async (store) => {
+    // Merge GST from dealer signup profile if store-level field is missing/empty
+    const admin = store.adminId as any;
+    const dealerProfile = admin?.dealerProfile;
+    if (dealerProfile) {
+      if (!store.gstNumber && dealerProfile.gstNumber) {
+        store.gstNumber = dealerProfile.gstNumber;
+      }
+      if (!store.sgstNumber && dealerProfile.sgstNumber) {
+        store.sgstNumber = dealerProfile.sgstNumber;
+      }
+    }
+    return repairStoreAddressIfNeeded(store);
+  }));
+
   return hydratedStores;
 }
+
 
 /**
  * Detail of a specific store.
