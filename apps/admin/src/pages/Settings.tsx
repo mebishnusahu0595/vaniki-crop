@@ -12,7 +12,7 @@ const settingsSchema = z.object({
   name: z.string().trim().min(3, 'Store name must be at least 3 characters'),
   phone: z.string().trim().regex(/^\+?[0-9]{10,15}$/, 'Enter valid phone (10 to 15 digits)'),
   email: z.string().trim().email('Enter a valid email').or(z.literal('')),
-  street: z.string().trim().min(5, 'Street is required'),
+  street: z.string().trim().min(1, 'Street is required'),
   city: z.string().trim().min(2, 'City is required'),
   state: z.string().trim().min(2, 'State is required'),
   pincode: z.string().trim().regex(/^\d{6}$/, 'Pincode must be 6 digits'),

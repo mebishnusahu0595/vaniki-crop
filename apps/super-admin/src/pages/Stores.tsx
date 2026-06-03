@@ -18,7 +18,7 @@ const storeSchema = z.object({
   phone: z.string().trim().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number.'),
   email: z.string().trim().email('Please enter a valid email address.').or(z.literal('')),
   adminId: z.string().min(1, 'Please assign a store admin.'),
-  street: z.string().trim().min(3, 'Street is required.'),
+  street: z.string().trim().min(1, 'Street is required.'),
   city: z.string().trim().min(2, 'City is required.'),
   state: z.string().trim().min(2, 'State is required.'),
   pincode: z.string().trim().regex(/^\d{6}$/, 'Pincode must be exactly 6 digits.'),

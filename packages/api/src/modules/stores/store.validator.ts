@@ -7,7 +7,7 @@ const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format'
 const storeSchema = z.object({
   name: z.string().trim().min(3).max(150),
   address: z.object({
-    street: z.string().trim().min(5),
+    street: z.string().trim().min(1, 'Street is required'),
     city: z.string().trim().min(2),
     state: z.string().trim().min(2),
     pincode: z.string().regex(/^\d{6}$/, 'Invalid pincode'),

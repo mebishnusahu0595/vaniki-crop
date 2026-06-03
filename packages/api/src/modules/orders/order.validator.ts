@@ -11,7 +11,7 @@ const orderItemSchema = z.object({
 const shippingAddressSchema = z.object({
   name: z.string().trim().min(2),
   mobile: z.string().regex(/^[6-9]\d{9}$/, 'Invalid mobile number'),
-  street: z.string().trim().min(5),
+  street: z.string().trim().min(1, 'Street is required'),
   city: z.string().trim().min(2),
   state: z.string().trim().min(2),
   pincode: z.string().regex(/^\d{6}$/, 'Invalid pincode'),

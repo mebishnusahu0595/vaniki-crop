@@ -197,7 +197,7 @@ export const updateMeSchema = z.object({
     mobile: mobileSchema.optional(),
     savedAddress: z
       .object({
-        street: optionalTrimmedField(z.string().trim().min(3, 'Street must be at least 3 characters')),
+        street: optionalTrimmedField(z.string().trim().min(1, 'Street must be at least 1 character')),
         city: optionalTrimmedField(z.string().trim().min(2, 'City must be at least 2 characters')),
         district: optionalTrimmedField(z.string().trim().min(2, 'District must be at least 2 characters')),
         state: optionalTrimmedField(z.string().trim().min(2, 'State must be at least 2 characters')),

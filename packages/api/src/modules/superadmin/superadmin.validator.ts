@@ -41,7 +41,7 @@ export const analyticsQuerySchema = z.object({
 const storeSchema = z.object({
   name: z.string().trim().min(2).max(150),
   address: z.object({
-    street: z.string().trim().min(3),
+    street: z.string().trim().min(1),
     city: z.string().trim().min(2),
     state: z.string().trim().min(2),
     pincode: z.string().trim().regex(/^\d{6}$/, 'Invalid pincode'),
