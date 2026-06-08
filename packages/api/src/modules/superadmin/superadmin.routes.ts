@@ -26,6 +26,8 @@ import {
   updateStoreSecretsSchema,
   updateProductRequestStatusSchema,
   updateTestimonialSchema,
+  createSuperAdminStaffSchema,
+  updateSuperAdminStaffSchema,
   validate,
 } from './superadmin.validator.js';
 
@@ -50,6 +52,11 @@ router.patch('/admins/:id', upload.single('profileImage'), validate(updateAdminS
 router.patch('/admins/:id/deactivate', superAdminController.deactivateAdmin);
 router.patch('/admins/:id/approval', validate(approveAdminSchema), superAdminController.approveAdmin);
 router.delete('/admins/:id', superAdminController.deleteAdmin);
+
+router.get('/superadmin-staff', superAdminController.listSuperAdminStaff);
+router.post('/superadmin-staff', validate(createSuperAdminStaffSchema), superAdminController.createSuperAdminStaff);
+router.patch('/superadmin-staff/:id', validate(updateSuperAdminStaffSchema), superAdminController.updateSuperAdminStaff);
+router.delete('/superadmin-staff/:id', superAdminController.deleteSuperAdminStaff);
 
 router.get('/customers', validate(customerQuerySchema), superAdminController.listCustomers);
 router.patch('/customers/:id/loyalty', superAdminController.adjustCustomerLoyalty);

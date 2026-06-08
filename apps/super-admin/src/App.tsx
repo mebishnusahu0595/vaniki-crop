@@ -22,6 +22,7 @@ import LoyaltyPage from './pages/Loyalty';
 import UserLoyaltyPage from './pages/UserLoyalty';
 import ReferralPage from './pages/Referral';
 import StaffPage from './pages/Staff';
+import SuperadminStaffPage from './pages/SuperadminStaff';
 import InvoicesPage from './pages/Invoices';
 import NotificationsPage from './pages/Notifications';
 import DealersPromotionsPage from './pages/DealersPromotions';
@@ -62,6 +63,7 @@ function App() {
           <Route path="/referrals" element={<ReferralPage />} />
           <Route path="/staff" element={<StaffPage />} />
           <Route path="/staff/:id" element={<StaffPage />} />
+          <Route path="/superadmin-staff" element={<SuperadminStaffPage />} />
           <Route path="/site-settings" element={<SettingsPage />} />
           <Route path="/settings" element={<ProfileSettingsPage />} />
         </Route>

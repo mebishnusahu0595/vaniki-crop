@@ -307,6 +307,26 @@ export const updateStoreSecretsSchema = z.object({
   }),
 });
 
+export const createSuperAdminStaffSchema = z.object({
+  body: z.object({
+    name: z.string().trim().min(2).max(100),
+    email: z.string().trim().email().optional().or(z.literal('')),
+    mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Invalid mobile number'),
+    password: z.string().min(6).max(128),
+  }),
+});
+
+export const updateSuperAdminStaffSchema = z.object({
+  params: z.object({ id: objectIdSchema }),
+  body: z.object({
+    name: z.string().trim().min(2).max(100).optional(),
+    email: z.string().trim().email().optional().or(z.literal('')).optional(),
+    mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Invalid mobile number').optional(),
+    password: z.string().min(6).max(128).optional(),
+    isActive: boolish.optional(),
+  }),
+});
+
 export function validate(schema: z.ZodObject<any>) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {

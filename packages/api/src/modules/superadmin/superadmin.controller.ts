@@ -118,6 +118,42 @@ export async function deleteAdmin(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function listSuperAdminStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await superAdminService.listSuperAdminStaff(req.query);
+    res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createSuperAdminStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.createSuperAdminStaff(req.body);
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateSuperAdminStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.updateSuperAdminStaff(req.params.id as string, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteSuperAdminStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await superAdminService.deleteSuperAdminStaff(req.params.id as string);
+    res.status(200).json({ success: true, message: 'Superadmin staff deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listCustomers(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await superAdminService.listCustomers(req.query);

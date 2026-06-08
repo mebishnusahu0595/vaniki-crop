@@ -669,4 +669,20 @@ export const adminApi = {
     const response = await api.get<ApiResponse<any[]>>('/superadmin/enquiries', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
   },
+  getSuperAdminStaffList: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<any[]>>('/superadmin/superadmin-staff', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
+  createSuperAdminStaff: async (payload: { name: string; mobile: string; email?: string; password: string }) => {
+    const response = await api.post<ApiResponse<any>>('/superadmin/superadmin-staff', payload);
+    return response.data.data;
+  },
+  updateSuperAdminStaff: async (id: string, payload: { name?: string; mobile?: string; email?: string; password?: string; isActive?: boolean }) => {
+    const response = await api.patch<ApiResponse<any>>(`/superadmin/superadmin-staff/${id}`, payload);
+    return response.data.data;
+  },
+  deleteSuperAdminStaff: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/superadmin/superadmin-staff/${id}`);
+    return response.data;
+  },
 };

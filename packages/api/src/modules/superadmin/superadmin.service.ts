@@ -930,6 +930,90 @@ export async function deleteAdmin(adminId: string) {
   await User.deleteOne({ _id: admin._id });
 }
 
+export async function listSuperAdminStaff(query: Record<string, any>) {
+  const page = Math.max(1, Number(query.page || 1));
+  const limit = Math.max(1, Math.min(100, Number(query.limit || 20)));
+  const skip = (page - 1) * limit;
+
+  const filter: Record<string, any> = { role: 'superAdmin' };
+  if (query.search) {
+    filter.$or = [
+      { name: new RegExp(String(query.search), 'i') },
+      { mobile: new RegExp(String(query.search), 'i') },
+    ];
+  }
+
+  const [rows, total] = await Promise.all([
+    User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    User.countDocuments(filter),
+  ]);
+
+  return { data: rows, pagination: { total, page, limit } };
+}
+
+export async function createSuperAdminStaff(input: Record<string, any>) {
+  const existingMobile = await User.findOne({ mobile: input.mobile });
+  if (existingMobile) {
+    throw new AppError('A user with this mobile already exists', 409);
+  }
+  if (input.email) {
+    const existingEmail = await User.findOne({ email: input.email.trim().toLowerCase() });
+    if (existingEmail) {
+      throw new AppError('A user with this email already exists', 409);
+    }
+  }
+
+  const staff = await User.create({
+    name: input.name,
+    email: input.email ? input.email.trim().toLowerCase() : undefined,
+    mobile: input.mobile,
+    password: input.password,
+    role: 'superAdmin',
+    isActive: true,
+    approvalStatus: 'approved',
+  });
+
+  return staff;
+}
+
+export async function updateSuperAdminStaff(id: string, input: Record<string, any>) {
+  const staff = await User.findById(id);
+  if (!staff || staff.role !== 'superAdmin') {
+    throw new AppError('Superadmin staff not found', 404);
+  }
+
+  if (input.mobile && input.mobile !== staff.mobile) {
+    const existingMobile = await User.findOne({ mobile: input.mobile });
+    if (existingMobile) {
+      throw new AppError('A user with this mobile already exists', 409);
+    }
+    staff.mobile = input.mobile;
+  }
+
+  if (input.email && input.email !== staff.email) {
+    const existingEmail = await User.findOne({ email: input.email.trim().toLowerCase() });
+    if (existingEmail) {
+      throw new AppError('A user with this email already exists', 409);
+    }
+    staff.email = input.email.trim().toLowerCase();
+  }
+
+  if (input.name) staff.name = input.name;
+  if (input.password) staff.password = input.password;
+  if (input.isActive !== undefined) staff.isActive = Boolean(input.isActive);
+
+  await staff.save();
+  return staff;
+}
+
+export async function deleteSuperAdminStaff(id: string) {
+  const staff = await User.findById(id);
+  if (!staff || staff.role !== 'superAdmin') {
+    throw new AppError('Superadmin staff not found', 404);
+  }
+  await User.deleteOne({ _id: id });
+}
+
 export async function listCustomers(query: Record<string, any>) {
   const { page, limit, skip } = parsePagination(query);
 
