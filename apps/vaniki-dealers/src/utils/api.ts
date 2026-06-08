@@ -346,4 +346,20 @@ export const adminApi = {
     const response = await api.patch<ApiResponse<any>>('/auth/push-token', { pushToken });
     return response.data.data;
   },
+  updateFcmToken: async (fcmToken: string) => {
+    const response = await api.patch<ApiResponse<any>>('/auth/fcm-token', { fcmToken });
+    return response.data.data;
+  },
+  listStoreStaff: async () => {
+    const response = await api.get<ApiResponse<any[]>>('/admin/staff');
+    return response.data.data;
+  },
+  createStoreStaff: async (payload: Record<string, string>) => {
+    const response = await api.post<ApiResponse<any>>('/admin/staff', payload);
+    return response.data.data;
+  },
+  deleteStoreStaff: async (id: string) => {
+    const response = await api.delete<ApiResponse<any>>(`/admin/staff/${id}`);
+    return response.data.data;
+  },
 };

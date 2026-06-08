@@ -21,7 +21,7 @@ pnpm-debug.log*
 
 # OS files
 .DS_Store
-vanikicropweb-firebase-adminsdk-*.json
+vanikicrop*-firebase-adminsdk-*.json
 
 # Backups and compiled installer binaries
 backups/

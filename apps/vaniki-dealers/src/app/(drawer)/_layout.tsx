@@ -67,6 +67,15 @@ export default function DrawerLayout() {
           });
         }
       });
+      Notifications.getDevicePushTokenAsync().then((deviceToken) => {
+        if (deviceToken?.data) {
+          adminApi.updateFcmToken(deviceToken.data).catch((err) => {
+            console.error('Failed to update FCM token on backend:', err);
+          });
+        }
+      }).catch((err) => {
+        console.log('[PUSH] FCM token registration not supported on this platform/device:', err.message);
+      });
     }
   }, [token]);
 
@@ -181,6 +190,15 @@ export default function DrawerLayout() {
         options={{ 
           title: 'Referrals', 
           drawerLabel: 'Referrals',
+          drawerIcon: ({ color, size }) => <Icon name="users" size={size} color={color} />
+        }} 
+      />
+
+      <Drawer.Screen 
+        name="staff" 
+        options={{ 
+          title: 'Manage Staff', 
+          drawerLabel: 'Manage Staff',
           drawerIcon: ({ color, size }) => <Icon name="users" size={size} color={color} />
         }} 
       />

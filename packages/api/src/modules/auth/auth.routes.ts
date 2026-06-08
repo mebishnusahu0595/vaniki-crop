@@ -101,6 +101,10 @@ router.patch('/selected-store', requireAuth, validate(selectedStoreSchema), auth
 /** PATCH /api/auth/push-token — Update Expo push token */
 router.patch('/push-token', requireAuth, validate(pushTokenSchema), authController.updatePushToken);
 
+/** PATCH /api/auth/fcm-token — Update Firebase push token */
+router.patch('/fcm-token', requireAuth, authController.updateFcmToken);
+
+
 /** PATCH /api/auth/change-password — Update current password */
 router.patch('/change-password', requireAuth, validate(changePasswordSchema), authController.changePassword);
 

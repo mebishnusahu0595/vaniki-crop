@@ -11,6 +11,7 @@ import { AppError } from '../../utils/AppError.js';
 import { addEmailToQueue } from '../../queues/email.queue.js';
 import { orderPlacedTemplate, orderStatusUpdateTemplate } from '../../utils/emailTemplates.js';
 import { sendExpoPushNotification } from '../../utils/expoPush.js';
+import { triggerOrderPlacedNotifications, triggerOrderStatusNotifications } from '../../utils/pushNotifications.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
 import { sendOrderInvoice } from '../whatsapp/whatsapp.service.js';
@@ -459,6 +460,9 @@ export async function placeCodOrder(userId: string, input: any) {
   // Send WhatsApp Invoice
   sendOrderInvoice(order._id.toString()).catch(err => console.error('[WHATSAPP] Error:', err));
 
+  // Trigger push notifications
+  triggerOrderPlacedNotifications(order).catch(err => console.error('[PUSH] Error triggering order placed notification:', err));
+
   return { orderId: order._id, orderNumber };
 }
 
@@ -565,6 +569,9 @@ export async function finalizeOrder(razorpayOrderId: string, paymentId: string, 
 
   // Send WhatsApp Invoice
   sendOrderInvoice(order._id.toString()).catch(err => console.error('[WHATSAPP] Error:', err));
+
+  // Trigger push notifications
+  triggerOrderPlacedNotifications(order).catch(err => console.error('[PUSH] Error triggering order placed notification:', err));
 
   return order;
 }
@@ -765,7 +772,11 @@ export async function updateOrderStatus(orderId: string, input: any, adminId: st
     throw new AppError('Order not found', 404);
   }
 
-  const oldStatus = order.status;
+  const oldStatus = order.status as string;
+  if (oldStatus === 'delivered') {
+    throw new AppError('Order status has been locked as delivered and cannot be changed.', 400);
+  }
+
   order.status = status;
   order.statusHistory.push({
     status,
@@ -805,6 +816,9 @@ export async function updateOrderStatus(orderId: string, input: any, adminId: st
       },
     });
   }
+
+  // Trigger unified notifications
+  triggerOrderStatusNotifications(order).catch(err => console.error('[PUSH] Error triggering status notifications:', err));
 
   return order;
 }

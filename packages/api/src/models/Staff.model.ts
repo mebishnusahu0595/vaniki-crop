@@ -7,7 +7,10 @@ export interface IStaff extends Document {
   email?: string;
   password: string;
   referralCode: string;
-  role: 'delivery' | 'referral';
+  role: 'delivery' | 'referral' | 'dealer-staff';
+  storeId?: mongoose.Types.ObjectId;
+  fcmToken?: string;
+  expoPushToken?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -21,7 +24,10 @@ const staffSchema = new Schema<IStaff>(
     email: { type: String, trim: true, lowercase: true },
     password: { type: String, required: true, minlength: 6, select: false },
     referralCode: { type: String, required: true, unique: true, uppercase: true, trim: true },
-    role: { type: String, enum: ['delivery', 'referral'], default: 'delivery' },
+    role: { type: String, enum: ['delivery', 'referral', 'dealer-staff'], default: 'delivery' },
+    storeId: { type: Schema.Types.ObjectId, ref: 'Store', default: null },
+    fcmToken: { type: String, trim: true },
+    expoPushToken: { type: String, trim: true },
     isActive: { type: Boolean, default: true },
   },
   {

@@ -71,6 +71,11 @@ export function usePushNotifications(enabled: boolean) {
       const token = await Notifications.getExpoPushTokenAsync({ projectId });
       setPushToken(token.data);
       await storefrontApi.updatePushToken(token.data).catch(() => undefined);
+
+      const deviceToken = await Notifications.getDevicePushTokenAsync().catch(() => null);
+      if (deviceToken?.data) {
+        await storefrontApi.updateFcmToken(deviceToken.data).catch(() => undefined);
+      }
     };
 
     register().catch(() => undefined);

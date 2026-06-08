@@ -101,3 +101,32 @@ export async function listReferrals(req: Request, res: Response, next: NextFunct
     next(error);
   }
 }
+
+export async function listStoreStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await adminService.listStoreStaff(req.userStoreId!);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createStoreStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await adminService.createStoreStaff(req.userStoreId!, req.body);
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteStoreStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    await adminService.deleteStoreStaff(req.userStoreId!, id as string);
+    res.status(200).json({ success: true, message: 'Store staff deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+

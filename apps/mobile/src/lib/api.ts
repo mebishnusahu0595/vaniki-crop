@@ -427,6 +427,13 @@ export const storefrontApi = {
     });
     return normalizeAuthUser(response.data as AuthUserLike);
   },
+  updateFcmToken: async (fcmToken: string) => {
+    const response = await request<AuthUser>('/auth/fcm-token', {
+      method: 'PATCH',
+      body: JSON.stringify({ fcmToken }),
+    });
+    return normalizeAuthUser(response.data as AuthUserLike);
+  },
   selectStore: async (storeId: string) => {
     return request<{ success: boolean; message: string }>('/stores/select', {
       method: 'POST',

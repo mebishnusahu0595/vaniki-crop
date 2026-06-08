@@ -179,3 +179,40 @@ export async function sendDeliveryOtp(req: Request, res: Response, next: NextFun
     next(error);
   }
 }
+
+export async function getPickupOrders(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await staffService.listPickupOrders(req.staffId!);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function sendPickupOtp(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await staffService.sendPickupOtp(req.staffId!, req.params.id as string);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function verifyPickupOtp(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await staffService.verifyPickupOtp(req.staffId!, req.params.id as string, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateStaffFcmToken(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await staffService.updateStaffFcmToken(req.staffId!, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+

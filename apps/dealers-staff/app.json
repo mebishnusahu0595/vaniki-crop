@@ -1,0 +1,108 @@
+{
+  "expo": {
+    "name": "Vaniki Dealers Staff",
+    "slug": "vanikicrop-dealers-staff",
+    "version": "1.0.0",
+    "description": "Vaniki Crop Dealers Staff App — For managing and verifying store pickup orders.",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "jsEngine": "hermes",
+    "scheme": "vanikicrop-staff",
+    "primaryColor": "#2D6A4F",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#2D6A4F",
+          "defaultChannel": "orders"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vanikicrop.dealersstaff"
+    },
+    "android": {
+      "googleServicesFile": "./google-services.json",
+      "package": "com.vanikicrop.dealersstaff",
+      "versionCode": 4,
+      "targetSdkVersion": 35,
+      "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "vanikicrop.com",
+              "pathPrefix": "/product"
+            },
+            {
+              "scheme": "https",
+              "host": "vanikicrop.com",
+              "pathPrefix": "/products"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "experiments": {
+      "typedRoutes": true,
+      "css": true
+    },
+    "web": {
+      "bundler": "metro",
+      "jsEngine": "hermes",
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "86b93c0f-925b-43b5-9c2d-40238c0b980c"
+      }
+    }
+  }
+}

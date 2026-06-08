@@ -364,6 +364,20 @@ export async function updatePushToken(req: Request, res: Response, next: NextFun
   }
 }
 
+export async function updateFcmToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await authService.updateFcmToken(req.userId!, req.body);
+
+    res.status(200).json({
+      success: true,
+      data: user.toJSON(),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
 /**
  * PATCH /api/auth/me
  * Updates the authenticated user's profile details.

@@ -6,6 +6,7 @@ import { Product } from '../../models/Product.model.js';
 import { ProductRequest } from '../../models/ProductRequest.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { User } from '../../models/User.model.js';
+import { Staff } from '../../models/Staff.model.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
 
 export async function searchAdminStoreData(storeId: string, query: string) {
@@ -453,3 +454,49 @@ export async function listReferrals(adminId: string, query: Record<string, any>)
 
   return createPaginationResponse(rows, totalCount, page, limit);
 }
+
+export async function listStoreStaff(storeId: string) {
+  return Staff.find({ storeId, role: 'dealer-staff' }).sort({ createdAt: -1 });
+}
+
+export async function createStoreStaff(storeId: string, payload: any) {
+  const { name, mobile, password } = payload;
+  if (!name || !mobile || !password) {
+    throw new AppError('Name, mobile, and password are required', 400);
+  }
+  if (password.length < 6) {
+    throw new AppError('Password must be at least 6 characters', 400);
+  }
+
+  let cleanedMobile = mobile.trim().replace(/\s+/g, '');
+  if (cleanedMobile.startsWith('+91')) cleanedMobile = cleanedMobile.slice(3);
+  else if (cleanedMobile.startsWith('91') && cleanedMobile.length === 12) cleanedMobile = cleanedMobile.slice(2);
+
+  if (!/^[6-9]\d{9}$/.test(cleanedMobile)) {
+    throw new AppError('Please enter a valid 10-digit Indian mobile number.', 400);
+  }
+
+  // Check if staff already exists
+  const existingStaff = await Staff.findOne({ mobile: cleanedMobile });
+  if (existingStaff) {
+    throw new AppError('Staff with this mobile number already exists', 400);
+  }
+
+  return Staff.create({
+    name,
+    mobile: cleanedMobile,
+    password,
+    role: 'dealer-staff',
+    storeId,
+    isActive: true
+  });
+}
+
+export async function deleteStoreStaff(storeId: string, staffId: string) {
+  const staff = await Staff.findOne({ _id: staffId, storeId, role: 'dealer-staff' });
+  if (!staff) {
+    throw new AppError('Staff member not found or does not belong to your store', 404);
+  }
+  await Staff.deleteOne({ _id: staffId });
+}
+

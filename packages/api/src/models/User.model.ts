@@ -61,6 +61,7 @@ export interface IUser extends Document {
   otpExpiry?: Date;
   refreshToken?: string;
   expoPushToken?: string;
+  fcmToken?: string;
   loyaltyPoints: number;
   lastCheckIn?: Date;
   preferredLanguage?: 'en' | 'hi';
@@ -199,6 +200,7 @@ const userSchema = new Schema<IUser>(
     otpExpiry: { type: Date, select: false },
     refreshToken: { type: String, select: false },
     expoPushToken: { type: String, trim: true },
+    fcmToken: { type: String, trim: true },
     loyaltyPoints: { type: Number, default: 0 },
     lastCheckIn: { type: Date },
     preferredLanguage: { type: String, enum: ['en', 'hi'], default: 'hi' },

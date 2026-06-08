@@ -830,6 +830,24 @@ export async function updatePushToken(
   return user;
 }
 
+export async function updateFcmToken(
+  userId: string,
+  input: { fcmToken: string },
+): Promise<IUser> {
+  if (!input.fcmToken) {
+    throw new AppError('FCM token is required', 400);
+  }
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { fcmToken: input.fcmToken },
+    { new: true, runValidators: true },
+  ).populate('selectedStore', 'name address');
+
+  if (!user) throw new AppError('User not found', 404);
+  return user;
+}
+
+
 /**
  * Updates the authenticated user's profile.
  */

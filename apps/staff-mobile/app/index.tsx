@@ -12,6 +12,7 @@ import { useStaffAuthStore } from '../src/store/useStaffAuthStore';
 import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
 import { resolveMediaUrl } from '../src/utils/media';
 import { LoadingScreen } from '../src/components/LoadingScreen';
+import * as Notifications from 'expo-notifications';
 
 function taskAddress(task: DeliveryTask) {
   return task.shippingAddress || task.userId?.savedAddress;
@@ -290,6 +291,20 @@ export default function DeliveryTasksScreen() {
       setStaff(sessionQuery.data);
     }
   }, [sessionQuery.data, setStaff]);
+
+  useEffect(() => {
+    if (token) {
+      Notifications.getDevicePushTokenAsync().then((deviceToken) => {
+        if (deviceToken?.data) {
+          staffApi.updateFcmToken(deviceToken.data).catch((err) => {
+            console.error('Failed to update FCM token on backend:', err);
+          });
+        }
+      }).catch((err) => {
+        console.log('[PUSH] FCM token registration not supported on this platform/device:', err.message);
+      });
+    }
+  }, [token]);
 
   const tasks = useMemo(() => tasksQuery.data || [], [tasksQuery.data]);
 

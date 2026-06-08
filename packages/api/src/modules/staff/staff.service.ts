@@ -7,6 +7,7 @@ import { AppError } from '../../utils/AppError.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 import { rewardReferrerForPurchase } from '../orders/order.service.js';
 import { sendOtpViaMessageCentral, validateOtpViaMessageCentral } from '../../utils/messageCentral.js';
+import { triggerDeliveryAssignedNotifications, triggerOrderStatusNotifications } from '../../utils/pushNotifications.js';
 
 
 export const DELIVERY_CANCEL_REASONS = [
@@ -253,6 +254,10 @@ export async function assignDelivery(staffId: string, payload: { orderId: string
 
   try {
     await order.save({ validateBeforeSave: false });
+    
+    // Trigger notification
+    triggerDeliveryAssignedNotifications(order, staff._id).catch(err => console.error('[PUSH] Error triggering task assignment notification:', err));
+    
     return orderPopulate(Order.findById(order._id));
   } catch (error: any) {
     console.error('[ERROR] Failed to save assigned order:', error.message, { orderId: order._id, status: order.status });
@@ -346,6 +351,9 @@ export async function deliverTask(
 
   // Reward referrer for the purchase
   await rewardReferrerForPurchase(order.userId.toString());
+
+  // Trigger push notification
+  triggerOrderStatusNotifications(order).catch(err => console.error('[PUSH] Error triggering status notifications:', err));
 
   return getStaffTask(staffId, orderId);
 
@@ -447,4 +455,155 @@ export async function sendDeliveryOtp(staffId: string, orderId: string) {
   await order.save({ validateBeforeSave: false });
 
   return { success: true, message: 'OTP sent successfully to registered customer number.' };
+}
+
+export async function listPickupOrders(staffId: string) {
+  const staff = await Staff.findById(staffId);
+  if (!staff || !staff.isActive) {
+    throw new AppError('Staff account not found or inactive', 401);
+  }
+  if (staff.role !== 'dealer-staff') {
+    throw new AppError('Access denied. Dealer staff privileges required.', 403);
+  }
+  if (!staff.storeId) {
+    throw new AppError('Dealer staff is not associated with any store', 400);
+  }
+
+  return orderPopulate(
+    Order.find({
+      storeId: staff.storeId,
+      serviceMode: 'pickup',
+      status: { $ne: 'cancelled' }
+    }).sort({ createdAt: -1 })
+  );
+}
+
+export async function sendPickupOtp(staffId: string, orderId: string) {
+  const staff = await Staff.findById(staffId);
+  if (!staff || !staff.isActive) {
+    throw new AppError('Staff account not found or inactive', 401);
+  }
+  if (staff.role !== 'dealer-staff') {
+    throw new AppError('Access denied. Dealer staff privileges required.', 403);
+  }
+  if (!staff.storeId) {
+    throw new AppError('Dealer staff is not associated with any store', 400);
+  }
+
+  const order = await Order.findOne({
+    _id: orderId,
+    storeId: staff.storeId,
+    serviceMode: 'pickup'
+  }).select('+deliveryOtp');
+
+  if (!order) {
+    throw new AppError('Pickup order not found at your store', 404);
+  }
+
+  if (['delivered', 'cancelled'].includes(order.status)) {
+    throw new AppError('Cannot send OTP for a completed or cancelled pickup order', 400);
+  }
+
+  const mobile = order.shippingAddress?.mobile || (order.userId as any)?.mobile;
+  let finalMobile = '';
+  if (mobile) {
+    finalMobile = mobile;
+  } else {
+    const customer = await User.findById(order.userId).select('mobile');
+    if (customer) {
+      finalMobile = customer.mobile;
+    }
+  }
+
+  if (!finalMobile) {
+    throw new AppError('Customer mobile number not found.', 404);
+  }
+
+  let cleaned = finalMobile.trim().replace(/\s+/g, '');
+  if (cleaned.startsWith('+91')) cleaned = cleaned.slice(3);
+  else if (cleaned.startsWith('91') && cleaned.length === 12) cleaned = cleaned.slice(2);
+
+  if (!/^[6-9]\d{9}$/.test(cleaned)) {
+    throw new AppError('Customer has an invalid 10-digit Indian mobile number.', 400);
+  }
+
+  const verificationId = await sendOtpViaMessageCentral(cleaned);
+
+  order.deliveryOtp = verificationId;
+  order.deliveryOtpGeneratedAt = new Date();
+  await order.save({ validateBeforeSave: false });
+
+  return { success: true, message: 'OTP sent successfully to registered customer number.' };
+}
+
+export async function verifyPickupOtp(staffId: string, orderId: string, payload: { otp: string }) {
+  const staff = await Staff.findById(staffId);
+  if (!staff || !staff.isActive) {
+    throw new AppError('Staff account not found or inactive', 401);
+  }
+  if (staff.role !== 'dealer-staff') {
+    throw new AppError('Access denied. Dealer staff privileges required.', 403);
+  }
+  if (!staff.storeId) {
+    throw new AppError('Dealer staff is not associated with any store', 400);
+  }
+
+  const order = await Order.findOne({
+    _id: orderId,
+    storeId: staff.storeId,
+    serviceMode: 'pickup'
+  }).select('+deliveryOtp');
+
+  if (!order) {
+    throw new AppError('Pickup order not found at your store', 404);
+  }
+
+  if (order.status === 'delivered') {
+    throw new AppError('This order is already picked up', 400);
+  }
+  if (order.status === 'cancelled') {
+    throw new AppError('Cancelled order cannot be picked up', 400);
+  }
+
+  if (!order.deliveryOtp) {
+    throw new AppError('OTP has not been sent yet. Please click Send OTP first.', 400);
+  }
+
+  const isOtpValid = await validateOtpViaMessageCentral(order.deliveryOtp, String(payload.otp).trim());
+  if (!isOtpValid) {
+    throw new AppError('Invalid delivery OTP', 400);
+  }
+
+  order.status = 'delivered';
+  order.deliveryDeliveredAt = new Date();
+  if (order.paymentMethod === 'cod') {
+    order.paymentStatus = 'paid';
+  }
+  order.statusHistory.push({
+    status: 'delivered',
+    note: `Picked up and verified by store staff (${staff.name}) with OTP`,
+    timestamp: new Date(),
+  });
+
+  await order.save({ validateBeforeSave: false });
+
+  // Reward referrer for the purchase
+  await rewardReferrerForPurchase(order.userId.toString());
+
+  // Trigger push notification to user and superadmin
+  triggerOrderStatusNotifications(order).catch(err => console.error('[PUSH] Error triggering status notifications:', err));
+
+  return order;
+}
+
+export async function updateStaffFcmToken(staffId: string, payload: { fcmToken: string }) {
+  const staff = await Staff.findByIdAndUpdate(
+    staffId,
+    { fcmToken: payload.fcmToken },
+    { new: true, runValidators: true }
+  );
+  if (!staff) {
+    throw new AppError('Staff account not found', 404);
+  }
+  return staff;
 }

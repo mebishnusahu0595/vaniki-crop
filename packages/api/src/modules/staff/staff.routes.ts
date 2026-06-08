@@ -48,6 +48,11 @@ router.post('/tasks/:id/send-otp', requireStaffAuth, staffController.sendDeliver
 router.patch('/tasks/:id/complete', requireStaffAuth, staffController.markTaskCompleted);
 router.post('/tasks/:id/deliver', requireStaffAuth, upload.single('proofImage'), staffController.deliverTask);
 router.post('/tasks/:id/cancel', requireStaffAuth, staffController.cancelTask);
+router.patch('/fcm-token', requireStaffAuth, staffController.updateStaffFcmToken);
+router.get('/pickup-orders', requireStaffAuth, staffController.getPickupOrders);
+router.post('/pickup-orders/:id/send-otp', requireStaffAuth, staffController.sendPickupOtp);
+router.post('/pickup-orders/:id/verify-pickup', requireStaffAuth, staffController.verifyPickupOtp);
+
 
 router.use(requireAuth, requireSuperAdmin);
 

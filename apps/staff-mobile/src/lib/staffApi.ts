@@ -174,4 +174,11 @@ export const staffApi = {
     });
     return response.data;
   },
+  updateFcmToken: async (fcmToken: string) => {
+    const response = await request<any>('/staff/fcm-token', {
+      method: 'PATCH',
+      body: JSON.stringify({ fcmToken }),
+    });
+    return response.data;
+  },
 };
