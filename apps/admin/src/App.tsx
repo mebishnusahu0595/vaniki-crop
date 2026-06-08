@@ -10,6 +10,7 @@ import InvoicesPage from './pages/Invoices';
 import RequestHistoryPage from './pages/RequestHistory';
 import SettlementPage from './pages/Settlement';
 import ReferralsPage from './pages/Referrals';
+import StaffPage from './pages/Staff';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/request-history" element={<RequestHistoryPage />} />
           <Route path="/settlements" element={<SettlementPage />} />
           <Route path="/referrals" element={<ReferralsPage />} />
+          <Route path="/staff" element={<StaffPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<Navigate to="/settings" replace />} />
         </Route>

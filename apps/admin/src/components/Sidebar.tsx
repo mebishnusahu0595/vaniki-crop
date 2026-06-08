@@ -9,6 +9,7 @@ import {
   X,
   Wallet,
   LayoutDashboard,
+  UserCog,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink } from 'react-router-dom';
@@ -30,6 +31,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/request-history', label: 'Request History', icon: ClipboardList },
   { to: '/settlements', label: 'Settlements', icon: Wallet },
   { to: '/referrals', label: 'Referrals', icon: Users },
+  { to: '/staff', label: 'Store Staff', icon: UserCog },
   { to: '/settings', label: 'Profile', icon: UserRound },
 ];
 

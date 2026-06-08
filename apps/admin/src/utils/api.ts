@@ -332,4 +332,16 @@ export const adminApi = {
     const response = await api.get<ApiResponse<any[]>>('/admin/referrals', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
   },
+  listStoreStaff: async () => {
+    const response = await api.get<ApiResponse<any[]>>('/admin/staff');
+    return response.data.data;
+  },
+  createStoreStaff: async (payload: { name: string; mobile: string; password: string }) => {
+    const response = await api.post<ApiResponse<any>>('/admin/staff', payload);
+    return response.data.data;
+  },
+  deleteStoreStaff: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/admin/staff/${id}`);
+    return response.data;
+  },
 };
