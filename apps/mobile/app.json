@@ -38,8 +38,8 @@
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
             "buildToolsVersion": "35.0.0",
-            "ndkVersion": "27.2.12479018",
-            "useLegacyPackaging": true,
+            "ndkVersion": "28.2.13676358",
+            "useLegacyPackaging": false,
             "extraGradleProperties": [
               {"name": "org.gradle.jvmargs", "value": "-Xmx1200m -XX:MaxMetaspaceSize=256m -XX:+UseParallelGC"},
               {"name": "org.gradle.parallel", "value": "false"},
@@ -60,7 +60,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.vanikicrop.app",
-      "versionCode": 10,
+      "versionCode": 11,
       "targetSdkVersion": 35,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
