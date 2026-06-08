@@ -1,5 +1,12 @@
 # Ignore huge dependencies and cache folders in the monorepo
 node_modules/
+
+# Native folders MUST NOT be uploaded — EAS uses CNG (expo prebuild) to
+# regenerate them from app config. Uploading a stale android/ folder makes EAS
+# skip prebuild and build the wrong (old) native project. (.easignore overrides
+# .gitignore for EAS, so these have to be listed here explicitly.)
+apps/mobile/android/
+apps/mobile/ios/
 .turbo/
 dist/
 backups/

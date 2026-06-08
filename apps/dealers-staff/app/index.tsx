@@ -50,6 +50,17 @@ function PickupCard({ task }: { task: DeliveryTask }) {
     onError: (error) => Alert.alert('Verification failed', error instanceof Error ? error.message : 'Please check OTP and try again.'),
   });
 
+  const collectPaymentMutation = useMutation({
+    mutationFn: (method: 'cash' | 'upi') => staffApi.collectPayment(task.id, { method }),
+    onSuccess: (_data, method) => {
+      invalidateTasks();
+      Alert.alert('Payment Recorded', `Marked as paid via ${method.toUpperCase()}.`);
+    },
+    onError: (error) => Alert.alert('Could not record payment', error instanceof Error ? error.message : 'Please try again.'),
+  });
+
+  const isPaid = task.paymentStatus === 'paid';
+
   return (
     <View className="rounded-[28px] bg-white p-5 border border-primary-50 shadow-sm">
       <View className="flex-row items-start justify-between gap-3">
@@ -64,7 +75,7 @@ function PickupCard({ task }: { task: DeliveryTask }) {
       </View>
 
       <View className="mt-4 gap-3">
-        {task.items.map((item, index) => (
+        {(task.items ?? []).map((item, index) => (
           <View key={`${item.productId}-${index}`} className="flex-row items-center gap-3 rounded-[20px] border border-primary-100 p-3">
             {item.image ? (
               <Image source={{ uri: resolveMediaUrl(item.image) }} style={{ width: 48, height: 48, borderRadius: 14 }} />
@@ -88,11 +99,44 @@ function PickupCard({ task }: { task: DeliveryTask }) {
         </View>
         <View className="flex-1 rounded-[20px] bg-amber-50 p-3">
           <Text className="text-[10px] font-black uppercase tracking-[1px] text-amber-700">Payment</Text>
-          <Text className="mt-1 text-base font-black text-primary-900">{task.paymentMethod.toUpperCase()} · {task.paymentStatus}</Text>
+          <Text className="mt-1 text-base font-black text-primary-900">{(task.paymentMethod ?? '-').toUpperCase()} · {task.paymentStatus ?? '-'}</Text>
         </View>
       </View>
 
-      <View className="mt-5 rounded-[24px] border border-primary-100 p-4">
+      <View className="mt-4 rounded-[24px] border border-primary-100 p-4">
+        <Text className="text-[10px] font-black uppercase tracking-[1.6px] text-primary-500">Payment Collection</Text>
+        {isPaid ? (
+          <View className="mt-3 flex-row items-center gap-2 rounded-[18px] bg-emerald-50 px-4 py-3">
+            <Feather name="check-circle" size={18} color="#059669" />
+            <Text className="text-sm font-black text-emerald-700">
+              Paid · {(task.paymentMethod ?? '-').toUpperCase()}
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text className="mt-1 text-xs text-primary-900/55">How did the customer pay?</Text>
+            <View className="mt-3 flex-row gap-3">
+              {(['cash', 'upi'] as const).map((method) => (
+                <Pressable
+                  key={method}
+                  onPress={() => collectPaymentMutation.mutate(method)}
+                  disabled={collectPaymentMutation.isPending}
+                  className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-primary-900 px-4 py-3.5 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {collectPaymentMutation.isPending && collectPaymentMutation.variables === method ? (
+                    <ActivityIndicator color="#ffffff" size="small" />
+                  ) : (
+                    <Feather name={method === 'cash' ? 'dollar-sign' : 'smartphone'} size={15} color="#ffffff" />
+                  )}
+                  <Text className="text-[11px] font-black uppercase tracking-[1px] text-white">{method}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+      </View>
+
+      <View className="mt-4 rounded-[24px] border border-primary-100 p-4">
         <View className="flex-row items-center justify-between mb-1">
           <Text className="text-[10px] font-black uppercase tracking-[1.6px] text-primary-500">Pickup OTP</Text>
           <Pressable
@@ -178,6 +222,11 @@ export default function PickupScreen() {
   }, [token]);
 
   const tasks = useMemo(() => pickupsQuery.data || [], [pickupsQuery.data]);
+  // Filter tasks to only show non-delivered orders.
+  // NOTE: this hook must stay above the early returns below, otherwise the
+  // hook count changes between renders ("Rendered more hooks than during the
+  // previous render") and the app crashes.
+  const activePickups = useMemo(() => tasks.filter((t) => t.status !== 'delivered'), [tasks]);
 
   if (!hydrated) {
     return <LoadingScreen />;
@@ -186,9 +235,6 @@ export default function PickupScreen() {
   if (!token) {
     return <Redirect href="/login" />;
   }
-
-  // Filter tasks to only show non-delivered orders
-  const activePickups = useMemo(() => tasks.filter(t => t.status !== 'delivered'), [tasks]);
 
   return (
     <SafeAreaView className="flex-1 bg-offwhite" edges={['top', 'left', 'right']}>

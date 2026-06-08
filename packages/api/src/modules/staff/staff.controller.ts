@@ -216,3 +216,12 @@ export async function updateStaffFcmToken(req: Request, res: Response, next: Nex
   }
 }
 
+export async function collectPayment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await staffService.collectPayment(req.staffId!, req.params.id as string, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+

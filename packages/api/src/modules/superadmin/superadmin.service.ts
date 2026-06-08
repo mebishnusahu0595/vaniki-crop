@@ -18,6 +18,7 @@ import { StoreSecret } from '../../models/StoreSecret.model.js';
 import { Enquiry } from '../../models/Enquiry.model.js';
 import * as orderService from '../orders/order.service.js';
 import { sendExpoPushNotification } from '../../utils/expoPush.js';
+import { sendFcmNotification } from '../../utils/pushNotifications.js';
 
 const STORE_COLORS = ['#2D6A4F', '#52B788', '#40916C', '#74C69D', '#95D5B2', '#1B4332', '#0B6E4F', '#6A994E'];
 
@@ -1169,42 +1170,65 @@ export async function sendNotification(
     title: string;
     body: string;
     link?: string;
-    targetAudience?: 'allCustomers';
+    targetAudience?: 'customers' | 'dealers' | 'both' | 'allCustomers';
   },
   createdBy: string,
 ) {
+  // Map the requested audience to user roles.
+  //  - customers -> the customer app (role: customer)
+  //  - dealers   -> the Vaniki Dealers app (role: storeAdmin)
+  //  - both      -> both of the above
+  const audience = input.targetAudience === 'allCustomers' ? 'customers' : input.targetAudience || 'customers';
+  const roles: Array<'customer' | 'storeAdmin'> =
+    audience === 'dealers' ? ['storeAdmin'] : audience === 'both' ? ['customer', 'storeAdmin'] : ['customer'];
+
   const recipients = await User.find({
-    role: { $in: ['customer', 'storeAdmin'] },
+    role: { $in: roles },
     isActive: true,
-    expoPushToken: { $type: 'string', $ne: '' },
-  }).select('expoPushToken').lean();
+    $or: [
+      { fcmToken: { $type: 'string', $ne: '' } },
+      { expoPushToken: { $type: 'string', $ne: '' } },
+    ],
+  })
+    .select('expoPushToken fcmToken')
+    .lean();
 
   let sentCount = 0;
   let failedCount = 0;
   const link = input.link?.trim();
+  const data = link ? { link } : undefined;
 
   for (const recipient of recipients) {
-    const token = recipient.expoPushToken;
-    if (!token) continue;
+    let delivered = false;
 
-    try {
-      await sendExpoPushNotification({
-        to: token,
-        title: input.title,
-        body: input.body,
-        data: link ? { link } : undefined,
-      });
-      sentCount += 1;
-    } catch {
-      failedCount += 1;
+    // Prefer raw FCM (what the latest app builds register), fall back to Expo.
+    if (recipient.fcmToken) {
+      try {
+        await sendFcmNotification(recipient.fcmToken, { title: input.title, body: input.body, data });
+        delivered = true;
+      } catch {
+        /* try expo next */
+      }
     }
+
+    if (recipient.expoPushToken) {
+      try {
+        await sendExpoPushNotification({ to: recipient.expoPushToken, title: input.title, body: input.body, data });
+        delivered = true;
+      } catch {
+        /* ignore */
+      }
+    }
+
+    if (delivered) sentCount += 1;
+    else failedCount += 1;
   }
 
   const campaign = await NotificationCampaign.create({
     title: input.title,
     body: input.body,
     link,
-    targetAudience: input.targetAudience || 'allCustomers',
+    targetAudience: audience,
     totalRecipients: recipients.length,
     sentCount,
     failedCount,

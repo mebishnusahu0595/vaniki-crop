@@ -279,7 +279,7 @@ export interface NotificationCampaign {
   title: string;
   body: string;
   link?: string;
-  targetAudience: 'allCustomers';
+  targetAudience: 'customers' | 'dealers' | 'both' | 'allCustomers';
   totalRecipients: number;
   sentCount: number;
   failedCount: number;

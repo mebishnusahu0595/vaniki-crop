@@ -596,6 +596,65 @@ export async function verifyPickupOtp(staffId: string, orderId: string, payload:
   return order;
 }
 
+/**
+ * Records an in-person payment collected by staff at delivery/pickup.
+ * Works for both delivery staff (orders assigned to them) and dealer staff
+ * (pickup orders at their store). Sets the order to paid with the chosen
+ * method (cash/upi) so it reflects in the superadmin console.
+ */
+export async function collectPayment(
+  staffId: string,
+  orderId: string,
+  payload: { method: 'cash' | 'upi' },
+) {
+  const staff = await Staff.findById(staffId);
+  if (!staff || !staff.isActive) {
+    throw new AppError('Staff account not found or inactive', 401);
+  }
+
+  const method = payload.method;
+  if (method !== 'cash' && method !== 'upi') {
+    throw new AppError('Payment method must be either cash or upi', 400);
+  }
+
+  // Authorize the order against this staff member.
+  let order;
+  if (staff.role === 'dealer-staff') {
+    if (!staff.storeId) {
+      throw new AppError('Dealer staff is not associated with any store', 400);
+    }
+    order = await Order.findOne({ _id: orderId, storeId: staff.storeId });
+  } else {
+    order = await Order.findOne({ _id: orderId, ...getStaffOrderQuery(staffId) });
+  }
+
+  if (!order) {
+    throw new AppError('Order not found for this staff member', 404);
+  }
+  if (order.status === 'cancelled') {
+    throw new AppError('Cannot collect payment for a cancelled order', 400);
+  }
+  if (order.paymentStatus === 'paid') {
+    throw new AppError('Payment is already marked as paid for this order', 400);
+  }
+
+  order.paymentStatus = 'paid';
+  order.paymentMethod = method;
+  order.paymentCollectedBy = staff._id as any;
+  order.paymentCollectedAt = new Date();
+  order.statusHistory.push({
+    status: order.status,
+    note: `Payment of ${order.totalAmount} collected via ${method.toUpperCase()} by ${staff.name}`,
+    timestamp: new Date(),
+  });
+
+  await order.save({ validateBeforeSave: false });
+
+  // The superadmin monitor polls orders every 15s, so it reflects the paid
+  // state automatically — no push notification needed here.
+  return order;
+}
+
 export async function updateStaffFcmToken(staffId: string, payload: { fcmToken: string }) {
   const staff = await Staff.findByIdAndUpdate(
     staffId,

@@ -19,7 +19,7 @@ export interface DeliveryTask {
   orderNumber: string;
   status: OrderStatusHistoryEntry['status'];
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
-  paymentMethod: 'razorpay' | 'cod';
+  paymentMethod: 'razorpay' | 'cod' | 'cash' | 'upi';
   totalAmount: number;
   createdAt: string;
   deliveryOtp?: string;
@@ -197,5 +197,12 @@ export const staffApi = {
       body: JSON.stringify({ fcmToken }),
     });
     return response.data;
+  },
+  collectPayment: async (id: string, payload: { method: 'cash' | 'upi' }) => {
+    const response = await request<DeliveryTask>(`/staff/orders/${id}/collect-payment`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return normalizeTask(response.data);
   },
 };

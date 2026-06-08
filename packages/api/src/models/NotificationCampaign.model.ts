@@ -1,6 +1,9 @@
 import mongoose, { Schema, type Document } from 'mongoose';
 
-export type NotificationTargetAudience = 'allCustomers';
+// 'customers' -> app users (role: customer); 'dealers' -> store admins on the
+// Vaniki Dealers app (role: storeAdmin); 'both' -> both. 'allCustomers' is the
+// legacy value, kept for backwards compatibility with existing campaigns.
+export type NotificationTargetAudience = 'customers' | 'dealers' | 'both' | 'allCustomers';
 
 export interface INotificationCampaign extends Document {
   title: string;
@@ -36,8 +39,8 @@ const notificationCampaignSchema = new Schema<INotificationCampaign>(
     },
     targetAudience: {
       type: String,
-      enum: ['allCustomers'],
-      default: 'allCustomers',
+      enum: ['customers', 'dealers', 'both', 'allCustomers'],
+      default: 'customers',
     },
     sentCount: { type: Number, default: 0, min: 0 },
     failedCount: { type: Number, default: 0, min: 0 },

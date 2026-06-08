@@ -29,3 +29,11 @@ Below is the Google tag for this account. Copy and paste it in the code of every
 
   gtag('config', 'AW-18196181898');
 </script>
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ vaniki dealer staff apk and vaniki admin staff apk is crashing .. and sabmein firebase ka notification aana chahiye .. sab order and sabka .. new
+  order aya toh uska .. and status ka bhi order ka .. https://superadmin.vanikicrop.com/notifications and isme 2 options rahe ek dealers ko bhejne ke
+  liye unke app par and ek user ka rahe .. and ek both ka option rahe .. jisko bhejna hai usko jaye bas .. and baaki orders and status ka apne aap jaye
+  .. manual na bhejna pade .. and jo pickup and delivery wala app hai na usme payment ka bhi option rakho ki samne wala cash se kiya ya upi se .. and
+  payment done ka bhi rakho taaki superadmin mein mark ho jaye .. in vaniki dealers staff and vaniki staff ( delivery man ) app ..

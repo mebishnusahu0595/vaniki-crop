@@ -52,6 +52,7 @@ router.patch('/fcm-token', requireStaffAuth, staffController.updateStaffFcmToken
 router.get('/pickup-orders', requireStaffAuth, staffController.getPickupOrders);
 router.post('/pickup-orders/:id/send-otp', requireStaffAuth, staffController.sendPickupOtp);
 router.post('/pickup-orders/:id/verify-pickup', requireStaffAuth, staffController.verifyPickupOtp);
+router.post('/orders/:id/collect-payment', requireStaffAuth, staffController.collectPayment);
 
 
 router.use(requireAuth, requireSuperAdmin);

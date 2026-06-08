@@ -6,11 +6,19 @@ import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
 import { formatDate } from '../utils/format';
 
+type Audience = 'customers' | 'dealers' | 'both';
+
+const AUDIENCE_OPTIONS: { value: Audience; label: string; hint: string }[] = [
+  { value: 'customers', label: 'Users', hint: 'Customer app' },
+  { value: 'dealers', label: 'Dealers', hint: 'Dealers app' },
+  { value: 'both', label: 'Both', hint: 'Users + Dealers' },
+];
+
 const defaultForm = {
   title: '',
   body: '',
   link: '',
-  targetAudience: 'allCustomers' as const,
+  targetAudience: 'customers' as Audience,
 };
 
 function getDeliveryRate(sent: number, total: number) {
@@ -76,11 +84,37 @@ export default function NotificationsPage() {
             </div>
             <div>
               <h2 className="text-lg font-black text-slate-900">Compose notification</h2>
-              <p className="text-sm text-slate-500">Audience: all active customers with a registered app token.</p>
+              <p className="text-sm text-slate-500">Choose who receives this notification, then compose it.</p>
             </div>
           </div>
 
           <div className="mt-6 space-y-4">
+            <div>
+              <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Send to</span>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {AUDIENCE_OPTIONS.map((opt) => {
+                  const active = form.targetAudience === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setForm((current) => ({ ...current, targetAudience: opt.value }))}
+                      className={`rounded-2xl border px-3 py-3 text-center transition ${
+                        active
+                          ? 'border-primary-500 bg-primary-500 text-white shadow-[0_10px_24px_rgba(45,106,79,0.22)]'
+                          : 'border-primary-100 bg-primary-50 text-slate-600 hover:border-primary-300'
+                      }`}
+                    >
+                      <span className="block text-sm font-black">{opt.label}</span>
+                      <span className={`block text-[10px] font-bold uppercase tracking-[0.1em] ${active ? 'text-white/75' : 'text-slate-400'}`}>
+                        {opt.hint}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <label className="block">
               <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Title</span>
               <input

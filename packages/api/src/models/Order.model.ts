@@ -55,8 +55,9 @@ export type OrderStatus =
 /** Payment status enum */
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
-/** Payment method enum */
-export type PaymentMethod = 'razorpay' | 'cod';
+/** Payment method enum. 'cash'/'upi' are recorded by staff when they collect
+ * payment in person at delivery/pickup. */
+export type PaymentMethod = 'razorpay' | 'cod' | 'cash' | 'upi';
 
 /** Service mode enum */
 export type OrderServiceMode = 'delivery' | 'pickup';
@@ -80,6 +81,10 @@ export interface IOrder extends Document {
   shippingAddress?: IShippingAddress;
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
+  /** Staff member who collected an in-person (cash/upi) payment. */
+  paymentCollectedBy?: mongoose.Types.ObjectId | null;
+  /** When an in-person payment was marked as collected. */
+  paymentCollectedAt?: Date;
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
@@ -216,11 +221,13 @@ const orderSchema = new Schema<IOrder, IOrderModel>(
     paymentMethod: {
       type: String,
       enum: {
-        values: ['razorpay', 'cod'],
+        values: ['razorpay', 'cod', 'cash', 'upi'],
         message: '{VALUE} is not a valid payment method',
       },
       required: [true, 'Payment method is required'],
     },
+    paymentCollectedBy: { type: Schema.Types.ObjectId, ref: 'Staff', default: null },
+    paymentCollectedAt: { type: Date },
     razorpayOrderId: { type: String },
     razorpayPaymentId: { type: String },
     razorpaySignature: { type: String },

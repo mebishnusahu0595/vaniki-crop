@@ -362,7 +362,7 @@ export const adminApi = {
     title: string;
     body: string;
     link?: string;
-    targetAudience: 'allCustomers';
+    targetAudience: 'customers' | 'dealers' | 'both';
   }) => {
     const response = await api.post<ApiResponse<NotificationCampaign>>('/superadmin/notifications', payload);
     return response.data.data;

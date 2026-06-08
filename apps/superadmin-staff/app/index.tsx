@@ -46,7 +46,7 @@ function OrderCard({ task }: { task: DeliveryTask }) {
       </View>
 
       <View className="mt-4 gap-3">
-        {task.items.map((item, index) => (
+        {(task.items ?? []).map((item, index) => (
           <View key={`${item.productId}-${index}`} className="flex-row items-center gap-3 rounded-[20px] border border-primary-100 p-3">
             {item.image ? (
               <Image source={{ uri: resolveMediaUrl(item.image) }} style={{ width: 48, height: 48, borderRadius: 14 }} />
@@ -70,7 +70,7 @@ function OrderCard({ task }: { task: DeliveryTask }) {
         </View>
         <View className="flex-1 rounded-[20px] bg-amber-50 p-3">
           <Text className="text-[10px] font-black uppercase tracking-[1px] text-amber-700">Payment Status</Text>
-          <Text className="mt-1 text-base font-black text-primary-900">{task.paymentMethod.toUpperCase()} · {task.paymentStatus}</Text>
+          <Text className="mt-1 text-base font-black text-primary-900">{(task.paymentMethod ?? '-').toUpperCase()} · {task.paymentStatus ?? '-'}</Text>
         </View>
       </View>
     </View>

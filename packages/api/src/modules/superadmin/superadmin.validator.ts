@@ -182,7 +182,10 @@ export const sendNotificationSchema = z.object({
         if (!value) return true;
         return value.startsWith('/') || /^https?:\/\/[^\s]+$/i.test(value);
       }, 'Link must be an app path or http(s) URL'),
-    targetAudience: z.enum(['allCustomers']).default('allCustomers'),
+    targetAudience: z.preprocess(
+      (value) => (value === 'allCustomers' ? 'customers' : value),
+      z.enum(['customers', 'dealers', 'both']).default('customers'),
+    ),
   }),
 });
 

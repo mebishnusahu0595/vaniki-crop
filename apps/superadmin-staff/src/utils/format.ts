@@ -9,6 +9,21 @@ export const currencyFormatter = new Intl.NumberFormat('en-IN', {
   maximumFractionDigits: 0,
 });
 
+/** Formats an ISO date/time string for order metadata, e.g. "8 Jun 2026, 3:25 pm". */
+export function formatDateTime(value?: string | number | Date | null) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return new Intl.DateTimeFormat('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date);
+}
+
 export function formatStoreAddress(address?: Partial<Address> | null) {
   if (!address) return '';
 

@@ -72,6 +72,17 @@ function TaskCard({ task }: { task: DeliveryTask }) {
     onError: (error) => Alert.alert('Cancel failed', error instanceof Error ? error.message : 'Please try again.'),
   });
 
+  const collectPaymentMutation = useMutation({
+    mutationFn: (method: 'cash' | 'upi') => staffApi.collectPayment(task.id, { method }),
+    onSuccess: (_data, method) => {
+      invalidateTasks();
+      Alert.alert('Payment Recorded', `Marked as paid via ${method.toUpperCase()}.`);
+    },
+    onError: (error) => Alert.alert('Could not record payment', error instanceof Error ? error.message : 'Please try again.'),
+  });
+
+  const isPaid = task.paymentStatus === 'paid';
+
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -144,6 +155,39 @@ function TaskCard({ task }: { task: DeliveryTask }) {
           <Text className="text-[10px] font-black uppercase tracking-[1px] text-amber-700">Payment</Text>
           <Text className="mt-1 text-base font-black text-primary-900">{task.paymentMethod.toUpperCase()} · {task.paymentStatus}</Text>
         </View>
+      </View>
+
+      <View className="mt-4 rounded-[24px] border border-primary-100 p-4">
+        <Text className="text-[10px] font-black uppercase tracking-[1.6px] text-primary-500">Payment Collection</Text>
+        {isPaid ? (
+          <View className="mt-3 flex-row items-center gap-2 rounded-[18px] bg-emerald-50 px-4 py-3">
+            <Feather name="check-circle" size={18} color="#059669" />
+            <Text className="text-sm font-black text-emerald-700">
+              Paid · {(task.paymentMethod ?? '-').toUpperCase()}
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text className="mt-1 text-xs text-primary-900/55">How did the customer pay?</Text>
+            <View className="mt-3 flex-row gap-3">
+              {(['cash', 'upi'] as const).map((method) => (
+                <Pressable
+                  key={method}
+                  onPress={() => collectPaymentMutation.mutate(method)}
+                  disabled={collectPaymentMutation.isPending}
+                  className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-primary-900 px-4 py-3.5 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {collectPaymentMutation.isPending && collectPaymentMutation.variables === method ? (
+                    <ActivityIndicator color="#ffffff" size="small" />
+                  ) : (
+                    <Feather name={method === 'cash' ? 'dollar-sign' : 'smartphone'} size={15} color="#ffffff" />
+                  )}
+                  <Text className="text-[11px] font-black uppercase tracking-[1px] text-white">{method}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
       </View>
 
       <TextInput
