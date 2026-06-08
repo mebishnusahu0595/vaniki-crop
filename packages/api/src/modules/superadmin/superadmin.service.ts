@@ -959,12 +959,6 @@ export async function createSuperAdminStaff(input: Record<string, any>) {
   if (existingMobile) {
     throw new AppError('A user with this mobile already exists', 409);
   }
-  if (input.email) {
-    const existingEmail = await User.findOne({ email: input.email.trim().toLowerCase() });
-    if (existingEmail) {
-      throw new AppError('A user with this email already exists', 409);
-    }
-  }
 
   const staff = await User.create({
     name: input.name,
@@ -997,10 +991,6 @@ export async function updateSuperAdminStaff(id: string, input: Record<string, an
   }
 
   if (input.email && input.email !== staff.email) {
-    const existingEmail = await User.findOne({ email: input.email.trim().toLowerCase() });
-    if (existingEmail) {
-      throw new AppError('A user with this email already exists', 409);
-    }
     staff.email = input.email.trim().toLowerCase();
   }
 
