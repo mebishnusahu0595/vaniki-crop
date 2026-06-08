@@ -935,7 +935,10 @@ export async function listSuperAdminStaff(query: Record<string, any>) {
   const limit = Math.max(1, Math.min(100, Number(query.limit || 20)));
   const skip = (page - 1) * limit;
 
-  const filter: Record<string, any> = { role: 'superAdmin' };
+  const filter: Record<string, any> = {
+    role: 'superAdmin',
+    email: { $ne: 'superadmin@vanikicrop.com' },
+  };
   if (query.search) {
     filter.$or = [
       { name: new RegExp(String(query.search), 'i') },
@@ -981,6 +984,9 @@ export async function updateSuperAdminStaff(id: string, input: Record<string, an
   if (!staff || staff.role !== 'superAdmin') {
     throw new AppError('Superadmin staff not found', 404);
   }
+  if (staff.email === 'superadmin@vanikicrop.com') {
+    throw new AppError('Cannot update primary superadmin account through staff endpoint', 400);
+  }
 
   if (input.mobile && input.mobile !== staff.mobile) {
     const existingMobile = await User.findOne({ mobile: input.mobile });
@@ -1010,6 +1016,9 @@ export async function deleteSuperAdminStaff(id: string) {
   const staff = await User.findById(id);
   if (!staff || staff.role !== 'superAdmin') {
     throw new AppError('Superadmin staff not found', 404);
+  }
+  if (staff.email === 'superadmin@vanikicrop.com') {
+    throw new AppError('Cannot delete primary superadmin account', 400);
   }
   await User.deleteOne({ _id: id });
 }
