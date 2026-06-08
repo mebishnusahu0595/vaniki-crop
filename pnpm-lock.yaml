@@ -311,6 +311,9 @@ importers:
       expo-location:
         specifier: ~18.1.6
         version: 18.1.6(expo@53.0.27(@babel/core@7.29.0)(@expo/dom-webview@55.0.6)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(babel-plugin-react-compiler@1.0.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))
+      expo-modules-core:
+        specifier: 2.5.0
+        version: 2.5.0
       expo-notifications:
         specifier: ~0.31.5
         version: 0.31.5(expo@53.0.27(@babel/core@7.29.0)(@expo/dom-webview@55.0.6)(@expo/metro-runtime@5.0.5(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0)))(babel-plugin-react-compiler@1.0.0)(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0))(react-native@0.79.6(@babel/core@7.29.0)(@types/react@19.0.14)(react@19.0.0))(react@19.0.0)
@@ -375,6 +378,9 @@ importers:
         specifier: ^5.0.5
         version: 5.0.13(@types/react@19.0.14)(immer@11.1.6)(react@19.0.0)(use-sync-external-store@1.6.0(react@19.0.0))
     devDependencies:
+      '@expo/cli':
+        specifier: 0.24.24
+        version: 0.24.24
       '@types/react':
         specifier: ~19.0.10
         version: 19.0.14
