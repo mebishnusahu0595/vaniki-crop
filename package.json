@@ -25,5 +25,10 @@
     "firebase": "^12.12.1",
     "firebase-admin": "^13.8.0",
     "react-native-worklets": "0.5.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "@expo/cli>expo": "53.0.27"
+    }
   }
 }
