@@ -15,6 +15,7 @@ import { storefrontApi } from '../../src/lib/api';
 import { useStoreStore } from '../../src/store/useStoreStore';
 import type { Testimonial } from '../../src/types/storefront';
 import { resolveMediaUrl } from '../../src/utils/media';
+import { Skeleton } from '../../src/components/Skeleton';
 
 const bestSellerTabs = ['Insecticides', 'Herbicides', 'Fungicides'] as const;
 const fallbackTestimonials: Testimonial[] = [
@@ -141,9 +142,7 @@ export default function HomeScreen() {
         </View>
 
         {homepageQuery.isLoading ? (
-          <View className="rounded-[30px] bg-primary-100 py-20">
-            <ActivityIndicator color="#2D6A4F" />
-          </View>
+          <Skeleton height={180} borderRadius={30} className="w-full" />
         ) : (
           <HeroCarousel banners={homepageQuery.data?.banners || []} />
         )}
@@ -176,8 +175,13 @@ export default function HomeScreen() {
               />
             </View>
           ) : homepageQuery.isLoading || categoriesFallbackQuery.isLoading ? (
-            <View className="rounded-[24px] bg-white py-8">
-              <ActivityIndicator color="#2D6A4F" />
+            <View className="flex-row gap-4 py-2">
+              {[1, 2, 3, 4].map((i) => (
+                <View key={i} className="items-center mr-1">
+                  <Skeleton width={96} height={96} borderRadius={24} />
+                  <Skeleton width={70} height={10} borderRadius={4} className="mt-3" />
+                </View>
+              ))}
             </View>
           ) : (
             <View className="rounded-[24px] bg-white px-4 py-5">
@@ -204,8 +208,18 @@ export default function HomeScreen() {
               />
             </View>
           ) : homepageQuery.isLoading || fallbackProductsQuery.isLoading ? (
-            <View className="rounded-[24px] bg-white py-8">
-              <ActivityIndicator color="#2D6A4F" />
+            <View className="flex-row gap-3">
+              {[1, 2].map((i) => (
+                <View key={i} className="w-[184px] p-3 rounded-[24px] border border-primary-100 bg-white gap-2 mr-1">
+                  <Skeleton height={140} borderRadius={16} className="w-full" />
+                  <Skeleton width={120} height={14} borderRadius={4} className="mt-1" />
+                  <Skeleton width={80} height={10} borderRadius={4} />
+                  <View className="flex-row justify-between items-center mt-2">
+                    <Skeleton width={50} height={14} borderRadius={4} />
+                    <Skeleton width={70} height={28} borderRadius={14} />
+                  </View>
+                </View>
+              ))}
             </View>
           ) : (
             <View className="rounded-[24px] bg-white px-4 py-5">
@@ -258,8 +272,18 @@ export default function HomeScreen() {
               />
             </View>
           ) : homepageQuery.isLoading || fallbackProductsQuery.isLoading ? (
-            <View className="rounded-[24px] bg-white py-8">
-              <ActivityIndicator color="#2D6A4F" />
+            <View className="flex-row gap-3">
+              {[1, 2].map((i) => (
+                <View key={i} className="w-[184px] p-3 rounded-[24px] border border-primary-100 bg-white gap-2 mr-1">
+                  <Skeleton height={140} borderRadius={16} className="w-full" />
+                  <Skeleton width={120} height={14} borderRadius={4} className="mt-1" />
+                  <Skeleton width={80} height={10} borderRadius={4} />
+                  <View className="flex-row justify-between items-center mt-2">
+                    <Skeleton width={50} height={14} borderRadius={4} />
+                    <Skeleton width={70} height={28} borderRadius={14} />
+                  </View>
+                </View>
+              ))}
             </View>
           ) : (
             <View className="rounded-[24px] bg-white px-4 py-5">
@@ -326,8 +350,20 @@ export default function HomeScreen() {
               />
             </View>
           ) : (
-            <View className="rounded-[24px] bg-white py-8">
-              <ActivityIndicator color="#2D6A4F" />
+            <View className="rounded-[24px] border border-primary-100 bg-white p-4 gap-4 mr-3" style={{ width: testimonialCardWidth }}>
+              <View className="flex-row items-center gap-3">
+                <Skeleton width={44} height={44} borderRadius={22} />
+                <View className="gap-2">
+                  <Skeleton width={100} height={12} borderRadius={4} />
+                  <Skeleton width={75} height={10} borderRadius={4} />
+                </View>
+              </View>
+              <Skeleton width={80} height={12} borderRadius={4} className="mt-2" />
+              <View className="gap-1.5 mt-2">
+                <Skeleton width="100%" height={10} borderRadius={4} />
+                <Skeleton width="90%" height={10} borderRadius={4} />
+                <Skeleton width="60%" height={10} borderRadius={4} />
+              </View>
             </View>
           )}
           {testimonials.length > 1 ? (

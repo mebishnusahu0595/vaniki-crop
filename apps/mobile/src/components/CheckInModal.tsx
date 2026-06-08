@@ -15,8 +15,18 @@ export const CheckInModal = () => {
   const [claimed, setClaimed] = useState(false);
   const [pointsEarned, setPointsEarned] = useState<number | null>(null);
 
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+  const isAlreadyCheckedIn = user?.checkInHistory?.some((d: string) => d.split('T')[0] === today);
+
+  useEffect(() => {
+    if (isAlreadyCheckedIn) {
+      setClaimed(true);
+    } else {
+      setClaimed(false);
+    }
+  }, [isAlreadyCheckedIn]);
+
   const closeModal = async () => {
-    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
     try {
       await AsyncStorage.setItem(`dismissedCheckIn_${today}`, 'true');
     } catch (e) {
@@ -144,19 +154,33 @@ export const CheckInModal = () => {
               <Pressable 
                 onPress={handleClaim} 
                 disabled={claiming}
-                style={[styles.button, claiming && styles.buttonDisabled]}
+                style={({ pressed }) => [
+                  styles.button, 
+                  claiming && styles.buttonDisabled,
+                  pressed && styles.buttonPressed
+                ]}
               >
                 <Text style={styles.buttonText}>{claiming ? 'CLAIMING...' : 'CLAIM DAILY REWARD'}</Text>
               </Pressable>
             ) : (
-              <View style={styles.claimedContainer}>
-                <Feather name="check-circle" size={24} color="#10B981" />
-                <Text style={styles.claimedText}>CLAIMED {pointsEarned} POINTS SUCCESSFULLY!</Text>
+              <View className="gap-2">
+                <View style={styles.claimedContainer}>
+                  <Feather name="check-circle" size={24} color="#10B981" />
+                  <Text style={styles.claimedText}>
+                    {pointsEarned ? `CLAIMED ${pointsEarned} POINTS SUCCESSFULLY!` : 'ALREADY CLAIMED TODAY!'}
+                  </Text>
+                </View>
+                <Pressable 
+                  onPress={closeModal} 
+                  className="bg-slate-100 py-3.5 rounded-2xl items-center mt-2 active:scale-95 active:opacity-90"
+                >
+                  <Text className="text-slate-600 text-[13px] font-black tracking-[1.5px]">CLOSE</Text>
+                </Pressable>
               </View>
             )}
           </View>
  
-          <Pressable onPress={closeModal} style={styles.closeButton}>
+          <Pressable onPress={closeModal} style={styles.closeButton} className="active:scale-90">
             <Feather name="x" size={20} color="#94A3B8" />
           </Pressable>
         </View>
@@ -280,6 +304,10 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  buttonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 } as any],
   },
   buttonText: {
     color: 'white',

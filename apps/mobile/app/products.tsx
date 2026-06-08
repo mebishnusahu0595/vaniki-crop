@@ -9,6 +9,7 @@ import { SectionHeader } from '../src/components/SectionHeader';
 import { useDebouncedValue } from '../src/hooks/useDebouncedValue';
 import { storefrontApi } from '../src/lib/api';
 import { useStoreStore } from '../src/store/useStoreStore';
+import { Skeleton } from '../src/components/Skeleton';
 
 const sortOptions = [
   { key: 'popular', label: 'Popular' },
@@ -70,6 +71,13 @@ export default function ProductsScreen() {
   });
 
   const products = useMemo(() => productsQuery.data?.data || [], [productsQuery.data?.data]);
+  const isLoading = productsQuery.isLoading;
+  const listData = useMemo(() => {
+    if (isLoading) {
+      return Array.from({ length: 4 }).map((_, i) => ({ id: `skeleton-${i}` }));
+    }
+    return products;
+  }, [isLoading, products]);
   const categoryOptions = useMemo<MobileCategoryOption[]>(
     () => [{ id: 'all', name: 'All', slug: '' }, ...((categoriesQuery.data || []).map((item) => ({
       id: item.id,
@@ -83,7 +91,7 @@ export default function ProductsScreen() {
     <Screen scroll={false}>
       <View className="flex-1">
         <FlashList
-          data={products}
+          data={listData as any}
           numColumns={2}
           showsVerticalScrollIndicator={false}
           estimatedItemSize={250}
@@ -102,11 +110,12 @@ export default function ProductsScreen() {
                   {categoryOptions.map((item) => (
                     <Pressable
                       key={item.id}
+                      disabled={isLoading}
                       onPress={() => {
                         setSelectedCategory(item.slug);
                         setPage(1);
                       }}
-                      className={`rounded-full px-5 py-2.5 ${selectedCategory === item.slug ? 'bg-primary-500' : 'bg-white border border-primary-100'}`}
+                      className={`rounded-full px-5 py-2.5 ${selectedCategory === item.slug ? 'bg-primary-500' : 'bg-white border border-primary-100'} ${isLoading ? 'opacity-50' : ''}`}
                     >
                       <Text
                         className={`text-[11px] font-black uppercase tracking-[1.2px] ${
@@ -125,6 +134,7 @@ export default function ProductsScreen() {
                   onChangeText={setMinPrice}
                   placeholder="Min Price"
                   keyboardType="number-pad"
+                  editable={!isLoading}
                   className="flex-1 rounded-[22px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
                   placeholderTextColor="#7a978b"
                 />
@@ -133,6 +143,7 @@ export default function ProductsScreen() {
                   onChangeText={setMaxPrice}
                   placeholder="Max Price"
                   keyboardType="number-pad"
+                  editable={!isLoading}
                   className="flex-1 rounded-[22px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
                   placeholderTextColor="#7a978b"
                 />
@@ -142,11 +153,12 @@ export default function ProductsScreen() {
                   {sortOptions.map((option) => (
                     <Pressable
                       key={option.key}
+                      disabled={isLoading}
                       onPress={() => {
                         setSort(option.key);
                         setPage(1);
                       }}
-                      className={`rounded-full px-5 py-2.5 ${sort === option.key ? 'bg-primary-500' : 'bg-white border border-primary-100'}`}
+                      className={`rounded-full px-5 py-2.5 ${sort === option.key ? 'bg-primary-500' : 'bg-white border border-primary-100'} ${isLoading ? 'opacity-50' : ''}`}
                     >
                       <Text
                         className={`text-[11px] font-black uppercase tracking-[1px] ${
@@ -161,17 +173,36 @@ export default function ProductsScreen() {
               </ScrollView>
             </View>
           }
-          renderItem={({ item }) => (
-            <View className="flex-1 px-1.5 mb-4">
-              <ProductCard product={item} />
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const anyItem = item as any;
+            if (anyItem && typeof anyItem === 'object' && 'id' in anyItem && typeof anyItem.id === 'string' && anyItem.id.startsWith('skeleton-')) {
+              return (
+                <View className="flex-1 px-1.5 mb-4">
+                  <View className="p-3 rounded-[24px] border border-primary-100 bg-white gap-2">
+                    <Skeleton height={140} borderRadius={16} className="w-full" />
+                    <Skeleton width="90%" height={14} borderRadius={4} className="mt-1" />
+                    <Skeleton width="60%" height={10} borderRadius={4} />
+                    <View className="flex-row justify-between items-center mt-2">
+                      <Skeleton width={50} height={14} borderRadius={4} />
+                      <Skeleton width={70} height={28} borderRadius={14} />
+                    </View>
+                  </View>
+                </View>
+              );
+            }
+
+            return (
+              <View className="flex-1 px-1.5 mb-4">
+                <ProductCard product={anyItem} />
+              </View>
+            );
+          }}
           ListFooterComponent={
             <View className="flex-row items-center justify-between py-4 pb-8">
               <Pressable
-                disabled={page <= 1}
+                disabled={page <= 1 || isLoading}
                 onPress={() => setPage((current) => Math.max(1, current - 1))}
-                className={`rounded-full px-4 py-3 ${page <= 1 ? 'bg-primary-100' : 'bg-white'}`}
+                className={`rounded-full px-4 py-3 ${page <= 1 || isLoading ? 'bg-primary-100' : 'bg-white active:scale-95'}`}
               >
                 <Text className="text-xs font-black uppercase tracking-[1px] text-primary-900">Previous</Text>
               </Pressable>
@@ -179,10 +210,10 @@ export default function ProductsScreen() {
                 Page {productsQuery.data?.pagination.page || 1}
               </Text>
               <Pressable
-                disabled={!productsQuery.data || page >= productsQuery.data.pagination.totalPages}
+                disabled={!productsQuery.data || page >= productsQuery.data.pagination.totalPages || isLoading}
                 onPress={() => setPage((current) => current + 1)}
                 className={`rounded-full px-4 py-3 ${
-                  !productsQuery.data || page >= productsQuery.data.pagination.totalPages ? 'bg-primary-100' : 'bg-white'
+                  (!productsQuery.data || page >= productsQuery.data.pagination.totalPages || isLoading) ? 'bg-primary-100' : 'bg-white active:scale-95'
                 }`}
               >
                 <Text className="text-xs font-black uppercase tracking-[1px] text-primary-900">Next</Text>

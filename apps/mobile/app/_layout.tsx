@@ -20,12 +20,13 @@ bindOnlineManager();
 function RootNavigation() {
   const pathname = usePathname();
   const hydrated = useAuthStore((state) => state.hydrated);
+  const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
 
-  useBootstrapSession();
+  const sessionQuery = useBootstrapSession();
   usePushNotifications(Boolean(user));
 
-  if (!hydrated) return <LoadingScreen />;
+  if (!hydrated || (token && sessionQuery.isLoading)) return <LoadingScreen />;
 
   return (
     <>
@@ -38,6 +39,12 @@ function RootNavigation() {
         <Stack.Screen name="products" />
         <Stack.Screen name="checkout" />
         <Stack.Screen name="order-success/[id]" />
+        <Stack.Screen name="order/[id]" />
+        <Stack.Screen name="account/orders" />
+        <Stack.Screen name="account/loyalty" />
+        <Stack.Screen name="account/wishlist" />
+        <Stack.Screen name="account/profile" />
+        <Stack.Screen name="account/password" />
         <Stack.Screen name="about" />
         <Stack.Screen name="contact" />
         <Stack.Screen name="privacy-policy" />

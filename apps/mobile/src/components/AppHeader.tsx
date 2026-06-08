@@ -104,42 +104,49 @@ export const AppHeader = memo(function AppHeader() {
 
   return (
     <View>
-      <View className="rounded-2xl bg-primary-900 px-4 py-2.5">
-        <View className="flex-row flex-wrap items-center justify-between gap-y-1.5">
+      <View className="rounded-2xl bg-primary-900 px-4 py-1.5">
+        <View className="flex-row flex-wrap items-center justify-between gap-y-1">
           <View className="flex-row items-center gap-1.5">
-            <Feather name="truck" size={12} color="#52B788" />
-            <Text className="text-[9px] font-black uppercase tracking-[1.6px] text-white">
+            <Feather name="truck" size={11} color="#52B788" />
+            <Text className="text-[8px] font-black uppercase tracking-[1.6px] text-white">
               {t('mobile.topNotice.freeDelivery', { amount: settings.freeDeliveryThreshold.toLocaleString('en-IN') })}
             </Text>
           </View>
           <View className="flex-row items-center gap-1.5">
-            <Feather name="phone" size={12} color="#52B788" />
-            <Text className="text-[9px] font-black uppercase tracking-[1.6px] text-white">
+            <Feather name="phone" size={11} color="#52B788" />
+            <Text className="text-[8px] font-black uppercase tracking-[1.6px] text-white">
               {t('mobile.topNotice.call')}: +91 9406160185
             </Text>
           </View>
         </View>
       </View>
 
-      <View className="mt-3 flex-row items-center justify-between">
-        <Pressable onPress={() => router.push('/(tabs)')} className="flex-row items-baseline gap-1">
-          <Text className="text-[20px] font-black leading-tight tracking-tight text-primary-900">
-            Vaniki
-          </Text>
-          <Text className="text-[20px] font-black leading-tight tracking-tight text-primary-500">
-            Crop
-          </Text>
+      <View className="mt-2 flex-row items-center justify-between">
+        <Pressable onPress={() => router.push('/(tabs)')} className="flex-row items-center gap-2 active:scale-95">
+          <Image
+            source={require('../../assets/icon.png')}
+            style={{ width: 22, height: 22, borderRadius: 5 }}
+            contentFit="contain"
+          />
+          <View className="flex-row items-baseline gap-0.5">
+            <Text className="text-[18px] font-black leading-tight tracking-tight text-primary-900">
+              Vaniki
+            </Text>
+            <Text className="text-[18px] font-black leading-tight tracking-tight text-primary-500">
+              Crop
+            </Text>
+          </View>
         </Pressable>
 
         <View className="flex-row items-center gap-1.5">
           <Pressable
             onPress={() => void handleLanguageToggle()}
             disabled={switchingLanguage}
-            className="h-10 min-w-[56px] items-center justify-center rounded-2xl border border-primary-100 bg-white px-2"
+            className="h-9 min-w-[50px] items-center justify-center rounded-2xl border border-primary-100 bg-white px-2 active:scale-95 active:opacity-85"
           >
             <Text
               numberOfLines={1}
-              className={`text-[9px] font-black uppercase tracking-[0.5px] ${
+              className={`text-[8.5px] font-black uppercase tracking-[0.5px] ${
                 switchingLanguage ? 'text-primary-900/45' : 'text-primary-900'
               }`}
             >
@@ -149,47 +156,47 @@ export const AppHeader = memo(function AppHeader() {
 
           <Pressable
             onPress={() => setShowCheckInModal(true)}
-            className="h-10 flex-row items-center gap-1.5 rounded-2xl border border-amber-100 bg-amber-50 px-2.5 active:scale-95"
+            className="h-9 flex-row items-center gap-1 rounded-2xl border border-amber-100 bg-amber-50 px-2 active:scale-95 active:opacity-90"
           >
-            <Image source={require('../../assets/coin.png')} style={{ width: 16, height: 16 }} />
+            <Image source={require('../../assets/coin.png')} style={{ width: 14, height: 14 }} />
             <Text className="text-xs font-black text-amber-900">{user?.loyaltyPoints || 0}</Text>
           </Pressable>
 
           <Pressable
             onPress={openCart}
-            className="relative h-10 w-10 items-center justify-center rounded-2xl bg-primary-900"
+            className="relative h-9 w-9 items-center justify-center rounded-2xl bg-primary-900 active:scale-95 active:opacity-90"
           >
-            <Feather name="shopping-cart" size={18} color="#FFFFFF" />
+            <Feather name="shopping-cart" size={16} color="#FFFFFF" />
             {cartCount > 0 ? (
-              <View className="absolute -right-1 -top-1 min-w-[18px] rounded-full border border-white bg-rose-500 px-1 py-0.5">
-                <Text className="text-center text-[10px] font-black text-white">{cartCount}</Text>
+              <View className="absolute -right-1 -top-1 min-w-[16px] rounded-full border border-white bg-rose-500 px-1 py-0.5">
+                <Text className="text-center text-[9px] font-black text-white">{cartCount}</Text>
               </View>
             ) : null}
           </Pressable>
 
           <Pressable
             onPress={openAccount}
-            className="h-10 w-10 items-center justify-center rounded-2xl border border-primary-100 bg-white"
+            className="h-9 w-9 items-center justify-center rounded-2xl border border-primary-100 bg-white active:scale-95 active:opacity-85"
           >
-            <Feather name="user" size={18} color="#082018" />
+            <Feather name="user" size={16} color="#082018" />
           </Pressable>
         </View>
       </View>
 
-      <View className="relative z-20 mt-3">
-        <View className="flex-row items-center rounded-2xl border border-primary-100 bg-white px-4 py-2">
-          <Feather name="search" size={16} color="#527164" />
+      <View className="relative z-20 mt-2">
+        <View className="flex-row items-center rounded-2xl border border-primary-100 bg-white px-3 py-1.5">
+          <Feather name="search" size={14} color="#527164" />
           <TextInput
             value={query}
             onChangeText={setQuery}
             placeholder={t('mobile.header.searchPlaceholder')}
-            className="mx-3 flex-1 py-2 text-sm font-semibold text-primary-900"
+            className="mx-2 flex-1 py-1.5 text-xs font-semibold text-primary-900"
             placeholderTextColor="#7a978b"
             returnKeyType="search"
             onSubmitEditing={submitSearch}
           />
-          <Pressable onPress={submitSearch} className="h-8 w-8 items-center justify-center rounded-xl bg-primary-50">
-            <MaterialIcons name="arrow-forward" size={18} color="#082018" />
+          <Pressable onPress={submitSearch} className="h-7 w-7 items-center justify-center rounded-xl bg-primary-50">
+            <MaterialIcons name="arrow-forward" size={16} color="#082018" />
           </Pressable>
         </View>
 

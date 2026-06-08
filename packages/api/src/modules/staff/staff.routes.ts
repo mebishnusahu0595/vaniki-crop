@@ -39,9 +39,12 @@ function requireStaffAuth(req: Request, _res: Response, next: NextFunction): voi
 }
 
 router.post('/login', staffController.loginStaff);
+router.post('/forgot-password', staffController.forgotPasswordStaff);
+router.post('/reset-password', staffController.resetPasswordStaff);
 router.get('/me', requireStaffAuth, staffController.getStaffMe);
 router.get('/tasks', requireStaffAuth, staffController.getStaffTasks);
 router.get('/tasks/:id', requireStaffAuth, staffController.getStaffTask);
+router.post('/tasks/:id/send-otp', requireStaffAuth, staffController.sendDeliveryOtp);
 router.patch('/tasks/:id/complete', requireStaffAuth, staffController.markTaskCompleted);
 router.post('/tasks/:id/deliver', requireStaffAuth, upload.single('proofImage'), staffController.deliverTask);
 router.post('/tasks/:id/cancel', requireStaffAuth, staffController.cancelTask);

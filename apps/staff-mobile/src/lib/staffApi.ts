@@ -154,4 +154,24 @@ export const staffApi = {
     });
     return normalizeTask(response.data);
   },
+  sendDeliveryOtp: async (id: string) => {
+    const response = await request<{ success: boolean; message: string }>(`/staff/tasks/${id}/send-otp`, {
+      method: 'POST',
+    });
+    return response.data;
+  },
+  forgotPassword: async (payload: { mobile: string }) => {
+    const response = await request<{ success: boolean; message: string; verificationId?: string }>('/staff/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return response.data;
+  },
+  resetPassword: async (payload: { mobile: string; otp: string; newPassword: string; verificationId: string }) => {
+    const response = await request<{ success: boolean; message: string }>('/staff/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return response.data;
+  },
 };

@@ -433,11 +433,6 @@ const Account: React.FC = () => {
                           <p className="mt-2 text-sm font-medium text-primary-900/60">
                             {new Date(order.createdAt).toLocaleDateString()} · {order.serviceMode === 'delivery' ? t('checkoutPage.delivery') : t('checkoutPage.pickup')}
                           </p>
-                          {order.deliveryOtp && !['delivered', 'cancelled'].includes(order.status) ? (
-                            <p className="mt-2 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-amber-700">
-                              Delivery OTP {order.deliveryOtp}
-                            </p>
-                          ) : null}
                         </div>
                         <div className="text-left sm:text-right">
                           <p className="text-sm font-black uppercase tracking-[0.16em] text-primary-500">{statusLabelMap[order.status] || order.status}</p>
@@ -751,16 +746,6 @@ const Account: React.FC = () => {
             ) : (
               <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
                 <div className="space-y-4">
-                  {orderDetail.deliveryOtp && !['delivered', 'cancelled'].includes(orderDetail.status) ? (
-                    <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-4">
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-700">Delivery OTP</p>
-                      <p className="mt-2 text-3xl font-black tracking-[0.24em] text-primary-900">{orderDetail.deliveryOtp}</p>
-                      <p className="mt-2 text-sm font-semibold text-primary-900/60">
-                        Give this one-time code only to the delivery person after receiving the order.
-                      </p>
-                    </div>
-                  ) : null}
-
                   <div className="grid gap-3 rounded-[1.5rem] border border-primary-100 bg-white p-4 sm:grid-cols-2">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary-500">Payment</p>

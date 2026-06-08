@@ -145,3 +145,37 @@ export async function removeStaff(req: Request, res: Response, next: NextFunctio
     next(error);
   }
 }
+
+export async function forgotPasswordStaff(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await staffService.forgotPasswordStaff(req.body);
+    res.status(200).json({
+      success: true,
+      message: 'OTP has been sent to the registered staff mobile number.',
+      verificationId: result.verificationId,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resetPasswordStaff(req: Request, res: Response, next: NextFunction) {
+  try {
+    await staffService.resetPasswordStaff(req.body);
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully. Please log in with your new password.',
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function sendDeliveryOtp(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await staffService.sendDeliveryOtp(req.staffId!, req.params.id as string);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}

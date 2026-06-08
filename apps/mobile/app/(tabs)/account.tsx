@@ -1,88 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, Share, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 import { Screen } from '../../src/components/Screen';
-import { ProductCard } from '../../src/components/ProductCard';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
 import { storefrontApi } from '../../src/lib/api';
-import { currencyFormatter, formatStoreAddress } from '../../src/utils/format';
-import { resolveMediaUrl } from '../../src/utils/media';
-import type { Product, ServiceMode } from '../../src/types/storefront';
-import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
-import { lookupPincode } from '../../src/utils/pincode';
-import { SelectionModal } from '../../src/components/SelectionModal';
-
-const tabs = ['orders', 'loyalty', 'wishlist', 'profile', 'password'] as const;
-
-function getOrderItemProduct(item: { productId: string | Product }) {
-  return typeof item.productId === 'object' ? item.productId : null;
-}
-
-function getOrderItemImage(item: { image?: string; productId: string | Product }) {
-  const product = getOrderItemProduct(item);
-  const imageUrl = product?.images?.[0]?.url || item.image;
-  const publicId = product?.images?.[0]?.publicId;
-  return imageUrl ? resolveMediaUrl(imageUrl, publicId) : '';
-}
 
 export default function AccountScreen() {
-  const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('orders');
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const { user, logout, setUser, setShowCheckInModal } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
-  const setStore = useStoreStore((state) => state.setStore);
   const mode = useServiceModeStore((state) => state.mode);
-  const setMode = useServiceModeStore((state) => state.setMode);
-  const setAddress = useServiceModeStore((state) => state.setAddress);
-  const [profile, setProfile] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    mobile: user?.mobile || '',
-    street: user?.savedAddress?.street || '',
-    city: user?.savedAddress?.city || '',
-    state: user?.savedAddress?.state || '',
-    pincode: user?.savedAddress?.pincode || '',
-    landmark: user?.savedAddress?.landmark || '',
-  });
-  const [password, setPassword] = useState({ currentPassword: '', newPassword: '' });
-  const [serviceMode, setServiceMode] = useState<ServiceMode>(mode);
-  const [pickupStoreId, setPickupStoreId] = useState(selectedStore?.id || '');
-  const [isQuickModeSaving, setIsQuickModeSaving] = useState(false);
-  const [stateModalVisible, setStateModalVisible] = useState(false);
-  const [districtModalVisible, setDistrictModalVisible] = useState(false);
-  const wishlistProducts = (user?.wishlist || []).filter(
-    (entry): entry is Product => typeof entry !== 'string',
-  );
-
-  const ordersQuery = useQuery({
-    queryKey: ['mobile-orders'],
-    queryFn: () => storefrontApi.orders(),
-    enabled: Boolean(user),
-  });
-  const orderDetailQuery = useQuery({
-    queryKey: ['mobile-order-detail', selectedOrderId],
-    queryFn: () => storefrontApi.orderDetail(selectedOrderId || ''),
-    enabled: Boolean(selectedOrderId),
-  });
-  const pickupStoresQuery = useQuery({
-    queryKey: ['mobile-account-pickup-stores'],
-    queryFn: storefrontApi.stores,
-    enabled: Boolean(user),
-  });
-
-  const pickupStores = useMemo(() => pickupStoresQuery.data || [], [pickupStoresQuery.data]);
-
-  useEffect(() => {
-    setServiceMode(mode);
-    setPickupStoreId(selectedStore?.id || '');
-  }, [mode, selectedStore?.id]);
 
   if (!user) {
     return (
@@ -92,7 +21,7 @@ export default function AccountScreen() {
           <Text className="mt-3 text-sm leading-6 text-primary-900/70">
             Track orders, save addresses, and manage your account from here.
           </Text>
-          <Pressable onPress={() => router.push('/(auth)/login')} className="mt-6 rounded-full bg-primary-500 px-5 py-4">
+          <Pressable onPress={() => router.push('/(auth)/login')} className="mt-6 rounded-full bg-primary-500 px-5 py-4 active:scale-95">
             <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">Login</Text>
           </Pressable>
         </View>
@@ -100,688 +29,149 @@ export default function AccountScreen() {
     );
   }
 
-  const handleQuickModeChange = async (nextMode: ServiceMode) => {
-    if (nextMode === mode) return;
-
-    setIsQuickModeSaving(true);
-    try {
-      const modeUser = await storefrontApi.updateServiceMode(nextMode);
-      setMode(nextMode);
-
-      if (nextMode === 'delivery') {
-        setStore(null);
-        setPickupStoreId('');
-        setUser({
-          ...user,
-          ...modeUser,
-          serviceMode: 'delivery',
-          selectedStore: null,
-        });
-      } else {
-        setUser({
-          ...user,
-          ...modeUser,
-          serviceMode: 'pickup',
-          selectedStore: modeUser.selectedStore ?? user.selectedStore ?? null,
-        });
-      }
-
-      Alert.alert('Updated', nextMode === 'delivery' ? 'Delivery mode activated.' : 'Pickup mode activated.');
-    } catch (caughtError) {
-      Alert.alert('Update failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
-    } finally {
-      setIsQuickModeSaving(false);
-    }
+  // Get initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
-  const handleQuickPickupStoreChange = async (nextStoreId: string) => {
-    if (!nextStoreId) return;
+  const menuItems = [
+    {
+      title: 'My Orders',
+      description: 'View order history & details',
+      icon: 'package' as const,
+      route: '/account/orders' as const,
+    },
+    {
+      title: 'Loyalty Rewards',
+      description: 'Collect daily points, view history',
+      icon: 'award' as const,
+      route: '/account/loyalty' as const,
+    },
+    {
+      title: 'My Wishlist',
+      description: 'Your saved favorite items',
+      icon: 'heart' as const,
+      route: '/account/wishlist' as const,
+    },
+    {
+      title: 'Edit Profile & Address',
+      description: 'Manage personal info & address details',
+      icon: 'map-pin' as const,
+      route: '/account/profile' as const,
+    },
+    {
+      title: 'Security & Password',
+      description: 'Update account password',
+      icon: 'lock' as const,
+      route: '/account/password' as const,
+    },
+  ];
 
-    setPickupStoreId(nextStoreId);
-    setIsQuickModeSaving(true);
-    try {
-      const modeUser = mode === 'pickup' ? null : await storefrontApi.updateServiceMode('pickup');
-      const storeUser = await storefrontApi.updateSelectedStore(nextStoreId);
-      await storefrontApi.selectStore(nextStoreId);
-
-      const matchedStore = pickupStores.find((store) => store.id === nextStoreId) || null;
-      if (matchedStore) {
-        setStore(matchedStore);
-      }
-
-      setMode('pickup');
-      setUser({
-        ...user,
-        ...(modeUser || {}),
-        ...storeUser,
-        serviceMode: 'pickup',
-        selectedStore: storeUser.selectedStore ?? modeUser?.selectedStore ?? matchedStore ?? null,
-      });
-      Alert.alert('Store updated', 'Pickup store has been selected.');
-    } catch (caughtError) {
-      Alert.alert('Update failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
-    } finally {
-      setIsQuickModeSaving(false);
-    }
-  };
-
-  const handleDownloadInvoice = async (orderId: string, orderNumber: string) => {
-    try {
-      const url = storefrontApi.getInvoiceUrl(orderId);
-      const token = useAuthStore.getState().token;
-      const fileUri = `${FileSystem.documentDirectory}invoice-${orderNumber}.pdf`;
-
-      const downloadRes = await FileSystem.downloadAsync(url, fileUri, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (downloadRes.status !== 200) {
-        throw new Error('Failed to download invoice');
-      }
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(downloadRes.uri);
-      } else {
-        Alert.alert('Download Complete', `Invoice saved to ${downloadRes.uri}`);
-      }
-    } catch (caughtError) {
-      Alert.alert('Download failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action is permanent and cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await storefrontApi.deleteAccount();
-              logout();
-              router.replace('/(auth)/login');
-            } catch (caughtError) {
-              Alert.alert('Error', caughtError instanceof Error ? caughtError.message : 'Failed to delete account.');
-            }
-          },
-        },
-      ],
-    );
-  };
+  const exploreItems = [
+    { title: 'About Vaniki', route: '/about' as const },
+    { title: 'Contact Support', route: '/contact' as const },
+    { title: 'Privacy Policy', route: '/privacy-policy' as const },
+  ];
 
   return (
-
     <Screen>
-      <View className="flex-row items-center justify-between">
-        <View>
-          <Text className="text-3xl font-black text-primary-900">{user.name}</Text>
-          <Text className="mt-2 text-sm text-primary-900/60">{user.mobile}</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* Profile Card Header */}
+        <View className="rounded-[32px] bg-primary-900 p-6 shadow-lg relative overflow-hidden">
+          {/* Subtle background decoration */}
+          <View className="absolute -right-10 -top-10 w-36 h-36 rounded-full bg-primary-800 opacity-40" />
+          <View className="absolute -left-10 -bottom-10 w-28 h-28 rounded-full bg-primary-800 opacity-40" />
+
+          <View className="flex-row items-center gap-4">
+            <View className="h-16 w-16 items-center justify-center rounded-full bg-white border border-primary-100">
+              <Text className="text-xl font-black text-primary-900">
+                {getInitials(user.name)}
+              </Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-xl font-black text-white">{user.name}</Text>
+              <Text className="text-xs font-semibold text-primary-100/70 mt-1">{user.mobile}</Text>
+            </View>
+          </View>
         </View>
+
+        {/* Quick Info Grid */}
+        <View className="mt-4 flex-row gap-3">
+          {/* Loyalty Points */}
+          <View className="flex-1 rounded-[24px] bg-amber-50 border border-amber-100 p-4 flex-row items-center justify-between shadow-sm">
+            <View>
+              <Text className="text-[10px] font-black uppercase tracking-[1.5px] text-amber-900/60">Balance</Text>
+              <Text className="text-2xl font-black text-amber-900 mt-1">{user.loyaltyPoints || 0}</Text>
+            </View>
+            <Image source={require('../../assets/coin.png')} style={{ width: 36, height: 36 }} />
+          </View>
+
+          {/* Service Mode */}
+          <View className="flex-1 rounded-[24px] bg-[#f4f7f6] border border-primary-100 p-4 shadow-sm">
+            <Text className="text-[10px] font-black uppercase tracking-[1.5px] text-primary-900/50">Service Mode</Text>
+            <Text className="text-sm font-black text-primary-900 mt-1 uppercase tracking-[1px]">{mode}</Text>
+            <Text className="text-[10px] text-primary-900/60 mt-0.5" numberOfLines={1}>
+              {mode === 'pickup' && selectedStore ? selectedStore.name : 'Home Delivery'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Menu Rows */}
+        <View className="mt-6 rounded-[32px] bg-white border border-primary-100 overflow-hidden shadow-sm">
+          {menuItems.map((item, index) => (
+            <Pressable
+              key={item.title}
+              onPress={() => router.push(item.route as any)}
+              className="flex-row items-center justify-between p-4 active:bg-primary-50/50 border-b border-primary-50"
+              style={({ pressed }) => pressed && { opacity: 0.95 }}
+            >
+              <View className="flex-row items-center gap-4 flex-1">
+                <View className="h-10 w-10 items-center justify-center rounded-2xl bg-primary-50">
+                  <Feather name={item.icon} size={18} color="#082018" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-black text-primary-900">{item.title}</Text>
+                  <Text className="text-xs text-primary-900/50 mt-0.5">{item.description}</Text>
+                </View>
+              </View>
+              <Feather name="chevron-right" size={16} color="#A3B8B0" />
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Explore Links */}
+        <View className="mt-6 rounded-[32px] bg-white border border-primary-100 p-4 shadow-sm">
+          <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500 mb-3 px-2">Info & Legal</Text>
+          {exploreItems.map((item, index) => (
+            <Pressable
+              key={item.title}
+              onPress={() => router.push(item.route)}
+              className="flex-row items-center justify-between py-3.5 px-2 border-b border-primary-50 last:border-b-0 active:scale-[0.99]"
+            >
+              <Text className="text-sm font-bold text-primary-900">{item.title}</Text>
+              <Feather name="arrow-right" size={14} color="#A3B8B0" />
+            </Pressable>
+          ))}
+        </View>
+
+        {/* Log Out button */}
         <Pressable
           onPress={async () => {
             await storefrontApi.logout().catch(() => undefined);
             logout();
           }}
-          className="h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm"
+          className="mt-8 rounded-full bg-rose-50 border border-rose-100 py-4 active:scale-95"
         >
-          <Feather name="log-out" size={20} color="#DC2626" />
+          <Text className="text-center text-xs font-black uppercase tracking-[2px] text-rose-600">
+            Log Out
+          </Text>
         </Pressable>
-      </View>
-
-      <View className="mt-5 rounded-[28px] bg-white p-5">
-        <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Service Mode</Text>
-        <View className="mt-3 flex-row rounded-full bg-primary-50 p-1">
-          {(['delivery', 'pickup'] as const).map((item) => (
-            <Pressable
-              key={item}
-              onPress={() => handleQuickModeChange(item)}
-              disabled={isQuickModeSaving}
-              className={`flex-1 rounded-full px-3 py-3 ${mode === item ? 'bg-primary-500' : 'bg-transparent'} ${isQuickModeSaving ? 'opacity-60' : ''}`}
-            >
-              <Text className={`text-center text-[10px] font-black uppercase tracking-[1.2px] ${mode === item ? 'text-white' : 'text-primary-900/55'}`}>
-                {item}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {mode === 'pickup' ? (
-          <View className="mt-4 gap-2">
-            {pickupStores.map((store) => (
-              <Pressable
-                key={store.id}
-                onPress={() => handleQuickPickupStoreChange(store.id)}
-                disabled={isQuickModeSaving}
-                className={`rounded-[18px] border px-4 py-4 ${pickupStoreId === store.id ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-white'} ${isQuickModeSaving ? 'opacity-60' : ''}`}
-              >
-                <Text className="text-sm font-black text-primary-900">{store.name}</Text>
-                <Text className="mt-1 text-sm text-primary-900/60">{formatStoreAddress(store.address)}</Text>
-              </Pressable>
-            ))}
-            {!pickupStores.length ? (
-              <Text className="text-sm text-primary-900/60">No pickup stores available right now.</Text>
-            ) : null}
-          </View>
-        ) : (
-          <Text className="mt-4 text-sm text-primary-900/60">Delivery mode will use your saved address at checkout.</Text>
-        )}
-      </View>
-
-      <View className="mt-4 flex-row rounded-full bg-primary-50 p-1">
-        {tabs.map((tab) => (
-          <Pressable
-            key={tab}
-            onPress={() => setActiveTab(tab)}
-            className={`flex-1 rounded-full px-3 py-3 ${activeTab === tab ? 'bg-white' : ''}`}
-          >
-            <Text className={`text-center text-[10px] font-black uppercase tracking-[1px] ${activeTab === tab ? 'text-primary-900' : 'text-primary-900/45'}`}>
-              {tab}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {activeTab === 'orders' ? (
-        <View className="mt-5 gap-4">
-          {(ordersQuery.data?.data || []).map((order) => (
-            <Pressable key={order.id} onPress={() => setSelectedOrderId(order.id)} className="rounded-[28px] bg-white p-5">
-              <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">{order.orderNumber}</Text>
-              <Text className="mt-2 text-lg font-black text-primary-900">{currencyFormatter.format(order.totalAmount)}</Text>
-              <Text className="mt-2 text-sm text-primary-900/60">{order.status}</Text>
-              {order.deliveryOtp && !['delivered', 'cancelled'].includes(order.status) ? (
-                <View className="mt-3 self-start rounded-full bg-amber-100 px-3 py-1">
-                  <Text className="text-[10px] font-black uppercase tracking-[1px] text-amber-700">
-                    OTP {order.deliveryOtp}
-                  </Text>
-                </View>
-              ) : null}
-            </Pressable>
-          ))}
-
-          {selectedOrderId && orderDetailQuery.data ? (
-            <View className="rounded-[28px] bg-white p-5">
-              <View className="flex-row items-center justify-between">
-                <View>
-                  <Text className="text-lg font-black text-primary-900">Order Detail</Text>
-                  <Text className="mt-1 text-sm text-primary-900/70">{orderDetailQuery.data.orderNumber}</Text>
-                </View>
-                <Pressable
-                  onPress={() => handleDownloadInvoice(orderDetailQuery.data!.id, orderDetailQuery.data!.orderNumber)}
-                  className="flex-row items-center gap-2 rounded-xl bg-primary-50 px-4 py-3"
-                >
-                  <Feather name="download" size={16} color="#143D2E" />
-                  <Text className="text-[10px] font-black uppercase tracking-[1px] text-primary-900">Invoice</Text>
-                </Pressable>
-              </View>
-              <View className="mt-4 gap-3">
-                {orderDetailQuery.data.deliveryOtp && !['delivered', 'cancelled'].includes(orderDetailQuery.data.status) ? (
-                  <View className="rounded-[22px] bg-amber-50 p-4">
-                    <Text className="text-[10px] font-black uppercase tracking-[2px] text-amber-700">Delivery OTP</Text>
-                    <Text className="mt-2 text-3xl font-black tracking-[6px] text-primary-900">{orderDetailQuery.data.deliveryOtp}</Text>
-                    <Text className="mt-2 text-sm leading-6 text-primary-900/60">
-                      Share this code only when the delivery arrives.
-                    </Text>
-                  </View>
-                ) : null}
-                <View className="rounded-[22px] border border-primary-100 bg-primary-50 p-4">
-                  <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Order Summary</Text>
-                  <View className="mt-3 gap-2">
-                    <View className="flex-row justify-between">
-                      <Text className="text-sm text-primary-900/60">Subtotal</Text>
-                      <Text className="text-sm font-black text-primary-900">{currencyFormatter.format(orderDetailQuery.data.subtotal)}</Text>
-                    </View>
-                    <View className="flex-row justify-between">
-                      <Text className="text-sm text-primary-900/60">Delivery</Text>
-                      <Text className="text-sm font-black text-primary-900">
-                        {orderDetailQuery.data.serviceMode === 'pickup' ? 'Pickup - no charge' : currencyFormatter.format(orderDetailQuery.data.deliveryCharge || 0)}
-                      </Text>
-                    </View>
-                    <View className="flex-row justify-between border-t border-primary-100 pt-2">
-                      <Text className="text-sm font-black text-primary-900">Total</Text>
-                      <Text className="text-sm font-black text-primary-900">{currencyFormatter.format(orderDetailQuery.data.totalAmount)}</Text>
-                    </View>
-                  </View>
-                </View>
-                <View className="gap-3">
-                  {orderDetailQuery.data.items.map((item, index) => {
-                    const product = getOrderItemProduct(item);
-                    const imageUrl = getOrderItemImage(item);
-                    const description = product?.shortDescription || product?.description || '';
-
-                    return (
-                      <Pressable
-                        key={`${(typeof item.productId === 'object' ? (item.productId as any)?.id : item.productId) || index}-${index}`}
-                        onPress={() => product?.slug && router.push(`/product/${product.slug}` as any)}
-                        disabled={!product?.slug}
-                        className="flex-row gap-3 rounded-[22px] border border-primary-100 bg-white p-3"
-                      >
-                        {imageUrl ? (
-                          <Image source={{ uri: imageUrl }} style={{ width: 72, height: 72, borderRadius: 18 }} />
-                        ) : (
-                          <View className="h-[72px] w-[72px] rounded-[18px] bg-primary-50" />
-                        )}
-                        <View className="flex-1">
-                          <Text className="text-sm font-black text-primary-900">{item.productName}</Text>
-                          <Text className="mt-1 text-[10px] font-black uppercase tracking-[1px] text-primary-500">
-                            {item.qty} x {item.variantLabel}
-                          </Text>
-                          {description ? (
-                            <Text numberOfLines={3} className="mt-2 text-xs leading-5 text-primary-900/60">{description}</Text>
-                          ) : null}
-                          <Text className="mt-2 text-sm font-black text-primary-700">{currencyFormatter.format(item.price * item.qty)}</Text>
-                        </View>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                {orderDetailQuery.data.statusHistory.map((entry) => (
-                  <View key={`${entry.status}-${entry.timestamp}`} className="flex-row gap-3">
-                    <View className="mt-1 h-3 w-3 rounded-full bg-primary-500" />
-                    <View className="flex-1">
-                      <Text className="text-sm font-black uppercase tracking-[1px] text-primary-900">{entry.status}</Text>
-                      <Text className="text-sm text-primary-900/60">{entry.note || 'Updated'}</Text>
-                    </View>
-                  </View>
-                ))}
-                <Text className="text-sm text-primary-900/60">
-                  {orderDetailQuery.data.shippingAddress
-                    ? `Delivery to ${formatStoreAddress(orderDetailQuery.data.shippingAddress)}`
-                    : `Pickup from ${orderDetailQuery.data.storeId?.name || 'Selected store'}`}
-                </Text>
-              </View>
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-
-      {activeTab === 'loyalty' ? (
-        <View className="mt-5 gap-4">
-          <View className="rounded-[28px] bg-amber-500 p-6">
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-[10px] font-black uppercase tracking-[2px] text-white/70">Point Balance</Text>
-                <Text className="mt-1 text-3xl font-black text-white">{user.loyaltyPoints || 0}</Text>
-              </View>
-              <Image source={require('../../assets/coin.png')} style={{ width: 48, height: 48 }} />
-            </View>
-            <Text className="mt-4 text-sm font-semibold text-white/80">
-              1 point = {currencyFormatter.format(1)} discount
-            </Text>
-          </View>
-
-          <View className="rounded-[28px] bg-white p-6">
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Check-in History</Text>
-                <Text className="mt-2 text-lg font-black text-primary-900">
-                  {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
-                </Text>
-              </View>
-              {user.lastCheckIn && new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(user.lastCheckIn)) !== new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date()) && (
-                <Pressable
-                  onPress={() => setShowCheckInModal(true)}
-                  className="rounded-xl bg-primary-900 px-4 py-2"
-                >
-                  <Text className="text-[10px] font-black uppercase tracking-[1px] text-white">Claim Today</Text>
-                </Pressable>
-              )}
-            </View>
-            
-            <View className="mt-6 flex-row flex-wrap gap-2">
-              {(() => {
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = now.getMonth();
-                const daysInMonth = new Date(year, month + 1, 0).getDate();
-                const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(now);
-
-                return Array.from({ length: daysInMonth }, (_, i) => {
-                  const day = i + 1;
-                  const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-                  const isCheckedIn = (user.checkInHistory || []).some((d: string) => d.split('T')[0] === dateStr);
-                  const isToday = todayStr === dateStr;
-
-                  return (
-                    <View 
-                      key={day} 
-                      className={`h-10 w-10 items-center justify-center rounded-xl border ${
-                        isCheckedIn ? 'border-emerald-500 bg-emerald-50' : 
-                        isToday ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-primary-50/30'
-                      }`}
-                    >
-                      {isCheckedIn ? (
-                        <Feather name="check" size={16} color="#10B981" />
-                      ) : (
-                        <Text className={`text-xs font-black ${isToday ? 'text-primary-900' : 'text-primary-900/30'}`}>{day}</Text>
-                      )}
-                    </View>
-                  );
-                });
-              })()}
-            </View>
-          </View>
-        </View>
-      ) : null}
-
-      {activeTab === 'wishlist' ? (
-        <View className="mt-5">
-          {wishlistProducts.length ? (
-            <View className="gap-3">
-              {wishlistProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </View>
-          ) : (
-            <View className="rounded-[28px] bg-white p-6">
-              <Text className="text-lg font-black text-primary-900">No saved products yet.</Text>
-              <Text className="mt-2 text-sm leading-6 text-primary-900/65">
-                Tap the heart icon on any product to build your wishlist.
-              </Text>
-              <Pressable
-                onPress={() => router.push('/products')}
-                className="mt-5 rounded-full bg-primary-500 px-5 py-4"
-              >
-                <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">Browse Products</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-      ) : null}
-
-          {activeTab === 'profile' ? (
-        <View className="mt-5 gap-3 rounded-[28px] bg-white p-5">
-          <View className="rounded-[24px] bg-primary-50 p-4">
-            <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Referral Program</Text>
-            <Text className="mt-2 text-lg font-black text-primary-900">Code: {user.referralCode || 'Generating'}</Text>
-            <Text className="mt-1 text-sm text-primary-900/65">Successful referrals: {user.referralCount || 0}</Text>
-            <Pressable
-              onPress={async () => {
-                if (!user.referralCode) {
-                  Alert.alert('Referral unavailable', 'Your referral code is not ready yet.');
-                  return;
-                }
-
-                const referralLink = `https://vanikicrop.com/signup?ref=${user.referralCode}`;
-                await Share.share({
-                  message: `Join Vaniki Crop with my referral link: ${referralLink}`,
-                });
-              }}
-              className="mt-3 rounded-full border border-primary-200 bg-white px-4 py-3"
-            >
-              <Text className="text-center text-[10px] font-black uppercase tracking-[1.5px] text-primary-900">Share Invite Link</Text>
-            </Pressable>
-          </View>
-
-          <View className="rounded-[24px] bg-primary-50 p-4">
-            <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Service Mode</Text>
-            <View className="mt-3 flex-row rounded-full bg-white p-1">
-              {(['delivery', 'pickup'] as const).map((item) => (
-                <Pressable
-                  key={item}
-                  onPress={() => setServiceMode(item)}
-                  className={`flex-1 rounded-full px-3 py-3 ${serviceMode === item ? 'bg-primary-500' : ''}`}
-                >
-                  <Text className={`text-center text-[10px] font-black uppercase tracking-[1.2px] ${serviceMode === item ? 'text-white' : 'text-primary-900/55'}`}>
-                    {item}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {serviceMode === 'pickup' ? (
-              <View className="mt-4 gap-2">
-                {pickupStores.map((store) => (
-                  <Pressable
-                    key={store.id}
-                    onPress={() => setPickupStoreId(store.id)}
-                    className={`rounded-[18px] border px-4 py-4 ${pickupStoreId === store.id ? 'border-primary-500 bg-white' : 'border-primary-100 bg-white/70'}`}
-                  >
-                    <Text className="text-sm font-black text-primary-900">{store.name}</Text>
-                    <Text className="mt-1 text-sm text-primary-900/60">{formatStoreAddress(store.address)}</Text>
-                  </Pressable>
-                ))}
-                {!pickupStores.length ? (
-                  <Text className="text-sm text-primary-900/60">No pickup stores available right now.</Text>
-                ) : null}
-              </View>
-            ) : (
-              <Text className="mt-4 text-sm text-primary-900/60">Delivery mode will use your saved address at checkout.</Text>
-            )}
-          </View>
-
-          <TextInput
-            value={profile.name}
-            onChangeText={(value) => setProfile((current) => ({ ...current, name: value }))}
-            placeholder="Full Name"
-            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-            placeholderTextColor="#7a978b"
-          />
-          <TextInput
-            value={profile.mobile}
-            onChangeText={(value) => setProfile((current) => ({ ...current, mobile: value }))}
-            placeholder="Mobile"
-            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-            placeholderTextColor="#7a978b"
-          />
-          <TextInput
-            value={profile.email}
-            onChangeText={(value) => setProfile((current) => ({ ...current, email: value }))}
-            placeholder="Email"
-            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-            placeholderTextColor="#7a978b"
-          />
-          <TextInput
-            value={profile.street}
-            onChangeText={(value) => setProfile((current) => ({ ...current, street: value }))}
-            placeholder="Street Address"
-            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-            placeholderTextColor="#7a978b"
-          />
-          <TextInput
-            value={profile.pincode}
-            onChangeText={async (v) => {
-              const pincode = v.replace(/\D/g, '');
-              setProfile(f => ({ ...f, pincode }));
-              if (pincode.length === 6) {
-                const result = await lookupPincode(pincode);
-                if (result) {
-                  setProfile(prev => ({
-                    ...prev,
-                    state: result.state,
-                    city: result.district,
-                  }));
-                }
-              }
-            }}
-            placeholder="Pincode"
-            keyboardType="number-pad"
-            maxLength={6}
-            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-            placeholderTextColor="#7a978b"
-          />
-          <Pressable 
-            onPress={() => setStateModalVisible(true)}
-            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4"
-          >
-            <Text style={{ color: profile.state ? '#143D2E' : '#7a978b' }} className="text-base font-medium">
-              {profile.state || 'Select State'}
-            </Text>
-          </Pressable>
-          {STATE_DISTRICTS[profile.state] ? (
-            <Pressable 
-              onPress={() => setDistrictModalVisible(true)}
-              className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4"
-            >
-              <Text style={{ color: profile.city ? '#143D2E' : '#7a978b' }} className="text-base font-medium">
-                {profile.city || 'Select District'}
-              </Text>
-            </Pressable>
-          ) : (
-            <TextInput
-              value={profile.city}
-              onChangeText={(value) => setProfile((current) => ({ ...current, city: value }))}
-              placeholder="District / City"
-              className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-              placeholderTextColor="#7a978b"
-            />
-          )}
-          <TextInput
-            value={profile.landmark}
-            onChangeText={(value) => setProfile((current) => ({ ...current, landmark: value }))}
-            placeholder="Landmark"
-            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-            placeholderTextColor="#7a978b"
-          />
-          
-          <SelectionModal
-            visible={stateModalVisible}
-            onClose={() => setStateModalVisible(false)}
-            title="Select State"
-            options={INDIAN_STATES}
-            selectedValue={profile.state}
-            onSelect={(state) => setProfile(f => ({ ...f, state, city: '' }))}
-          />
-
-          <SelectionModal
-            visible={districtModalVisible}
-            onClose={() => setDistrictModalVisible(false)}
-            title="Select District"
-            options={STATE_DISTRICTS[profile.state] || []}
-            selectedValue={profile.city}
-            onSelect={(city) => setProfile(f => ({ ...f, city }))}
-          />
-          <Pressable
-            onPress={async () => {
-              if (serviceMode === 'pickup' && !pickupStoreId) {
-                Alert.alert('Choose store', 'Please choose a pickup store before saving.');
-                return;
-              }
-
-              try {
-                const updatedProfile = await storefrontApi.updateMe({
-                  name: profile.name,
-                  email: profile.email,
-                  mobile: profile.mobile,
-                  savedAddress: {
-                    street: profile.street,
-                    city: profile.city,
-                    district: profile.city,
-                    state: profile.state,
-                    pincode: profile.pincode,
-                    landmark: profile.landmark,
-                  },
-                });
-
-                const updatedMode = await storefrontApi.updateServiceMode(serviceMode);
-                let nextUser = {
-                  ...updatedProfile,
-                  serviceMode: updatedMode.serviceMode,
-                  selectedStore: updatedMode.selectedStore ?? null,
-                };
-
-                setMode(serviceMode);
-
-                if (serviceMode === 'pickup' && pickupStoreId) {
-                  const storeUser = await storefrontApi.updateSelectedStore(pickupStoreId);
-                  await storefrontApi.selectStore(pickupStoreId);
-                  const matchedStore = pickupStores.find((store) => store.id === pickupStoreId) || null;
-                  if (matchedStore) {
-                    setStore(matchedStore);
-                  }
-                  nextUser = {
-                    ...nextUser,
-                    selectedStore: storeUser.selectedStore ?? null,
-                  };
-                } else if (serviceMode === 'delivery') {
-                  setStore(null);
-                  setPickupStoreId('');
-                  nextUser = {
-                    ...nextUser,
-                    selectedStore: null,
-                  };
-                }
-
-                setUser(nextUser);
-                setAddress(nextUser.savedAddress || null);
-                Alert.alert('Profile saved', 'Your account preferences have been updated.');
-              } catch (caughtError) {
-                Alert.alert('Save failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
-              }
-            }}
-            className="rounded-full bg-primary-500 px-5 py-4"
-          >
-            <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">Save Profile</Text>
-          </Pressable>
-
-          <View className="mt-2 gap-3 rounded-[24px] bg-primary-50 p-4">
-            <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">Explore</Text>
-            <Pressable onPress={() => router.push('/about' as any)} className="rounded-full bg-white px-4 py-3">
-              <Text className="text-center text-[10px] font-black uppercase tracking-[1.4px] text-primary-900">About Vaniki</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push('/contact' as any)} className="rounded-full bg-white px-4 py-3">
-              <Text className="text-center text-[10px] font-black uppercase tracking-[1.4px] text-primary-900">Contact Support</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push('/privacy-policy' as any)} className="rounded-full bg-white px-4 py-3">
-              <Text className="text-center text-[10px] font-black uppercase tracking-[1.4px] text-primary-900">Privacy Policy</Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            onPress={handleDeleteAccount}
-            className="mt-4 rounded-full bg-red-50 px-5 py-4"
-          >
-            <Text className="text-center text-xs font-black uppercase tracking-[2px] text-red-600">Delete Account</Text>
-          </Pressable>
-        </View>
-
-      ) : null}
-
-      {activeTab === 'password' ? (
-        <View className="mt-5 gap-3 rounded-[28px] bg-white p-5">
-          <TextInput
-            value={password.currentPassword}
-            onChangeText={(value) => setPassword((current) => ({ ...current, currentPassword: value }))}
-            placeholder="Current Password"
-            secureTextEntry
-            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-            placeholderTextColor="#7a978b"
-          />
-          <TextInput
-            value={password.newPassword}
-            onChangeText={(value) => setPassword((current) => ({ ...current, newPassword: value }))}
-            placeholder="New Password"
-            secureTextEntry
-            className="rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
-            placeholderTextColor="#7a978b"
-          />
-          <Pressable
-            onPress={async () => {
-              await storefrontApi.changePassword(password);
-              await storefrontApi.logout();
-              logout();
-              router.replace('/(auth)/login');
-            }}
-            className="rounded-full bg-primary-500 px-5 py-4"
-          >
-            <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">Change Password</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      <Pressable
-        onPress={async () => {
-          await storefrontApi.logout().catch(() => undefined);
-          logout();
-        }}
-        className="mt-6 rounded-full bg-white px-5 py-4"
-      >
-        <Text className="text-center text-xs font-black uppercase tracking-[2px] text-primary-900">Logout</Text>
-      </Pressable>
+      </ScrollView>
     </Screen>
   );
 }

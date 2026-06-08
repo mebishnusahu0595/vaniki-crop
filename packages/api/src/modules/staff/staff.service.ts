@@ -6,6 +6,7 @@ import { Order } from '../../models/Order.model.js';
 import { AppError } from '../../utils/AppError.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 import { rewardReferrerForPurchase } from '../orders/order.service.js';
+import { sendOtpViaMessageCentral, validateOtpViaMessageCentral } from '../../utils/messageCentral.js';
 
 
 export const DELIVERY_CANCEL_REASONS = [
@@ -314,7 +315,11 @@ export async function deliverTask(
   if (order.status === 'cancelled') {
     throw new AppError('Cancelled order cannot be delivered', 400);
   }
-  if (!order.deliveryOtp || String(payload.otp).trim() !== order.deliveryOtp) {
+  if (!order.deliveryOtp) {
+    throw new AppError('OTP has not been sent yet. Please click Send OTP first.', 400);
+  }
+  const isOtpValid = await validateOtpViaMessageCentral(order.deliveryOtp, String(payload.otp).trim());
+  if (!isOtpValid) {
     throw new AppError('Invalid delivery OTP', 400);
   }
 
@@ -367,4 +372,79 @@ export async function cancelTask(staffId: string, orderId: string, payload: { re
 
   await order.save({ validateBeforeSave: false });
   return getStaffTask(staffId, orderId);
+}
+
+export async function forgotPasswordStaff(payload: { mobile: string }) {
+  if (!payload.mobile) {
+    throw new AppError('Mobile number is required', 400);
+  }
+  
+  let cleaned = payload.mobile.trim().replace(/\s+/g, '');
+  if (cleaned.startsWith('+91')) cleaned = cleaned.slice(3);
+  else if (cleaned.startsWith('91') && cleaned.length === 12) cleaned = cleaned.slice(2);
+
+  const staff = await Staff.findOne({ mobile: cleaned });
+  if (!staff) {
+    throw new AppError('No staff account found with this mobile number.', 404);
+  }
+  if (!staff.isActive) {
+    throw new AppError('This staff account is inactive.', 403);
+  }
+
+  const verificationId = await sendOtpViaMessageCentral(cleaned);
+  return { verificationId };
+}
+
+export async function resetPasswordStaff(payload: { mobile: string; otp: string; newPassword: string; verificationId: string }) {
+  if (!payload.mobile || !payload.otp || !payload.newPassword || !payload.verificationId) {
+    throw new AppError('All fields (mobile, otp, newPassword, verificationId) are required', 400);
+  }
+
+  let cleaned = payload.mobile.trim().replace(/\s+/g, '');
+  if (cleaned.startsWith('+91')) cleaned = cleaned.slice(3);
+  else if (cleaned.startsWith('91') && cleaned.length === 12) cleaned = cleaned.slice(2);
+
+  const staff = await Staff.findOne({ mobile: cleaned }).select('+password');
+  if (!staff) {
+    throw new AppError('No staff account found with this mobile number.', 404);
+  }
+  if (!staff.isActive) {
+    throw new AppError('This staff account is inactive.', 403);
+  }
+
+  const isOtpValid = await validateOtpViaMessageCentral(payload.verificationId, payload.otp);
+  if (!isOtpValid) {
+    throw new AppError('Invalid OTP', 400);
+  }
+
+  staff.password = payload.newPassword;
+  await staff.save();
+}
+
+export async function sendDeliveryOtp(staffId: string, orderId: string) {
+  const order = await getStaffTask(staffId, orderId);
+  if (['delivered', 'cancelled'].includes(order.status)) {
+    throw new AppError('Cannot send OTP for a completed or cancelled task', 400);
+  }
+
+  const mobile = order.shippingAddress?.mobile || order.userId?.mobile;
+  if (!mobile) {
+    throw new AppError('Customer mobile number not found.', 404);
+  }
+
+  let cleaned = mobile.trim().replace(/\s+/g, '');
+  if (cleaned.startsWith('+91')) cleaned = cleaned.slice(3);
+  else if (cleaned.startsWith('91') && cleaned.length === 12) cleaned = cleaned.slice(2);
+
+  if (!/^[6-9]\d{9}$/.test(cleaned)) {
+    throw new AppError('Customer has an invalid 10-digit Indian mobile number.', 400);
+  }
+
+  const verificationId = await sendOtpViaMessageCentral(cleaned);
+
+  order.deliveryOtp = verificationId;
+  order.deliveryOtpGeneratedAt = new Date();
+  await order.save({ validateBeforeSave: false });
+
+  return { success: true, message: 'OTP sent successfully to registered customer number.' };
 }

@@ -23,6 +23,7 @@ export default function LoginScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [verificationId, setVerificationId] = useState('');
   
   const { setSession } = useAdminAuthStore();
   const router = useRouter();
@@ -55,7 +56,10 @@ export default function LoginScreen() {
     setIsSendingOtp(true);
     setError('');
     try {
-      await adminApi.forgotPassword({ mobile: forgotMobile });
+      const res = await adminApi.forgotPassword({ mobile: forgotMobile });
+      if (res.verificationId) {
+        setVerificationId(res.verificationId);
+      }
       setMode('reset');
       Alert.alert('OTP Sent', 'Enter the 4-digit OTP to verify your identity.');
     } catch (err: any) {
@@ -77,11 +81,12 @@ export default function LoginScreen() {
     setLoading(true);
     setError('');
     try {
-      await adminApi.resetPassword({ mobile: forgotMobile, otp: forgotOtp, newPassword });
+      await adminApi.resetPassword({ mobile: forgotMobile, otp: forgotOtp, newPassword, verificationId });
       Alert.alert('Success', 'Password reset successfully. Please login.');
       setMode('login');
       setForgotOtp('');
       setNewPassword('');
+      setVerificationId('');
     } catch (err: any) {
       setError(err.message || 'Could not reset password');
     } finally {

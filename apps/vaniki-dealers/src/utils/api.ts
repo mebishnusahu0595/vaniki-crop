@@ -136,7 +136,7 @@ export const adminApi = {
     return response.data;
   },
   forgotPassword: async (payload: { mobile?: string; email?: string }) => {
-    const response = await api.post<{ success: boolean; message: string }>('/auth/forgot-password', payload);
+    const response = await api.post<{ success: boolean; message: string; verificationId?: string }>('/auth/forgot-password', payload);
     return response.data;
   },
   resetPassword: async (payload: { mobile?: string; email?: string; otp: string; newPassword: string; verificationId?: string }) => {

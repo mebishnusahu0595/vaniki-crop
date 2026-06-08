@@ -431,11 +431,15 @@ export default function SignupScreen() {
               }}
               disabled={loading || !isMobileVerified}
               style={{ opacity: isMobileVerified && !loading ? 1 : 0.5 }}
-              className="mt-6 rounded-full bg-primary-500 px-5 py-4"
+              className="mt-6 rounded-full bg-primary-500 px-5 py-4 justify-center h-[52px]"
             >
-              <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
-                {loading ? 'Creating account...' : 'Create Account'}
-              </Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
+                  Create Account
+                </Text>
+              )}
             </Pressable>
           </View>
         </ScrollView>

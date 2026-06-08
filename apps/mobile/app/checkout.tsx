@@ -17,6 +17,7 @@ import { currencyFormatter, formatStoreAddress } from '../src/utils/format';
 import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
 import { lookupPincode } from '../src/utils/pincode';
 import { SelectionModal } from '../src/components/SelectionModal';
+import { Skeleton } from '../src/components/Skeleton';
 
 function getCheckoutErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) return error.message;
@@ -244,9 +245,19 @@ export default function CheckoutScreen() {
 
             <View className="flex-1">
               {isLoadingStores ? (
-                <View className="flex-1 items-center justify-center">
-                  <ActivityIndicator color="#2D6A4F" size="large" />
-                  <Text className="mt-4 text-xs font-black uppercase tracking-widest text-primary-900/40">Fetching stores...</Text>
+                <View className="gap-3">
+                  {[1, 2, 3].map((i) => (
+                    <View key={i} className="rounded-[28px] border-2 border-primary-100 bg-white p-5 gap-3">
+                      <View className="flex-row justify-between items-center">
+                        <Skeleton width={120} height={16} borderRadius={4} />
+                        <Skeleton width={20} height={20} borderRadius={10} />
+                      </View>
+                      <View className="flex-row items-center gap-1.5 mt-1">
+                        <Feather name="map-pin" size={12} color="#94A3B8" />
+                        <Skeleton width={150} height={12} borderRadius={4} className="ml-1.5" />
+                      </View>
+                    </View>
+                  ))}
                 </View>
               ) : (
                 <ScrollView 
@@ -686,9 +697,13 @@ export default function CheckoutScreen() {
         }}
         className={`mb-10 mt-8 rounded-full px-5 py-5 shadow-lg ${!selectedStore || paying ? 'bg-primary-200' : 'bg-primary-500'}`}
       >
-        <Text className="text-center text-base font-black uppercase tracking-[2px] text-white">
-          {paying ? 'Processing...' : paymentMethod === 'razorpay' ? 'Pay with Razorpay' : 'Place COD Order'}
-        </Text>
+        {paying ? (
+          <ActivityIndicator color="#ffffff" size="small" />
+        ) : (
+          <Text className="text-center text-base font-black uppercase tracking-[2px] text-white">
+            {paymentMethod === 'razorpay' ? 'Pay with Razorpay' : 'Place COD Order'}
+          </Text>
+        )}
       </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

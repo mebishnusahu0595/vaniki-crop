@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
+import { FlashList } from '@shopify/flash-list';
 import { Screen } from '../../src/components/Screen';
+import { Skeleton } from '../../src/components/Skeleton';
 import { ProductCard } from '../../src/components/ProductCard';
 import { ReviewStars } from '../../src/components/ReviewStars';
 import { storefrontApi } from '../../src/lib/api';
@@ -30,6 +32,8 @@ export default function ProductDetailScreen() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const galleryRef = useRef<ScrollView>(null);
   const productQuery = useQuery({
     queryKey: ['mobile-product', slug],
     queryFn: () => storefrontApi.productDetail(slug),
@@ -75,7 +79,59 @@ export default function ProductDetailScreen() {
   if (!product || !selectedVariant) {
     return (
       <Screen>
-        <Text className="text-base font-semibold text-primary-900">Loading product...</Text>
+        <View className="gap-4 pb-10">
+          {/* Gallery Image Skeleton */}
+          <Skeleton height={280} borderRadius={28} className="w-full" />
+          
+          {/* Dots Indicator Skeleton */}
+          <View className="flex-row justify-center gap-1.5 mt-1">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} width={8} height={8} borderRadius={4} />
+            ))}
+          </View>
+
+          {/* Thumbnail Previews Skeleton */}
+          <View className="flex-row justify-center gap-2 mt-1">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} width={50} height={50} borderRadius={12} />
+            ))}
+          </View>
+
+          {/* Title and Rating Skeletons */}
+          <View className="gap-2.5 mt-3">
+            <Skeleton width="40%" height={10} borderRadius={4} />
+            <Skeleton width="85%" height={24} borderRadius={6} />
+            <Skeleton width="30%" height={14} borderRadius={4} />
+          </View>
+
+          {/* Price Block Skeleton */}
+          <View className="flex-row items-center gap-3 mt-1">
+            <Skeleton width={80} height={24} borderRadius={6} />
+            <Skeleton width={60} height={16} borderRadius={4} />
+            <Skeleton width={50} height={14} borderRadius={4} />
+          </View>
+
+          {/* Variants Block Skeleton */}
+          <View className="gap-2 mt-3">
+            <Skeleton width={60} height={10} borderRadius={4} />
+            <View className="flex-row gap-2 mt-1">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} width={70} height={32} borderRadius={16} />
+              ))}
+            </View>
+          </View>
+
+          {/* Description Block Skeleton */}
+          <View className="gap-2 mt-3">
+            <Skeleton width={100} height={12} borderRadius={4} />
+            <Skeleton width="100%" height={10} borderRadius={4} className="mt-1" />
+            <Skeleton width="95%" height={10} borderRadius={4} />
+            <Skeleton width="60%" height={10} borderRadius={4} />
+          </View>
+
+          {/* Action Button Skeleton */}
+          <Skeleton height={48} borderRadius={24} className="w-full mt-4" />
+        </View>
       </Screen>
     );
   }
@@ -104,27 +160,100 @@ export default function ProductDetailScreen() {
 
   return (
     <Screen>
-      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} className="mb-5">
-        {galleryImages.length ? (
-          galleryImages.map((image) => {
-            const imageUrl = resolveMediaUrl(image.url, image.publicId);
-            return (
+      <View className="mb-5">
+        <ScrollView
+          ref={galleryRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={(event) => {
+            const contentOffsetX = event.nativeEvent.contentOffset.x;
+            const index = Math.round(contentOffsetX / galleryImageWidth);
+            if (index !== activeImageIndex) {
+              setActiveImageIndex(index);
+            }
+          }}
+          scrollEventThrottle={16}
+          style={{ width: galleryImageWidth }}
+        >
+          {galleryImages.length ? (
+            galleryImages.map((image) => {
+              const imageUrl = resolveMediaUrl(image.url, image.publicId);
+              return (
+                <View
+                  key={image.url}
+                  style={{ width: galleryImageWidth, height: 280, borderRadius: 28 }}
+                  className="bg-[#f4f7f6] overflow-hidden items-center justify-center"
+                >
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={{ width: '100%', height: '100%' }}
+                    contentFit="contain"
+                  />
+                </View>
+              );
+            })
+          ) : (
+            <View
+              style={{ width: galleryImageWidth, height: 280, borderRadius: 28 }}
+              className="bg-[#f4f7f6] overflow-hidden items-center justify-center"
+            >
               <Image
-                key={image.url}
-                source={{ uri: imageUrl }}
-                style={{ width: galleryImageWidth, height: 280, borderRadius: 28 }}
-                contentFit="cover"
+                source={{ uri: getPrimaryImage(product, routeImage) }}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="contain"
               />
-            );
-          })
-        ) : (
-          <Image
-            source={{ uri: getPrimaryImage(product, routeImage) }}
-            style={{ width: galleryImageWidth, height: 280, borderRadius: 28 }}
-            contentFit="cover"
-          />
-        )}
-      </ScrollView>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Dots indicator */}
+        {galleryImages.length > 1 ? (
+          <View className="mt-3 flex-row justify-center gap-1.5">
+            {galleryImages.map((_, index) => (
+              <Pressable
+                key={index}
+                onPress={() => {
+                  galleryRef.current?.scrollTo({ x: index * galleryImageWidth, animated: true });
+                  setActiveImageIndex(index);
+                }}
+                className={`h-2 rounded-full ${
+                  activeImageIndex === index ? 'w-5 bg-primary-500' : 'w-2 bg-primary-200'
+                }`}
+              />
+            ))}
+          </View>
+        ) : null}
+
+        {/* Thumbnail previews */}
+        {galleryImages.length > 1 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mt-4"
+            contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}
+          >
+            {galleryImages.map((image, index) => {
+              const imageUrl = resolveMediaUrl(image.url, image.publicId);
+              const isSelected = index === activeImageIndex;
+              return (
+                <Pressable
+                  key={`thumb-${image.url}`}
+                  onPress={() => {
+                    galleryRef.current?.scrollTo({ x: index * galleryImageWidth, animated: true });
+                    setActiveImageIndex(index);
+                  }}
+                  className={`h-14 w-14 overflow-hidden rounded-xl border bg-[#f4f7f6] items-center justify-center active:scale-95 ${
+                    isSelected ? 'border-primary-500' : 'border-primary-100'
+                  }`}
+                >
+                  <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
+      </View>
 
       <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">
         {product.category?.name || 'Crop Care'}
@@ -135,7 +264,7 @@ export default function ProductDetailScreen() {
       <View className="mt-4 flex-row gap-2">
         <Pressable
           onPress={() => void handleToggleWishlist()}
-          className={`flex-1 rounded-full border px-4 py-3 ${
+          className={`flex-1 rounded-full border px-4 py-3 active:scale-95 active:opacity-90 ${
             isWishlisted ? 'border-rose-200 bg-rose-50' : 'border-primary-200 bg-white'
           }`}
         >
@@ -149,7 +278,7 @@ export default function ProductDetailScreen() {
         </Pressable>
         <Pressable
           onPress={handleToggleCompare}
-          className={`flex-1 rounded-full border px-4 py-3 ${
+          className={`flex-1 rounded-full border px-4 py-3 active:scale-95 active:opacity-90 ${
             isCompared ? 'border-primary-500 bg-primary-500' : 'border-primary-200 bg-white'
           }`}
         >
@@ -198,7 +327,7 @@ export default function ProductDetailScreen() {
           <Pressable
             key={variant.id}
             onPress={() => setSelectedVariantId(variant.id)}
-            className={`rounded-full px-4 py-3 ${selectedVariant.id === variant.id ? 'bg-primary-500' : 'bg-white'}`}
+            className={`rounded-full px-4 py-3 active:scale-95 ${selectedVariant.id === variant.id ? 'bg-primary-500' : 'bg-white border border-primary-100'}`}
           >
             <Text className={`text-xs font-black uppercase tracking-[1px] ${selectedVariant.id === variant.id ? 'text-white' : 'text-primary-900'}`}>
               {variant.label}
@@ -209,7 +338,7 @@ export default function ProductDetailScreen() {
 
       {quantityInCart > 0 ? (
         <View className="mt-6 flex-row items-center justify-between rounded-full bg-primary-50 px-3 py-2">
-          <Pressable onPress={() => decreaseQty(selectedVariant.id)} className="h-10 w-10 items-center justify-center rounded-full bg-white">
+          <Pressable onPress={() => decreaseQty(selectedVariant.id)} className="h-10 w-10 items-center justify-center rounded-full bg-white active:scale-90">
             <Feather name="minus" size={16} color="#082018" />
           </Pressable>
           <Text className="text-sm font-black text-primary-900">{quantityInCart}</Text>
@@ -220,7 +349,7 @@ export default function ProductDetailScreen() {
               }
             }}
             disabled={!canIncrease}
-            className={`h-10 w-10 items-center justify-center rounded-full ${canIncrease ? 'bg-primary-500' : 'bg-primary-100'}`}
+            className={`h-10 w-10 items-center justify-center rounded-full active:scale-90 ${canIncrease ? 'bg-primary-500' : 'bg-primary-100'}`}
           >
             <Feather name="plus" size={16} color={canIncrease ? '#FFFFFF' : '#6D8A7D'} />
           </Pressable>
@@ -233,7 +362,7 @@ export default function ProductDetailScreen() {
             }
           }}
           disabled={isOutOfStock}
-          className={`mt-6 rounded-full px-5 py-4 ${isOutOfStock ? 'bg-primary-100' : 'bg-primary-500'}`}
+          className={`mt-6 rounded-full px-5 py-4 active:scale-95 active:opacity-90 ${isOutOfStock ? 'bg-primary-100' : 'bg-primary-500'}`}
         >
           <Text className={`text-center text-sm font-black uppercase tracking-[2px] ${isOutOfStock ? 'text-primary-900/45' : 'text-white'}`}>
             {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
@@ -273,7 +402,7 @@ export default function ProductDetailScreen() {
                 await storefrontApi.submitReview({ productId: product.id, rating, comment });
                 setComment('');
               }}
-              className="rounded-full bg-primary-500 px-5 py-4"
+              className="rounded-full bg-primary-500 px-5 py-4 active:scale-95 active:opacity-90"
             >
               <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
                 Submit Review
@@ -283,11 +412,28 @@ export default function ProductDetailScreen() {
         ) : null}
       </View>
 
-      <View className="mt-7">
+      <View className="mt-7 pb-8">
         <Text className="mb-4 text-lg font-black text-primary-900">Related Products</Text>
-        {relatedProducts.map((item) => (
-          <ProductCard key={item.id} product={item} />
-        ))}
+        {relatedProducts.length ? (
+          <View style={{ height: 340, width: '100%' }}>
+            <FlashList
+              horizontal
+              data={relatedProducts}
+              showsHorizontalScrollIndicator={false}
+              estimatedItemSize={184}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <View className="mr-3 w-[184px]">
+                  <ProductCard product={item} compact />
+                </View>
+              )}
+            />
+          </View>
+        ) : (
+          <Text className="text-sm font-semibold text-primary-900/65">
+            No related products found.
+          </Text>
+        )}
       </View>
     </Screen>
   );

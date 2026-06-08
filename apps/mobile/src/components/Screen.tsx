@@ -57,12 +57,12 @@ export function Screen({
   const content = (
     <View className={contentClassName} style={{ paddingBottom: bottomPadding }}>
       {withHeader ? (
-        <View className="pb-4 pt-3">
+        <View className="pb-2 pt-1.5">
           <AppHeader />
         </View>
       ) : null}
       {withServiceBar ? (
-        <View className="pb-4">
+        <View className="pb-2">
           <ServiceModeBar />
         </View>
       ) : null}

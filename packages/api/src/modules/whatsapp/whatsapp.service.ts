@@ -272,10 +272,6 @@ async function handleOrderQuery(to: string, user: any, lang: string) {
     if (order.serviceMode === 'pickup' && order.status !== 'delivered') {
       response += lang === 'hi' ? `⚠️ *याद दिलाएं:* कृपया दुकान से सामान लेते समय पैसे (Cash) साथ लाएं।\n` : `⚠️ *Reminder:* Please bring cash for payment at the store.\n`;
     }
-
-    if (order.deliveryOtp && (order.status === 'processing' || order.status === 'shipped')) {
-      response += `🔑 *OTP:* ${order.deliveryOtp}\n`;
-    }
   });
 
   response += `\nअधिक जानकारी के लिए यहाँ देखें: ${APP_URL}/account/orders`;

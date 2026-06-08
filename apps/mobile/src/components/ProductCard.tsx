@@ -72,16 +72,16 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
       }
       className={
         compact
-          ? 'mb-3 min-h-[318px] overflow-hidden rounded-[22px] border border-primary-100 bg-white'
-          : 'mb-4 flex-1 overflow-hidden rounded-[26px] border border-primary-100 bg-white'
+          ? 'mb-3 min-h-[318px] overflow-hidden rounded-[22px] border border-primary-100 bg-white active:scale-[0.98] active:opacity-[0.98]'
+          : 'mb-4 flex-1 overflow-hidden rounded-[26px] border border-primary-100 bg-white active:scale-[0.98] active:opacity-[0.98]'
       }
     >
-      <View className="relative">
+      <View className="relative bg-[#f4f7f6] overflow-hidden">
         <Image
           source={{ uri: primaryImage }}
           placeholder={{ uri: 'https://placehold.co/400x400?text=Vaniki+Crop' }}
           style={{ width: '100%', height: compact ? 118 : 150 }}
-          contentFit="cover"
+          contentFit="contain"
           transition={500}
         />
         {isOutOfStock ? (
@@ -108,7 +108,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
               event.stopPropagation();
               void handleToggleWishlist();
             }}
-            className={`h-8 w-8 items-center justify-center rounded-full border ${
+            className={`h-8 w-8 items-center justify-center rounded-full border active:scale-90 ${
               isWishlisted ? 'border-rose-200 bg-rose-50' : 'border-white/85 bg-white/90'
             }`}
           >
@@ -119,7 +119,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
               event.stopPropagation();
               handleToggleCompare();
             }}
-            className={`h-8 w-8 items-center justify-center rounded-full border ${
+            className={`h-8 w-8 items-center justify-center rounded-full border active:scale-90 ${
               isCompared ? 'border-primary-500 bg-primary-500' : 'border-white/85 bg-white/90'
             }`}
           >
@@ -137,10 +137,16 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
           {product.category?.name || 'Crop Care'}
         </Text>
         <Text
-          numberOfLines={2}
-          className={`mt-2 font-black leading-5 text-primary-900 ${compact ? 'min-h-[34px] text-[13px]' : 'min-h-[42px] text-sm'}`}
+          numberOfLines={1}
+          className={`mt-1 font-black leading-tight text-primary-900 ${compact ? 'text-[13px]' : 'text-sm'}`}
         >
           {product.name}
+        </Text>
+        <Text
+          numberOfLines={1}
+          className="mt-0.5 text-[11px] font-semibold text-primary-900/60 min-h-[16px]"
+        >
+          {product.shortDescription || ' '}
         </Text>
         <View className="mt-3 flex-row items-center gap-2">
           {variant ? (
@@ -166,7 +172,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
                 event.stopPropagation();
                 if (variant) decreaseQty(variant.id);
               }}
-              className={`${compact ? 'h-8 w-8' : 'h-9 w-9'} items-center justify-center rounded-full bg-white`}
+              className={`${compact ? 'h-8 w-8' : 'h-9 w-9'} items-center justify-center rounded-full bg-white active:scale-90`}
             >
               <Feather name="minus" size={16} color="#082018" />
             </Pressable>
@@ -179,7 +185,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
                 }
               }}
               disabled={!canIncrease}
-              className={`${compact ? 'h-8 w-8' : 'h-9 w-9'} items-center justify-center rounded-full ${canIncrease ? 'bg-primary-500' : 'bg-primary-100'}`}
+              className={`${compact ? 'h-8 w-8' : 'h-9 w-9'} items-center justify-center rounded-full active:scale-90 ${canIncrease ? 'bg-primary-500' : 'bg-primary-100'}`}
             >
               <Feather name="plus" size={16} color={canIncrease ? '#FFFFFF' : '#6D8A7D'} />
             </Pressable>
@@ -193,7 +199,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
               }
             }}
             disabled={isOutOfStock}
-            className={`mt-4 rounded-full px-4 ${compact ? 'py-2.5' : 'py-3'} ${isOutOfStock ? 'bg-primary-100' : 'bg-primary-500'}`}
+            className={`mt-4 rounded-full px-4 active:scale-95 active:opacity-90 ${compact ? 'py-2.5' : 'py-3'} ${isOutOfStock ? 'bg-primary-100' : 'bg-primary-500'}`}
           >
             <Text className={`text-center font-black uppercase ${compact ? 'text-[10px] tracking-[1.5px]' : 'text-xs tracking-[2px]'} ${isOutOfStock ? 'text-primary-900/45' : 'text-white'}`}>
               {isOutOfStock ? t('mobile.actions.outOfStock') : t('mobile.actions.addToCart')}

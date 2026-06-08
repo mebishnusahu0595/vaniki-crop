@@ -32,6 +32,19 @@ function TaskCard({ task }: { task: DeliveryTask }) {
   const [cancelReason, setCancelReason] = useState<(typeof DELIVERY_CANCEL_REASONS)[number]>('Customer not available');
   const [cancelNote, setCancelNote] = useState('');
   const [proofImage, setProofImage] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [isSendingOtpCode, setIsSendingOtpCode] = useState(false);
+
+  const handleSendOtp = async () => {
+    setIsSendingOtpCode(true);
+    try {
+      await staffApi.sendDeliveryOtp(task.id);
+      Alert.alert('Success', 'OTP sent to customer mobile number.');
+    } catch (error) {
+      Alert.alert('Failed to send OTP', error instanceof Error ? error.message : 'Please try again.');
+    } finally {
+      setIsSendingOtpCode(false);
+    }
+  };
 
   const invalidateTasks = () => queryClient.invalidateQueries({ queryKey: ['delivery-staff-tasks'] });
 
@@ -167,7 +180,20 @@ function TaskCard({ task }: { task: DeliveryTask }) {
       ) : null}
 
       <View className="mt-5 rounded-[24px] border border-primary-100 p-4">
-        <Text className="text-[10px] font-black uppercase tracking-[1.6px] text-primary-500">Deliver With OTP</Text>
+        <View className="flex-row items-center justify-between mb-1">
+          <Text className="text-[10px] font-black uppercase tracking-[1.6px] text-primary-500">Deliver With OTP</Text>
+          <Pressable
+            onPress={handleSendOtp}
+            disabled={isSendingOtpCode}
+            className="rounded-full bg-primary-900 px-3 py-1.5 active:scale-[0.97]"
+          >
+            {isSendingOtpCode ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text className="text-[9px] font-black uppercase tracking-[1px] text-white">Send OTP</Text>
+            )}
+          </Pressable>
+        </View>
         <TextInput
           value={otp}
           onChangeText={(value) => setOtp(value.replace(/\D/g, '').slice(0, 6))}
