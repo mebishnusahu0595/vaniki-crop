@@ -60,7 +60,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.vanikicrop.app",
-      "versionCode": 13,
+      "versionCode": 14,
       "targetSdkVersion": 35,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
