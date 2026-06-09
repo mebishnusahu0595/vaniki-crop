@@ -53,6 +53,8 @@ router.get('/pickup-orders', requireStaffAuth, staffController.getPickupOrders);
 router.post('/pickup-orders/:id/send-otp', requireStaffAuth, staffController.sendPickupOtp);
 router.post('/pickup-orders/:id/verify-pickup', requireStaffAuth, staffController.verifyPickupOtp);
 router.post('/orders/:id/collect-payment', requireStaffAuth, staffController.collectPayment);
+router.get('/inventory', requireStaffAuth, staffController.listStaffInventory);
+router.patch('/inventory', requireStaffAuth, staffController.updateStaffInventory);
 
 
 router.use(requireAuth, requireSuperAdmin);

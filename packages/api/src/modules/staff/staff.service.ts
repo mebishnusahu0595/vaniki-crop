@@ -6,6 +6,7 @@ import { Order } from '../../models/Order.model.js';
 import { AppError } from '../../utils/AppError.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 import { rewardReferrerForPurchase } from '../orders/order.service.js';
+import { listDealerInventory, upsertDealerInventory } from '../admin/admin.service.js';
 import { sendOtpViaMessageCentral, validateOtpViaMessageCentral } from '../../utils/messageCentral.js';
 import { triggerDeliveryAssignedNotifications, triggerOrderStatusNotifications } from '../../utils/pushNotifications.js';
 
@@ -653,6 +654,36 @@ export async function collectPayment(
   // The superadmin monitor polls orders every 15s, so it reflects the paid
   // state automatically — no push notification needed here.
   return order;
+}
+
+/** Resolves the store a dealer-staff member belongs to (for inventory management). */
+async function getDealerStaffStoreId(staffId: string) {
+  const staff = await Staff.findById(staffId);
+  if (!staff || !staff.isActive) {
+    throw new AppError('Staff account not found or inactive', 401);
+  }
+  if (staff.role !== 'dealer-staff') {
+    throw new AppError('Access denied. Dealer staff privileges required.', 403);
+  }
+  if (!staff.storeId) {
+    throw new AppError('Dealer staff is not associated with any store', 400);
+  }
+  return staff.storeId.toString();
+}
+
+/** Lists the dealer-staff's store inventory (same shape as the dealer admin app). */
+export async function listStaffInventory(staffId: string) {
+  const storeId = await getDealerStaffStoreId(staffId);
+  return listDealerInventory(storeId);
+}
+
+/** Updates the dealer-staff's store inventory quantities. */
+export async function updateStaffInventory(
+  staffId: string,
+  entries: Array<{ productId: string; variantId: string; quantity: number }>,
+) {
+  const storeId = await getDealerStaffStoreId(staffId);
+  return upsertDealerInventory(storeId, staffId, entries);
 }
 
 export async function updateStaffFcmToken(staffId: string, payload: { fcmToken: string }) {

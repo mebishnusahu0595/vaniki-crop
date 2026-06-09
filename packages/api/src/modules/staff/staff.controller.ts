@@ -225,3 +225,22 @@ export async function collectPayment(req: Request, res: Response, next: NextFunc
   }
 }
 
+export async function listStaffInventory(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await staffService.listStaffInventory(req.staffId!);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateStaffInventory(req: Request, res: Response, next: NextFunction) {
+  try {
+    const entries = Array.isArray(req.body?.entries) ? req.body.entries : [];
+    const data = await staffService.updateStaffInventory(req.staffId!, entries);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+

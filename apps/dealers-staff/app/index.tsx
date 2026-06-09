@@ -277,7 +277,23 @@ export default function PickupScreen() {
                   <Text className="mt-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900">Refresh</Text>
                 </Pressable>
               </View>
-              
+
+              <Pressable
+                onPress={() => router.push('/inventory' as never)}
+                className="mt-3 flex-row items-center justify-between rounded-[24px] bg-white border border-primary-50 px-5 py-4 active:scale-[0.99]"
+              >
+                <View className="flex-row items-center gap-3">
+                  <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-50">
+                    <Feather name="box" size={18} color="#2D6A4F" />
+                  </View>
+                  <View>
+                    <Text className="text-sm font-black text-primary-900">Manage Inventory</Text>
+                    <Text className="mt-0.5 text-[11px] font-semibold text-primary-900/55">Update store stock levels</Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={20} color="#143D2E" />
+              </Pressable>
+
               <View className="h-5" />
             </View>
           }

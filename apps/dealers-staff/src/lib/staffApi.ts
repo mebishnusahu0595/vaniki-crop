@@ -46,6 +46,26 @@ export interface DeliveryTask {
   statusHistory: OrderStatusHistoryEntry[];
 }
 
+export interface InventoryVariant {
+  id: string;
+  label: string;
+  price: number;
+  dealerPrice?: number;
+  offerPrice?: number;
+  mrp?: number;
+  quantity: number;
+}
+
+export interface InventoryProduct {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string;
+  category?: { name?: string } | string | null;
+  shortDescription?: string;
+  variants: InventoryVariant[];
+}
+
 export const DELIVERY_CANCEL_REASONS = [
   'Customer not available',
   'Customer refused delivery',
@@ -204,5 +224,16 @@ export const staffApi = {
       body: JSON.stringify(payload),
     });
     return normalizeTask(response.data);
+  },
+  inventoryProducts: async () => {
+    const response = await request<InventoryProduct[]>('/staff/inventory');
+    return response.data || [];
+  },
+  updateInventory: async (entries: Array<{ productId: string; variantId: string; quantity: number }>) => {
+    const response = await request<InventoryProduct[]>('/staff/inventory', {
+      method: 'PATCH',
+      body: JSON.stringify({ entries }),
+    });
+    return response.data || [];
   },
 };

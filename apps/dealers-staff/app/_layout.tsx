@@ -43,6 +43,7 @@ function RootNavigation() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="login" />
+        <Stack.Screen name="inventory" />
       </Stack>
     </>
   );

@@ -52,7 +52,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.vanikicrop.superadminstaff",
-      "versionCode": 4,
+      "versionCode": 5,
       "targetSdkVersion": 35,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
