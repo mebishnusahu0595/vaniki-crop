@@ -12,6 +12,12 @@
     },
     "android": {
       "package": "com.vaniki.dealers",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#f0faf5",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -35,6 +41,13 @@
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 76
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#2D6A4F"
         }
       ],
       [

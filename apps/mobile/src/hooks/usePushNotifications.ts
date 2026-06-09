@@ -66,15 +66,26 @@ export function usePushNotifications(enabled: boolean) {
 
       const projectId =
         Constants.easConfig?.projectId || Constants.expoConfig?.extra?.eas?.projectId;
-      if (!projectId) return;
+      
+      if (projectId) {
+        try {
+          const token = await Notifications.getExpoPushTokenAsync({ projectId });
+          setPushToken(token.data);
+          await storefrontApi.updatePushToken(token.data).catch(() => undefined);
+        } catch (expoErr) {
+          console.warn('[PUSH] Failed to get Expo push token:', expoErr);
+        }
+      } else {
+        console.warn('[PUSH] Project ID is missing, skipping Expo push token.');
+      }
 
-      const token = await Notifications.getExpoPushTokenAsync({ projectId });
-      setPushToken(token.data);
-      await storefrontApi.updatePushToken(token.data).catch(() => undefined);
-
-      const deviceToken = await Notifications.getDevicePushTokenAsync().catch(() => null);
-      if (deviceToken?.data) {
-        await storefrontApi.updateFcmToken(deviceToken.data).catch(() => undefined);
+      try {
+        const deviceToken = await Notifications.getDevicePushTokenAsync();
+        if (deviceToken?.data) {
+          await storefrontApi.updateFcmToken(deviceToken.data).catch(() => undefined);
+        }
+      } catch (fcmErr) {
+        console.warn('[PUSH] Failed to get FCM device push token:', fcmErr);
       }
     };
 
