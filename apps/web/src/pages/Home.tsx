@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Flame } from 'lucide-react';
+import { ArrowRight, Flame, Smartphone, ExternalLink } from 'lucide-react';
+import { PLAY_STORE_URL } from '../components/common/AppPromoModal';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -145,6 +146,52 @@ const Home: React.FC = () => {
               >
                 {t('home.shopNow')}
               </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Download the App — hardcoded promo section */}
+      <section className="px-4 py-10 md:py-14">
+        <div className="container mx-auto">
+          <div className="overflow-hidden rounded-[2rem] border border-emerald-800/30 bg-[linear-gradient(135deg,_#09261a,_#020b08)] text-white shadow-xl">
+            <div className="flex flex-col items-center gap-8 p-6 sm:p-10 md:flex-row md:justify-between md:gap-12">
+              <div className="text-center md:max-w-xl md:text-left">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-4 py-1.5 text-emerald-300">
+                  <Smartphone size={15} />
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em]">Vaniki Crop App</span>
+                </div>
+                <h2 className="text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
+                  Download our app from Google Play
+                </h2>
+                <p className="mx-auto mt-3 max-w-md text-sm font-semibold text-emerald-100/60 md:mx-0">
+                  Shop genuine crop protection, track orders in real time, and get instant rewards — right from your phone.
+                </p>
+                <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row md:justify-start">
+                  <a
+                    href={PLAY_STORE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-6 py-4 text-xs font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-600 sm:w-auto"
+                  >
+                    <ExternalLink size={16} />
+                    <span>Go to Play Store</span>
+                  </a>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-100/40">
+                    or scan the code →
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-full max-w-[230px] shrink-0 rounded-3xl bg-white p-3 shadow-2xl">
+                <img
+                  src="/app_promotion.jpeg"
+                  alt="Scan to download the Vaniki Crop app from Google Play"
+                  className="h-auto w-full select-none"
+                  draggable={false}
+                  loading="lazy"
+                />
+              </div>
             </div>
           </div>
         </div>

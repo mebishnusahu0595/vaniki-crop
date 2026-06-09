@@ -44,6 +44,9 @@ export const EnquiryModal: React.FC = () => {
     sessionStorage.setItem('vaniki_enquiry_dismissed', 'true');
     setIsOpen(false);
 
+    // Show the app download promo right after the enquiry form is closed.
+    window.dispatchEvent(new Event('vaniki:show-app-promo'));
+
     // After closing the enquiry modal, trigger Point Claim after a 10 second delay
     setTimeout(() => {
       // Double check if they didn't complete it in another tab/interaction
@@ -83,6 +86,9 @@ export const EnquiryModal: React.FC = () => {
       if (response.success) {
         localStorage.setItem('vaniki_enquiry_submitted', 'true');
         setIsOpen(false);
+
+        // Show the app download promo after submission too.
+        window.dispatchEvent(new Event('vaniki:show-app-promo'));
 
         // Instantly trigger Point Claim popup as requested!
         setShowLoyaltyModal(true);

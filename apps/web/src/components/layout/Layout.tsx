@@ -11,6 +11,7 @@ import type { ServiceMode } from '../../types/storefront';
 import { useAuthStore } from '../../store/useAuthStore';
 import { CheckInModal } from '../loyalty/CheckInModal';
 import { EnquiryModal } from '../common/EnquiryModal';
+import { AppPromoModal } from '../common/AppPromoModal';
 
 const authRoutes = ['/login', '/signup'];
 
@@ -54,6 +55,7 @@ const Layout: React.FC = () => {
       {!hideChrome && <MobileNav />}
       {!hideChrome && <CheckInModal />}
       {!hideChrome && <EnquiryModal />}
+      {!hideChrome && <AppPromoModal />}
     </div>
   );
 };

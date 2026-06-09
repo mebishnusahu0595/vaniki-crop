@@ -4,6 +4,7 @@ import { MessageCircle, Phone, Mail, MapPin } from 'lucide-react';
 import { siteContent } from '../../content/site';
 import { useTranslation } from 'react-i18next';
 import { openSupportWhatsApp } from '../../utils/whatsapp';
+import { PLAY_STORE_URL } from '../common/AppPromoModal';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
@@ -42,6 +43,29 @@ const Footer: React.FC = () => {
                   {t('footer.whatsappSupport')}
                 </button>
               </div>
+            </div>
+
+            {/* Download app — Google Play */}
+            <div className="mt-6 md:mt-8">
+              <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-primary-400">Get the App</p>
+              <a
+                href={PLAY_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 rounded-2xl border border-primary-800 bg-primary-950/40 p-2 pr-4 transition hover:border-primary-500"
+                aria-label="Download Vaniki Crop on Google Play"
+              >
+                <img
+                  src="/app_promotion.jpeg"
+                  alt="Scan to download the Vaniki Crop app"
+                  className="h-11 w-11 rounded-lg object-cover"
+                  loading="lazy"
+                />
+                <span className="flex flex-col leading-tight">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-primary-100/45">Download on</span>
+                  <span className="text-sm font-black text-white">Google Play</span>
+                </span>
+              </a>
             </div>
           </div>
 
