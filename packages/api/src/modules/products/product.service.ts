@@ -205,7 +205,7 @@ export async function getProducts(
     for (const product of products) {
       if (product.variants && product.variants.length > 0) {
         for (const variant of product.variants) {
-          const key = `${product._id.toString()}_${variant._id.toString()}`;
+          const key = `${product._id.toString()}_${variant._id!.toString()}`;
           if (inventoryMap.has(key)) {
             variant.stock = inventoryMap.get(key)!;
           }
@@ -304,7 +304,7 @@ export async function searchProducts(
     for (const product of results) {
       if (product.variants && product.variants.length > 0) {
         for (const variant of product.variants) {
-          const key = `${product._id.toString()}_${variant._id.toString()}`;
+          const key = `${product._id.toString()}_${variant._id!.toString()}`;
           if (inventoryMap.has(key)) {
             variant.stock = inventoryMap.get(key)!;
           }
@@ -346,7 +346,7 @@ export async function getProductBySlug(slug: string, storeId?: string): Promise<
     }
 
     for (const variant of product.variants) {
-      const key = variant._id.toString();
+      const key = variant._id!.toString();
       if (inventoryMap.has(key)) {
         variant.stock = inventoryMap.get(key)!;
       }
