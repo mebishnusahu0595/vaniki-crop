@@ -29,9 +29,10 @@ export async function getProducts(req: Request, res: Response, next: NextFunctio
 export async function searchProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { q, storeId, limit } = req.query as any;
+    const activeStoreId = storeId || req.storeId || req.userStoreId;
     const products = await productService.searchProducts(
       q,
-      storeId,
+      activeStoreId,
       limit ? parseInt(limit) : undefined,
     );
     res.status(200).json({
@@ -50,7 +51,8 @@ export async function searchProducts(req: Request, res: Response, next: NextFunc
  */
 export async function getProductBySlug(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { product, reviews } = await productService.getProductBySlug(req.params.slug as string);
+    const storeId = req.storeId || req.userStoreId;
+    const { product, reviews } = await productService.getProductBySlug(req.params.slug as string, storeId);
     res.status(200).json({
       success: true,
       data: {

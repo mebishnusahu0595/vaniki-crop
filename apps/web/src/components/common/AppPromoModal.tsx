@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Smartphone, ExternalLink } from 'lucide-react';
 
@@ -14,9 +15,15 @@ export const PLAY_STORE_URL =
  */
 export const AppPromoModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
-    const open = () => setIsOpen(true);
+    const open = () => {
+      const isDismissed = sessionStorage.getItem('vaniki_app_promo_dismissed') === 'true';
+      if (location.pathname === '/' && !isDismissed) {
+        setIsOpen(true);
+      }
+    };
     window.addEventListener('vaniki:show-app-promo', open);
 
     // On refreshes where the enquiry form will NOT auto-open this session,
@@ -24,9 +31,10 @@ export const AppPromoModal: React.FC = () => {
     const enquiryDone =
       localStorage.getItem('vaniki_enquiry_submitted') === 'true' ||
       sessionStorage.getItem('vaniki_enquiry_dismissed') === 'true';
+    const isDismissed = sessionStorage.getItem('vaniki_app_promo_dismissed') === 'true';
 
     let timer: ReturnType<typeof setTimeout> | undefined;
-    if (enquiryDone) {
+    if (enquiryDone && location.pathname === '/' && !isDismissed) {
       timer = setTimeout(() => setIsOpen(true), 1500);
     }
 
@@ -34,9 +42,12 @@ export const AppPromoModal: React.FC = () => {
       window.removeEventListener('vaniki:show-app-promo', open);
       if (timer) clearTimeout(timer);
     };
-  }, []);
+  }, [location.pathname]);
 
-  const close = () => setIsOpen(false);
+  const close = () => {
+    sessionStorage.setItem('vaniki_app_promo_dismissed', 'true');
+    setIsOpen(false);
+  };
 
   if (!isOpen) return null;
 

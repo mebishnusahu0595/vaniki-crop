@@ -189,6 +189,31 @@ export async function getProducts(
     Product.countDocuments(filter),
   ]);
 
+  if (storeId && products.length > 0) {
+    const productIds = products.map((p) => p._id);
+    const inventories = await DealerInventory.find({
+      storeId,
+      productId: { $in: productIds },
+    }).select('productId variantId quantity');
+
+    const inventoryMap = new Map<string, number>();
+    for (const inv of inventories) {
+      const key = `${inv.productId.toString()}_${inv.variantId.toString()}`;
+      inventoryMap.set(key, inv.quantity);
+    }
+
+    for (const product of products) {
+      if (product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+          const key = `${product._id.toString()}_${variant._id.toString()}`;
+          if (inventoryMap.has(key)) {
+            variant.stock = inventoryMap.get(key)!;
+          }
+        }
+      }
+    }
+  }
+
   return createPaginationResponse(products, total, page, limit);
 }
 
@@ -256,13 +281,34 @@ export async function searchProducts(
     regexFilter.$or = regexClauses;
   }
 
-  const regexMatches = await Product.find(regexFilter)
-    .select('name slug shortDescription images variants.label variants.price tags')
-    .populate('category', 'name slug')
-    .sort({ totalSold: -1, createdAt: -1 })
-    .limit(Math.max(0, normalizedLimit - textMatches.length));
+  const results = [...textMatches, ...regexMatches];
 
-  return [...textMatches, ...regexMatches];
+  if (storeId && results.length > 0) {
+    const productIds = results.map((p) => p._id);
+    const inventories = await DealerInventory.find({
+      storeId,
+      productId: { $in: productIds },
+    }).select('productId variantId quantity');
+
+    const inventoryMap = new Map<string, number>();
+    for (const inv of inventories) {
+      const key = `${inv.productId.toString()}_${inv.variantId.toString()}`;
+      inventoryMap.set(key, inv.quantity);
+    }
+
+    for (const product of results) {
+      if (product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+          const key = `${product._id.toString()}_${variant._id.toString()}`;
+          if (inventoryMap.has(key)) {
+            variant.stock = inventoryMap.get(key)!;
+          }
+        }
+      }
+    }
+  }
+
+  return results;
 }
 
 /**
@@ -271,7 +317,7 @@ export async function searchProducts(
  *
  * @param slug - The product's URL slug
  */
-export async function getProductBySlug(slug: string): Promise<{
+export async function getProductBySlug(slug: string, storeId?: string): Promise<{
   product: IProduct;
   reviews: any[];
 }> {
@@ -281,6 +327,25 @@ export async function getProductBySlug(slug: string): Promise<{
 
   if (!product) {
     throw new AppError('Product not found', 404);
+  }
+
+  if (storeId && product.variants && product.variants.length > 0) {
+    const inventories = await DealerInventory.find({
+      storeId,
+      productId: product._id,
+    }).select('variantId quantity');
+
+    const inventoryMap = new Map<string, number>();
+    for (const inv of inventories) {
+      inventoryMap.set(inv.variantId.toString(), inv.quantity);
+    }
+
+    for (const variant of product.variants) {
+      const key = variant._id.toString();
+      if (inventoryMap.has(key)) {
+        variant.stock = inventoryMap.get(key)!;
+      }
+    }
   }
 
   const reviews = await Review.find({ productId: product._id, isApproved: true })
