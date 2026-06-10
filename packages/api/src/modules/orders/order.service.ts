@@ -49,7 +49,7 @@ async function calculateCart(items: any[], storeId: string) {
       variantId: item.variantId,
     }).select('quantity');
 
-    const availableStock = inventoryRow ? inventoryRow.quantity : variant.stock;
+    const availableStock = variant.stock + (inventoryRow ? inventoryRow.quantity : 0);
 
     if (availableStock < item.qty) {
       throw new AppError(`Not enough stock for "${product.name} - ${variant.label}"`, 400);
@@ -397,16 +397,20 @@ export async function placeCodOrder(userId: string, input: any) {
       variantId: item.variantId,
     });
 
-    if (inventoryRow) {
-      inventoryRow.quantity = Math.max(0, inventoryRow.quantity - item.qty);
+    const dealerDeduct = Math.min(inventoryRow ? inventoryRow.quantity : 0, item.qty);
+    const superAdminDeduct = item.qty - dealerDeduct;
+
+    if (inventoryRow && dealerDeduct > 0) {
+      inventoryRow.quantity = Math.max(0, inventoryRow.quantity - dealerDeduct);
       await inventoryRow.save();
-    } else {
+    }
+
+    if (superAdminDeduct > 0) {
       await Product.updateOne(
         { _id: item.productId, 'variants._id': item.variantId },
         {
           $inc: {
-            'variants.$.stock': -item.qty,
-            totalSold: item.qty,
+            'variants.$.stock': -superAdminDeduct,
           },
         }
       );
@@ -497,15 +501,20 @@ export async function finalizeOrder(razorpayOrderId: string, paymentId: string, 
       variantId: item.variantId,
     });
 
-    if (inventoryRow) {
-      inventoryRow.quantity = Math.max(0, inventoryRow.quantity - item.qty);
+    const dealerDeduct = Math.min(inventoryRow ? inventoryRow.quantity : 0, item.qty);
+    const superAdminDeduct = item.qty - dealerDeduct;
+
+    if (inventoryRow && dealerDeduct > 0) {
+      inventoryRow.quantity = Math.max(0, inventoryRow.quantity - dealerDeduct);
       await inventoryRow.save();
-    } else {
+    }
+
+    if (superAdminDeduct > 0) {
       await Product.updateOne(
         { _id: item.productId, 'variants._id': item.variantId },
         {
           $inc: {
-            'variants.$.stock': -item.qty,
+            'variants.$.stock': -superAdminDeduct,
           },
         }
       );

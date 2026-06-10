@@ -189,26 +189,35 @@ export async function getProducts(
     Product.countDocuments(filter),
   ]);
 
-  if (storeId && products.length > 0) {
+  if (products.length > 0) {
     const productIds = products.map((p) => p._id);
-    const inventories = await DealerInventory.find({
-      storeId,
-      productId: { $in: productIds },
-    }).select('productId variantId quantity');
+    let inventories;
+    if (storeId) {
+      inventories = await DealerInventory.find({
+        storeId,
+        productId: { $in: productIds },
+      }).select('productId variantId quantity');
+    } else {
+      const activeStores = await Store.find({ isActive: true }).select('_id');
+      const activeStoreIds = activeStores.map((s) => s._id);
+      inventories = await DealerInventory.find({
+        storeId: { $in: activeStoreIds },
+        productId: { $in: productIds },
+      }).select('productId variantId quantity');
+    }
 
     const inventoryMap = new Map<string, number>();
     for (const inv of inventories) {
       const key = `${inv.productId.toString()}_${inv.variantId.toString()}`;
-      inventoryMap.set(key, inv.quantity);
+      inventoryMap.set(key, (inventoryMap.get(key) || 0) + inv.quantity);
     }
 
     for (const product of products) {
       if (product.variants && product.variants.length > 0) {
         for (const variant of product.variants) {
           const key = `${product._id.toString()}_${variant._id!.toString()}`;
-          if (inventoryMap.has(key)) {
-            variant.stock = inventoryMap.get(key)!;
-          }
+          const dealerQty = inventoryMap.get(key) || 0;
+          variant.stock = variant.stock + dealerQty;
         }
       }
     }
@@ -288,26 +297,35 @@ export async function searchProducts(
 
   const results = [...textMatches, ...regexMatches];
 
-  if (storeId && results.length > 0) {
+  if (results.length > 0) {
     const productIds = results.map((p) => p._id);
-    const inventories = await DealerInventory.find({
-      storeId,
-      productId: { $in: productIds },
-    }).select('productId variantId quantity');
+    let inventories;
+    if (storeId) {
+      inventories = await DealerInventory.find({
+        storeId,
+        productId: { $in: productIds },
+      }).select('productId variantId quantity');
+    } else {
+      const activeStores = await Store.find({ isActive: true }).select('_id');
+      const activeStoreIds = activeStores.map((s) => s._id);
+      inventories = await DealerInventory.find({
+        storeId: { $in: activeStoreIds },
+        productId: { $in: productIds },
+      }).select('productId variantId quantity');
+    }
 
     const inventoryMap = new Map<string, number>();
     for (const inv of inventories) {
       const key = `${inv.productId.toString()}_${inv.variantId.toString()}`;
-      inventoryMap.set(key, inv.quantity);
+      inventoryMap.set(key, (inventoryMap.get(key) || 0) + inv.quantity);
     }
 
     for (const product of results) {
       if (product.variants && product.variants.length > 0) {
         for (const variant of product.variants) {
           const key = `${product._id.toString()}_${variant._id!.toString()}`;
-          if (inventoryMap.has(key)) {
-            variant.stock = inventoryMap.get(key)!;
-          }
+          const dealerQty = inventoryMap.get(key) || 0;
+          variant.stock = variant.stock + dealerQty;
         }
       }
     }
@@ -334,22 +352,32 @@ export async function getProductBySlug(slug: string, storeId?: string): Promise<
     throw new AppError('Product not found', 404);
   }
 
-  if (storeId && product.variants && product.variants.length > 0) {
-    const inventories = await DealerInventory.find({
-      storeId,
-      productId: product._id,
-    }).select('variantId quantity');
+  if (product.variants && product.variants.length > 0) {
+    let inventories;
+    if (storeId) {
+      inventories = await DealerInventory.find({
+        storeId,
+        productId: product._id,
+      }).select('variantId quantity');
+    } else {
+      const activeStores = await Store.find({ isActive: true }).select('_id');
+      const activeStoreIds = activeStores.map((s) => s._id);
+      inventories = await DealerInventory.find({
+        storeId: { $in: activeStoreIds },
+        productId: product._id,
+      }).select('variantId quantity');
+    }
 
     const inventoryMap = new Map<string, number>();
     for (const inv of inventories) {
-      inventoryMap.set(inv.variantId.toString(), inv.quantity);
+      const key = inv.variantId.toString();
+      inventoryMap.set(key, (inventoryMap.get(key) || 0) + inv.quantity);
     }
 
     for (const variant of product.variants) {
       const key = variant._id!.toString();
-      if (inventoryMap.has(key)) {
-        variant.stock = inventoryMap.get(key)!;
-      }
+      const dealerQty = inventoryMap.get(key) || 0;
+      variant.stock = variant.stock + dealerQty;
     }
   }
 
