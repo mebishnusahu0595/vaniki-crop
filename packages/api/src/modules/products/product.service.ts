@@ -281,6 +281,11 @@ export async function searchProducts(
     regexFilter.$or = regexClauses;
   }
 
+  const regexMatches = await Product.find(regexFilter)
+    .select('name slug shortDescription images variants.label variants.price tags')
+    .populate('category', 'name slug')
+    .limit(normalizedLimit - textMatches.length);
+
   const results = [...textMatches, ...regexMatches];
 
   if (storeId && results.length > 0) {

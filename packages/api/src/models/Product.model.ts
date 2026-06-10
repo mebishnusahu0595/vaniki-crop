@@ -37,6 +37,7 @@ export interface IProductImage {
 
 /** Product variant (size/packaging options) */
 export interface IProductVariant {
+  _id?: mongoose.Types.ObjectId;
   label: string;
   price: number;
   adminPrice?: number;
