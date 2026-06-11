@@ -22,3 +22,6 @@ packages/shared/node_modules/
 *.zip
 *.tgz
 NGINX
+*.apk
+*.aab
+apk/

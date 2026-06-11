@@ -23,10 +23,14 @@ const withGlide16KBPageFix = (config) => {
 // ─── 16KB Page Size Fix ───────────────────────────────────────────────
 // libavif_android.so (org.aomedia.avif.android:avif, pulled by Glide's
 // avif-integration) is only 4KB-aligned and fails Google Play's 16KB check.
-// Exclude it; AVIF falls back to Android's native decoder (API 31+).
-configurations.all {
-    exclude group: 'com.github.bumptech.glide', module: 'avif-integration'
-    exclude group: 'org.aomedia.avif.android', module: 'avif'
+// Exclude it from packaging to prevent crashes and Google Play Console rejections.
+// The avif-integration Java classes remain in the classpath to avoid NoClassDefFoundError.
+android {
+    packagingOptions {
+        jniLibs {
+            excludes += ["**/libavif_android.so"]
+        }
+    }
 }
 // ─────────────────────────────────────────────────────────────────────
 `;

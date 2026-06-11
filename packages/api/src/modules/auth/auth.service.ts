@@ -27,8 +27,12 @@ import type {
   UpdateMeInput,
 } from './auth.validator.js';
 
-// ─── OTP Store Type (for pre-signup OTP caching) ─────────────────────────
-const otpStore: Record<string, { hashedOtp: string; otpExpiry: Date }> = {};
+// ─── OTP Store (for pre-signup OTP caching) ──────────────────────────────
+// Signup OTPs go through Message Central (same provider as login/forgot-password).
+// Message Central generates the OTP itself, so we track the verificationId per
+// mobile and remember the code once it validates, since a verificationId can
+// only be validated once but signup needs to re-confirm it.
+const signupOtpStore: Record<string, { verificationId: string; otpExpiry: Date; verifiedOtp?: string }> = {};
 
 // ─── Token Config ────────────────────────────────────────────────────────
 
@@ -60,87 +64,27 @@ function generateOtp(): string {
 }
 
 import { generateUniqueReferralCode } from '../../utils/referral.helpers.js';
-/**
- * Sends OTP via MSG91 API.
- * In development mode, logs to console instead of calling the API.
- * @param mobile - 10-digit Indian mobile number
- * @param otp - The OTP to send
- */
-async function sendOtpViaMSG91(mobile: string, otp: string): Promise<void> {
-  const authKey = process.env.MSG91_AUTH_KEY;
-  const templateId = process.env.MSG91_TEMPLATE_ID;
-
-  if (!authKey || !templateId) {
-    // Development fallback: log OTP to console
-    console.log(`📱 [DEV] OTP for ${mobile}: ${otp}`);
-    return;
-  }
-
-  try {
-    const response = await fetch('https://api.msg91.com/api/v5/otp', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        authkey: authKey,
-      },
-      body: JSON.stringify({
-        template_id: templateId,
-        mobile: `91${mobile}`,
-        otp,
-      }),
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      console.error('MSG91 error:', data);
-      throw new AppError('Failed to send OTP. Please try again.', 500);
-    }
-  } catch (error) {
-    if (error instanceof AppError) throw error;
-    console.error('MSG91 request failed:', error);
-    throw new AppError('OTP service unavailable. Please try again later.', 503);
-  }
-}
 
 // ─── Service Methods ─────────────────────────────────────────────────────
 
 /**
- * Sends a 6-digit OTP to the given mobile number.
- * Stores the hashed OTP + expiry on the user document (creates a temp user if needed).
+ * Sends a signup OTP to the given mobile number via Message Central
+ * (the same provider used for login and forgot-password OTPs).
  * @param input - { mobile }
  */
 export async function sendOtp(input: SendOtpInput): Promise<void> {
   const { mobile } = input;
-  const otp = generateOtp();
-  const hashedOtp = await bcrypt.hash(otp, 10);
-  const otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
-  // Upsert: store OTP on existing user or create a placeholder
-  await User.findOneAndUpdate(
-    { mobile },
-    {
-      otp: hashedOtp,
-      otpExpiry,
-    },
-    { upsert: false }, // Don't create user yet — only update if exists
-  );
-
-  // If user doesn't exist, store OTP in a special way for signup verification
   const existingUser = await User.findOne({ mobile });
-  if (!existingUser) {
-    otpStore[mobile] = { hashedOtp, otpExpiry };
+  if (existingUser?.password) {
+    throw new AppError('An account with this mobile number already exists', 409);
   }
 
-  await sendOtpViaMSG91(mobile, otp);
-  
-  // If user has an email, send OTP via email as well
-  if (existingUser && existingUser.email) {
-    addEmailToQueue({
-      to: existingUser.email,
-      subject: 'Your Vaniki Crop OTP',
-      html: passwordResetOtpTemplate(existingUser, otp),
-    });
-  }
+  const verificationId = await sendOtpViaMessageCentral(mobile);
+  signupOtpStore[mobile] = {
+    verificationId,
+    otpExpiry: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
+  };
 }
 
 /**
@@ -156,28 +100,31 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<void> {
     throw new AppError('OTP is required', 400);
   }
 
-  const existingUser = await User.findOne({ mobile }).select('+otp +otpExpiry');
-  let isOtpValid = false;
-
-  if (existingUser?.otp && existingUser?.otpExpiry) {
-    if (existingUser.otpExpiry < new Date()) {
-      throw new AppError('OTP has expired. Please request a new one.', 400);
-    }
-    isOtpValid = await bcrypt.compare(normalizedOtp, existingUser.otp);
-  } else {
-    // Check temp store for new signups
-    const tempOtp = otpStore[mobile];
-    if (tempOtp) {
-      if (tempOtp.otpExpiry < new Date()) {
-        throw new AppError('OTP has expired. Please request a new one.', 400);
-      }
-      isOtpValid = await bcrypt.compare(normalizedOtp, tempOtp.hashedOtp);
-    }
+  const entry = signupOtpStore[mobile];
+  if (!entry) {
+    throw new AppError('No OTP requested. Please request a new one.', 400);
   }
 
+  if (entry.otpExpiry < new Date()) {
+    delete signupOtpStore[mobile];
+    throw new AppError('OTP has expired. Please request a new one.', 400);
+  }
+
+  // Already validated against Message Central once — accept the same code again
+  // (a verificationId can only be validated a single time on their side).
+  if (entry.verifiedOtp) {
+    if (entry.verifiedOtp !== normalizedOtp) {
+      throw new AppError('Invalid OTP', 400);
+    }
+    return;
+  }
+
+  const isOtpValid = await validateOtpViaMessageCentral(entry.verificationId, normalizedOtp);
   if (!isOtpValid) {
     throw new AppError('Invalid OTP', 400);
   }
+
+  entry.verifiedOtp = normalizedOtp;
 }
 
 /**
@@ -202,30 +149,22 @@ export async function signup(
   if (normalizedOtp) {
     let isOtpValid = false;
 
-    if (existingUser?.otp && existingUser?.otpExpiry) {
-      if (existingUser.otpExpiry < new Date()) {
-        throw new AppError('OTP has expired. Please request a new one.', 400);
+    const entry = signupOtpStore[mobile];
+    if (entry) {
+      if (entry.verifiedOtp) {
+        isOtpValid = entry.verifiedOtp === normalizedOtp;
+      } else if (entry.otpExpiry >= new Date()) {
+        isOtpValid = await validateOtpViaMessageCentral(entry.verificationId, normalizedOtp);
       }
-      isOtpValid = await bcrypt.compare(normalizedOtp, existingUser.otp);
-    } else {
-      // Check temp store for new signups
-      const tempOtp = otpStore[mobile];
-      if (tempOtp) {
-        if (tempOtp.otpExpiry < new Date()) {
-          delete otpStore[mobile];
-          throw new AppError('OTP has expired. Please request a new one.', 400);
-        }
-        isOtpValid = await bcrypt.compare(normalizedOtp, tempOtp.hashedOtp);
-        if (isOtpValid) delete otpStore[mobile];
-      }
+      if (isOtpValid) delete signupOtpStore[mobile];
     }
 
     if (!isOtpValid) {
       throw new AppError('Invalid OTP', 400);
     }
-  } else if (otpStore[mobile]) {
+  } else if (signupOtpStore[mobile]) {
     // OTP is optional now, so stale temp OTP cache should not block signup.
-    delete otpStore[mobile];
+    delete signupOtpStore[mobile];
   }
 
   let referredById: IUser['_id'] | undefined;

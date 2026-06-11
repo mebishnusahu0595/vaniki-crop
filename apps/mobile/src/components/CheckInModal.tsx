@@ -163,7 +163,7 @@ export const CheckInModal = () => {
                 <Text style={styles.buttonText}>{claiming ? 'CLAIMING...' : 'CLAIM DAILY REWARD'}</Text>
               </Pressable>
             ) : (
-              <View className="gap-2">
+              <View style={styles.claimedWrapper}>
                 <View style={styles.claimedContainer}>
                   <Feather name="check-circle" size={24} color="#10B981" />
                   <Text style={styles.claimedText}>
@@ -172,9 +172,12 @@ export const CheckInModal = () => {
                 </View>
                 <Pressable 
                   onPress={closeModal} 
-                  className="bg-slate-100 py-3.5 rounded-2xl items-center mt-2 active:scale-95 active:opacity-90"
+                  style={({ pressed }) => [
+                    styles.closeButtonOutline,
+                    pressed && styles.buttonPressed
+                  ]}
                 >
-                  <Text className="text-slate-600 text-[13px] font-black tracking-[1.5px]">CLOSE</Text>
+                  <Text style={styles.closeButtonOutlineText}>CLOSE</Text>
                 </Pressable>
               </View>
             )}
@@ -337,5 +340,21 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 20,
+  },
+  claimedWrapper: {
+    gap: 8,
+  },
+  closeButtonOutline: {
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  closeButtonOutlineText: {
+    color: '#475569',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 1.5,
   },
 });

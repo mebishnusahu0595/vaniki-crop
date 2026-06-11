@@ -388,10 +388,12 @@ export const storefrontApi = {
     });
   },
   forgotPassword: async (payload: { mobile?: string; email?: string }) => {
-    return request<{ success: boolean; message: string; verificationId?: string }>('/auth/forgot-password', {
+    // Backend returns verificationId at the top level of the response, not inside data.
+    const response = await request<{ success: boolean; message: string }>('/auth/forgot-password', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+    return response as typeof response & { verificationId?: string };
   },
   resetPassword: async (payload: { mobile?: string; email?: string; otp: string; newPassword: string; verificationId?: string }) => {
     return request<{ success: boolean; message: string }>('/auth/reset-password', {
