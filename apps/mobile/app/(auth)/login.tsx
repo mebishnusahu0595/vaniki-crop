@@ -111,8 +111,8 @@ export default function LoginScreen() {
   };
 
   const handleOtpLogin = async () => {
-    if (!loginOtp || loginOtp.length !== 6) {
-      Alert.alert('Invalid OTP', 'Enter the 6-digit OTP sent to your mobile.');
+    if (!loginOtp || loginOtp.length !== 4) {
+      Alert.alert('Invalid OTP', 'Enter the 4-digit OTP sent to your mobile.');
       return;
     }
     setLoading(true);
@@ -185,7 +185,7 @@ export default function LoginScreen() {
     switch (mode) {
       case 'login': return 'Login with your mobile number and password.';
       case 'otp-send': return `Enter your mobile number and we'll send a one-time password.`;
-      case 'otp-verify': return `Enter the 6-digit OTP sent to ${otpMobile}.`;
+      case 'otp-verify': return `Enter the 4-digit OTP sent to ${otpMobile}.`;
       case 'forgot': return 'Enter your registered mobile to receive a 4-digit OTP.';
       case 'reset': return 'Enter the 4-digit OTP and your new password.';
     }
@@ -339,14 +339,14 @@ export default function LoginScreen() {
             {mode === 'otp-verify' && (
               <View className="mt-6">
                 <View>
-                  <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">6-Digit OTP</Text>
+                  <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">4-Digit OTP</Text>
                   <TextInput
                     value={loginOtp}
-                    onChangeText={(val) => setLoginOtp(val.replace(/\D/g, '').slice(0, 6))}
+                    onChangeText={(val) => setLoginOtp(val.replace(/\D/g, '').slice(0, 4))}
                     onFocus={onInputFocus}
-                    placeholder="000000"
+                    placeholder="0000"
                     keyboardType="number-pad"
-                    maxLength={6}
+                    maxLength={4}
                     className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-center text-2xl font-black tracking-[10px] text-primary-900"
                     placeholderTextColor="#7a978b"
                   />
