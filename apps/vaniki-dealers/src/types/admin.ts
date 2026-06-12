@@ -226,6 +226,7 @@ export interface DealerPromotion {
   id: string;
   title: string;
   description: string;
+  link?: string;
   image?: {
     url: string;
     publicId: string;

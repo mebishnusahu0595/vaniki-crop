@@ -14,6 +14,7 @@ import { resolveMediaUrl } from '../utils/media';
 const promotionSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters'),
   description: z.string().min(5, 'Description must be at least 5 characters'),
+  link: z.string().optional().or(z.literal('')),
   isActive: z.boolean().default(true),
   sortOrder: z.coerce.number().default(0),
 });
@@ -24,6 +25,7 @@ type PromotionFormOutput = z.output<typeof promotionSchema>;
 const promotionDefaultValues: PromotionFormInput = {
   title: '',
   description: '',
+  link: '',
   isActive: true,
   sortOrder: 0,
 };
@@ -61,6 +63,7 @@ export default function DealersPromotionsPage() {
     reset({
       title: editing.title,
       description: editing.description,
+      link: editing.link || '',
       isActive: editing.isActive,
       sortOrder: editing.sortOrder,
     });
@@ -112,6 +115,7 @@ export default function DealersPromotionsPage() {
       const payload = new FormData();
       payload.append('title', values.title);
       payload.append('description', values.description);
+      payload.append('link', values.link || '');
       payload.append('isActive', String(values.isActive));
       payload.append('sortOrder', String(values.sortOrder));
       if (promoFile) {
@@ -169,6 +173,16 @@ export default function DealersPromotionsPage() {
               className="min-h-[120px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" 
             />
             {errors.description && <p className="mt-1 text-xs text-rose-500">{errors.description.message}</p>}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Promotion Link (Optional)</label>
+            <input 
+              {...register('link')} 
+              placeholder="e.g. https://superadmin.vanikicrop.com/products/urea" 
+              className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" 
+            />
+            {errors.link && <p className="mt-1 text-xs text-rose-500">{errors.link.message}</p>}
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
@@ -269,6 +283,14 @@ export default function DealersPromotionsPage() {
                     <div>
                       <h4 className="text-lg font-black text-slate-900 leading-tight">{promo.title}</h4>
                       <p className="mt-2 text-sm text-slate-600 whitespace-pre-wrap">{promo.description}</p>
+                      {promo.link && (
+                        <p className="mt-2 text-xs font-bold text-primary-600">
+                          Link:{' '}
+                          <a href={promo.link} target="_blank" rel="noopener noreferrer" className="hover:underline break-all">
+                            {promo.link}
+                          </a>
+                        </p>
+                      )}
                     </div>
                   </div>
 

@@ -1292,7 +1292,7 @@ export async function getOrderDetail(orderId: string) {
 }
 
 export async function updateOrderStatus(orderId: string, input: Record<string, any>, adminId: string) {
-  return orderService.updateOrderStatus(orderId, input, adminId);
+  return orderService.updateOrderStatus(orderId, input, adminId, 'superAdmin');
 }
 
 export async function listPayments(query: Record<string, any>) {

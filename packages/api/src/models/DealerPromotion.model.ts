@@ -11,6 +11,7 @@ export interface IDealerPromotion extends Document {
   title: string;
   description: string;
   image?: IDealerPromotionImage;
+  link?: string;
   isActive: boolean;
   sortOrder: number;
   createdAt: Date;
@@ -43,6 +44,11 @@ const dealerPromotionSchema = new Schema<IDealerPromotion>(
     image: {
       type: dealerPromotionImageSchema,
       default: undefined,
+    },
+    link: {
+      type: String,
+      trim: true,
+      default: '',
     },
     isActive: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },

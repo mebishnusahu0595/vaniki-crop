@@ -770,15 +770,17 @@ export async function getSuperAdminOrders(query: any) {
   return createPaginationResponse(orders, total, page, limit);
 }
 
-/**
- * Updates an order's status and notifies the customer.
- */
-export async function updateOrderStatus(orderId: string, input: any, adminId: string) {
+export async function updateOrderStatus(orderId: string, input: any, adminId: string, userRole: string, userStoreId?: string) {
   const { status, note } = input;
   const order = await Order.findById(orderId);
 
   if (!order) {
     throw new AppError('Order not found', 404);
+  }
+
+  // Security check: storeAdmin can only update orders of their own store
+  if (userRole === 'storeAdmin' && (!userStoreId || order.storeId.toString() !== userStoreId)) {
+    throw new AppError('Access denied. You can only update your own store orders.', 403);
   }
 
   const oldStatus = order.status as string;

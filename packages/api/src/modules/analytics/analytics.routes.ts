@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as analyticsController from './analytics.controller.js';
 import { requireAuth, requireStoreAdmin, requireSuperAdmin } from '../auth/auth.middleware.js';
-import { extractStoreId } from '../../middleware/store.middleware.js';
+import { extractStoreId, requireOwnStore } from '../../middleware/store.middleware.js';
 
 const router: Router = Router();
 
@@ -9,7 +9,7 @@ const router: Router = Router();
 router.get('/superadmin', requireAuth, requireSuperAdmin, analyticsController.getSuperAdminAnalytics);
 
 /** GET /api/analytics/admin — Store-specific analytics dashboard */
-router.get('/admin', requireAuth, requireStoreAdmin, extractStoreId, analyticsController.getStoreAdminAnalytics);
+router.get('/admin', requireAuth, requireStoreAdmin, extractStoreId, requireOwnStore, analyticsController.getStoreAdminAnalytics);
 
 /** POST /api/analytics/pageview — Log page hit (Public) */
 router.post('/pageview', analyticsController.recordPageView);

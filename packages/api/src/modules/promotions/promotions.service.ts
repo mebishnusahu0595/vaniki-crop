@@ -50,6 +50,7 @@ export async function createPromotion(data: Record<string, any>, file?: Express.
     title: data.title,
     description: data.description,
     image,
+    link: data.link,
     isActive: data.isActive !== undefined ? String(data.isActive) === 'true' : true,
     sortOrder: data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
   });
@@ -81,6 +82,7 @@ export async function updatePromotion(id: string, data: Record<string, any>, fil
 
   if (data.title !== undefined) promotion.title = data.title;
   if (data.description !== undefined) promotion.description = data.description;
+  if (data.link !== undefined) promotion.link = data.link;
   if (data.isActive !== undefined) promotion.isActive = String(data.isActive) === 'true';
   if (data.sortOrder !== undefined) promotion.sortOrder = Number(data.sortOrder);
 

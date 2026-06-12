@@ -16,6 +16,7 @@ import { adminApi } from '../../utils/api';
 import { currencyFormatter, formatDateTime } from '../../utils/format';
 import { Feather } from '@expo/vector-icons';
 import { resolveMediaUrl } from '../../utils/media';
+import * as Linking from 'expo-linking';
 
 const Icon = Feather as any;
 
@@ -134,8 +135,10 @@ export default function DashboardScreen() {
               style={{ width: Dimensions.get('window').width - 32 }}
             >
               {promotionsQuery.data.data.map((promo) => (
-                <View
+                <TouchableOpacity
                   key={promo.id}
+                  activeOpacity={promo.link ? 0.9 : 1}
+                  onPress={() => promo.link && Linking.openURL(promo.link).catch(err => console.error('Failed to open link:', err))}
                   style={{ width: Dimensions.get('window').width - 32 }}
                   className="bg-emerald-950 rounded-[2rem] overflow-hidden relative aspect-[2.4/1]"
                 >
@@ -153,7 +156,7 @@ export default function DashboardScreen() {
                       {promo.description}
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           </View>

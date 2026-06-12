@@ -182,7 +182,7 @@ export async function getSuperAdminOrders(req: Request, res: Response, next: Nex
  */
 export async function updateOrderStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const order = await orderService.updateOrderStatus((req.params as any).id, req.body, req.userId!);
+    const order = await orderService.updateOrderStatus((req.params as any).id, req.body, req.userId!, req.userRole!, req.userStoreId);
     res.status(200).json({ success: true, data: order });
   } catch (error) {
     next(error);
