@@ -81,7 +81,7 @@ export default function DashboardScreen() {
   const eligibleOrdersCount = eligibleOrdersQuery.data?.length ?? 0;
 
   // Referral counts
-  const referralCount = referralsQuery.data?.data?.length ?? referralsQuery.data?.length ?? 0;
+  const referralCount = referralsQuery.data?.data?.length ?? 0;
 
   // Find max value in series for bar scale calculation
   const maxSeriesAmount = Math.max(...revenueSeries.map((p) => p.amount), 1);
