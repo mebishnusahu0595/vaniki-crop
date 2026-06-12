@@ -17,6 +17,15 @@ export const extractStoreId = async (req: Request, _res: Response, next: NextFun
     
     let storeId = storeHeader || storeQuery || req.userStoreId;
 
+    // Fallback: If no store ID is provided but the user is a storeAdmin, dynamically look up their assigned store
+    if (!storeId && req.userRole === 'storeAdmin' && req.userId) {
+      const dbStore = await Store.findOne({ adminId: req.userId }).select('_id');
+      if (dbStore) {
+        storeId = dbStore._id.toString();
+        req.userStoreId = storeId; // Sync userStoreId for downstream security checks
+      }
+    }
+
     if (storeId) {
       // Basic format check for MongoDB ObjectId
       if (!/^[0-9a-fA-F]{24}$/.test(storeId)) {

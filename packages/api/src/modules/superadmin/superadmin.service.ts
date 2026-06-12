@@ -896,7 +896,42 @@ export async function approveAdmin(adminId: string, approvalStatus: 'approved' |
     storeUpdate.gstNumber = admin.dealerProfile.gstNumber;
     storeUpdate.sgstNumber = admin.dealerProfile.sgstNumber;
   }
-  await Store.updateMany({ adminId: admin._id }, storeUpdate);
+
+  if (approvalStatus === 'approved') {
+    const existingStore = await Store.findOne({ adminId: admin._id });
+    if (!existingStore) {
+      const dealerProfile = admin.dealerProfile || {};
+      const newStore = await Store.create({
+        name: dealerProfile.storeName || `${admin.name}'s Store`,
+        phone: admin.mobile,
+        email: admin.email,
+        adminId: admin._id,
+        isActive: true,
+        address: {
+          street: dealerProfile.storeLocation || 'N/A',
+          city: dealerProfile.storeLocation || 'N/A',
+          state: 'Chhattisgarh',
+          pincode: '491001',
+        },
+        location: {
+          type: 'Point',
+          coordinates: [
+            typeof dealerProfile.longitude === 'number' ? dealerProfile.longitude : 81.6296,
+            typeof dealerProfile.latitude === 'number' ? dealerProfile.latitude : 21.2514,
+          ],
+        },
+        deliveryRadius: 10,
+        gstNumber: dealerProfile.gstNumber,
+        sgstNumber: dealerProfile.sgstNumber,
+      });
+      admin.selectedStore = newStore._id as any;
+      await admin.save();
+    } else {
+      await Store.updateMany({ adminId: admin._id }, storeUpdate);
+    }
+  } else {
+    await Store.updateMany({ adminId: admin._id }, storeUpdate);
+  }
 
   const assignedStore = await getAssignedStore(admin._id as mongoose.Types.ObjectId);
   return toAdminAccountResponse(admin, assignedStore);
