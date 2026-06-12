@@ -900,7 +900,7 @@ export async function approveAdmin(adminId: string, approvalStatus: 'approved' |
   if (approvalStatus === 'approved') {
     const existingStore = await Store.findOne({ adminId: admin._id });
     if (!existingStore) {
-      const dealerProfile = admin.dealerProfile || {};
+      const dealerProfile = (admin.dealerProfile || {}) as any;
       const newStore = await Store.create({
         name: dealerProfile.storeName || `${admin.name}'s Store`,
         phone: admin.mobile,
