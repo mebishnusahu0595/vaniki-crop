@@ -13,8 +13,8 @@ const Dealers: React.FC = () => {
   const handleDownload = () => {
     // Direct link to the APK in public directory with cache-busting query parameter
     const link = document.createElement('a');
-    link.href = `/dealers-v1.0.3.apk?v=${Date.now()}`;
-    link.download = 'dealers-v1.0.3.apk';
+    link.href = `/dealers-v1.0.4.apk?v=${Date.now()}`;
+    link.download = 'dealers-v1.0.4.apk';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -131,7 +131,7 @@ const Dealers: React.FC = () => {
                 <ul className="mt-5 space-y-3.5">
                   {[
                     "Click the **Download Android APK** button above to download the file.",
-                    "Open your device's **Downloads** or File Manager and tap the downloaded `dealers-v1.0.3.apk` file.",
+                    "Open your device's **Downloads** or File Manager and tap the downloaded `dealers-v1.0.4.apk` file.",
                     "If prompted, toggle on **'Allow from this source'** or **'Unknown Sources'** in your settings to grant installation permission.",
                     "Tap **Install** and open the application to login with your authorized dealer credentials."
                   ].map((step, idx) => (
