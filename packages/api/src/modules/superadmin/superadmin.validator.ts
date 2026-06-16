@@ -162,7 +162,24 @@ export const customerQuerySchema = z.object({
     search: z.preprocess(emptyToUndefined, z.string().optional()),
     page: z.preprocess(emptyToUndefined, z.string().optional()),
     limit: z.preprocess(emptyToUndefined, z.string().optional()),
+    isActive: z.preprocess(emptyToUndefined, z.enum(['all', 'active', 'inactive']).optional()),
+    sortBy: z.preprocess(emptyToUndefined, z.enum(['orders', 'spend', 'lastOrder', 'dateJoined', 'name']).optional()),
+    sortOrder: z.preprocess(emptyToUndefined, z.enum(['asc', 'desc']).optional()),
   }),
+});
+
+export const updateCustomerSchema = z.object({
+  params: z.object({ id: objectIdSchema }),
+  body: z.object({
+    name: z.string().trim().min(2).max(100).optional(),
+    email: z.string().trim().email().optional().or(z.literal('')).optional(),
+    mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Invalid mobile number').optional(),
+    isActive: boolish.optional(),
+  }),
+});
+
+export const deleteCustomerSchema = z.object({
+  params: z.object({ id: objectIdSchema }),
 });
 
 export const notificationQuerySchema = z.object({

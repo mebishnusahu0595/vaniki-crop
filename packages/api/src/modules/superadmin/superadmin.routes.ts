@@ -9,6 +9,8 @@ import {
   createStoreSchema,
   createTestimonialSchema,
   customerQuerySchema,
+  updateCustomerSchema,
+  deleteCustomerSchema,
   notificationQuerySchema,
   deleteStoreSchema,
   orderQuerySchema,
@@ -59,6 +61,8 @@ router.patch('/superadmin-staff/:id', validate(updateSuperAdminStaffSchema), sup
 router.delete('/superadmin-staff/:id', superAdminController.deleteSuperAdminStaff);
 
 router.get('/customers', validate(customerQuerySchema), superAdminController.listCustomers);
+router.patch('/customers/:id', validate(updateCustomerSchema), superAdminController.updateCustomer);
+router.delete('/customers/:id', validate(deleteCustomerSchema), superAdminController.deleteCustomer);
 router.patch('/customers/:id/loyalty', superAdminController.adjustCustomerLoyalty);
 router.get('/notifications', validate(notificationQuerySchema), superAdminController.listNotifications);
 router.post('/notifications', validate(sendNotificationSchema), superAdminController.sendNotification);

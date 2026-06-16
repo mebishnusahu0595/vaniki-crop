@@ -375,6 +375,25 @@ export async function adjustCustomerLoyalty(req: Request, res: Response, next: N
   }
 }
 
+export async function updateCustomer(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.updateCustomer(req.params.id as string, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteCustomer(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await superAdminService.deleteCustomer(req.params.id as string);
+    res.status(200).json({ success: true, message: 'Customer deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
 export async function listEnquiries(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await superAdminService.listEnquiries(req.query);

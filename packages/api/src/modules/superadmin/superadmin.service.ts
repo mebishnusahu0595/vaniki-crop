@@ -1058,6 +1058,28 @@ export async function listCustomers(query: Record<string, any>) {
     match.$or = [{ name: searchRegex }, { mobile: searchRegex }, { email: searchRegex }];
   }
 
+  if (query.isActive === 'active') {
+    match.isActive = true;
+  } else if (query.isActive === 'inactive') {
+    match.isActive = false;
+  }
+
+  let sortStage: any = { lastOrderDate: -1, name: 1 };
+  if (query.sortBy) {
+    const order = query.sortOrder === 'asc' ? 1 : -1;
+    if (query.sortBy === 'orders') {
+      sortStage = { orderCount: order, name: 1 };
+    } else if (query.sortBy === 'spend') {
+      sortStage = { totalSpend: order, name: 1 };
+    } else if (query.sortBy === 'lastOrder') {
+      sortStage = { lastOrderDate: order, name: 1 };
+    } else if (query.sortBy === 'dateJoined') {
+      sortStage = { createdAt: order, name: 1 };
+    } else if (query.sortBy === 'name') {
+      sortStage = { name: order };
+    }
+  }
+
   const pipeline = [
     { $match: match },
     {
@@ -1110,9 +1132,10 @@ export async function listCustomers(query: Record<string, any>) {
         loyaltyPoints: 1,
         checkInHistory: 1,
         lastCheckIn: 1,
+        createdAt: 1,
       },
     },
-    { $sort: { lastOrderDate: -1, name: 1 } as any },
+    { $sort: sortStage },
     { $skip: skip },
     { $limit: limit },
   ];
@@ -1168,6 +1191,42 @@ export async function listCustomers(query: Record<string, any>) {
   });
 
   return createPaginationResponse(processedRows, totalCount, page, limit);
+}
+
+export async function updateCustomer(id: string, updateData: any) {
+  const customer = await User.findById(id);
+  if (!customer || customer.role !== 'customer') {
+    throw new AppError('Customer not found', 404);
+  }
+
+  if (updateData.mobile && updateData.mobile !== customer.mobile) {
+    const existing = await User.findOne({ mobile: updateData.mobile, role: 'customer' });
+    if (existing) {
+      throw new AppError('Mobile number already in use by another customer', 400);
+    }
+  }
+
+  if (updateData.name !== undefined) customer.name = updateData.name;
+  if (updateData.email !== undefined) customer.email = updateData.email;
+  if (updateData.mobile !== undefined) customer.mobile = updateData.mobile;
+  if (updateData.isActive !== undefined) customer.isActive = updateData.isActive;
+
+  await customer.save();
+  return customer;
+}
+
+export async function deleteCustomer(id: string) {
+  const customer = await User.findById(id);
+  if (!customer || customer.role !== 'customer') {
+    throw new AppError('Customer not found', 404);
+  }
+
+  const orderCount = await Order.countDocuments({ userId: customer._id });
+  if (orderCount > 0) {
+    throw new AppError('Cannot delete customer with existing orders. You can deactivate them instead.', 400);
+  }
+
+  await User.deleteOne({ _id: customer._id });
 }
 
 export async function listNotifications(query: Record<string, any>) {

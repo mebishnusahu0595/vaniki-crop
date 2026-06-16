@@ -350,6 +350,14 @@ export const adminApi = {
     const response = await api.get<ApiResponse<Customer[]>>('/superadmin/customers', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
   },
+  updateCustomer: async (id: string, payload: { name?: string; email?: string; mobile?: string; isActive?: boolean }) => {
+    const response = await api.patch<ApiResponse<Customer>>(`/superadmin/customers/${id}`, payload);
+    return response.data.data;
+  },
+  deleteCustomer: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/superadmin/customers/${id}`);
+    return response.data;
+  },
   adjustCustomerLoyalty: async (id: string, loyaltyPoints: number) => {
     const response = await api.patch<ApiResponse<Customer>>(`/superadmin/customers/${id}/loyalty`, { loyaltyPoints });
     return response.data.data;
