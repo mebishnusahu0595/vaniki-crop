@@ -1221,11 +1221,6 @@ export async function deleteCustomer(id: string) {
     throw new AppError('Customer not found', 404);
   }
 
-  const orderCount = await Order.countDocuments({ userId: customer._id });
-  if (orderCount > 0) {
-    throw new AppError('Cannot delete customer with existing orders. You can deactivate them instead.', 400);
-  }
-
   await User.deleteOne({ _id: customer._id });
 }
 

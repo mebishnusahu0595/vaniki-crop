@@ -552,30 +552,26 @@ export default function CustomersPage() {
             </p>
 
             {deletingCustomer.orderCount > 0 ? (
-              <div className="mt-4 rounded-2xl border border-rose-100 bg-rose-50/50 p-4 text-left text-xs text-rose-700 space-y-1">
-                <p className="font-bold">⚠️ Cannot Delete Customer</p>
+              <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50/50 p-4 text-left text-xs text-amber-700 space-y-1">
+                <p className="font-bold">⚠️ Warning</p>
                 <p>
-                  This customer has <strong className="text-rose-950">{deletingCustomer.orderCount} orders</strong> in the
-                  system. Database integrity prevents deletion of active accounts.
+                  This customer has <strong className="text-amber-950">{deletingCustomer.orderCount} orders</strong> in the
+                  system. Deleting this customer will remove their profile, but their past orders will remain in the system.
                 </p>
-                <p className="font-semibold mt-1">Recommended Action:</p>
-                <p>Close this dialog and click Edit to deactivate their account instead.</p>
               </div>
             ) : (
               <p className="mt-2 text-xs text-slate-500">This action is permanent. All customer history will be removed.</p>
             )}
 
             <div className="mt-6 flex gap-3">
-              {deletingCustomer.orderCount === 0 && (
-                <button
-                  type="button"
-                  disabled={deleteMutation.isPending}
-                  onClick={() => deleteMutation.mutate(deletingCustomer.id)}
-                  className="flex-1 cursor-pointer rounded-2xl bg-rose-600 py-3 text-sm font-black uppercase tracking-[0.18em] text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-200 transition"
-                >
-                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-                </button>
-              )}
+              <button
+                type="button"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(deletingCustomer.id)}
+                className="flex-1 cursor-pointer rounded-2xl bg-rose-600 py-3 text-sm font-black uppercase tracking-[0.18em] text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-200 transition"
+              >
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              </button>
               <button
                 type="button"
                 onClick={() => setDeletingCustomer(null)}
