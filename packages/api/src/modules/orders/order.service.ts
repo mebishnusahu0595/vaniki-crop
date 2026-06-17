@@ -188,6 +188,8 @@ export async function initiateOrder(userId: string, input: any) {
   // 2. Calculate Subtotal & Validate Stock
   const { subtotal, validatedItems } = await calculateCart(items, resolvedStoreId);
 
+  const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
+
   // 3. Handle Coupon
   let couponDiscount = 0;
   let loyaltyDiscount = 0;
@@ -204,6 +206,13 @@ export async function initiateOrder(userId: string, input: any) {
   // 4. Handle Loyalty Points
   if (loyaltyPoints && Number(loyaltyPoints) > 0) {
     const user = await User.findById(userId).select('loyaltyPoints');
+    const minPoints = siteSettings?.minLoyaltyPointsToRedeem || 0;
+    if (user && (user.loyaltyPoints || 0) < minPoints) {
+      throw new AppError(`You need at least ${minPoints} loyalty points to redeem them.`, 400);
+    }
+    if (Number(loyaltyPoints) < minPoints) {
+      throw new AppError(`You must redeem at least ${minPoints} loyalty points.`, 400);
+    }
     const pointsToApply = Math.min(Number(loyaltyPoints), user?.loyaltyPoints || 0);
     // Limit loyalty discount to subtotal - couponDiscount
     const maxAllowedPoints = Math.max(0, subtotal - couponDiscount);
@@ -212,7 +221,6 @@ export async function initiateOrder(userId: string, input: any) {
   }
 
   // 5. Delivery Charge
-  const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
   const threshold = siteSettings?.freeDeliveryThreshold ?? 1000;
   const charge = siteSettings?.standardDeliveryCharge ?? 50;
 
@@ -334,6 +342,24 @@ export async function placeCodOrder(userId: string, input: any) {
   }
 
   const siteSettingsForCOD = await SiteSetting.findOne({ singletonKey: 'default' });
+
+  // Handle Loyalty Points for COD
+  if (loyaltyPoints && Number(loyaltyPoints) > 0) {
+    const user = await User.findById(userId).select('loyaltyPoints');
+    const minPoints = siteSettingsForCOD?.minLoyaltyPointsToRedeem || 0;
+    if (user && (user.loyaltyPoints || 0) < minPoints) {
+      throw new AppError(`You need at least ${minPoints} loyalty points to redeem them.`, 400);
+    }
+    if (Number(loyaltyPoints) < minPoints) {
+      throw new AppError(`You must redeem at least ${minPoints} loyalty points.`, 400);
+    }
+    const pointsToApply = Math.min(Number(loyaltyPoints), user?.loyaltyPoints || 0);
+    // Limit loyalty discount to subtotal - couponDiscount
+    const maxAllowedPoints = Math.max(0, subtotal - couponDiscount);
+    loyaltyPointsApplied = Math.min(pointsToApply, maxAllowedPoints);
+    loyaltyDiscount = loyaltyPointsApplied; // 1 point = 1 rupee
+  }
+
   const thresholdForCOD = siteSettingsForCOD?.freeDeliveryThreshold ?? 1000;
   const chargeForCOD = siteSettingsForCOD?.standardDeliveryCharge ?? 50;
 

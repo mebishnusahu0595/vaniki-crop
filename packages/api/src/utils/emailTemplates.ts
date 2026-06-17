@@ -48,6 +48,7 @@ export const orderPlacedTemplate = (order: any, user: any) => `
     <div class="total-section">
       <p>Subtotal: ₹${order.subtotal}</p>
       ${order.couponDiscount ? `<p>Coupon Discount: -₹${order.couponDiscount}</p>` : ''}
+      ${order.loyaltyDiscount ? `<p>Loyalty Discount: -₹${order.loyaltyDiscount}</p>` : ''}
       ${order.deliveryCharge ? `<p>Delivery: ₹${order.deliveryCharge}</p>` : ''}
       <h2 style="color: #2D6A4F;">Total: ₹${order.totalAmount}</h2>
     </div>

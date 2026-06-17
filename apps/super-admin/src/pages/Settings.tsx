@@ -20,6 +20,7 @@ const settingsSchema = z.object({
   metaTitle: z.string().max(160, 'Meta title can be up to 160 characters').optional(),
   metaDescription: z.string().max(300, 'Meta description can be up to 300 characters').optional(),
   loyaltyPointRupeeValue: z.coerce.number().min(0, 'Point value cannot be negative'),
+  minLoyaltyPointsToRedeem: z.coerce.number().min(0, 'Minimum redemption threshold cannot be negative'),
   garageNames: z.array(z.string().trim().min(1, 'Garage name is required')).default([]),
   street: z.string().trim().optional().or(z.literal('')),
   city: z.string().trim().optional().or(z.literal('')),
@@ -44,6 +45,7 @@ const settingsDefaultValues: SettingsFormInput = {
   metaTitle: '',
   metaDescription: '',
   loyaltyPointRupeeValue: 1,
+  minLoyaltyPointsToRedeem: 0,
   garageNames: [],
   street: '',
   city: '',
@@ -89,6 +91,7 @@ export default function SettingsPage() {
       metaTitle: settingsQuery.data.metaTitle || '',
       metaDescription: settingsQuery.data.metaDescription || '',
       loyaltyPointRupeeValue: settingsQuery.data.loyaltyPointRupeeValue || 1,
+      minLoyaltyPointsToRedeem: settingsQuery.data.minLoyaltyPointsToRedeem || 0,
       garageNames: settingsQuery.data.garageNames || [],
       street: settingsQuery.data.address?.street || '',
       city: settingsQuery.data.address?.city || '',
@@ -198,6 +201,13 @@ export default function SettingsPage() {
             <input type="number" step="0.01" {...register('loyaltyPointRupeeValue', { valueAsNumber: true })} placeholder="Rupee value of 1 point" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.loyaltyPointRupeeValue ? 'border-rose-300' : 'border-primary-100'}`} />
             <p className="mt-1 text-[10px] font-bold text-slate-400">Value of 1 loyalty point in INR. (e.g. 1 point = 1 Rupee)</p>
             {errors.loyaltyPointRupeeValue ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.loyaltyPointRupeeValue.message}</p> : null}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Minimum Points to Redeem</label>
+            <input type="number" {...register('minLoyaltyPointsToRedeem', { valueAsNumber: true })} placeholder="Minimum points required to redeem" className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 ${errors.minLoyaltyPointsToRedeem ? 'border-rose-300' : 'border-primary-100'}`} />
+            <p className="mt-1 text-[10px] font-bold text-slate-400">Minimum loyalty points balance a user must have to redeem them at checkout.</p>
+            {errors.minLoyaltyPointsToRedeem ? <p className="mt-1 text-xs font-semibold text-rose-600">{errors.minLoyaltyPointsToRedeem.message}</p> : null}
           </div>
 
           <div className="md:col-span-2 mt-4">

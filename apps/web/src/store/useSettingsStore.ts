@@ -8,6 +8,7 @@ interface SiteSettings {
   supportEmail?: string;
   supportPhone?: string;
   loyaltyPointRupeeValue?: number;
+  minLoyaltyPointsToRedeem?: number;
 }
 
 interface SettingsState {

@@ -95,7 +95,15 @@ export default function AccountScreen() {
             </View>
             <View className="flex-1">
               <Text className="text-xl font-black text-white">{user.name}</Text>
-              <Text className="text-xs font-semibold text-primary-100/70 mt-1">{user.mobile}</Text>
+              <View className="flex-row flex-wrap items-center gap-2 mt-1">
+                <Text className="text-xs font-semibold text-primary-100/70">{user.mobile}</Text>
+                {user.referralCode ? (
+                  <>
+                    <Text className="text-xs text-primary-100/40">•</Text>
+                    <Text className="text-xs font-black text-amber-300">Ref: {user.referralCode}</Text>
+                  </>
+                ) : null}
+              </View>
             </View>
           </View>
         </View>

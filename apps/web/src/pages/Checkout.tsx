@@ -363,7 +363,7 @@ const Checkout: React.FC = () => {
                                 }}
                                 className={`group flex w-full flex-col gap-1.5 rounded-2xl p-4 text-left transition-all duration-300 ${
                                   !store.isFullyAvailable 
-                                    ? 'opacity-30 grayscale cursor-not-allowed bg-slate-50/50' 
+                                    ? 'opacity-75 cursor-not-allowed bg-rose-50/20 border border-rose-100/30' 
                                     : activeStoreId === store.id 
                                       ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-[0.98]' 
                                       : 'hover:bg-primary-50 active:scale-[0.98]'
@@ -386,6 +386,22 @@ const Checkout: React.FC = () => {
                                   <MapPin size={10} strokeWidth={2.5} />
                                   <span>{store.address.city}, {store.address.state}</span>
                                 </div>
+                                {!store.isFullyAvailable && store.unavailableItems && store.unavailableItems.length > 0 && (
+                                  <div className="mt-2 w-full rounded-xl bg-red-50 p-2.5 text-[11px] font-semibold text-red-700 border border-red-100">
+                                    <p className="text-[9px] font-black uppercase tracking-wider text-red-600 mb-1">Out of Stock Items:</p>
+                                    {store.unavailableItems.map((uItem: any, idx: number) => {
+                                      const cartItem = items.find(
+                                        (i) => i.productId === uItem.productId && i.variantId === uItem.variantId
+                                      );
+                                      if (!cartItem) return null;
+                                      return (
+                                        <div key={idx} className="mt-0.5">
+                                          • {cartItem.productName} ({cartItem.variantLabel}) — Stock: {uItem.availableStock} (Need {uItem.requestedQty})
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </button>
                             ))}
                           </div>
@@ -520,7 +536,10 @@ const Checkout: React.FC = () => {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <img src="/coin.png" alt="Points" className="h-5 w-5" />
-                      <span className="text-sm font-bold text-amber-900">{user.loyaltyPoints} points available</span>
+                      <span className="text-sm font-bold text-amber-900">
+                        {user.loyaltyPoints} points available
+                        {(settings.minLoyaltyPointsToRedeem || 0) > 0 ? ` (Min. ${settings.minLoyaltyPointsToRedeem} required)` : ''}
+                      </span>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -533,7 +552,18 @@ const Checkout: React.FC = () => {
                       className="flex-1 rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-bold"
                     />
                     <button
-                      onClick={() => setAppliedLoyaltyPoints(loyaltyPointsInput)}
+                      onClick={() => {
+                        const minPoints = settings.minLoyaltyPointsToRedeem || 0;
+                        if ((user.loyaltyPoints || 0) < minPoints) {
+                          toast.error(`You need at least ${minPoints} loyalty points to redeem them.`);
+                          return;
+                        }
+                        if (loyaltyPointsInput > 0 && loyaltyPointsInput < minPoints) {
+                          toast.error(`You must redeem at least ${minPoints} points.`);
+                          return;
+                        }
+                        setAppliedLoyaltyPoints(loyaltyPointsInput);
+                      }}
                       className="rounded-xl bg-amber-600 px-6 py-2 text-xs font-black uppercase tracking-wider text-white transition hover:bg-amber-700"
                     >
                       Apply
@@ -558,7 +588,7 @@ const Checkout: React.FC = () => {
                   <div className="flex gap-4">
                     <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-primary-50 border border-primary-100/50">
                       {item.image ? (
-                        <img src={item.image} alt={item.productName} className="h-full w-full object-cover" />
+                        <img src={item.image} alt={item.productName} className="h-full w-full object-contain" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-primary-200">
                           <StoreIcon size={24} />

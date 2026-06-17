@@ -111,6 +111,7 @@ export interface SiteSettings {
   supportPhone?: string;
   maintenanceMode?: boolean;
   loyaltyPointRupeeValue?: number;
+  minLoyaltyPointsToRedeem?: number;
 }
 
 export interface HomepageData {

@@ -70,7 +70,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                           heightHint={120}
                           loading="lazy"
                           containerClassName="h-full w-full rounded-2xl"
-                          className="h-full w-full rounded-2xl object-cover"
+                          className="h-full w-full rounded-2xl object-contain"
                         />
                       ) : (
                         <ShoppingBag size={20} className="text-primary-300" />

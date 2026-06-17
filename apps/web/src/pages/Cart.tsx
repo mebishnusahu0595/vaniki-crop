@@ -106,7 +106,7 @@ const Cart: React.FC = () => {
                     heightHint={160}
                     loading="lazy"
                     containerClassName="h-full w-full rounded-[1.5rem]"
-                    className="h-full w-full rounded-[1.5rem] object-cover"
+                    className="h-full w-full rounded-[1.5rem] object-contain"
                   />
                 ) : (
                   <ShoppingCart size={20} className="text-primary-400" />

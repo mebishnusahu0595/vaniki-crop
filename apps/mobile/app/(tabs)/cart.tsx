@@ -48,7 +48,7 @@ export default function CartScreen() {
               <Image
                 source={{ uri: resolveMediaUrl(item.image) }}
                 style={{ width: 92, height: 92, borderRadius: 20 }}
-                contentFit="cover"
+                contentFit="contain"
               />
               <View className="flex-1">
                 <Text className="text-sm font-black text-primary-900">{item.productName}</Text>

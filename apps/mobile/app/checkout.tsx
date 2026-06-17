@@ -278,7 +278,7 @@ export default function CheckoutScreen() {
                             isActive 
                               ? 'border-primary-500 bg-primary-50 shadow-md scale-[0.98]' 
                               : 'border-primary-100 bg-white'
-                          } ${!isAvailable ? 'opacity-30 grayscale' : 'active:scale-[0.96]'}`}
+                          } ${!isAvailable ? 'opacity-75 border-rose-100' : 'active:scale-[0.96]'}`}
                         >
                           <View className="flex-row items-center justify-between">
                             <View className="flex-1">
@@ -305,6 +305,24 @@ export default function CheckoutScreen() {
                               </View>
                             )}
                           </View>
+                          {!isAvailable && store.unavailableItems && store.unavailableItems.length > 0 && (
+                            <View style={{ marginTop: 12, backgroundColor: '#FEF2F2', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#FEE2E2' }}>
+                              <Text style={{ fontSize: 9, fontWeight: '900', color: '#DC2626', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
+                                Out of Stock Items:
+                              </Text>
+                              {store.unavailableItems.map((uItem: any, idx: number) => {
+                                const cartItem = items.find(
+                                  (i) => i.productId === uItem.productId && i.variantId === uItem.variantId
+                                );
+                                if (!cartItem) return null;
+                                return (
+                                  <Text key={idx} style={{ fontSize: 11, fontWeight: '700', color: '#B91C1C', marginTop: 2 }}>
+                                    • {cartItem.productName} ({cartItem.variantLabel}) — Stock: {uItem.availableStock} (Need {uItem.requestedQty})
+                                  </Text>
+                                );
+                              })}
+                            </View>
+                          )}
                         </Pressable>
                       );
                     })}
@@ -515,7 +533,10 @@ export default function CheckoutScreen() {
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center gap-2">
                 <Image source={require('../assets/coin.png')} style={{ width: 16, height: 16 }} />
-                <Text className="text-sm font-bold text-amber-900">{user.loyaltyPoints} points available</Text>
+                <Text className="text-sm font-bold text-amber-900">
+                  {user.loyaltyPoints} points available
+                  {(settings.minLoyaltyPointsToRedeem || 0) > 0 ? ` (Min. ${settings.minLoyaltyPointsToRedeem} required)` : ''}
+                </Text>
               </View>
             </View>
             <View className="flex-row gap-2">
@@ -528,7 +549,24 @@ export default function CheckoutScreen() {
                 placeholderTextColor="#94A3B8"
               />
               <Pressable
-                onPress={() => setAppliedLoyaltyPoints(loyaltyPointsInput)}
+                onPress={() => {
+                  const minPoints = settings.minLoyaltyPointsToRedeem || 0;
+                  if ((user.loyaltyPoints || 0) < minPoints) {
+                    Alert.alert(
+                      'Validation Error',
+                      `You need at least ${minPoints} loyalty points to redeem them.`
+                    );
+                    return;
+                  }
+                  if (loyaltyPointsInput > 0 && loyaltyPointsInput < minPoints) {
+                    Alert.alert(
+                      'Validation Error',
+                      `You must redeem at least ${minPoints} points.`
+                    );
+                    return;
+                  }
+                  setAppliedLoyaltyPoints(loyaltyPointsInput);
+                }}
                 className="rounded-xl bg-amber-600 px-5 py-2 justify-center"
               >
                 <Text className="text-xs font-black text-white uppercase tracking-wider">Apply</Text>

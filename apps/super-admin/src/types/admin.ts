@@ -493,6 +493,7 @@ export interface SiteSettings {
   metaTitle?: string;
   metaDescription?: string;
   loyaltyPointRupeeValue?: number;
+  minLoyaltyPointsToRedeem?: number;
   garageNames?: string[];
   address?: Address;
   panNumber?: string;

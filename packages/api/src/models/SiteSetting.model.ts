@@ -23,6 +23,7 @@ export interface ISiteSetting extends Document {
   };
   panNumber?: string;
   gstNumber?: string;
+  minLoyaltyPointsToRedeem: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -91,6 +92,11 @@ const siteSettingSchema = new Schema<ISiteSetting>(
     loyaltyPointRupeeValue: {
       type: Number,
       default: 1,
+      min: 0,
+    },
+    minLoyaltyPointsToRedeem: {
+      type: Number,
+      default: 0,
       min: 0,
     },
     garageNames: {
