@@ -30,6 +30,7 @@ import {
   updateTestimonialSchema,
   createSuperAdminStaffSchema,
   updateSuperAdminStaffSchema,
+  updateEnquiryStatusSchema,
   validate,
 } from './superadmin.validator.js';
 
@@ -112,5 +113,6 @@ router.get('/user-referrals/:id', superAdminController.getUserReferralDetails);
 router.get('/whatsapp-referrals', superAdminController.listWhatsAppReferrals);
 router.get('/referral-stats', superAdminController.getReferralStats);
 router.get('/enquiries', superAdminController.listEnquiries);
+router.patch('/enquiries/:id/status', validate(updateEnquiryStatusSchema), superAdminController.updateEnquiryStatus);
 
 export default router;

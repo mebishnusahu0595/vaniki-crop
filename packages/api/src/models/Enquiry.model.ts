@@ -5,6 +5,7 @@ export interface IEnquiry extends Document {
   mobile: string;
   category: string;
   ipAddress?: string;
+  status: 'seen' | 'unseen';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +30,11 @@ const enquirySchema = new Schema<IEnquiry>(
     ipAddress: {
       type: String,
       trim: true,
+    },
+    status: {
+      type: String,
+      enum: ['seen', 'unseen'],
+      default: 'unseen',
     },
   },
   {

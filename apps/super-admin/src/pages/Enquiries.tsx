@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, ClipboardList, Search, Calendar } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight, ClipboardList, Search, Calendar, Eye, EyeOff } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -51,12 +51,26 @@ export default function EnquiriesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 350);
+  const queryClient = useQueryClient();
 
   const enquiriesQuery = useQuery({
     queryKey: ['super-admin-enquiries', page, debouncedSearch],
     queryFn: () => adminApi.enquiries({ page, search: debouncedSearch, limit: 15 }),
     placeholderData: (previousData) => previousData,
   });
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'seen' | 'unseen' }) =>
+      adminApi.updateEnquiryStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin-enquiries'] });
+    },
+  });
+
+  const handleToggleStatus = (id: string, currentStatus: string) => {
+    const nextStatus = currentStatus === 'seen' ? 'unseen' : 'seen';
+    toggleStatusMutation.mutate({ id, status: nextStatus });
+  };
 
   if (enquiriesQuery.isLoading && !enquiriesQuery.data) {
     return <LoadingBlock label="Loading enquiry responses..." />;
@@ -125,6 +139,8 @@ export default function EnquiriesPage() {
               <th className="px-6 py-4">Dynamic Category</th>
               <th className="px-6 py-4">Client IP Address</th>
               <th className="px-6 py-4">Date & Time</th>
+              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-primary-100">
@@ -143,6 +159,36 @@ export default function EnquiriesPage() {
                 </td>
                 <td className="px-6 py-4 text-sm font-mono text-slate-500">{enquiry.ipAddress || '127.0.0.1'}</td>
                 <td className="px-6 py-4 text-sm text-slate-500">{formatDateTime(enquiry.createdAt)}</td>
+                <td className="px-6 py-4 text-sm">
+                  {enquiry.status === 'seen' ? (
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+                      Seen
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-amber-700 animate-pulse">
+                      Unseen
+                    </span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-sm">
+                  <button
+                    onClick={() => handleToggleStatus(enquiry.id, enquiry.status)}
+                    disabled={toggleStatusMutation.isPending}
+                    className="flex items-center gap-1.5 rounded-xl border border-primary-100 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-primary-700 hover:bg-primary-50 transition disabled:opacity-50"
+                  >
+                    {enquiry.status === 'seen' ? (
+                      <>
+                        <EyeOff size={13} />
+                        <span>Unread</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye size={13} />
+                        <span>Read</span>
+                      </>
+                    )}
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -161,7 +207,20 @@ export default function EnquiriesPage() {
         {enquiries.map((enquiry: any) => (
           <div key={enquiry.id} className="rounded-3xl border border-primary-100 bg-white p-5 space-y-3 shadow-sm">
             <div className="flex items-center justify-between border-b border-primary-50 pb-2.5">
-              <span className="text-sm font-black text-slate-900">{enquiry.name}</span>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-black text-slate-900">{enquiry.name}</span>
+                <div>
+                  {enquiry.status === 'seen' ? (
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-emerald-700 border border-emerald-100">
+                      Seen
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-amber-700 animate-pulse border border-amber-100">
+                      Unseen
+                    </span>
+                  )}
+                </div>
+              </div>
               <span className="rounded-full bg-primary-100 px-3 py-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-primary-700">
                 {enquiry.category}
               </span>
@@ -178,9 +237,28 @@ export default function EnquiriesPage() {
                 <span className="block font-semibold text-slate-400 uppercase tracking-wider text-[10px]">IP Address</span>
                 <span className="font-mono text-slate-600">{enquiry.ipAddress || '127.0.0.1'}</span>
               </div>
-              <div className="col-span-2 pt-1 flex items-center gap-1.5 text-[10px] text-slate-400">
-                <Calendar size={12} />
-                <span>{formatDateTime(enquiry.createdAt)}</span>
+              <div className="col-span-2 pt-1 flex items-center justify-between gap-1.5 text-[10px] text-slate-400">
+                <div className="flex items-center gap-1">
+                  <Calendar size={12} />
+                  <span>{formatDateTime(enquiry.createdAt)}</span>
+                </div>
+                <button
+                  onClick={() => handleToggleStatus(enquiry.id, enquiry.status)}
+                  disabled={toggleStatusMutation.isPending}
+                  className="flex items-center gap-1 rounded-xl border border-primary-100 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-primary-700 hover:bg-primary-50 transition"
+                >
+                  {enquiry.status === 'seen' ? (
+                    <>
+                      <EyeOff size={11} />
+                      <span>Unread</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye size={11} />
+                      <span>Read</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

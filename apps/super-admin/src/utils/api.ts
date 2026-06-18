@@ -677,6 +677,10 @@ export const adminApi = {
     const response = await api.get<ApiResponse<any[]>>('/superadmin/enquiries', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
   },
+  updateEnquiryStatus: async (id: string, status: 'seen' | 'unseen') => {
+    const response = await api.patch<ApiResponse<any>>(`/superadmin/enquiries/${id}/status`, { status });
+    return response.data.data;
+  },
   getSuperAdminStaffList: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<any[]>>('/superadmin/superadmin-staff', { params });
     return { data: response.data.data, pagination: response.data.pagination! };

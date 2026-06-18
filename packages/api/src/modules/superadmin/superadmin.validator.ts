@@ -348,6 +348,13 @@ export const updateSuperAdminStaffSchema = z.object({
   }),
 });
 
+export const updateEnquiryStatusSchema = z.object({
+  params: z.object({ id: objectIdSchema }),
+  body: z.object({
+    status: z.enum(['seen', 'unseen']),
+  }),
+});
+
 export function validate(schema: z.ZodObject<any>) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {

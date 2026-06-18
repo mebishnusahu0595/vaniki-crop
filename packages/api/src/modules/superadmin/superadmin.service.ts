@@ -1929,4 +1929,11 @@ export async function listEnquiries(query: Record<string, any>) {
 
   return createPaginationResponse(rows, total, page, limit);
 }
-// force push
+
+export async function updateEnquiryStatus(id: string, status: 'seen' | 'unseen') {
+  const enquiry = await Enquiry.findByIdAndUpdate(id, { status }, { new: true });
+  if (!enquiry) {
+    throw new AppError('Enquiry not found', 404);
+  }
+  return enquiry;
+}

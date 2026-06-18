@@ -402,3 +402,14 @@ export async function listEnquiries(req: Request, res: Response, next: NextFunct
     next(error);
   }
 }
+
+export async function updateEnquiryStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const result = await superAdminService.updateEnquiryStatus(id, status);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
