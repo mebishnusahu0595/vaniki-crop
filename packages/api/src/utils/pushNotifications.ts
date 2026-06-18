@@ -211,7 +211,7 @@ export async function triggerOrderStatusNotifications(order: IOrder) {
     const firstItemImage = order.items?.[0]?.image || '';
     const payload: SendNotificationInput = {
       title: `Order Status: ${order.status.toUpperCase()}`,
-      body: `Your order ${order.orderNumber} is now ${order.status}.`,
+      body: `Order ${order.orderNumber} is now ${order.status}.`,
       data: {
         orderId: order._id.toString(),
         orderNumber: order.orderNumber,
@@ -223,32 +223,51 @@ export async function triggerOrderStatusNotifications(order: IOrder) {
       imageUrl: firstItemImage
     };
 
-    // Notify Customer
+    // 1. Notify Customer
     await sendNotificationToUser(order.userId, payload);
 
-    // If order was delivered, notify superadmins as well
-    if (order.status === 'delivered') {
-      const superadmins = await User.find({ role: 'superAdmin', isActive: true }).select('fcmToken expoPushToken');
-      const superadminFcmTokens = superadmins.map(s => s.fcmToken).filter(Boolean) as string[];
-      const superadminPayload = {
-        title: 'Order Delivered Successfully',
-        body: `Order ${order.orderNumber} has been delivered.`,
-        data: payload.data,
-        imageUrl: firstItemImage
-      };
-
-      if (superadminFcmTokens.length > 0) {
-        await sendFcmNotification(superadminFcmTokens, superadminPayload);
+    // 2. Notify Superadmins (Superadmin Staff App)
+    const superadmins = await User.find({ role: 'superAdmin', isActive: true }).select('fcmToken expoPushToken');
+    const superadminFcmTokens = superadmins.map(s => s.fcmToken).filter(Boolean) as string[];
+    if (superadminFcmTokens.length > 0) {
+      await sendFcmNotification(superadminFcmTokens, payload);
+    }
+    for (const adminUser of superadmins) {
+      if (adminUser.expoPushToken) {
+        try {
+          await sendExpoPushNotification({
+            to: adminUser.expoPushToken,
+            title: payload.title,
+            body: payload.body,
+            data: payload.data
+          });
+        } catch {}
       }
+    }
 
-      for (const adminUser of superadmins) {
-        if (adminUser.expoPushToken) {
+    // 3. Notify Store Owner (Dealer)
+    const store = await Store.findById(order.storeId);
+    if (store?.adminId) {
+      await sendNotificationToUser(store.adminId, payload);
+    }
+
+    // 4. If pickup order, notify Dealer Staff of that store
+    if (order.serviceMode === 'pickup') {
+      const dealerStaffs = await Staff.find({ storeId: order.storeId, role: 'dealer-staff', isActive: true }).select('fcmToken expoPushToken');
+      const staffFcmTokens = dealerStaffs.map(s => s.fcmToken).filter(Boolean) as string[];
+      
+      if (staffFcmTokens.length > 0) {
+        await sendFcmNotification(staffFcmTokens, payload);
+      }
+      
+      for (const staff of dealerStaffs) {
+        if (staff.expoPushToken) {
           try {
             await sendExpoPushNotification({
-              to: adminUser.expoPushToken,
-              title: superadminPayload.title,
-              body: superadminPayload.body,
-              data: superadminPayload.data
+              to: staff.expoPushToken,
+              title: payload.title,
+              body: payload.body,
+              data: payload.data
             });
           } catch {}
         }
@@ -277,5 +296,48 @@ export async function triggerDeliveryAssignedNotifications(order: IOrder, staffI
     await sendNotificationToStaff(staffId, payload);
   } catch (err: any) {
     console.error('[PUSH] triggerDeliveryAssignedNotifications error:', err.message);
+  }
+}
+
+/**
+ * Trigger notification to superadmins when a new website enquiry is submitted.
+ */
+export async function triggerEnquiryNotifications(enquiry: any) {
+  try {
+    const payload: SendNotificationInput = {
+      title: 'New Website Enquiry',
+      body: `${enquiry.name} submitted an enquiry for ${enquiry.category}.`,
+      data: {
+        enquiryId: enquiry._id.toString(),
+        type: 'new_enquiry',
+        name: enquiry.name,
+        mobile: enquiry.mobile,
+        category: enquiry.category,
+        date: enquiry.createdAt ? enquiry.createdAt.toISOString() : new Date().toISOString()
+      }
+    };
+
+    // Notify all active Superadmins
+    const superadmins = await User.find({ role: 'superAdmin', isActive: true }).select('fcmToken expoPushToken');
+    const superadminFcmTokens = superadmins.map(s => s.fcmToken).filter(Boolean) as string[];
+    
+    if (superadminFcmTokens.length > 0) {
+      await sendFcmNotification(superadminFcmTokens, payload);
+    }
+    
+    for (const adminUser of superadmins) {
+      if (adminUser.expoPushToken) {
+        try {
+          await sendExpoPushNotification({
+            to: adminUser.expoPushToken,
+            title: payload.title,
+            body: payload.body,
+            data: payload.data
+          });
+        } catch {}
+      }
+    }
+  } catch (err: any) {
+    console.error('[PUSH] triggerEnquiryNotifications error:', err.message);
   }
 }
