@@ -9,7 +9,7 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldShowBanner: true,
     shouldShowList: true,
-    shouldPlaySound: false,
+    shouldPlaySound: true,
     shouldSetBadge: false,
   }),
 });
@@ -33,18 +33,18 @@ export function usePushNotifications(enabled: boolean) {
 
       if (finalStatus !== 'granted') return;
 
-      const projectId =
-        Constants.easConfig?.projectId || Constants.expoConfig?.extra?.eas?.projectId;
-      if (!projectId) return;
-
-      const token = await Notifications.getExpoPushTokenAsync({ projectId });
-      setPushToken(token.data);
-      
-      // Update token using staff API for staff app
-      await staffApi.me().then(async () => {
-         // Note: staffApi doesn't have updatePushToken yet, but we can add it if needed.
-         // For now, we just avoid crashing by not calling storefrontApi.
-      }).catch(() => undefined);
+      // Register raw FCM device token (used by backend for direct FCM push)
+      try {
+        const deviceToken = await Notifications.getDevicePushTokenAsync();
+        if (deviceToken?.data) {
+          setPushToken(deviceToken.data);
+          await staffApi.updateFcmToken(deviceToken.data).catch((err) => {
+            console.error('[PUSH] Failed to register FCM token:', err.message);
+          });
+        }
+      } catch (err: any) {
+        console.log('[PUSH] FCM token not supported on this device:', err.message);
+      }
     };
 
     register().catch(() => undefined);

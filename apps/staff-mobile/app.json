@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vaniki Staff",
     "slug": "vanikicrop-staff",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Vaniki Crop Staff App — For delivery and order management.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -52,7 +52,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.vanikicrop.staff",
-      "versionCode": 5,
+      "versionCode": 6,
       "targetSdkVersion": 35,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [

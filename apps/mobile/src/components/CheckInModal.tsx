@@ -154,11 +154,11 @@ export const CheckInModal = () => {
               <Pressable 
                 onPress={handleClaim} 
                 disabled={claiming}
-                style={({ pressed }) => [
+                style={[
                   styles.button, 
-                  claiming && styles.buttonDisabled,
-                  pressed && styles.buttonPressed
+                  claiming && styles.buttonDisabled
                 ]}
+                className="active:opacity-85 active:scale-[0.99]"
               >
                 <Text style={styles.buttonText}>{claiming ? 'CLAIMING...' : 'CLAIM DAILY REWARD'}</Text>
               </Pressable>
@@ -172,10 +172,8 @@ export const CheckInModal = () => {
                 </View>
                 <Pressable 
                   onPress={closeModal} 
-                  style={({ pressed }) => [
-                    styles.closeButtonOutline,
-                    pressed && styles.buttonPressed
-                  ]}
+                  style={styles.closeButtonOutline}
+                  className="active:opacity-85 active:scale-[0.99]"
                 >
                   <Text style={styles.closeButtonOutlineText}>CLOSE</Text>
                 </Pressable>
