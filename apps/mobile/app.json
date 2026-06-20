@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vaniki Crop",
     "slug": "vaniki-crop",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "description": "Vaniki Crop — India's trusted crop protection marketplace. Buy genuine pesticides, insecticides, fungicides & herbicides from local agri stores with delivery or pickup. Secure Razorpay payments, real-time order tracking, and farmer-first support.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
