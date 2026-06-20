@@ -15,7 +15,7 @@ content = content.replace(/reactAndroidLibs/g, 'expoLibs');
 // 2. Add keystore properties loading
 if (!content.includes('keystorePropertiesFile')) {
   // Find jscFlavor declaration
-  const jscRegex = /def jscFlavor = .+/;
+  const jscRegex = /def jscFlavor = 'io\.github\.react-native-community:jsc-android:.+/;
   const match = content.match(jscRegex);
   if (match) {
     const target = match[0];
