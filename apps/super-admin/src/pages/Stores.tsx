@@ -10,7 +10,7 @@ import type { StoreSummary } from '../types/admin';
 import { adminApi } from '../utils/api';
 import { formatDisplayStoreAddress, isMeaningfulAddressText, reverseGeocodeCoordinates } from '../utils/geocoding';
 import { currencyFormatter } from '../utils/format';
-import { FileText } from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const storeSchema = z.object({
@@ -78,11 +78,30 @@ export default function StoresPage() {
   const debouncedSearch = useDebouncedValue(search, 350);
   const navigate = useNavigate();
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
   const storesQuery = useQuery({
-    queryKey: ['super-admin-stores', debouncedSearch],
-    queryFn: () => adminApi.stores({ search: debouncedSearch, limit: 100 }),
+    queryKey: ['super-admin-stores', debouncedSearch, page],
+    queryFn: () => adminApi.stores({ search: debouncedSearch, limit: 25, page }),
     placeholderData: (previousData) => previousData,
   });
+
+  const pagination = storesQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   const adminsQuery = useQuery({
     queryKey: ['super-admin-admin-options'],
@@ -667,7 +686,7 @@ export default function StoresPage() {
           </div>
         ) : null}
 
-        {storesQuery.data?.data.map((store) => (
+        {storesQuery.data?.data.map((store, index) => (
           <div
             key={store.id}
             onClick={() => setSelectedStore(store)}
@@ -675,7 +694,12 @@ export default function StoresPage() {
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-lg font-black text-slate-900">{store.name}</p>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="rounded-xl bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-500">
+                    #{(page - 1) * 25 + index + 1}
+                  </span>
+                  <p className="text-lg font-black text-slate-900">{store.name}</p>
+                </div>
                 <p className="mt-1 text-sm text-slate-500">
                   {formatDisplayStoreAddress(store.address) || 'Address needs update'}
                 </p>
@@ -753,6 +777,48 @@ export default function StoresPage() {
             </div>
           </div>
         ))}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between rounded-[1.5rem] border border-primary-100 bg-white p-4 shadow-sm mt-4">
+            <button
+              type="button"
+              onClick={handlePrevPage}
+              disabled={page === 1}
+              className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={16} />
+              <span>Prev</span>
+            </button>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPage(p)}
+                  className={`rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-wider transition ${
+                    page === p
+                      ? 'bg-primary-600 text-white shadow-md'
+                      : 'bg-white border border-primary-100 text-slate-600 hover:bg-primary-50'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleNextPage}
+              disabled={page === totalPages}
+              className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+            >
+              <span>Next</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

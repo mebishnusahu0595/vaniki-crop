@@ -375,6 +375,15 @@ export async function adjustCustomerLoyalty(req: Request, res: Response, next: N
   }
 }
 
+export async function createCustomer(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await superAdminService.createCustomer(req.body);
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateCustomer(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const data = await superAdminService.updateCustomer(req.params.id as string, req.body);

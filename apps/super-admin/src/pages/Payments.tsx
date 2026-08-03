@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
@@ -46,6 +47,14 @@ export default function PaymentsPage() {
   const [method, setMethod] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
+  // Pagination State
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [storeId, status, method, startDate, endDate]);
 
   const storesQuery = useQuery({
     queryKey: ['super-admin-payment-stores'],
@@ -53,7 +62,7 @@ export default function PaymentsPage() {
   });
 
   const paymentsQuery = useQuery({
-    queryKey: ['super-admin-payments', storeId, status, method, startDate, endDate],
+    queryKey: ['super-admin-payments', storeId, status, method, startDate, endDate, page],
     queryFn: () =>
       adminApi.payments({
         storeId,
@@ -61,14 +70,27 @@ export default function PaymentsPage() {
         method,
         startDate,
         endDate,
-        limit: 100,
+        limit: 25,
+        page,
       }),
   });
 
   if (paymentsQuery.isLoading) return <LoadingBlock label="Loading payments..." />;
 
+  const payments = paymentsQuery.data?.data || [];
+  const pagination = paymentsQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
   const exportRows =
-    paymentsQuery.data?.data.map((payment) => ({
+    payments.map((payment) => ({
       orderNumber: payment.orderNumber,
       store: payment.store.name,
       customer: payment.customer.name,
@@ -132,6 +154,7 @@ export default function PaymentsPage() {
         <table className="min-w-full">
           <thead className="bg-primary-50/70 text-left text-xs font-black uppercase tracking-[0.16em] text-slate-500">
             <tr>
+              <th className="px-4 py-3">S.No.</th>
               <th className="px-4 py-3">Order#</th>
               <th className="px-4 py-3">Store</th>
               <th className="px-4 py-3">Customer</th>
@@ -143,8 +166,9 @@ export default function PaymentsPage() {
             </tr>
           </thead>
           <tbody>
-            {paymentsQuery.data?.data.map((payment) => (
+            {payments.map((payment, index) => (
               <tr key={payment.id} className="border-t border-primary-100">
+                <td className="px-4 py-3 text-sm font-black text-slate-500">{(page - 1) * 25 + index + 1}</td>
                 <td className="px-4 py-3 text-sm font-black text-slate-900">{payment.orderNumber}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{payment.store.name}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{payment.customer.name}</td>
@@ -170,9 +194,14 @@ export default function PaymentsPage() {
       </div>
 
       <div className="grid gap-4 lg:hidden">
-        {paymentsQuery.data?.data.map((payment) => (
+        {payments.map((payment, index) => (
           <div key={payment.id} className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
-            <p className="text-lg font-black text-slate-900">{payment.orderNumber}</p>
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span className="rounded-xl bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-500">
+                #{(page - 1) * 25 + index + 1}
+              </span>
+              <span className="text-lg font-black text-slate-900">{payment.orderNumber}</span>
+            </div>
             <p className="mt-1 text-sm text-slate-500">{payment.store.name} · {payment.customer.name}</p>
             <p className="mt-1 text-sm text-slate-500">{payment.razorpayId}</p>
             <div className="mt-3 flex items-center justify-between">
@@ -186,6 +215,48 @@ export default function PaymentsPage() {
           </div>
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-[1.5rem] border border-primary-100 bg-white p-4 shadow-sm">
+          <button
+            type="button"
+            onClick={handlePrevPage}
+            disabled={page === 1}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+            <span>Prev</span>
+          </button>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPage(p)}
+                className={`rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-wider transition ${
+                  page === p
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'bg-white border border-primary-100 text-slate-600 hover:bg-primary-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleNextPage}
+            disabled={page === totalPages}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <span>Next</span>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

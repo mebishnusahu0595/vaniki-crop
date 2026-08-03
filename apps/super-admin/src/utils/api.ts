@@ -342,7 +342,7 @@ export const adminApi = {
     const response = await api.get<ApiResponse<Order>>(`/superadmin/orders/${id}`);
     return response.data.data;
   },
-  updateOrderStatus: async (id: string, payload: { status: string; note?: string }) => {
+  updateOrderStatus: async (id: string, payload: { status: string; note?: string; paymentStatus?: string }) => {
     const response = await api.patch<ApiResponse<Order>>(`/superadmin/orders/${id}/status`, payload);
     return response.data.data;
   },
@@ -350,7 +350,11 @@ export const adminApi = {
     const response = await api.get<ApiResponse<Customer[]>>('/superadmin/customers', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
   },
-  updateCustomer: async (id: string, payload: { name?: string; email?: string; mobile?: string; isActive?: boolean }) => {
+  createCustomer: async (payload: { name: string; email?: string; mobile: string; password?: string; isActive?: boolean; loyaltyPoints?: number }) => {
+    const response = await api.post<ApiResponse<Customer>>('/superadmin/customers', payload);
+    return response.data.data;
+  },
+  updateCustomer: async (id: string, payload: { name?: string; email?: string; mobile?: string; isActive?: boolean; loyaltyPoints?: number }) => {
     const response = await api.patch<ApiResponse<Customer>>(`/superadmin/customers/${id}`, payload);
     return response.data.data;
   },

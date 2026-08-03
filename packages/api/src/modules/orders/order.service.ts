@@ -9,7 +9,7 @@ import { validateCoupon } from '../coupons/coupon.service.js';
 import { razorpay } from '../../config/razorpay.js';
 import { AppError } from '../../utils/AppError.js';
 import { addEmailToQueue } from '../../queues/email.queue.js';
-import { orderPlacedTemplate, orderStatusUpdateTemplate } from '../../utils/emailTemplates.js';
+import { orderPlacedTemplate, orderStatusUpdateTemplate, adminOrderNotificationTemplate, adminOrderStatusChangeTemplate } from '../../utils/emailTemplates.js';
 import { sendExpoPushNotification } from '../../utils/expoPush.js';
 import { triggerOrderPlacedNotifications, triggerOrderStatusNotifications } from '../../utils/pushNotifications.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
@@ -487,6 +487,21 @@ export async function placeCodOrder(userId: string, input: any) {
     }
   }
 
+  // Notify fixed admin email (ORDER_NOTIFICATION_EMAIL)
+  const notificationEmail = process.env.ORDER_NOTIFICATION_EMAIL;
+  if (notificationEmail) {
+    const populatedOrder = await Order.findById(order._id).populate('storeId', 'name address phone').populate('userId', 'name mobile email');
+    addEmailToQueue({
+      to: notificationEmail,
+      subject: `🛒 New Order - ${orderNumber} | ${populatedStore?.name || 'Unknown'} | ₹${order.totalAmount}`,
+      html: adminOrderNotificationTemplate(
+        populatedOrder || order,
+        populatedStore || { name: 'Unknown' },
+        user || { name: 'Customer' }
+      ),
+    });
+  }
+
   // Send WhatsApp Invoice
   sendOrderInvoice(order._id.toString()).catch(err => console.error('[WHATSAPP] Error:', err));
 
@@ -600,6 +615,20 @@ export async function finalizeOrder(razorpayOrderId: string, paymentId: string, 
         html: `<h3>New order received in the system</h3><p>Store: ${store?.name || 'Unknown'}</p><p>Order Number: ${order.orderNumber}</p><p>Total: ₹${order.totalAmount}</p>`,
       });
     }
+  }
+
+  // Notify fixed admin email (ORDER_NOTIFICATION_EMAIL)
+  const notifEmail = process.env.ORDER_NOTIFICATION_EMAIL;
+  if (notifEmail) {
+    addEmailToQueue({
+      to: notifEmail,
+      subject: `🛒 New Order (Paid) - ${order.orderNumber} | ${store?.name || 'Unknown'} | ₹${order.totalAmount}`,
+      html: adminOrderNotificationTemplate(
+        order,
+        store || { name: 'Unknown' },
+        user || { name: 'Customer' }
+      ),
+    });
   }
 
   // Send WhatsApp Invoice
@@ -797,7 +826,7 @@ export async function getSuperAdminOrders(query: any) {
 }
 
 export async function updateOrderStatus(orderId: string, input: any, adminId: string, userRole: string, userStoreId?: string) {
-  const { status, note } = input;
+  const { status, note, paymentStatus } = input;
   const order = await Order.findById(orderId);
 
   if (!order) {
@@ -815,9 +844,12 @@ export async function updateOrderStatus(orderId: string, input: any, adminId: st
   }
 
   order.status = status;
+  if (paymentStatus) {
+    order.paymentStatus = paymentStatus;
+  }
   order.statusHistory.push({
     status,
-    note,
+    note: paymentStatus ? `${note || ''}${note ? ' | ' : ''}Payment: ${paymentStatus}`.trim() : note,
     updatedBy: adminId as any,
     timestamp: new Date(),
   });
@@ -856,6 +888,23 @@ export async function updateOrderStatus(orderId: string, input: any, adminId: st
 
   // Trigger unified notifications
   triggerOrderStatusNotifications(order).catch(err => console.error('[PUSH] Error triggering status notifications:', err));
+
+  // Notify fixed admin email (ORDER_NOTIFICATION_EMAIL) about status change
+  const statusNotifEmail = process.env.ORDER_NOTIFICATION_EMAIL;
+  if (statusNotifEmail) {
+    const populatedStore = await Store.findById(order.storeId).select('name');
+    addEmailToQueue({
+      to: statusNotifEmail,
+      subject: `📋 Order ${status.toUpperCase()} - ${order.orderNumber} | ₹${order.totalAmount}`,
+      html: adminOrderStatusChangeTemplate(
+        order,
+        populatedStore || { name: 'Unknown' },
+        user || { name: 'Customer' },
+        status,
+        note
+      ),
+    });
+  }
 
   return order;
 }

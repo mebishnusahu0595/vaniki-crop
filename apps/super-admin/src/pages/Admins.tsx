@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { LocateFixed } from 'lucide-react';
+import { LocateFixed, ChevronLeft, ChevronRight } from 'lucide-react';
 import { z } from 'zod';
 import { API_BASE_URL } from '../config/api';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -299,16 +299,36 @@ export default function AdminsPage() {
   const [approvalStatus, setApprovalStatus] = useState('');
   const debouncedSearch = useDebouncedValue(search, 350);
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, approvalStatus]);
+
   const adminsQuery = useQuery({
-    queryKey: ['super-admin-admins', debouncedSearch, approvalStatus],
+    queryKey: ['super-admin-admins', debouncedSearch, approvalStatus, page],
     queryFn: () =>
       adminApi.admins({
         search: debouncedSearch,
         approvalStatus: approvalStatus || undefined,
-        limit: 100,
+        limit: 25,
+        page,
       }),
     placeholderData: (previousData) => previousData,
   });
+
+  const pagination = adminsQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   const {
     register,
@@ -818,7 +838,7 @@ export default function AdminsPage() {
           <p className="px-1 text-xs font-semibold text-slate-500">Updating list...</p>
         ) : null}
 
-        {visibleAdmins.map((admin) => (
+        {visibleAdmins.map((admin, index) => (
           <div
             key={admin.id}
             onClick={() => setSelectedAdmin(admin)}
@@ -859,7 +879,12 @@ export default function AdminsPage() {
                   </div>
                 )}
                 <div>
-                  <p className="text-lg font-black text-slate-900">{admin.name}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="rounded-xl bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-500">
+                      #{(page - 1) * 25 + index + 1}
+                    </span>
+                    <p className="text-lg font-black text-slate-900">{admin.name}</p>
+                  </div>
                   <p className="mt-1 text-sm text-slate-500">{admin.mobile} · {admin.email || 'No email'}</p>
                   <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary-600">
                     Assigned Store: {admin.assignedStore?.name || 'Unassigned'}
@@ -960,6 +985,48 @@ export default function AdminsPage() {
             No admins found for selected filter.
           </div>
         ) : null}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between rounded-[1.5rem] border border-primary-100 bg-white p-4 shadow-sm mt-4">
+            <button
+              type="button"
+              onClick={handlePrevPage}
+              disabled={page === 1}
+              className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={16} />
+              <span>Prev</span>
+            </button>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPage(p)}
+                  className={`rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-wider transition ${
+                    page === p
+                      ? 'bg-primary-600 text-white shadow-md'
+                      : 'bg-white border border-primary-100 text-slate-600 hover:bg-primary-50'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleNextPage}
+              disabled={page === totalPages}
+              className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+            >
+              <span>Next</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
       {selectedAdmin ? (

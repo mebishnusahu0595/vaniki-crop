@@ -16,10 +16,11 @@ export default function OrdersPage() {
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const debouncedSearch = useDebouncedValue(search, 350);
   const today = new Date().toLocaleDateString('en-CA');
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [nextStatus, setNextStatus] = useState('confirmed');
+  const [nextPaymentStatus, setNextPaymentStatus] = useState('');
   const [note, setNote] = useState('');
 
   const [prevSearchParam, setPrevSearchParam] = useState(searchParams.get('search'));
@@ -51,11 +52,12 @@ export default function OrdersPage() {
   }
 
   const updateStatusMutation = useMutation({
-    mutationFn: () => adminApi.updateOrderStatus(selectedOrderId!, { status: nextStatus, note }),
+    mutationFn: () => adminApi.updateOrderStatus(selectedOrderId!, { status: nextStatus, note, ...(nextPaymentStatus ? { paymentStatus: nextPaymentStatus } : {}) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin-order-detail', selectedOrderId] });
       setNote('');
+      setNextPaymentStatus('');
     },
   });
 
@@ -187,7 +189,7 @@ export default function OrdersPage() {
         {ordersQuery.data?.data.length === 0 && (
           <div className="rounded-[1.5rem] border border-dashed border-primary-200 bg-primary-50/30 py-12 text-center">
             <p className="text-lg font-black text-slate-400">
-              {startDate === today && endDate === today ? 'No orders today' : 'No orders found for the selected period'}
+              {!startDate && !endDate ? 'No orders found' : startDate === today && endDate === today ? 'No orders today' : 'No orders found for the selected period'}
             </p>
           </div>
         )}
@@ -339,6 +341,27 @@ export default function OrdersPage() {
                           </option>
                         ))}
                       </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="update-payment-status"
+                          className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500"
+                        >
+                          Payment Status
+                        </label>
+                        <select
+                          id="update-payment-status"
+                          value={nextPaymentStatus}
+                          onChange={(event) => setNextPaymentStatus(event.target.value)}
+                          className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3"
+                        >
+                          <option value="">Don't change</option>
+                          {['pending', 'paid', 'failed', 'refunded'].map((item) => (
+                            <option key={item} value={item}>
+                              {item}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div>
                         <label

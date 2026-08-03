@@ -1193,6 +1193,29 @@ export async function listCustomers(query: Record<string, any>) {
   return createPaginationResponse(processedRows, totalCount, page, limit);
 }
 
+export async function createCustomer(data: any) {
+  const { name, email, mobile, password, isActive, loyaltyPoints } = data;
+
+  const existing = await User.findOne({ mobile });
+  if (existing) {
+    throw new AppError('Mobile number already in use by another customer', 400);
+  }
+
+  const customer = new User({
+    name,
+    email: email || undefined,
+    mobile,
+    password: password || 'Vaniki@123',
+    isActive: isActive !== undefined ? isActive : true,
+    loyaltyPoints: loyaltyPoints !== undefined ? Number(loyaltyPoints) : 0,
+    role: 'customer',
+    approvalStatus: 'approved',
+  });
+
+  await customer.save();
+  return customer;
+}
+
 export async function updateCustomer(id: string, updateData: any) {
   const customer = await User.findById(id);
   if (!customer || customer.role !== 'customer') {
@@ -1210,6 +1233,7 @@ export async function updateCustomer(id: string, updateData: any) {
   if (updateData.email !== undefined) customer.email = updateData.email;
   if (updateData.mobile !== undefined) customer.mobile = updateData.mobile;
   if (updateData.isActive !== undefined) customer.isActive = updateData.isActive;
+  if (updateData.loyaltyPoints !== undefined) customer.loyaltyPoints = Number(updateData.loyaltyPoints);
 
   await customer.save();
   return customer;

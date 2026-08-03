@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Users, 
@@ -10,6 +10,7 @@ import {
   XCircle,
   Copy,
   ChevronRight,
+  ChevronLeft,
   UserCheck,
   Package,
   Award,
@@ -497,9 +498,17 @@ function CustomerReferrals() {
   const [selectedReferrerId, setSelectedReferrerId] = useState<string | null>(null);
   const [sortByPoints, setSortByPoints] = useState<'default' | 'asc' | 'desc'>('default');
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
   const referrersQuery = useQuery({
-    queryKey: ['user-referrals', searchTerm],
-    queryFn: () => adminApi.userReferrals({ search: searchTerm }),
+    queryKey: ['user-referrals', searchTerm, page],
+    queryFn: () => adminApi.userReferrals({ search: searchTerm, limit: 25, page }),
   });
 
   const detailsQuery = useQuery({
@@ -507,6 +516,17 @@ function CustomerReferrals() {
     queryFn: () => adminApi.userReferralDetails(selectedReferrerId!),
     enabled: !!selectedReferrerId
   });
+
+  const pagination = referrersQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   const rawReferrers = referrersQuery.data?.data || [];
   const filteredReferrers = [...rawReferrers].sort((a, b) => {
@@ -551,7 +571,7 @@ function CustomerReferrals() {
 
         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
           <div className="divide-y divide-slate-50">
-            {filteredReferrers.map((referrer: UserReferrer) => (
+            {filteredReferrers.map((referrer: UserReferrer, index) => (
               <button
                 key={referrer.id}
                 onClick={() => setSelectedReferrerId(referrer.id)}
@@ -561,6 +581,9 @@ function CustomerReferrals() {
                 )}
               >
                 <div className="flex items-center gap-3">
+                  <span className="rounded-xl bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-500">
+                    #{(page - 1) * 25 + index + 1}
+                  </span>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-600">
                     <Award size={18} />
                   </div>
@@ -579,6 +602,48 @@ function CustomerReferrals() {
               <div className="p-8 text-center text-sm text-slate-400 font-bold">No referrers found</div>
             )}
           </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-slate-100 p-4 shadow-xs mt-2 bg-white rounded-2xl">
+              <button
+                type="button"
+                onClick={handlePrevPage}
+                disabled={page === 1}
+                className="flex items-center gap-1 rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-45 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={14} />
+                <span>Prev</span>
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setPage(p)}
+                    className={cn(
+                      "rounded-lg px-2.5 py-1 text-xs font-bold transition",
+                      page === p
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50'
+                    )}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNextPage}
+                disabled={page === totalPages}
+                className="flex items-center gap-1 rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-45 disabled:cursor-not-allowed"
+              >
+                <span>Next</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -730,12 +795,30 @@ function CustomerReferrals() {
 function WhatsAppReferrals() {
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm]);
+
   const whatsappQuery = useQuery({
-    queryKey: ['whatsapp-referrals', searchTerm],
-    queryFn: () => adminApi.getWhatsAppReferrals({ search: searchTerm }),
+    queryKey: ['whatsapp-referrals', searchTerm, page],
+    queryFn: () => adminApi.getWhatsAppReferrals({ search: searchTerm, limit: 25, page }),
   });
 
   const referrals = whatsappQuery.data?.data || [];
+  const pagination = whatsappQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   if (whatsappQuery.isLoading) return <LoadingBlock label="Loading WhatsApp referrals..." />;
 
@@ -773,10 +856,13 @@ function WhatsAppReferrals() {
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {referrals.map((user: any) => (
+            {referrals.map((user: any, index) => (
               <div key={user.id} className="rounded-2xl border border-slate-100 bg-slate-50/50 p-5 transition hover:bg-slate-50">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
+                    <span className="rounded-xl bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-500">
+                      #{(page - 1) * 25 + index + 1}
+                    </span>
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 text-green-600 shadow-sm">
                       <Users size={22} />
                     </div>
@@ -803,6 +889,49 @@ function WhatsAppReferrals() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-slate-100 p-4 shadow-xs mt-4 bg-white rounded-2xl">
+            <button
+              type="button"
+              onClick={handlePrevPage}
+              disabled={page === 1}
+              className="flex items-center gap-1 rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-45 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={14} />
+              <span>Prev</span>
+            </button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPage(p)}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-xs font-bold transition",
+                    page === p
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50'
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleNextPage}
+              disabled={page === totalPages}
+              className="flex items-center gap-1 rounded-xl border border-slate-100 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-45 disabled:cursor-not-allowed"
+            >
+              <span>Next</span>
+              <ChevronRight size={14} />
+            </button>
           </div>
         )}
       </div>

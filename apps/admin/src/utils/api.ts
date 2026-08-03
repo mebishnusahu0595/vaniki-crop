@@ -205,7 +205,7 @@ export const adminApi = {
     const response = await api.get<ApiResponse<Order>>(`/orders/admin/${id}`);
     return response.data.data;
   },
-  updateOrderStatus: async (id: string, payload: { status: string; note?: string }) => {
+  updateOrderStatus: async (id: string, payload: { status: string; note?: string; paymentStatus?: string }) => {
     const response = await api.patch<ApiResponse<Order>>(`/orders/admin/${id}/status`, payload);
     return response.data.data;
   },

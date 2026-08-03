@@ -122,3 +122,180 @@ export const passwordResetOtpTemplate = (user: any, otp: string) => `
 </body>
 </html>
 `;
+
+
+/**
+ * Comprehensive HTML template for admin order notification.
+ * Sent to vaniki.crop@gmail.com (ORDER_NOTIFICATION_EMAIL) on every new order.
+ */
+export const adminOrderNotificationTemplate = (order: any, store: any, customer: any) => {
+  const statusColor: Record<string, string> = {
+    placed: '#f59e0b',
+    confirmed: '#3b82f6',
+    processing: '#8b5cf6',
+    shipped: '#06b6d4',
+    delivered: '#10b981',
+    cancelled: '#ef4444',
+  };
+  const paymentColor: Record<string, string> = {
+    pending: '#f59e0b',
+    paid: '#10b981',
+    failed: '#ef4444',
+    refunded: '#8b5cf6',
+  };
+
+  const itemsHtml = (order.items || []).map((item: any) => `
+    <tr>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">${item.productName}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9;">${item.variantLabel}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: center;">${item.qty}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right;">₹${item.price}</td>
+      <td style="padding: 8px 12px; border-bottom: 1px solid #f1f5f9; text-align: right;">₹${item.price * item.qty}</td>
+    </tr>
+  `).join('');
+
+  const address = order.shippingAddress
+    ? `${order.shippingAddress.street || ''}, ${order.shippingAddress.city || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`
+    : 'N/A';
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.5; color: #1e293b; margin: 0; padding: 0; background: #f8fafc; }
+    .wrapper { max-width: 650px; margin: 20px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+    .header { background: #2D6A4F; padding: 24px 30px; color: #fff; }
+    .header h1 { margin: 0; font-size: 20px; }
+    .header p { margin: 4px 0 0; opacity: 0.85; font-size: 13px; }
+    .body { padding: 24px 30px; }
+    .info-grid { display: table; width: 100%; margin: 16px 0; }
+    .info-row { display: table-row; }
+    .info-label { display: table-cell; padding: 6px 12px 6px 0; font-weight: 600; font-size: 13px; color: #64748b; white-space: nowrap; }
+    .info-value { display: table-cell; padding: 6px 0; font-size: 14px; color: #1e293b; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #fff; }
+    table.items { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    table.items th { background: #f1f5f9; padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #64748b; }
+    .summary { margin-top: 16px; text-align: right; font-size: 14px; }
+    .summary .total { font-size: 18px; font-weight: 800; color: #2D6A4F; }
+    .footer { background: #f8fafc; padding: 16px 30px; text-align: center; font-size: 11px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>🛒 New Order Received</h1>
+      <p>${order.orderNumber} · ${new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+    </div>
+    <div class="body">
+      <div class="info-grid">
+        <div class="info-row"><span class="info-label">Store:</span><span class="info-value">${store?.name || 'Unknown Store'}</span></div>
+        <div class="info-row"><span class="info-label">Customer:</span><span class="info-value">${customer?.name || 'N/A'} (${customer?.mobile || 'N/A'})</span></div>
+        <div class="info-row"><span class="info-label">Email:</span><span class="info-value">${customer?.email || 'N/A'}</span></div>
+        <div class="info-row"><span class="info-label">Service Mode:</span><span class="info-value">${order.serviceMode === 'pickup' ? '📦 Pickup' : '🚚 Delivery'}</span></div>
+        <div class="info-row"><span class="info-label">Address:</span><span class="info-value">${address}</span></div>
+        <div class="info-row"><span class="info-label">Order Status:</span><span class="info-value"><span class="badge" style="background:${statusColor[order.status] || '#64748b'}">${order.status}</span></span></div>
+        <div class="info-row"><span class="info-label">Payment Method:</span><span class="info-value">${order.paymentMethod === 'cod' ? '💵 Cash on Delivery' : '💳 Razorpay'}</span></div>
+        <div class="info-row"><span class="info-label">Payment Status:</span><span class="info-value"><span class="badge" style="background:${paymentColor[order.paymentStatus] || '#64748b'}">${order.paymentStatus}</span></span></div>
+      </div>
+
+      <h3 style="margin: 20px 0 8px; font-size: 15px; color: #334155;">Items Ordered</h3>
+      <table class="items">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Variant</th>
+            <th style="text-align:center;">Qty</th>
+            <th style="text-align:right;">Price</th>
+            <th style="text-align:right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <p>Subtotal: ₹${order.subtotal}</p>
+        ${order.couponDiscount ? `<p>Coupon Discount: -₹${order.couponDiscount}</p>` : ''}
+        ${order.loyaltyDiscount ? `<p>Loyalty Discount: -₹${order.loyaltyDiscount}</p>` : ''}
+        ${order.deliveryCharge ? `<p>Delivery Charge: ₹${order.deliveryCharge}</p>` : ''}
+        <p class="total">Total: ₹${order.totalAmount}</p>
+      </div>
+    </div>
+    <div class="footer">
+      <p>Vaniki Crop Admin Notification · <a href="https://superadmin.vanikicrop.com/orders" style="color: #2D6A4F;">View in Dashboard</a></p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+};
+
+/**
+ * Comprehensive HTML template for admin order status change notification.
+ * Sent to vaniki.crop@gmail.com (ORDER_NOTIFICATION_EMAIL) on every status change.
+ */
+export const adminOrderStatusChangeTemplate = (order: any, store: any, customer: any, newStatus: string, note?: string) => {
+  const statusColor: Record<string, string> = {
+    placed: '#f59e0b',
+    confirmed: '#3b82f6',
+    processing: '#8b5cf6',
+    shipped: '#06b6d4',
+    delivered: '#10b981',
+    cancelled: '#ef4444',
+  };
+  const paymentColor: Record<string, string> = {
+    pending: '#f59e0b',
+    paid: '#10b981',
+    failed: '#ef4444',
+    refunded: '#8b5cf6',
+  };
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.5; color: #1e293b; margin: 0; padding: 0; background: #f8fafc; }
+    .wrapper { max-width: 650px; margin: 20px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+    .header { background: #1e40af; padding: 24px 30px; color: #fff; }
+    .header h1 { margin: 0; font-size: 20px; }
+    .header p { margin: 4px 0 0; opacity: 0.85; font-size: 13px; }
+    .body { padding: 24px 30px; }
+    .info-grid { display: table; width: 100%; margin: 16px 0; }
+    .info-row { display: table-row; }
+    .info-label { display: table-cell; padding: 6px 12px 6px 0; font-weight: 600; font-size: 13px; color: #64748b; white-space: nowrap; }
+    .info-value { display: table-cell; padding: 6px 0; font-size: 14px; color: #1e293b; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #fff; }
+    .footer { background: #f8fafc; padding: 16px 30px; text-align: center; font-size: 11px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>📋 Order Status Updated</h1>
+      <p>${order.orderNumber} → <strong>${newStatus.toUpperCase()}</strong></p>
+    </div>
+    <div class="body">
+      <div class="info-grid">
+        <div class="info-row"><span class="info-label">Order:</span><span class="info-value">${order.orderNumber}</span></div>
+        <div class="info-row"><span class="info-label">Store:</span><span class="info-value">${store?.name || 'Unknown Store'}</span></div>
+        <div class="info-row"><span class="info-label">Customer:</span><span class="info-value">${customer?.name || 'N/A'} (${customer?.mobile || 'N/A'})</span></div>
+        <div class="info-row"><span class="info-label">Service Mode:</span><span class="info-value">${order.serviceMode === 'pickup' ? '📦 Pickup' : '🚚 Delivery'}</span></div>
+        <div class="info-row"><span class="info-label">New Status:</span><span class="info-value"><span class="badge" style="background:${statusColor[newStatus] || '#64748b'}">${newStatus}</span></span></div>
+        <div class="info-row"><span class="info-label">Payment Status:</span><span class="info-value"><span class="badge" style="background:${paymentColor[order.paymentStatus] || '#64748b'}">${order.paymentStatus}</span></span></div>
+        <div class="info-row"><span class="info-label">Payment Method:</span><span class="info-value">${order.paymentMethod === 'cod' ? '💵 COD' : '💳 Razorpay'}</span></div>
+        <div class="info-row"><span class="info-label">Total Amount:</span><span class="info-value" style="font-weight:800; color:#2D6A4F;">₹${order.totalAmount}</span></div>
+        ${note ? `<div class="info-row"><span class="info-label">Note:</span><span class="info-value">${note}</span></div>` : ''}
+      </div>
+      <p style="font-size:13px; color:#64748b; margin-top:20px;">Updated at: ${new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+    </div>
+    <div class="footer">
+      <p>Vaniki Crop Admin Notification · <a href="https://superadmin.vanikicrop.com/orders" style="color: #2D6A4F;">View in Dashboard</a></p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+};

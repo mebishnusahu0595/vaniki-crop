@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Info, User, Warehouse, Box } from 'lucide-react';
+import { Info, User, Warehouse, Box, ChevronLeft, ChevronRight } from 'lucide-react';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { PageHeader } from '../components/PageHeader';
 import { adminApi } from '../utils/api';
@@ -18,9 +18,17 @@ export default function ProductRequestsPage() {
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
   const [selectedRequest, setSelectedRequest] = useState<ProductRequest | null>(null);
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [status]);
+
   const requestQuery = useQuery({
-    queryKey: ['super-admin-product-requests', status],
-    queryFn: () => adminApi.productRequests({ status: status || undefined, limit: 100 }),
+    queryKey: ['super-admin-product-requests', status, page],
+    queryFn: () => adminApi.productRequests({ status: status || undefined, limit: 25, page }),
   });
 
   const updateRequestMutation = useMutation({
@@ -38,6 +46,18 @@ export default function ProductRequestsPage() {
   if (requestQuery.isLoading) {
     return <LoadingBlock label="Loading product requests..." />;
   }
+
+  const requests = requestQuery.data?.data || [];
+  const pagination = requestQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   return (
     <div className="space-y-6 pb-20">
@@ -61,7 +81,7 @@ export default function ProductRequestsPage() {
       </div>
 
       <div className="grid gap-4">
-        {requestQuery.data?.data.map((request) => {
+        {requests.map((request, index) => {
           const nextStatus = statusDraft[request.id] || 'approved';
           const superAdminNote = noteDraft[request.id] || '';
 
@@ -70,6 +90,9 @@ export default function ProductRequestsPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex-1 min-w-[280px]">
                   <div className="flex items-center gap-2">
+                    <span className="rounded-xl bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-500">
+                      #{(page - 1) * 25 + index + 1}
+                    </span>
                     <p className="text-xl font-black text-slate-900">{request.productName}</p>
                     <button
                       onClick={() => setSelectedRequest(request)}
@@ -161,6 +184,48 @@ export default function ProductRequestsPage() {
           );
         })}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-[1.5rem] border border-primary-100 bg-white p-4 shadow-sm">
+          <button
+            type="button"
+            onClick={handlePrevPage}
+            disabled={page === 1}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+            <span>Prev</span>
+          </button>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPage(p)}
+                className={`rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-wider transition ${
+                  page === p
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'bg-white border border-primary-100 text-slate-600 hover:bg-primary-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleNextPage}
+            disabled={page === totalPages}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <span>Next</span>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
 
       {selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">

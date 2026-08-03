@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileText, Download, Calendar, Loader2, Plus, Store, Trash2, IndianRupee } from 'lucide-react';
+import { FileText, Download, Calendar, Loader2, Plus, Store, Trash2, IndianRupee, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import { adminApi } from '../utils/api';
@@ -23,6 +23,14 @@ export default function InvoicesPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState(storeIdParam || '');
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [storeIdParam]);
+
   useEffect(() => {
     if (storeIdParam) {
       setSelectedStoreId(storeIdParam);
@@ -41,9 +49,21 @@ export default function InvoicesPage() {
   });
 
   const invoicesQuery = useQuery({
-    queryKey: ['super-admin-b2b-invoices', storeIdParam],
-    queryFn: () => adminApi.getB2BInvoices({ limit: 50, storeId: storeIdParam || undefined }),
+    queryKey: ['super-admin-b2b-invoices', storeIdParam, page],
+    queryFn: () => adminApi.getB2BInvoices({ limit: 25, page, storeId: storeIdParam || undefined }),
   });
+
+  const invoices = invoicesQuery.data?.data || [];
+  const pagination = invoicesQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   const createInvoiceMutation = useMutation({
     mutationFn: (payload: any) => adminApi.createB2BInvoice(payload),
@@ -123,14 +143,19 @@ export default function InvoicesPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {invoicesQuery.data?.data.map((invoice: any) => (
+        {invoices.map((invoice: any, index) => (
           <div
             key={invoice._id}
             className="group relative overflow-hidden rounded-[2.5rem] border border-primary-100 bg-white p-7 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_20px_50px_rgba(45,106,79,0.12)]"
           >
             <div className="flex items-start justify-between">
-              <div className="rounded-[1.25rem] bg-primary-50 p-3.5 text-primary-600 transition-colors group-hover:bg-primary-600 group-hover:text-white">
-                <FileText size={24} />
+              <div className="flex items-center gap-2">
+                <span className="rounded-xl bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-500">
+                  #{(page - 1) * 25 + index + 1}
+                </span>
+                <div className="rounded-[1.25rem] bg-primary-50 p-3.5 text-primary-600 transition-colors group-hover:bg-primary-600 group-hover:text-white">
+                  <FileText size={24} />
+                </div>
               </div>
               <div className="text-right">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Total Amount</p>
@@ -172,7 +197,7 @@ export default function InvoicesPage() {
           </div>
         ))}
 
-        {invoicesQuery.data?.data.length === 0 && (
+        {invoices.length === 0 && (
           <div className="col-span-full flex flex-col items-center justify-center rounded-[3rem] border-2 border-dashed border-slate-200 bg-slate-50/50 py-24 text-center">
             <div className="mb-6 rounded-full bg-white p-8 shadow-xl">
               <FileText size={48} className="text-slate-200" />
@@ -182,6 +207,48 @@ export default function InvoicesPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-[1.5rem] border border-primary-100 bg-white p-4 shadow-sm mt-4">
+          <button
+            type="button"
+            onClick={handlePrevPage}
+            disabled={page === 1}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+            <span>Prev</span>
+          </button>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPage(p)}
+                className={`rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-wider transition ${
+                  page === p
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'bg-white border border-primary-100 text-slate-600 hover:bg-primary-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleNextPage}
+            disabled={page === totalPages}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <span>Next</span>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
 
       {isCreating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">

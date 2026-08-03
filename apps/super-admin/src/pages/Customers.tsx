@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowUpDown, TrendingUp, DollarSign, User, Edit2, Trash2, ShieldAlert } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, DollarSign, User, Edit2, Trash2, ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
@@ -15,7 +15,9 @@ const customerSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters'),
   email: z.string().trim().email('Enter a valid email').or(z.literal('')),
   mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
+  password: z.string().min(6, 'Password must be at least 6 characters').optional().or(z.literal('')),
   isActive: z.boolean(),
+  loyaltyPoints: z.number().min(0, 'Loyalty points must be at least 0'),
 });
 
 type CustomerFormInput = z.infer<typeof customerSchema>;
@@ -30,28 +32,48 @@ export default function CustomersPage() {
   const [sortBy, setSortBy] = useState<'orders' | 'spend' | 'lastOrder' | 'dateJoined' | 'name'>('lastOrder');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+
+  // Reset page to 1 when filters or sorting change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, sortBy, sortOrder]);
+
   // Modals & Details State
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
 
   // Alerts
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   const customersQuery = useQuery({
-    queryKey: ['admin-customers', debouncedSearch, statusFilter, sortBy, sortOrder],
+    queryKey: ['admin-customers', debouncedSearch, statusFilter, sortBy, sortOrder, page],
     queryFn: () =>
       adminApi.customers({
         search: debouncedSearch,
         isActive: statusFilter === 'all' ? undefined : statusFilter,
         sortBy,
         sortOrder,
-        limit: 100,
+        limit: 25,
+        page,
       }),
   });
 
   const customers = customersQuery.data?.data || [];
+  const pagination = customersQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const handlePrevPage = () => {
+    setPage((prev) => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   // Find selected customer within react query data so it reacts to updates automatically
   const selectedCustomer = useMemo(() => {
@@ -91,7 +113,9 @@ export default function CustomersPage() {
       name: '',
       email: '',
       mobile: '',
+      password: '',
       isActive: true,
+      loyaltyPoints: 0,
     },
   });
 
@@ -103,11 +127,38 @@ export default function CustomersPage() {
         email: editingCustomer.email || '',
         mobile: editingCustomer.mobile,
         isActive: editingCustomer.isActive ?? true,
+        loyaltyPoints: editingCustomer.loyaltyPoints ?? 0,
       });
     }
   }, [editingCustomer, reset]);
 
   // Mutations
+  const createMutation = useMutation({
+    mutationFn: (values: CustomerFormInput) => {
+      return adminApi.createCustomer(values);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] });
+      setSuccessMsg('Customer created successfully.');
+      setErrorMsg('');
+      setIsCreatingCustomer(false);
+      reset({
+        name: '',
+        email: '',
+        mobile: '',
+        password: '',
+        isActive: true,
+        loyaltyPoints: 0,
+      });
+      setTimeout(() => setSuccessMsg(''), 3000);
+    },
+    onError: (err) => {
+      setSuccessMsg('');
+      setErrorMsg(err instanceof Error ? err.message : 'Failed to create customer');
+      setTimeout(() => setErrorMsg(''), 5000);
+    },
+  });
+
   const updateMutation = useMutation({
     mutationFn: (values: CustomerFormInput) => {
       if (!editingCustomer) throw new Error('No customer selected');
@@ -150,7 +201,29 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Platform Customers" subtitle="View customer statistics, manage account status, and check purchase patterns." />
+      <PageHeader
+        title="Platform Customers"
+        subtitle="View customer statistics, manage account status, and check purchase patterns."
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              reset({
+                name: '',
+                email: '',
+                mobile: '',
+                password: '',
+                isActive: true,
+                loyaltyPoints: 0,
+              });
+              setIsCreatingCustomer(true);
+            }}
+            className="cursor-pointer rounded-2xl bg-primary-600 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white hover:bg-primary-700 transition shadow-sm"
+          >
+            Create Customer
+          </button>
+        }
+      />
 
       {/* Insights Banner */}
       {insights && (
@@ -187,7 +260,7 @@ export default function CustomersPage() {
             </div>
             <div>
               <p className="text-xs font-black uppercase tracking-[0.1em] text-slate-400">Total Customers</p>
-              <p className="text-base font-black text-slate-900 mt-0.5">{customers.length}</p>
+              <p className="text-base font-black text-slate-900 mt-0.5">{pagination?.total || 0}</p>
               <p className="text-xs font-semibold text-slate-500 mt-0.5">
                 Popular: {insights.topPopularProduct}
               </p>
@@ -277,7 +350,7 @@ export default function CustomersPage() {
             No customers match your criteria.
           </div>
         ) : (
-          customers.map((customer) => (
+          customers.map((customer, index) => (
             <div
               key={customer.id}
               className="rounded-[1.5rem] border border-primary-100 bg-white p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between transition hover:bg-primary-50/40"
@@ -288,6 +361,9 @@ export default function CustomersPage() {
                 className="flex-1 text-left flex flex-col gap-1"
               >
                 <div className="flex items-center gap-2 flex-wrap">
+                  <span className="rounded-xl bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-500">
+                    #{(page - 1) * 25 + index + 1}
+                  </span>
                   <span className="text-lg font-black text-slate-900">{customer.name}</span>
                   {customer.orderCount >= 5 && (
                     <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary-700">
@@ -342,6 +418,48 @@ export default function CustomersPage() {
           ))
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-[1.5rem] border border-primary-100 bg-white p-4 shadow-sm">
+          <button
+            type="button"
+            onClick={handlePrevPage}
+            disabled={page === 1}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+            <span>Prev</span>
+          </button>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPage(p)}
+                className={`rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-wider transition ${
+                  page === p
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'bg-white border border-primary-100 text-slate-600 hover:bg-primary-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleNextPage}
+            disabled={page === totalPages}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <span>Next</span>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Customer Details Modal */}
       {selectedCustomer ? (
@@ -506,6 +624,20 @@ export default function CustomersPage() {
                 {errors.email && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.email.message}</p>}
               </div>
 
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Loyalty Points</label>
+                <input
+                  type="number"
+                  {...register('loyaltyPoints', { valueAsNumber: true })}
+                  placeholder="0"
+                  min={0}
+                  className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                    errors.loyaltyPoints ? 'border-rose-300' : 'border-primary-100'
+                  }`}
+                />
+                {errors.loyaltyPoints && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.loyaltyPoints.message}</p>}
+              </div>
+
               <div className="flex items-center justify-between rounded-2xl border border-primary-100 bg-primary-50/50 p-4">
                 <div>
                   <p className="text-sm font-black text-slate-900">Active Status</p>
@@ -580,6 +712,114 @@ export default function CustomersPage() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Customer Modal */}
+      {isCreatingCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4 py-6">
+          <div className="w-full max-w-lg rounded-[2rem] border border-primary-100 bg-white p-6 shadow-xl">
+            <h2 className="text-2xl font-black text-slate-900">Create Customer</h2>
+            <p className="mt-1 text-sm text-slate-500">Add a new customer to the platform.</p>
+
+            <form onSubmit={handleSubmit((values) => createMutation.mutate(values))} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Name</label>
+                <input
+                  {...register('name')}
+                  placeholder="Customer name"
+                  className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                    errors.name ? 'border-rose-300' : 'border-primary-100'
+                  }`}
+                />
+                {errors.name && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.name.message}</p>}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Mobile Number</label>
+                <input
+                  {...register('mobile')}
+                  placeholder="Mobile number"
+                  maxLength={10}
+                  onInput={(event) => {
+                    event.currentTarget.value = event.currentTarget.value.replace(/\D/g, '').slice(0, 10);
+                  }}
+                  className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                    errors.mobile ? 'border-rose-300' : 'border-primary-100'
+                  }`}
+                />
+                {errors.mobile && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.mobile.message}</p>}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Email Address</label>
+                <input
+                  {...register('email')}
+                  placeholder="email@example.com (optional)"
+                  className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                    errors.email ? 'border-rose-300' : 'border-primary-100'
+                  }`}
+                />
+                {errors.email && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.email.message}</p>}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Password</label>
+                <input
+                  {...register('password')}
+                  type="text"
+                  placeholder="Password (optional, default is Vaniki@123)"
+                  className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                    errors.password ? 'border-rose-300' : 'border-primary-100'
+                  }`}
+                />
+                {errors.password && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.password.message}</p>}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Loyalty Points</label>
+                <input
+                  type="number"
+                  {...register('loyaltyPoints', { valueAsNumber: true })}
+                  placeholder="0"
+                  min={0}
+                  className={`w-full rounded-2xl border bg-primary-50 px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 ${
+                    errors.loyaltyPoints ? 'border-rose-300' : 'border-primary-100'
+                  }`}
+                />
+                {errors.loyaltyPoints && <p className="mt-1 text-xs font-semibold text-rose-600">{errors.loyaltyPoints.message}</p>}
+              </div>
+
+              <div className="flex items-center justify-between rounded-2xl border border-primary-100 bg-primary-50/50 p-4">
+                <div>
+                  <p className="text-sm font-black text-slate-900">Active Status</p>
+                  <p className="text-xs text-slate-500">Enable or disable this customer's account.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  {...register('isActive')}
+                  className="h-5 w-5 rounded border-primary-300 text-primary-600 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  className="flex-1 cursor-pointer rounded-2xl bg-primary-500 py-3 text-sm font-black uppercase tracking-[0.18em] text-white hover:bg-primary-600 disabled:cursor-not-allowed disabled:bg-primary-200 transition"
+                >
+                  {createMutation.isPending ? 'Creating...' : 'Create Customer'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingCustomer(false)}
+                  className="flex-1 cursor-pointer rounded-2xl border border-primary-100 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-600 hover:bg-primary-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

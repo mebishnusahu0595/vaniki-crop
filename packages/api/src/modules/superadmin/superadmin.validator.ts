@@ -175,6 +175,18 @@ export const updateCustomerSchema = z.object({
     email: z.string().trim().email().optional().or(z.literal('')).optional(),
     mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Invalid mobile number').optional(),
     isActive: boolish.optional(),
+    loyaltyPoints: numberFromInput(z.number().min(0)).optional(),
+  }),
+});
+
+export const createCustomerSchema = z.object({
+  body: z.object({
+    name: z.string().trim().min(2).max(100),
+    email: z.string().trim().email().optional().or(z.literal('')),
+    mobile: z.string().trim().regex(/^[6-9]\d{9}$/, 'Invalid mobile number'),
+    password: z.string().min(6).optional(),
+    isActive: boolish.optional(),
+    loyaltyPoints: numberFromInput(z.number().min(0)).optional(),
   }),
 });
 
@@ -228,6 +240,7 @@ export const orderStatusUpdateSchema = z.object({
   body: z.object({
     status: z.enum(['confirmed', 'processing', 'shipped', 'delivered', 'cancelled']),
     note: z.string().trim().max(200).optional(),
+    paymentStatus: z.enum(['pending', 'paid', 'failed', 'refunded']).optional(),
   }),
 });
 

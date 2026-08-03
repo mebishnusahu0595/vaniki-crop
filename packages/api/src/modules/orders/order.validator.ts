@@ -94,6 +94,7 @@ export const updateOrderStatusSchema = z.object({
   body: z.object({
     status: z.enum(['confirmed', 'processing', 'shipped', 'delivered', 'cancelled']),
     note: z.string().trim().max(200).optional(),
+    paymentStatus: z.enum(['pending', 'paid', 'failed', 'refunded']).optional(),
   }),
   params: z.object({
     id: objectIdSchema,

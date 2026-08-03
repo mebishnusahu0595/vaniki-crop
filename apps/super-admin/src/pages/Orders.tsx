@@ -89,10 +89,11 @@ export default function OrdersPage() {
   };
 
   const today = formatDateToYYYYMMDD(new Date());
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [nextStatus, setNextStatus] = useState('confirmed');
+  const [nextPaymentStatus, setNextPaymentStatus] = useState('');
   const [note, setNote] = useState('');
 
   const handlePrevDay = () => {
@@ -143,11 +144,12 @@ export default function OrdersPage() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: () => adminApi.updateOrderStatus(selectedOrderId!, { status: nextStatus, note }),
+    mutationFn: () => adminApi.updateOrderStatus(selectedOrderId!, { status: nextStatus, note, ...(nextPaymentStatus ? { paymentStatus: nextPaymentStatus } : {}) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['super-admin-orders'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-order-detail', selectedOrderId] });
       setNote('');
+      setNextPaymentStatus('');
     },
   });
 
@@ -204,6 +206,13 @@ export default function OrdersPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-[1.5rem] border border-primary-100 bg-white p-4 shadow-[0_12px_40px_rgba(15,23,42,0.03)]">
         <div className="flex items-center gap-2">
           <button
+            onClick={() => { setStartDate(''); setEndDate(''); }}
+            className={`rounded-2xl border border-primary-100 px-5 py-2 text-xs font-black uppercase tracking-[0.16em] transition ${!startDate && !endDate ? 'bg-primary-500 text-white' : 'bg-white text-slate-600 hover:bg-primary-50 hover:text-slate-900'}`}
+          >
+            All Time
+          </button>
+
+          <button
             onClick={handlePrevDay}
             className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary-100 bg-white text-slate-600 hover:bg-primary-50 hover:text-slate-900 transition"
             title="Previous Day"
@@ -229,7 +238,7 @@ export default function OrdersPage() {
 
         <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-primary-700">
           <Calendar size={16} />
-          <span>Active Period: {startDate === endDate ? `${startDate}` : `${startDate} to ${endDate}`}</span>
+          <span>Active Period: {!startDate && !endDate ? 'All Time' : startDate === endDate ? `${startDate}` : `${startDate} to ${endDate}`}</span>
         </div>
       </div>
 
@@ -300,7 +309,7 @@ export default function OrdersPage() {
         {ordersQuery.data?.data.length === 0 && (
           <div className="py-12 text-center">
             <p className="text-lg font-black text-slate-400">
-              {startDate === today && endDate === today ? 'No orders today' : 'No orders found for the selected period'}
+              {!startDate && !endDate ? 'No orders found' : startDate === today && endDate === today ? 'No orders today' : 'No orders found for the selected period'}
             </p>
           </div>
         )}
@@ -340,7 +349,7 @@ export default function OrdersPage() {
         {ordersQuery.data?.data.length === 0 && (
           <div className="rounded-[1.5rem] border border-dashed border-primary-200 bg-primary-50/30 py-12 text-center">
             <p className="text-lg font-black text-slate-400">
-              {startDate === today && endDate === today ? 'No orders today' : 'No orders found for the selected period'}
+              {!startDate && !endDate ? 'No orders found' : startDate === today && endDate === today ? 'No orders today' : 'No orders found for the selected period'}
             </p>
           </div>
         )}
@@ -441,6 +450,15 @@ export default function OrdersPage() {
                         <option key={item} value={item}>{item}</option>
                       ))}
                     </select>
+                    <div>
+                      <label className="mb-1 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Payment Status</label>
+                      <select value={nextPaymentStatus} onChange={(event) => setNextPaymentStatus(event.target.value)} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
+                        <option value="">Don't change</option>
+                        {['pending', 'paid', 'failed', 'refunded'].map((item) => (
+                          <option key={item} value={item}>{item}</option>
+                        ))}
+                      </select>
+                    </div>
                     <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional note" className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
                     <button onClick={() => updateStatusMutation.mutate()} className="w-full rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white">
                       Update Status

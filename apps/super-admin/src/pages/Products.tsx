@@ -1,4 +1,4 @@
-import { Ban, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Ban, Pencil, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -14,10 +14,24 @@ export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
+  const page = parseInt(searchParams.get('page') || '1', 10);
+
   const productsQuery = useQuery({
-    queryKey: ['admin-products', search, category],
-    queryFn: () => adminApi.products({ search, category, limit: 100 }),
+    queryKey: ['admin-products', search, category, page],
+    queryFn: () => adminApi.products({ search, category, limit: 25, page }),
   });
+
+  const pagination = productsQuery.data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const handlePageChange = (newPage: number) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (newPage > 1) next.set('page', String(newPage));
+      else next.delete('page');
+      return next;
+    });
+  };
   const categoriesQuery = useQuery({
     queryKey: ['admin-product-categories'],
     queryFn: () => adminApi.categories({ limit: 100 }),
@@ -91,6 +105,7 @@ export default function ProductsPage() {
             const next = new URLSearchParams(current);
             if (event.target.value) next.set('search', event.target.value);
             else next.delete('search');
+            next.delete('page');
             return next;
           })}
           placeholder="Search by product name or tags"
@@ -102,6 +117,7 @@ export default function ProductsPage() {
             const next = new URLSearchParams(current);
             if (event.target.value) next.set('category', event.target.value);
             else next.delete('category');
+            next.delete('page');
             return next;
           })}
           className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-slate-900 outline-none"
@@ -117,6 +133,7 @@ export default function ProductsPage() {
         <table className="min-w-full">
           <thead className="bg-primary-50/70">
             <tr className="text-left text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+              <th className="px-5 py-4">S.No.</th>
               <th className="px-5 py-4">Image</th>
               <th className="px-5 py-4">Product</th>
               <th className="px-5 py-4">Category</th>
@@ -127,13 +144,14 @@ export default function ProductsPage() {
             </tr>
           </thead>
           <tbody>
-            {productsQuery.data?.data.map((product) => {
+            {(productsQuery.data?.data || []).map((product, index) => {
               const totalStock = product.variants.reduce((sum, variant) => sum + variant.stock, 0);
               const firstImage = product.images?.[0];
               const imageUrl = firstImage ? resolveMediaUrl(firstImage.url, firstImage.publicId) : null;
 
               return (
                 <tr key={product.id} className="border-t border-primary-100">
+                  <td className="px-5 py-4 text-sm font-black text-slate-500">{(page - 1) * 25 + index + 1}</td>
                   <td className="px-5 py-4">
                     <div className="h-10 w-10 overflow-hidden rounded-lg bg-primary-50">
                       {imageUrl ? (
@@ -225,12 +243,17 @@ export default function ProductsPage() {
       </div>
 
       <div className="grid gap-4 lg:hidden">
-        {productsQuery.data?.data.map((product) => (
+        {(productsQuery.data?.data || []).map((product, index) => (
           <div key={product.id} className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-lg font-black text-slate-900">{product.name}</p>
-                <p className="mt-1 text-sm text-slate-500">{product.category?.name || 'Uncategorized'}</p>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="rounded-xl bg-slate-100 px-2 py-0.5 text-xs font-black text-slate-500">
+                    #{(page - 1) * 25 + index + 1}
+                  </span>
+                  <p className="text-lg font-black text-slate-900">{product.name}</p>
+                </div>
+                <p className="text-sm text-slate-500">{product.category?.name || 'Uncategorized'}</p>
               </div>
               <button
                 onClick={async () => {
@@ -291,6 +314,48 @@ export default function ProductsPage() {
           </div>
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-[1.5rem] border border-primary-100 bg-white p-4 shadow-sm">
+          <button
+            type="button"
+            onClick={() => handlePageChange(Math.max(page - 1, 1))}
+            disabled={page === 1}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={16} />
+            <span>Prev</span>
+          </button>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => handlePageChange(p)}
+                className={`rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-wider transition ${
+                  page === p
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'bg-white border border-primary-100 text-slate-600 hover:bg-primary-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handlePageChange(Math.min(page + 1, totalPages))}
+            disabled={page === totalPages}
+            className="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-slate-600 hover:bg-primary-50 transition disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <span>Next</span>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
