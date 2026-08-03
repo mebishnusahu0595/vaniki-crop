@@ -151,6 +151,9 @@ export default function OrdersPage() {
       setNote('');
       setNextPaymentStatus('');
     },
+    onError: (error: any) => {
+      alert(error?.response?.data?.message || error?.message || 'Failed to update order status');
+    },
   });
 
   const detail = orderDetailQuery.data;
@@ -460,8 +463,8 @@ export default function OrdersPage() {
                       </select>
                     </div>
                     <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional note" className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
-                    <button onClick={() => updateStatusMutation.mutate()} className="w-full rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white">
-                      Update Status
+                    <button onClick={() => updateStatusMutation.mutate()} disabled={updateStatusMutation.isPending} className="w-full rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white disabled:opacity-50">
+                      {updateStatusMutation.isPending ? 'Updating...' : 'Update Status'}
                     </button>
                   </div>
                 </div>

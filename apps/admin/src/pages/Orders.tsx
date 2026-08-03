@@ -59,6 +59,9 @@ export default function OrdersPage() {
       setNote('');
       setNextPaymentStatus('');
     },
+    onError: (error: any) => {
+      alert(error?.response?.data?.message || error?.message || 'Failed to update order status');
+    },
   });
 
   const detail = orderDetailQuery.data;
@@ -380,9 +383,10 @@ export default function OrdersPage() {
                       </div>
                       <button
                         onClick={() => updateStatusMutation.mutate()}
-                        className="w-full rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white"
+                        disabled={updateStatusMutation.isPending}
+                        className="w-full rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white disabled:opacity-50"
                       >
-                        Update Status
+                        {updateStatusMutation.isPending ? 'Updating...' : 'Update Status'}
                       </button>
                     </div>
                   </div>

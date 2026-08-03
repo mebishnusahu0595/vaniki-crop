@@ -839,16 +839,18 @@ export async function updateOrderStatus(orderId: string, input: any, adminId: st
   }
 
   const oldStatus = order.status as string;
-  if (oldStatus === 'delivered') {
+  if (oldStatus === 'delivered' && status !== 'delivered') {
     throw new AppError('Order status has been locked as delivered and cannot be changed.', 400);
   }
 
-  order.status = status;
+  if (oldStatus !== 'delivered') {
+    order.status = status;
+  }
   if (paymentStatus) {
     order.paymentStatus = paymentStatus;
   }
   order.statusHistory.push({
-    status,
+    status: oldStatus === 'delivered' ? 'delivered' : status,
     note: paymentStatus ? `${note || ''}${note ? ' | ' : ''}Payment: ${paymentStatus}`.trim() : note,
     updatedBy: adminId as any,
     timestamp: new Date(),
