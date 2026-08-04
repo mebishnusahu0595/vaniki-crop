@@ -1,5 +1,6 @@
 import { useAuthStore } from '../store/useAuthStore';
 import { useStoreStore } from '../store/useStoreStore';
+import { useServiceModeStore } from '../store/useServiceModeStore';
 import { API_BASE_URL } from '../config/api';
 import { resolveMediaUrl } from '../utils/media';
 import type {
@@ -147,9 +148,15 @@ const normalizeHomepageData = (homepage: HomepageData): HomepageData => ({
 async function request<T>(path: string, options: RequestOptions = {}) {
   const token = useAuthStore.getState().token;
   const storeId = useStoreStore.getState().selectedStore?.id;
+  const serviceMode = useServiceModeStore.getState().mode;
   const url = new URL(`${API_BASE_URL}${path}`);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  // Auto-inject serviceMode for product-related endpoints
+  if (storeId && serviceMode) {
+    url.searchParams.set('serviceMode', serviceMode);
+  }
 
   if (options.params) {
     Object.entries(options.params).forEach(([key, value]) => {

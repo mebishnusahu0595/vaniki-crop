@@ -219,7 +219,8 @@ export async function getProducts(
         for (const variant of product.variants) {
           const key = `${product._id.toString()}_${variant._id!.toString()}`;
           const dealerQty = inventoryMap.get(key) || 0;
-          variant.stock = variant.stock + dealerQty;
+          // Pickup + store selected = show only dealer stock; delivery = full stock
+          variant.stock = (storeId && query.serviceMode === 'pickup') ? dealerQty : variant.stock + dealerQty;
         }
       }
     }
@@ -342,7 +343,7 @@ export async function searchProducts(
  *
  * @param slug - The product's URL slug
  */
-export async function getProductBySlug(slug: string, storeId?: string): Promise<{
+export async function getProductBySlug(slug: string, storeId?: string, serviceMode?: string): Promise<{
   product: IProduct;
   reviews: any[];
 }> {
@@ -379,7 +380,9 @@ export async function getProductBySlug(slug: string, storeId?: string): Promise<
     for (const variant of product.variants) {
       const key = variant._id!.toString();
       const dealerQty = inventoryMap.get(key) || 0;
-      variant.stock = variant.stock + dealerQty;
+      // When pickup mode with a specific store, show only that store's dealer stock
+      // When delivery mode or no store, show base stock + dealer stock
+      variant.stock = (storeId && serviceMode === 'pickup') ? dealerQty : variant.stock + dealerQty;
     }
   }
 

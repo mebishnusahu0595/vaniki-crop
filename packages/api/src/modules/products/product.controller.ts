@@ -52,7 +52,8 @@ export async function searchProducts(req: Request, res: Response, next: NextFunc
 export async function getProductBySlug(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const storeId = req.storeId || req.userStoreId;
-    const { product, reviews } = await productService.getProductBySlug(req.params.slug as string, storeId);
+    const serviceMode = req.query.serviceMode as string | undefined;
+    const { product, reviews } = await productService.getProductBySlug(req.params.slug as string, storeId, serviceMode);
     res.status(200).json({
       success: true,
       data: {

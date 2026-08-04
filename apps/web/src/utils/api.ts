@@ -2,6 +2,7 @@ import axios, { type AxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../config/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { useStoreStore } from '../store/useStoreStore';
+import { useServiceModeStore } from '../store/useServiceModeStore';
 import { resolveMediaUrl } from './media';
 import type {
   AuthUser,
@@ -48,6 +49,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   const storeId = useStoreStore.getState().selectedStore?.id;
+  const serviceMode = useServiceModeStore.getState().mode;
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -55,6 +57,10 @@ api.interceptors.request.use((config) => {
 
   if (storeId) {
     config.headers['X-Store-Id'] = storeId;
+    // Auto-inject serviceMode as query param for product stock calculation
+    if (serviceMode) {
+      config.params = { ...config.params, serviceMode };
+    }
   }
 
   return config;
