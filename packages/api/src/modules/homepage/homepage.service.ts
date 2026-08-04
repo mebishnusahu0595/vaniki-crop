@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { Banner } from '../../models/Banner.model.js';
 import { Category } from '../../models/Category.model.js';
+import { DealerInventory } from '../../models/DealerInventory.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Testimonial } from '../../models/Testimonial.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
@@ -49,6 +50,18 @@ export async function getHomepageData(storeId?: string) {
     .sort({ sortOrder: 1, createdAt: -1 })
     .limit(8);
 
+  // Get product IDs that have dealer inventory for this store (even if not directly assigned)
+  let inventoryProductIds: mongoose.Types.ObjectId[] = [];
+  if (sId) {
+    const inventoryDocs = await DealerInventory.find({ storeId: sId, quantity: { $gt: 0 } }).select('productId').lean();
+    inventoryProductIds = inventoryDocs.map((doc) => doc.productId);
+  }
+
+  // Build store visibility filter: product assigned to store OR has dealer inventory for it OR global (empty storeId)
+  const storeVisibilityFilter = sId
+    ? { $or: [{ storeId: sId }, { storeId: { $size: 0 } }, { _id: { $in: inventoryProductIds } }] }
+    : {};
+
   // 3. Sale Products (isFeatured=true, with discount calculating from first variant)
   // We use aggregation to calculate discount on the fly for sorting
   const saleProducts = await Product.aggregate([
@@ -56,7 +69,7 @@ export async function getHomepageData(storeId?: string) {
       $match: { 
         isActive: true, 
         isFeatured: true,
-        ...(sId ? { storeId: sId } : {})
+        ...storeVisibilityFilter,
       } 
     },
     {
@@ -99,7 +112,7 @@ export async function getHomepageData(storeId?: string) {
   // 4. Best Sellers (Higher totalSold)
   const bestSellers = await Product.find({ 
     isActive: true,
-    ...(sId ? { storeId: sId } : {})
+    ...storeVisibilityFilter,
   })
     .sort({ totalSold: -1 })
     .limit(12)

@@ -135,8 +135,10 @@ export async function getProducts(
   // Store filter (query param takes precedence over user's selected store)
   const storeId = query.storeId || query.store || userStoreId;
   if (storeId) {
-    // Products with no store assignment are treated as global and should be visible in every store context.
-    filter.$or = [{ storeId }, { storeId: { $size: 0 } }];
+    // Include products that: are assigned to this store, are global (empty storeId), or have dealer inventory
+    const inventoryDocs = await DealerInventory.find({ storeId, quantity: { $gt: 0 } }).select('productId').lean();
+    const inventoryProductIds = inventoryDocs.map((doc) => doc.productId);
+    filter.$or = [{ storeId }, { storeId: { $size: 0 } }, { _id: { $in: inventoryProductIds } }];
   }
 
   // Category filter (by slug or ID)
