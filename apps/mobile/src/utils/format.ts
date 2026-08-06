@@ -1,4 +1,4 @@
-import type { Address, Product } from '../types/storefront';
+import type { Address, Product, Store } from '../types/storefront';
 import { resolveMediaUrl } from './media';
 
 const PLACEHOLDER_ADDRESS_VALUES = new Set(['pending', 'na', 'n/a', 'none', 'null', 'undefined']);
@@ -18,6 +18,17 @@ export function formatStoreAddress(address?: Partial<Address> | null) {
       return Boolean(normalized) && !PLACEHOLDER_ADDRESS_VALUES.has(normalized) && normalized !== '000000';
     })
     .join(', ');
+}
+
+export function buildStoreDirectionsUrl(store: Pick<Store, 'location' | 'address'>) {
+  const coordinates = store.location?.coordinates;
+  if (coordinates && coordinates.length === 2) {
+    // GeoJSON stores coordinates as [longitude, latitude]
+    return `https://www.google.com/maps/search/?api=1&query=${coordinates[1]},${coordinates[0]}`;
+  }
+
+  const query = encodeURIComponent(formatStoreAddress(store.address) || '');
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
 export function getPrimaryImage(product?: Product | null, fallbackUrl?: string) {

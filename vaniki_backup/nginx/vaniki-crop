@@ -1,0 +1,195 @@
+# 1. Main Website & API Proxy (vanikicrop.com)
+server {
+    server_name vanikicrop.com www.vanikicrop.com;
+
+    # Static web app files
+    root /var/www/vaniki-crop/apps/web/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API Proxy (Handles /api and /api/)
+    location /api {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Uploads directory serving
+    location /uploads/ {
+        alias /var/www/vaniki-crop/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/vanikicrop.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/vanikicrop.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+# 2. Admin Panel (admin.vanikicrop.com)
+server {
+    server_name admin.vanikicrop.com;
+
+    root /var/www/vaniki-crop/apps/admin/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API Proxy (Handles /api and /api/)
+    location /api {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/vanikicrop.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/vanikicrop.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+# 3. Super Admin Panel (superadmin.vanikicrop.com)
+server {
+    server_name superadmin.vanikicrop.com;
+
+    root /var/www/vaniki-crop/apps/super-admin/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API Proxy (Handles /api and /api/)
+    location /api {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/vanikicrop.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/vanikicrop.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+# 4. Vue Website served on vanikicropscience.com (http://vanikicropscience.com)
+server {
+    server_name vanikicropscience.com www.vanikicropscience.com;
+
+    # Static web app files for the Vue website
+    root /var/www/vanikicrop-website/dist;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API Proxy (Handles /api and /api/)
+    location /api {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Uploads directory serving
+    location /uploads/ {
+        alias /var/www/vaniki-crop/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/vanikicropscience.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/vanikicropscience.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+
+}
+
+server {
+    if ($host = www.vanikicrop.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    if ($host = vanikicrop.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name vanikicrop.com www.vanikicrop.com;
+    return 404; # managed by Certbot
+}
+
+server {
+    if ($host = admin.vanikicrop.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name admin.vanikicrop.com;
+    return 404; # managed by Certbot
+}
+
+server {
+    if ($host = superadmin.vanikicrop.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name superadmin.vanikicrop.com;
+    return 404; # managed by Certbot
+}
+
+server {
+    if ($host = www.vanikicropscience.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    if ($host = vanikicropscience.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name vanikicropscience.com www.vanikicropscience.com;
+    return 404; # managed by Certbot
+
+
+
+
+}

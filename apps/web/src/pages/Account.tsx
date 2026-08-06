@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2, LogOut, FileText, Scale } from 'lucide-react';
+import { Package, User, KeyRound, X, Heart, Copy, Gift, CheckCircle2, LogOut, FileText, Scale, Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useServiceModeStore } from '../store/useServiceModeStore';
 import { useStoreStore } from '../store/useStoreStore';
 import { storefrontApi } from '../utils/api';
-import { currencyFormatter, formatStoreAddress } from '../utils/format';
+import { buildStoreDirectionsUrl, currencyFormatter, formatStoreAddress } from '../utils/format';
 import type { OrderStatusHistoryEntry, Product, ServiceMode } from '../types/storefront';
 import { cn } from '../utils/cn';
 import { resolveMediaUrl } from '../utils/media';
@@ -354,6 +354,17 @@ const Account: React.FC = () => {
             <p className="text-xs font-medium text-primary-900/55">
               {isLoadingPickupStores ? t('common.loading') : selectedStore ? formatStoreAddress(selectedStore.address) : t('checkoutPage.choosePickupHint')}
             </p>
+            {selectedStore ? (
+              <a
+                href={buildStoreDirectionsUrl(selectedStore)}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-primary transition hover:bg-primary-100"
+              >
+                <Navigation size={13} />
+                {t('storeSelector.getDirections')}
+              </a>
+            ) : null}
           </div>
         ) : (
           <p className="mt-4 text-xs font-medium text-primary-900/55">{t('storeSelector.addressHint')}</p>
@@ -544,6 +555,20 @@ const Account: React.FC = () => {
                     <p className="text-xs font-medium text-primary-900/55">
                       {isLoadingPickupStores ? t('common.loading') : t('header.pickupFrom')}
                     </p>
+                    {(() => {
+                      const chosenStore = pickupStores.find((store) => store.id === profilePickupStoreId);
+                      return chosenStore ? (
+                        <a
+                          href={buildStoreDirectionsUrl(chosenStore)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-primary transition hover:bg-primary-100"
+                        >
+                          <Navigation size={13} />
+                          {t('storeSelector.getDirections')}
+                        </a>
+                      ) : null;
+                    })()}
                   </div>
                 ) : (
                   <p className="mt-4 text-xs font-medium text-primary-900/55">{t('storeSelector.addressHint')}</p>
@@ -753,7 +778,7 @@ const Account: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary-500">Fulfillment</p>
-                      <p className="mt-1 text-sm font-black text-primary-900">{orderDetail.serviceMode === 'delivery' ? 'Delivery' : 'Pickup'}</p>
+                      <p className="mt-1 text-sm font-black text-primary-900">{orderDetail.serviceMode === 'delivery' ? 'Delivery' : 'Store'}</p>
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary-500">Subtotal</p>
@@ -762,7 +787,7 @@ const Account: React.FC = () => {
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary-500">Delivery Charge</p>
                       <p className="mt-1 text-sm font-black text-primary-900">
-                        {orderDetail.serviceMode === 'pickup' ? 'Pickup - no charge' : currencyFormatter.format(orderDetail.deliveryCharge || 0)}
+                        {orderDetail.serviceMode === 'pickup' ? 'Store - no charge' : currencyFormatter.format(orderDetail.deliveryCharge || 0)}
                       </p>
                     </div>
                   </div>

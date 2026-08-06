@@ -53,6 +53,20 @@ export function formatStoreAddress(
     .join(', ') || i18n.t('storeSelector.chooseStore');
 }
 
+export function buildStoreDirectionsUrl(store: {
+  location?: { coordinates?: [number, number] } | null;
+  address?: Parameters<typeof formatStoreAddress>[0];
+}) {
+  const coordinates = store.location?.coordinates;
+  if (coordinates && coordinates.length === 2) {
+    // GeoJSON stores coordinates as [longitude, latitude]
+    return `https://www.google.com/maps/search/?api=1&query=${coordinates[1]},${coordinates[0]}`;
+  }
+
+  const query = encodeURIComponent(formatStoreAddress(store.address));
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+}
+
 export function getDiscountPercent(mrp: number, price: number) {
   if (!mrp || mrp <= price) return 0;
   return Math.round(((mrp - price) / mrp) * 100);

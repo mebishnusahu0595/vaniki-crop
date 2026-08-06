@@ -186,7 +186,7 @@ function OrderDetailPopup({ order, onClose }: { order: Order | null; onClose: ()
                 <View className="flex-row justify-between">
                   <Text className="text-sm text-primary-900/60">Delivery Charge</Text>
                   <Text className="text-sm font-black text-primary-900">
-                    {order.serviceMode === 'pickup' ? 'Free (Pickup)' : currencyFormatter.format(order.deliveryCharge || 0)}
+                    {order.serviceMode === 'pickup' ? 'Free (Store)' : currencyFormatter.format(order.deliveryCharge || 0)}
                   </Text>
                 </View>
                 <View className="mt-1 flex-row justify-between border-t border-primary-100 pt-3">

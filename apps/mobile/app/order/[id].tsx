@@ -255,7 +255,7 @@ export default function OrderDetailScreen() {
               <View className="flex-row justify-between">
                 <Text className="text-sm text-primary-900/60">Delivery Charge</Text>
                 <Text className="text-sm font-black text-primary-900">
-                  {order.serviceMode === 'pickup' ? 'Free (Pickup)' : currencyFormatter.format(order.deliveryCharge || 0)}
+                  {order.serviceMode === 'pickup' ? 'Free (Store)' : currencyFormatter.format(order.deliveryCharge || 0)}
                 </Text>
               </View>
               <View className="flex-row justify-between border-t border-primary-100 pt-3 mt-1">
@@ -268,14 +268,14 @@ export default function OrderDetailScreen() {
           {/* Delivery Address */}
           <View className="rounded-[28px] bg-white border border-primary-100 p-5 mb-4 shadow-sm">
             <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500 mb-3">
-              {order.serviceMode === 'pickup' ? 'Pickup Location' : 'Delivery Address'}
+              {order.serviceMode === 'pickup' ? 'Store Location' : 'Delivery Address'}
             </Text>
             <Text className="text-sm leading-6 text-primary-900/70">
               {order.shippingAddress
                 ? `${order.shippingAddress.name ? order.shippingAddress.name + ', ' : ''}${formatStoreAddress(order.shippingAddress)}`
                 : order.storeId?.name
                 ? `${order.storeId.name}${order.storeId.address ? ' — ' + formatStoreAddress(order.storeId.address) : ''}`
-                : 'Pickup from selected store'}
+                : 'From selected store'}
             </Text>
           </View>
 

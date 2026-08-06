@@ -1,0 +1,1223 @@
+{
+  "company": "Vaniki Crop",
+  "website": "https://vanikicrop.com",
+  "products": [
+    {
+      "id": "69e0cef8f0b2cf9ae1debb20",
+      "name": "VASH SUPER",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Bifenthrin",
+      "composition": "Bifenthrin 10% EC",
+      "formulation": "EC (Emulsifiable Concentrate)",
+      "description": "VASH SUPER is a premier broad-spectrum synthetic pyrethroid insecticide and termiticide formulation containing Bifenthrin 10% EC. It acts on the nervous system of insects, disrupting sodium channels, which leads to rapid paralysis and death. This formulation is highly effective against both chewing and sucking pests, making it a versatile crop protection product. Farmers rely on VASH SUPER to safeguard high-value field crops like cotton and paddy, and plantation crops like tea. It is also widely recommended as a soil termiticide to protect sugarcane crops and building foundations from termite damage.\n\nFor optimal results, VASH SUPER should be applied at a dosage of 200–400 ml per acre mixed with sufficient water to ensure thorough coverage of the plant canopy. Spraying should be initiated at the first appearance of pests, preferably during the early morning or late afternoon when wind speeds are low and temperatures are moderate. When using it as a termiticide, apply as a soil drench around the root zone or structural foundations. Appropriate protective equipment should be worn during application, and safety guidelines must be strictly followed.",
+      "benefits": [
+        "Broad-spectrum control targeting both sucking and chewing insect pests.",
+        "Unique termiticide and insecticide dual action for sugarcane and wood structures.",
+        "Strong contact and stomach action ensuring immediate knockdown of target insects.",
+        "Excellent residual efficacy and resistance to wash-off by rain."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Cotton",
+        "Sugarcane",
+        "Tea",
+        "Vegetables"
+      ],
+      "target_pests": [
+        "Bollworms",
+        "Whiteflies",
+        "Stem Borers",
+        "Leaf Folders",
+        "Termites",
+        "Mites"
+      ],
+      "dosage": "200 - 400 ml per acre",
+      "application_method": "Foliar Spray or Soil Drenching",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml"
+      ],
+      "mrp": "850 - 1250",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492631768-c5024e5b-f13a-44fb-b1fd-af9985b93241.png",
+      "product_url": "https://vanikicrop.com/product/vash-super",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e0d750f0b2cf9ae1debb4e",
+      "name": "MATIX",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Dinotefuran + Pymetrozine",
+      "composition": "Dinotefuran 15% + Pymetrozine 45% WG",
+      "formulation": "WG (Water Dispersible Granules)",
+      "description": "MATIX is a highly advanced, dual-action insecticide containing Dinotefuran 15% and Pymetrozine 45% WG. This combination targets the nervous system and feeding mechanisms of sap-sucking insects, particularly plant hoppers in paddy crops. Dinotefuran provides rapid knockdown systemic action, while Pymetrozine works as a feeding blocker, causing insects to permanently stop feeding soon after exposure. The water-dispersible granule (WG) formulation is easy to dissolve, safe for the applicator, and leaves no dusty residue. MATIX is a cornerstone product for managing resistant hopper populations in rice-growing regions.\n\nThe recommended application rate of MATIX is 133.2 to 266.4 gm per acre, depending on the pest density and crop stage. It should be applied in sufficient water (typically 200 liters per acre) using a knapsack sprayer with a hollow cone nozzle to ensure uniform coverage of the crop, especially targeting the lower parts of the rice tillers where hoppers aggregate. Timing the spray at the ETL (Economic Threshold Level) of hoppers ensures maximum yield protection. Always maintain a thin layer of water in the field during or after application for optimal systemic action.",
+      "benefits": [
+        "Dual active ingredients providing synergistic action against resistant hopper populations.",
+        "Translaminar and systemic properties for controlling hidden pests on the underside of leaves.",
+        "Causes immediate feeding cessation in insects, preventing virus transmission and crop damage.",
+        "Long-lasting protection and excellent rainfastness within 2 hours of application."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Cotton",
+        "Vegetables"
+      ],
+      "target_pests": [
+        "Brown Plant Hopper (BPH)",
+        "White Backed Plant Hopper (WBPH)",
+        "Green Leaf Hopper (GLH)",
+        "Aphids",
+        "Whiteflies"
+      ],
+      "dosage": "133.2 - 266.4 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "266.4 gm",
+        "133.2 gm"
+      ],
+      "mrp": "850 - 1650",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776491871577-6b858dee-7d61-4721-ac6a-b8042973edf9.png",
+      "product_url": "https://vanikicrop.com/product/matix",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1c579f0b2cf9ae1debb6e",
+      "name": "VIVAN-SUPER",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Chlorantraniliprole + Lambda-cyhalothrin",
+      "composition": "Chlorantraniliprole 9.3% + Lambda-cyhalothrin 4.6% ZC",
+      "formulation": "ZC (Mixed Formulation of CS and SC)",
+      "description": "VIVAN-SUPER is a premium, broad-spectrum insecticide blend of Chlorantraniliprole 9.3% and Lambda-cyhalothrin 4.6% ZC. This innovative mixed formulation combines two distinct modes of action: Chlorantraniliprole, a diamide that targets ryanodine receptors causing muscular paralysis, and Lambda-cyhalothrin, a synthetic pyrethroid that provides rapid knockdown contact control of pests. VIVAN-SUPER is exceptionally effective against major pests like Stem Borers, Leaf Folders, and Bollworms in paddy and cotton. Its ZC formulation provides extended protection and ensures excellent adhesion to leaf surfaces.\n\nApply VIVAN-SUPER at a dose of 100 to 250 ml per acre using a standard sprayer. For paddy, apply when the crop is in the active tillering to panicle initiation stage to prevent stem borer damage. Ensure complete coverage of the foliage for maximum contact and systemic uptake. It is recommended to spray in the evening to minimize impact on pollinators and beneficial insects. Maintain safety precautions, including wearing gloves and masks during mixing and spraying.",
+      "benefits": [
+        "Combines rapid contact knockdown with long-lasting systemic control.",
+        "Highly effective against lepidopteran pests, caterpillars, and key sucking pests.",
+        "ZC formulation offers superior stability, coverage, and rainfastness on foliage.",
+        "Protects new plant growth through upward systemic translocation."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Cotton",
+        "Soybean",
+        "Tomato",
+        "Maize"
+      ],
+      "target_pests": [
+        "Stem Borer",
+        "Leaf Folder",
+        "Bollworms",
+        "Fruit Borer",
+        "Girdle Beetle",
+        "Fall Armyworm"
+      ],
+      "dosage": "100 - 250 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "100 ml",
+        "250 ml",
+        "500 ml"
+      ],
+      "mrp": "1100 - 5000",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492649547-6e684935-9fab-4ed3-bacb-7883ca9584a2.png",
+      "product_url": "https://vanikicrop.com/product/vivan-super",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1ca44f0b2cf9ae1debbab",
+      "name": "VEER",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Emamectin Benzoate",
+      "composition": "Emamectin Benzoate 5% SG",
+      "formulation": "SG (Soluble Granules)",
+      "description": "VEER is a highly specialized, water-soluble granule insecticide containing Emamectin Benzoate 5% SG. Derived from the natural fermentation of soil microbes, it acts as a stomach poison that disrupts GABA receptors in the nervous system of lepidopteran pests, leading to rapid paralysis and death. VEER is extremely popular for controlling stubborn caterpillars, such as Diamondback Moth in cabbage, and Fruit and Shoot Borers in eggplant. Its excellent translaminar action allows it to penetrate leaf tissue, forming a lethal reservoir that controls pests feeding on the underside of leaves.\n\nThe recommended dosage of VEER is 80 to 100 gm per acre dissolved in 200 liters of water. Spraying should be done at the early larval stages for maximum efficacy. Ensure the spray covers all leaf surfaces, particularly in dense crop canopies like cabbage. VEER has a favorable environmental profile and is relatively safe for beneficial insects and predators when dry, making it ideal for Integrated Pest Management (IPM) programs. Avoid spraying when rain is expected within 2 hours.",
+      "benefits": [
+        "Naturally derived macrocyclic insecticide safe for beneficial insects.",
+        "Translaminar activity that forms a reservoir of active ingredient inside leaves.",
+        "Highly effective against lepidopteran caterpillars at very low doses.",
+        "Quick action, causing caterpillar paralysis and feeding cessation within hours."
+      ],
+      "crops": [
+        "Grapes",
+        "Cotton",
+        "Cabbage",
+        "Brinjal",
+        "Okra",
+        "Chili",
+        "Red Gram"
+      ],
+      "target_pests": [
+        "Fruit and Shoot Borer",
+        "Diamondback Moth (DBM)",
+        "Bollworms",
+        "Pod Borer",
+        "Thrips"
+      ],
+      "dosage": "80 - 100 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "50 gm",
+        "100 gm",
+        "250 gm"
+      ],
+      "mrp": "300 - 1100",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776491912537-4297ea66-0138-40e7-a5e4-712a988d666e.png",
+      "product_url": "https://vanikicrop.com/product/veer",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1cbbcf0b2cf9ae1debbda",
+      "name": "NEXON",
+      "category": "Fungicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Thifluzamide",
+      "composition": "Thifluzamide 24% SC",
+      "formulation": "SC (Suspension Concentrate)",
+      "description": "NEXON is an advanced systemic fungicide formulated as a Suspension Concentrate (SC) containing Thifluzamide 24%. It belongs to the carboxanilide group, which inhibits succinate dehydrogenase (SDHI) in the fungal respiration cycle, halting growth and spore germination. NEXON is highly regarded for its efficacy against Rhizoctonia solani, the pathogen responsible for Sheath Blight in rice, and Black Scurf in potatoes. It is quickly absorbed by the root system and foliage, moving upward to protect the entire plant from structural damage and leaf decay.\n\nApply NEXON at a dosage of 150 ml per acre, mixed with 200 liters of water. In rice fields, the first application should be done at the initiation of sheath blight symptoms or during the tillering-to-booting stage. A second spray may be applied 15 days later if disease pressure persists. Proper water management in paddy fields enhances systemic uptake. The fungicide is compatible with most commonly used insecticides and plant growth promoters, allowing for convenient tank-mix applications.",
+      "benefits": [
+        "Advanced systemic fungicide with strong preventive and curative properties.",
+        "Exceptional control over Sheath Blight in rice, leading to cleaner grains.",
+        "Promotes crop health, increases tillering, and improves final grain quality.",
+        "Excellent rainfastness, remaining effective even after heavy rainfall."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Potato",
+        "Tomato"
+      ],
+      "target_pests": [
+        "Sheath Blight",
+        "Black Scurf",
+        "Early Blight"
+      ],
+      "dosage": "150 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml",
+        "150 ml"
+      ],
+      "mrp": "450 - 4000",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776508032184-7c114c10-6fc5-444a-a907-0bf2bc9c6b1f.png",
+      "product_url": "https://vanikicrop.com/product/nexon",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1cc97f0b2cf9ae1debbea",
+      "name": "VANSH",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Fenobucarb (BPMC)",
+      "composition": "BPMC 50% EC (Fenobucarb)",
+      "formulation": "EC (Emulsifiable Concentrate)",
+      "description": "VANSH is a fast-acting carbamate insecticide containing Fenobucarb (BPMC) 50% EC. It acts by inhibiting acetylcholinesterase, leading to an accumulation of acetylcholine at synaptic junctions, which causes rapid nervous breakdown and immediate knockdown of target insects. VANSH is specifically designed to control major sap-sucking pests like the Brown Plant Hopper (BPH) and Green Leaf Hopper (GLH) in rice. It works primarily through contact action and is highly effective at clearing dense hopper populations during critical infestations.\n\nThe recommended application rate of VANSH is 300 to 500 ml per acre. Spraying should target the base of the rice plants, where the hoppers live and feed. Ensure thorough coverage of the stems by spraying with a high-volume sprayer. To prevent resistance buildup, it is advised to alternate VANSH with other classes of insecticides like Dinotefuran or Pymetrozine. Use personal protective equipment when handling the product and avoid inhalation or skin contact.",
+      "benefits": [
+        "Fast-acting carbamate insecticide with rapid knockdown contact action.",
+        "Highly effective against plant hoppers resistant to other chemical groups.",
+        "Breaks the resistance cycle when rotated with neonicotinoids.",
+        "Cost-effective solution for immediate pest suppression during hopper burns."
+      ],
+      "crops": [
+        "Paddy (Rice)"
+      ],
+      "target_pests": [
+        "Brown Plant Hopper (BPH)",
+        "Green Leaf Hopper (GLH)",
+        "White Backed Plant Hopper (WBPH)"
+      ],
+      "dosage": "300 - 500 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml"
+      ],
+      "mrp": "530 - 1000",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776409621948-d890ee23-b67e-4da3-a9a6-8844b8d44627.jpg",
+      "product_url": "https://vanikicrop.com/product/vansh",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1cdf1f0b2cf9ae1debbfb",
+      "name": "V-STAR",
+      "category": "Fungicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Azoxystrobin + Difenoconazole",
+      "composition": "Azoxystrobin 18.2% + Difenoconazole 11.4% SC",
+      "formulation": "SC (Suspension Concentrate)",
+      "description": "V-STAR is a premium, broad-spectrum systemic fungicide containing Azoxystrobin 18.2% and Difenoconazole 11.4% SC. It offers a dual-action defense system: Azoxystrobin inhibits mitochondrial respiration (preventing spore germination), while Difenoconazole interferes with cell wall sterol biosynthesis (halting fungal growth). This combination is highly effective against leaf blast, sheath blight, powdery mildew, and anthracnose. V-STAR not only controls diseases but also enhances the metabolic activity of plants, resulting in a visible greening effect and improved grain quality.\n\nRecommended application rate for V-STAR is 200 ml per acre mixed with 200 liters of water. Spraying should be initiated preventively or at the first sign of disease symptoms. For paddy crops, applying V-STAR at the booting stage and heading stage protects the flag leaf and panicle, ensuring plump, shiny grains. The suspension concentrate formulation is highly stable, dissolves easily in water, and provides long-lasting protective cover to crops.",
+      "benefits": [
+        "Dual systemic fungicide combining strobilurin and triazole chemistry.",
+        "Broad-spectrum control of major fungal diseases (Ascomycetes, Basidiomycetes).",
+        "Phytotonic effect makes leaves greener and increases overall crop yield.",
+        "Provides preventive, curative, and translaminar disease protection."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Tomato",
+        "Chili",
+        "Maize",
+        "Wheat",
+        "Mango"
+      ],
+      "target_pests": [
+        "Sheath Blight",
+        "Blast",
+        "Powdery Mildew",
+        "Early Blight",
+        "Anthracnose",
+        "Rust"
+      ],
+      "dosage": "200 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml",
+        "250 ml"
+      ],
+      "mrp": "1100 - 4200",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492684696-5a59ea01-5b99-4063-bf06-481fd73cff27.png",
+      "product_url": "https://vanikicrop.com/product/v-star",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1d0a2f0b2cf9ae1debcb0",
+      "name": "VAT-SUPER",
+      "category": "Fungicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Azoxystrobin + Tebuconazole",
+      "composition": "Azoxystrobin 11% + Tebuconazole 18.3% SC",
+      "formulation": "SC (Suspension Concentrate)",
+      "description": "VAT-SUPER is a powerful dual-action systemic fungicide formulated with Azoxystrobin 11% and Tebuconazole 18.3% SC. It combines a strobilurin fungicide (Azoxystrobin) that prevents spore germination and fungal energy production, with a triazole fungicide (Tebuconazole) that stops fungal growth by inhibiting cell membrane synthesis. This makes VAT-SUPER an exceptional choice for controlling Blast and Sheath Blight in rice, Purple Blotch in onions, and Fruit Rot in chili. The systemic action ensures that the active ingredients are distributed evenly throughout the plant tissue.\n\nThe recommended dosage is 250 to 300 ml per acre, applied at the first onset of disease symptoms. Thoroughly spray the foliage using a high-volume sprayer to ensure the fungicide reaches all parts of the plant. A second application may be carried out after 10-14 days if wet weather or high humidity conditions persist. Ensure safety measures are followed, and keep livestock away from treated areas for at least 7 days.",
+      "benefits": [
+        "Synergistic combination offering systemic and translaminar activity.",
+        "Excellent defense against both leaf and fruit fungal diseases.",
+        "Delivers a physiological greening effect, improving photosynthesis and crop yield.",
+        "Long-lasting protection with low risk of resistance development."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Chili",
+        "Tomato",
+        "Onion",
+        "Wheat"
+      ],
+      "target_pests": [
+        "Blast",
+        "Sheath Blight",
+        "Fruit Rot",
+        "Powdery Mildew",
+        "Purple Blotch",
+        "Yellow Rust"
+      ],
+      "dosage": "250 - 300 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml",
+        "250 ml"
+      ],
+      "mrp": "1100 - 4000",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777442969977-f68c6ff4-a356-433e-bfe7-4c68c2f1cff7.jpg",
+      "product_url": "https://vanikicrop.com/product/vat-super",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1d19bf0b2cf9ae1debcc7",
+      "name": "PAROLI",
+      "category": "Fungicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Propiconazole + Difenoconazole",
+      "composition": "Propiconazole 13.9% + Difenoconazole 13.9% EC",
+      "formulation": "EC (Emulsifiable Concentrate)",
+      "description": "PAROLI is a high-performance systemic fungicide containing Propiconazole 13.9% and Difenoconazole 13.9% EC. This synergistic combination of two triazole fungicides blocks ergosterol biosynthesis in fungal cell membranes, halting the development of key diseases. PAROLI is widely used to control Sheath Blight and Dirty Panicle (grain staining) in paddy crops, as well as Leaf Spot in groundnut and Rust in wheat. It is highly systemic, rapidly absorbed by the green parts of the plant, and translocated acropetally to protect new growth.\n\nApply PAROLI at 200 to 250 ml per acre with 200 liters of water. In paddy, application at the boot-leaf stage and at 50% flowering is highly recommended to protect the flag leaf and prevent grain staining, which dramatically improves the grain quality and weight. Use a flat fan or hollow cone nozzle for uniform coverage. Avoid application under high wind conditions or during peak hot hours.",
+      "benefits": [
+        "Broad-spectrum control against sheath blight and grain staining (dirty panicle).",
+        "Dual triazole combination providing quick penetration and systemic movement.",
+        "Improves grain filling, grain weight, and milling recovery rates in rice.",
+        "Provides preventive and curative control with strong residual protection."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Wheat",
+        "Groundnut",
+        "Tea"
+      ],
+      "target_pests": [
+        "Sheath Blight",
+        "Dirty Panicle",
+        "Rust",
+        "Leaf Spot",
+        "Blister Blight"
+      ],
+      "dosage": "200 - 250 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml",
+        "250 ml"
+      ],
+      "mrp": "700 - 2500",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492914274-ec7cbcf8-282d-4180-86ff-837d4e5a2338.png",
+      "product_url": "https://vanikicrop.com/product/paroli",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1d2fff0b2cf9ae1debce1",
+      "name": "PAYTHEN",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Pyriproxyfen + Bifenthrin",
+      "composition": "Pyriproxyfen 10% + Bifenthrin 10% EC",
+      "formulation": "EC (Emulsifiable Concentrate)",
+      "description": "PAYTHEN is a next-generation pre-mixed insecticide consisting of Pyriproxyfen 10% and Bifenthrin 10% EC. It offers a unique dual action: Pyriproxyfen, an Insect Growth Regulator (IGR), mimics juvenile hormones to prevent egg hatching and nymph development, while Bifenthrin, a synthetic pyrethroid, provides rapid knockdown of adult insects through contact and stomach action. This combination is highly effective against whiteflies, thrips, and mites in cotton and vegetable crops, making it a powerful weapon against pests that have developed resistance to other insecticides.\n\nApply PAYTHEN at a dose of 400 to 500 ml per acre in 200 liters of water. Spraying should be initiated when the whitefly population reaches the threshold level, ensuring coverage of both the upper and lower surfaces of leaves where nymphs reside. The dual action ensures that the pest cycle is broken completely. Wear protective clothing, gloves, and goggles during preparation and spraying.",
+      "benefits": [
+        "Unique formulation targeting all developmental stages of sucking pests.",
+        "Combines an Insect Growth Regulator (IGR) with a rapid-knockdown pyrethroid.",
+        "Provides excellent control of resistant whitefly populations.",
+        "Long-lasting residual control, reducing the frequency of sprays."
+      ],
+      "crops": [
+        "Cotton",
+        "Chili",
+        "Brinjal",
+        "Okra"
+      ],
+      "target_pests": [
+        "Whitefly (Nymphs & Adults)",
+        "Thrips",
+        "Aphids",
+        "Mites",
+        "Bollworms"
+      ],
+      "dosage": "400 - 500 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml",
+        "250 ml"
+      ],
+      "mrp": "550 - 2000",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492089981-87ba9ca3-f45f-4343-a751-d940d9c0a820.png",
+      "product_url": "https://vanikicrop.com/product/paythen",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1d436f0b2cf9ae1debcfe",
+      "name": "505-RUDRA",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Chlorpyriphos + Cypermethrin",
+      "composition": "commonly Chlorpyriphos 50% + Cypermethrin 5% EC",
+      "formulation": "EC (Emulsifiable Concentrate)",
+      "description": "505-RUDRA is a highly popular and powerful combination insecticide containing Chlorpyriphos 50% and Cypermethrin 5% EC. It exerts multi-mode action on pests, utilizing the acetylcholinesterase inhibition of Chlorpyriphos (an organophosphate) and the sodium channel disruption of Cypermethrin (a synthetic pyrethroid). This combination provides rapid knockdown and long-lasting control of chewing and sucking pests. 505-RUDRA is widely used in cotton for bollworm control and in paddy for managing stem borers and leaf folders due to its strong contact, stomach, and vapor (fumigant) action.\n\nThe recommended dosage of 505-RUDRA is 300 to 400 ml per acre mixed with sufficient water. For stem borers in rice, ensure that the spray reaches the lower canopy. For bollworms in cotton, spray as soon as square formation begins or when pest activity is noticed. Due to its vapor action, it is highly effective in dense crop canopies. Standard safety protocols, including avoiding drift and wearing protective gear, should be strictly followed.",
+      "benefits": [
+        "Powerful synergistic formulation combining organophosphate and pyrethroid chemistry.",
+        "Contact, stomach, and fumigant action for multi-level pest control.",
+        "Quick knockdown effect on contact with rapid crop safety.",
+        "Vapor action helps control hidden borers inside stems."
+      ],
+      "crops": [
+        "Cotton",
+        "Paddy (Rice)",
+        "Sugarcane",
+        "Vegetables"
+      ],
+      "target_pests": [
+        "Bollworms",
+        "Stem Borer",
+        "Leaf Folder",
+        "Aphids",
+        "Jassids",
+        "Whitefly"
+      ],
+      "dosage": "300 - 400 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml"
+      ],
+      "mrp": "650 - 1250",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492067483-5f555da5-adab-4091-9ab1-02f6b766a9f5.png",
+      "product_url": "https://vanikicrop.com/product/505-rudra",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1d508f0b2cf9ae1debd1c",
+      "name": "TORANTO",
+      "category": "Fungicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Tebuconazole + Trifloxystrobin",
+      "composition": "Tebuconazole 50% + Trifloxystrobin 25% WG",
+      "formulation": "WG (Water Dispersible Granules)",
+      "description": "TORANTO is a top-tier premium fungicide containing Tebuconazole 50% and Trifloxystrobin 25% WG. It integrates a highly systemic triazole (Tebuconazole) with a protective, mesostemic strobilurin (Trifloxystrobin). This gives the product exceptional preventive and curative activity against critical fungal diseases, including Blast, Neck Blast, and Sheath Blight in rice, and Anthracnose in mangoes and chilies. The WG formulation is clean to handle, disperses instantly in water, and provides robust adhesion to leaves, ensuring excellent rainfastness.\n\nRecommended application rate for TORANTO is 80 to 100 gm per acre, dissolved in 200 liters of water. For rice, spray at the booting stage to prevent neck blast and sheath blight. Ensure full crop coverage. TORANTO significantly improves grain quality and appearance, which fetches higher market prices. Always read the label before use and wear appropriate protective clothing.",
+      "benefits": [
+        "Premium broad-spectrum systemic fungicide with top-tier disease control.",
+        "Combines a highly active triazole with a premium strobilurin.",
+        "Phytotonic effect gives crops a healthy green look and increases yield.",
+        "Improves grain shining, milling recovery, and storage quality."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Tomato",
+        "Mango",
+        "Chili",
+        "Grapes"
+      ],
+      "target_pests": [
+        "Blast",
+        "Sheath Blight",
+        "Powdery Mildew",
+        "Anthracnose",
+        "Early Blight"
+      ],
+      "dosage": "80 - 100 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "100 gm"
+      ],
+      "mrp": "1000",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777441259149-b293efbc-d1a3-4316-b448-f645abfb0838.jpg",
+      "product_url": "https://vanikicrop.com/product/toranto",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1d665f0b2cf9ae1debd3a",
+      "name": "VIGEN",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Chlorantraniliprole",
+      "composition": "Chlorantraniliprole 18.5% SC",
+      "formulation": "SC (Suspension Concentrate)",
+      "description": "VIGEN is a highly effective, low-dose systemic insecticide containing Chlorantraniliprole 18.5% SC. As an anthranilic diamide, it works by binding to ryanodine receptors in insect muscle cells, causing uncontrolled release of calcium, which leads to immediate feeding cessation, muscle paralysis, and subsequent death. VIGEN is the industry standard for controlling stem borers and leaf folders in paddy, and shoot borers in sugarcane and vegetables. Its low toxicity profile makes it highly compatible with biological pest control programs.\n\nThe standard dosage of VIGEN is 60 ml per acre mixed with 200 liters of water. For rice, apply at the onset of stem borer moths or leaf folder damage (typically 25-35 days after transplanting). In sugarcane, apply at the early shoot stage. Its unique formulation provides long-lasting protection (up to 21 days) and is highly resistant to rain wash-off, making it a reliable choice for monsoonal crop protection.",
+      "benefits": [
+        "Extremely low dosage required, minimizing chemical load in the environment.",
+        "Outstanding control of caterpillars and borers for up to 3 weeks.",
+        "Safe for beneficial insects, predators, and earthworms.",
+        "Translaminar and systemic movement protects new leaves."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Sugarcane",
+        "Cotton",
+        "Cabbage",
+        "Tomato",
+        "Maize"
+      ],
+      "target_pests": [
+        "Stem Borer",
+        "Leaf Folder",
+        "Early Shoot Borer",
+        "Fruit Borer",
+        "Diamondback Moth"
+      ],
+      "dosage": "60 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "300 ml",
+        "150 ml",
+        "60 ml",
+        "30 ml"
+      ],
+      "mrp": "360 - 2900",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492707241-d2c6098a-670f-41ef-a677-c55fe6e21436.png",
+      "product_url": "https://vanikicrop.com/product/vigen",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1d734f0b2cf9ae1debd5f",
+      "name": "V-MET",
+      "category": "Herbicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Metsulfuron Methyl",
+      "composition": "Metsulfuron methyl 20% WP",
+      "formulation": "WP (Wettable Powder)",
+      "description": "V-MET is a selective, post-emergence sulfonylurea herbicide containing Metsulfuron Methyl 20% WP. It is absorbed through weed roots and foliage, quickly translocating throughout the weed plant. It acts by inhibiting the acetolactate synthase (ALS) enzyme, which is essential for synthesizing key amino acids, leading to growth arrest and weed death. V-MET is exceptionally effective at controlling broad-leaved weeds in wheat and rice fields, providing weed-free conditions for the crop to flourish.\n\nThe recommended dosage of V-MET is 8 gm per acre, typically applied 30-35 days after sowing wheat, when weeds are in the 2-4 leaf stage. Dissolve the 8 gm packet in 150-200 liters of water and spray uniformly. Ensure that there is adequate moisture in the soil at the time of application for optimum herbicide activity. Do not exceed the recommended dose to prevent carryover effects on subsequent crops.",
+      "benefits": [
+        "Highly selective post-emergence herbicide for wheat and rice.",
+        "Extremely low dose rate, reducing cost and environmental load.",
+        "Inhibits ALS enzyme, causing rapid cessation of weed growth.",
+        "Completely safe for the main wheat crop when applied at the right stage."
+      ],
+      "crops": [
+        "Wheat",
+        "Paddy (Rice)"
+      ],
+      "target_pests": [
+        "Broad-leaved weeds (Chenopodium album, Rumex dentatus, Melilotus spp.)"
+      ],
+      "dosage": "8 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "8 gm"
+      ],
+      "mrp": "100",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777451009942-ffb2cc00-57ee-4176-be92-bc595743342c.jpg",
+      "product_url": "https://vanikicrop.com/product/v-met",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1d91cf0b2cf9ae1debe83",
+      "name": "SCARPIO-Z",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Fenpyroximate",
+      "composition": "Fenpyroximate 5% EC",
+      "formulation": "EC (Emulsifiable Concentrate)",
+      "description": "SCARPIO-Z is a highly specialized contact acaricide containing Fenpyroximate 5% EC. It targets the respiration system of mites by inhibiting mitochondrial complex I electron transport, resulting in rapid paralysis and cessation of feeding. SCARPIO-Z is designed to control a wide range of destructive mites, including Red Spider Mites, Yellow Mites, and Purple Mites in chili, tea, and orchard crops. It is effective against larvae, nymphs, and adults, and also reduces the viability of female mite eggs.\n\nThe recommended dosage of SCARPIO-Z is 300 to 400 ml per acre mixed with 200 liters of water. Spraying must be done thoroughly, ensuring complete coverage of the foliage, especially the lower side of leaves where mites build webs and colonies. Apply at the first sign of mite infestation. For tea and vegetables, follow the specified pre-harvest interval (PHI) for safety.",
+      "benefits": [
+        "Specialized contact acaricide (miticide) targeting all developmental stages.",
+        "Inhibits mitochondrial electron transport, leading to rapid mite paralysis.",
+        "Provides quick knockdown of nymphs and adults with strong egg-hatching inhibition.",
+        "Long residual action keeps crops free from mites for extended periods."
+      ],
+      "crops": [
+        "Chili",
+        "Tea",
+        "Coconut",
+        "Apple"
+      ],
+      "target_pests": [
+        "Red Spider Mites",
+        "Yellow Mites",
+        "Purple Mites",
+        "Thrips"
+      ],
+      "dosage": "300 - 400 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "500 ml",
+        "1 Liter",
+        "250 ml"
+      ],
+      "mrp": "650 - 2400",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492894869-4a082d32-bacc-4a18-8181-af8cd25f524b.png",
+      "product_url": "https://vanikicrop.com/product/scarpio-z",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1da87f0b2cf9ae1debed8",
+      "name": "VIRUSH",
+      "category": "Fungicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Tebuconazole + Sulphur",
+      "composition": "Tebuconazole 10% + Sulphur 65% WG",
+      "formulation": "WG (Water Dispersible Granules)",
+      "description": "VIRUSH is a unique combination fungicide and miticide containing Tebuconazole 10% and Sulphur 65% WG. This dual-action product combines the systemic triazole fungicide Tebuconazole, which inhibits ergosterol synthesis, with the contact fungicide and acaricide properties of elemental Sulphur. VIRUSH is highly effective against Powdery Mildew and Leaf Spots, while simultaneously suppressing mite populations. Additionally, the high Sulphur content acts as a key secondary nutrient, promoting chlorophyll formation and protein synthesis in crops like oilseeds and vegetables.\n\nThe recommended dosage of VIRUSH is 500 to 1000 gm per acre, depending on the severity of the disease. Dissolve the granules in 200 liters of water and spray thoroughly over the foliage. Apply preventively or at the early stage of disease development. It is highly compatible with most insecticides, making it a convenient option for combined pest and disease management.",
+      "benefits": [
+        "Dual-action systemic fungicide and acaricide (miticide).",
+        "Provides systemic triazole control combined with contact Sulphur protection.",
+        "Supplies essential Sulphur nutrient, improving crop quality and oil content.",
+        "WG formulation is easy to mix, dust-free, and leaves no phytotoxic residue."
+      ],
+      "crops": [
+        "Chili",
+        "Soybean",
+        "Grapes",
+        "Mango",
+        "Onion"
+      ],
+      "target_pests": [
+        "Powdery Mildew",
+        "Fruit Rot",
+        "Leaf Spot",
+        "Rust",
+        "Mites"
+      ],
+      "dosage": "500 - 1000 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "500 gm",
+        "1 KG"
+      ],
+      "mrp": "1220 - 2400",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776491954355-8b09a5da-09e9-4358-bdea-4c16fc78ff1b.png",
+      "product_url": "https://vanikicrop.com/product/virush",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e1dbe0f0b2cf9ae1debfb0",
+      "name": "VIDA-70",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Imidacloprid",
+      "composition": "Imidacloprid 70% WG",
+      "formulation": "WG (Water Dispersible Granules)",
+      "description": "VIDA-70 is a highly potent, systemic neonicotinoid insecticide containing Imidacloprid 70% WG. It binds to nicotinic acetylcholine receptors in the insect central nervous system, causing excitation, convulsions, and death. VIDA-70 is a market leader for controlling sucking pests like aphids, thrips, jassids, and plant hoppers. The water-dispersible granule formulation is highly concentrated, dissolving completely in water and leaving no sediment, which prevents nozzle clogging during spraying.\n\nRecommended application rate for VIDA-70 is 30 to 75 gm per acre, dissolved in 200 liters of water. Spray at the initiation of sucking pest activity. For brown plant hopper in rice, apply when hoppers are observed at the base of the plants, directing the spray towards the plant stems. Avoid spraying during crop flowering to protect foraging honeybees.",
+      "benefits": [
+        "Highly concentrated neonicotinoid providing rapid systemic action.",
+        "Low application dose reduces chemical exposure and costs.",
+        "Excellent root uptake and foliar translocation protect new growth.",
+        "Controls persistent sucking pests, reducing virus vector transmission."
+      ],
+      "crops": [
+        "Cotton",
+        "Paddy (Rice)",
+        "Tomato",
+        "Cucumber",
+        "Chili"
+      ],
+      "target_pests": [
+        "Jassids",
+        "Aphids",
+        "Thrips",
+        "Brown Plant Hopper (BPH)",
+        "Whiteflies"
+      ],
+      "dosage": "30 - 75 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "75 gm",
+        "150 gm",
+        "30 gm"
+      ],
+      "mrp": "620 - 2399",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492664925-49c45850-1dd7-4d6b-87e8-bd5e4d7c0107.png",
+      "product_url": "https://vanikicrop.com/product/vida-70",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e21b8df0b2cf9ae1dec452",
+      "name": "V24D",
+      "category": "Herbicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "2,4-D (2,4-Dichlorophenoxyacetic acid)",
+      "composition": "2,4-D (2,4-Dichlorophenoxyacetic acid)",
+      "formulation": "SL (Soluble Liquid) or Amine/Sodium Salt",
+      "description": "V24D is a selective, systemic herbicide containing 2,4-D (2,4-Dichlorophenoxyacetic acid) formulated as a Soluble Liquid (SL). It mimics the natural plant hormone auxin, causing rapid, uncontrolled growth (epinasty) in broadleaf weeds, which leads to stem twisting, leaf curling, and eventual weed death within a few days. V24D is highly selective for grassy crops, making it safe to use in wheat, maize, sugarcane, and paddy fields. It is a vital tool for managing broadleaf weed infestations that compete with crops for light and nutrients.\n\nThe standard dosage of V24D is 400 to 500 ml per acre. It should be applied when the weeds are in the active growth stage (2-4 leaves), typically 30-35 days after crop sowing or transplanting. Ensure that the spray drift does not contact nearby broadleaf crops like cotton, mustard, or vegetables, as they are highly sensitive to 2,4-D. Use a flood jet or flat fan nozzle for uniform application.",
+      "benefits": [
+        "Time-tested selective systemic herbicide for cereal crops and sugarcane.",
+        "Disrupts weed cell growth by mimicking natural plant growth hormones (auxin).",
+        "Provides excellent control over stubborn and deep-rooted broadleaf weeds.",
+        "Low cost and highly compatible as a tank-mix partner with other herbicides."
+      ],
+      "crops": [
+        "Sugarcane",
+        "Maize",
+        "Wheat",
+        "Paddy (Rice)",
+        "Non-crop areas"
+      ],
+      "target_pests": [
+        "Broad-leaved weeds (Chenopodium album, Convolvulus arvensis, Cyperus rotundus)"
+      ],
+      "dosage": "400 - 500 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "500 ml",
+        "1 Liter"
+      ],
+      "mrp": "500 - 950",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1776492613727-7829579b-c0ce-4840-b17e-8d9e37b23f52.png",
+      "product_url": "https://vanikicrop.com/product/v24d",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e35f343ce9e72931d2addc",
+      "name": "VALID",
+      "category": "Fungicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Validamycin",
+      "composition": "Validamycin (3% L)",
+      "formulation": "SL (Soluble Liquid)",
+      "description": "VALID is an eco-friendly antibiotic fungicide containing Validamycin 3% SL. It is produced by the fermentation of the actinomycete Streptomyces hygroscopicus and works by inhibiting the trehalase enzyme in fungi, which blocks the synthesis of glucose and halts mycelial development. VALID is widely used to prevent and cure Sheath Blight in rice. Because of its biological origin, it is highly safe for non-target organisms, leaving no chemical residues on the grain and making it ideal for sustainable agriculture.\n\nApply VALID at a dosage of 400 to 500 ml per acre mixed with 200 liters of water. In paddy fields, spray at the early appearance of sheath blight lesions on the leaf sheaths. Ensure the spray covers the lower sections of the rice stems where the infection initiates. It can be repeated after 10-14 days if the weather remains warm and humid. VALID is highly compatible with common insecticides.",
+      "benefits": [
+        "Safe antibiotic fungicide derived from fermentation of Streptomyces hygroscopicus.",
+        "Specific action against Rhizoctonia solani (Sheath Blight pathogen).",
+        "Environmentally friendly with low toxicity to mammals and fish.",
+        "Systemic action stops the growth of fungal mycelia and prevents spread."
+      ],
+      "crops": [
+        "Paddy (Rice)"
+      ],
+      "target_pests": [
+        "Sheath Blight"
+      ],
+      "dosage": "400 - 500 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml",
+        "250 ml"
+      ],
+      "mrp": "280 - 900",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777442176914-708cc52e-2cfd-40d6-b8dd-ac095cc8c376.jpg",
+      "product_url": "https://vanikicrop.com/product/valid",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e460203ce9e72931d2b100",
+      "name": "CURVE",
+      "category": "Herbicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Clodinafop-propargyl",
+      "composition": "Clodinafop-propargyl 15% WP",
+      "formulation": "WP (Wettable Powder)",
+      "description": "CURVE is a highly selective, post-emergence herbicide containing Clodinafop-propargyl 15% WP. It is designed to control narrow-leaf grass weeds, particularly Phalaris minor (Gulli Danda) and Wild Oats (Avena fatua), which are major threats to wheat yields. CURVE is absorbed through the leaves of the weeds and moves systemically to the growing points, where it inhibits the acetyl-coenzyme A carboxylase (ACCase) enzyme. This halts lipid synthesis, causing grass weeds to yellow and die within 2 weeks.\n\nThe recommended rate of CURVE is 160 gm per acre (usually sold with a surfactant). It should be applied 30-35 days after sowing wheat, when the weeds are at the 2-4 leaf stage. Dissolve the product and surfactant in 150 liters of water and spray uniformly using a flat fan nozzle. Ensure the soil has adequate moisture for the herbicide to work effectively.",
+      "benefits": [
+        "Highly selective post-emergence herbicide for grassy weeds in wheat.",
+        "Inhibits ACCase enzyme, shutting down lipid synthesis in grass weeds.",
+        "Absorbed rapidly by leaves, stopping weed growth within 48 hours.",
+        "No adverse effect on the wheat crop when applied at the recommended dose."
+      ],
+      "crops": [
+        "Wheat"
+      ],
+      "target_pests": [
+        "Phalaris minor (Gulli Danda)",
+        "Wild Oats (Avena fatua)"
+      ],
+      "dosage": "160 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "160 gm"
+      ],
+      "mrp": "360",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777440263260-2341f7ef-98e9-4d31-b120-d9a764b11224.jpg",
+      "product_url": "https://vanikicrop.com/product/curve",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e466c63ce9e72931d2b20e",
+      "name": "VRIGEN GR",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Chlorantraniliprole",
+      "composition": "Chlorantraniliprole 0.4% GR",
+      "formulation": "GR (Granules)",
+      "description": "VRIGEN GR is a modern granular systemic insecticide containing Chlorantraniliprole 0.4% GR. Designed for soil application, it is absorbed by the roots and translocated systemically throughout the growing plant. It works by targeting the ryanodine receptors of chewing pests, causing them to stop feeding immediately. VRIGEN GR is highly effective at controlling Stem Borers and Leaf Folders in rice, and Shoot Borers in sugarcane. Its granular formulation offers slow release, providing extended protection for up to 50 days.\n\nBroadcasting is the recommended method of application for VRIGEN GR at a dosage of 4 KG per acre. For paddy, apply between 15 to 30 days after transplanting. It can be mixed with sand or fertilizer for even distribution. Ensure that a water level of 2-3 inches is maintained in the field for 4-5 days after application to facilitate root uptake. This method reduces labor costs and protects the crop from early-stage damage.",
+      "benefits": [
+        "Granular systemic insecticide providing long-lasting crop protection (up to 50 days).",
+        "Promotes robust root development, tillering, and healthy green foliage.",
+        "Extremely safe for beneficial insects, spiders, and earthworms in the soil.",
+        "Easy to apply via broadcasting, eliminating the need for leaf sprays."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Sugarcane"
+      ],
+      "target_pests": [
+        "Stem Borer",
+        "Leaf Folder",
+        "Early Shoot Borer",
+        "Top Borer"
+      ],
+      "dosage": "4 KG per acre",
+      "application_method": "Broadcasting",
+      "pack_sizes": [
+        "4 KG"
+      ],
+      "mrp": "1900",
+      "image_url": "",
+      "product_url": "https://vanikicrop.com/product/vrigen-gr",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e46fd43ce9e72931d2b2bd",
+      "name": "HYDRA-50",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Cartap Hydrochloride",
+      "composition": "Cartap Hydrochloride 50% SP",
+      "formulation": "SP (Soluble Powder)",
+      "description": "HYDRA-50 is a broad-spectrum systemic and contact insecticide containing Cartap Hydrochloride 50% SP. Derived from the natural toxin nereistoxin, it blocks nicotinic acetylcholine receptors in the insect central nervous system, leading to rapid paralysis and death. HYDRA-50 is highly effective at controlling lepidopteran pests, stem borers, and diamondback moths. It is absorbed by both roots and leaves, providing comprehensive protection to the plant from internal and external insect damage.\n\nApply HYDRA-50 at 250 to 500 gm per acre, dissolved in 200 liters of water. For rice crops, apply when stem borer or leaf folder damage exceeds the economic threshold level. Ensure thorough coverage of the foliage. It is compatible with most fungicides and micro-nutrients. Always wear protective masks and gloves during application, and avoid spraying during high wind speed.",
+      "benefits": [
+        "Multi-action insecticide with contact, systemic, and stomach action.",
+        "Rapidly paralyzes insect pests, causing immediate feeding cessation.",
+        "Highly effective against biting, chewing, and boring pests.",
+        "Low mammalian toxicity and safe for integrated pest management."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Cabbage",
+        "Tomato",
+        "Brinjal"
+      ],
+      "target_pests": [
+        "Stem Borer",
+        "Leaf Folder",
+        "Diamondback Moth (DBM)",
+        "Fruit Borer"
+      ],
+      "dosage": "250 - 500 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "100 gm",
+        "250 gm"
+      ],
+      "mrp": "420 - 680",
+      "image_url": "",
+      "product_url": "https://vanikicrop.com/product/hydra-50",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e477a23ce9e72931d2b407",
+      "name": "VASUKI SUPER",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Profenofos + Cypermethrin",
+      "composition": "Profenofos 40% + Cypermethrin 4% EC",
+      "formulation": "EC (Emulsifiable Concentrate)",
+      "description": "VASUKI SUPER is a powerful pre-mixed combination insecticide containing Profenofos 40% and Cypermethrin 4% EC. The combination offers a two-pronged attack: Profenofos (an organophosphate) inhibits acetylcholinesterase, while Cypermethrin (a synthetic pyrethroid) delays sodium channel closure. This results in rapid neurotoxicity and death of target pests. VASUKI SUPER is highly effective at controlling bollworms, borers, and sucking pests. It also possesses strong ovicidal action, killing pest eggs before they can hatch into destructive larvae.\n\nRecommended application rate for VASUKI SUPER is 400 to 500 ml per acre mixed with 200 liters of water. Apply at the early larval stages or when pest density reaches economic threshold limits. Spray thoroughly to cover all plant parts, including the undersides of leaves. Due to its strong contact action, avoid application when beneficial insects or honeybees are active. Wear protective gear during mixing and application.",
+      "benefits": [
+        "Powerful synergistic combination of organophosphate and pyrethroid.",
+        "Provides excellent contact, stomach, and ovicidal (egg-killing) action.",
+        "Controls a wide range of chewing and sucking pests, including resistant bollworms.",
+        "Rapid knockdown effect with good crop safety profile."
+      ],
+      "crops": [
+        "Cotton",
+        "Brinjal",
+        "Cabbage",
+        "Chili",
+        "Okra"
+      ],
+      "target_pests": [
+        "Bollworms",
+        "Fruit and Shoot Borer",
+        "Diamondback Moth",
+        "Aphids",
+        "Thrips",
+        "Whitefly"
+      ],
+      "dosage": "400 - 500 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "1 Liter",
+        "500 ml"
+      ],
+      "mrp": "1500 - 2100",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777020873491-6742234e-9124-47c1-81be-72b89418462b.png",
+      "product_url": "https://vanikicrop.com/product/vasuki-super",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e481b23ce9e72931d2b56d",
+      "name": "V-PRIT",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Acetamiprid",
+      "composition": "Acetamiprid 20% SP",
+      "formulation": "SP (Soluble Powder)",
+      "description": "V-PRIT is a highly effective systemic neonicotinoid insecticide containing Acetamiprid 20% SP. It works by binding to nicotinic acetylcholine receptors in target pests, disrupting their nervous system and causing death. V-PRIT is exceptionally active against sucking pests such as aphids, whiteflies, thrips, and jassids in cotton and vegetable crops. Its strong translaminar action allows the chemical to pass through the leaf surface, ensuring that pests hiding on the underside of leaves are effectively controlled.\n\nApply V-PRIT at a dosage of 50 to 100 gm per acre, dissolved in 200 liters of water. Spraying should be carried out at the first appearance of sucking pests. The soluble powder dissolves quickly in water and leaves no residue, ensuring clean spray nozzles. It has a low toxicity profile for mammals and is highly suitable for inclusion in Integrated Pest Management (IPM) practices.",
+      "benefits": [
+        "Highly systemic neonicotinoid with excellent translaminar action.",
+        "Controls target sucking pests on both sides of leaves.",
+        "Low dosage requirement with long-term protection.",
+        "Acts through contact and ingestion, showing quick knockdown."
+      ],
+      "crops": [
+        "Cotton",
+        "Chili",
+        "Cabbage",
+        "Okra",
+        "Vegetables"
+      ],
+      "target_pests": [
+        "Aphids",
+        "Jassids",
+        "Thrips",
+        "Whiteflies"
+      ],
+      "dosage": "50 - 100 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "100 gm",
+        "250 gm"
+      ],
+      "mrp": "300 - 550",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777441421619-b942d675-7364-40da-841c-900efc8a4f8c.jpg",
+      "product_url": "https://vanikicrop.com/product/v-prit",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e4a0e63ce9e72931d2b6d3",
+      "name": "V-QUAT",
+      "category": "Herbicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Paraquat Dichloride",
+      "composition": "Paraquat Dichloride 24% SL",
+      "formulation": "SL (Soluble Liquid)",
+      "description": "V-QUAT is a non-selective, fast-acting contact herbicide containing Paraquat Dichloride 24% SL. It acts by destroying cell membranes and inhibiting photosynthesis in green plant tissue, causing rapid drying (desiccation) of weeds. V-QUAT is highly effective at controlling annual grasses and broad-leaved weeds in orchards, plantation crops like tea and coffee, and non-cropped areas. Because it only kills green tissue it contacts, it is ideal for directed spraying, and it is instantly deactivated by soil particles, leaving no residue for subsequent crops.\n\nThe recommended dosage of V-QUAT is 800 to 1000 ml per acre mixed with 200 liters of water. Spraying should be done using a flood jet or flat fan nozzle with a protective hood to prevent drift onto the main crop foliage. Apply when weeds are actively growing and are less than 6 inches in height. It is highly toxic and should be handled with extreme caution, using complete protective equipment.",
+      "benefits": [
+        "Broad-spectrum, non-selective contact herbicide with extremely fast action.",
+        "Results are visible within hours of application, causing rapid weed drying.",
+        "Excellent rainfastness within 30 minutes, ideal for rainy seasons.",
+        "Inactivated instantly upon contact with soil, leaving no harmful residues."
+      ],
+      "crops": [
+        "Tea",
+        "Coffee",
+        "Rubber",
+        "Orchards",
+        "Non-crop areas"
+      ],
+      "target_pests": [
+        "Broad-leaved weeds",
+        "Annual grass weeds"
+      ],
+      "dosage": "800 - 1000 ml per acre",
+      "application_method": "Directed Foliar Spray",
+      "pack_sizes": [
+        "1 Liter"
+      ],
+      "mrp": "530",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777441339037-b5e18295-18b8-417e-bd86-04d130cd9e1d.jpg",
+      "product_url": "https://vanikicrop.com/product/v-quat",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e4a36f3ce9e72931d2b724",
+      "name": "V-CLEAR",
+      "category": "Herbicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Glyphosate",
+      "composition": "Glyphosate 41% SL",
+      "formulation": "SL (Soluble Liquid)",
+      "description": "V-CLEAR is a highly effective, non-selective systemic herbicide formulated as a Soluble Liquid (SL) containing Glyphosate 41%. It is absorbed through green leaves and stems and translocates systemically throughout the weed, reaching the roots, rhizomes, and tubers. It acts by inhibiting the EPSP synthase enzyme, which is essential for synthesis of aromatic amino acids, causing weed death. V-CLEAR is the ultimate solution for controlling tough, deep-rooted perennial and annual weeds in tea gardens and non-cropped areas.\n\nApply V-CLEAR at a rate of 1 to 2 Liters per acre, dissolved in 150-200 liters of clean water. For directed application in orchards or tea gardens, use a spray hood to prevent drift onto the foliage of the main crop. Apply when weeds are green and actively growing for maximum systemic absorption. Keep grazing animals away from sprayed areas and follow all handling safety precautions.",
+      "benefits": [
+        "Non-selective systemic herbicide that kills weeds from the roots.",
+        "Inhibits EPSP synthase, blocking key amino acid synthesis in plants.",
+        "Translocates from green leaves down to the root system, preventing regrowth.",
+        "Highly cost-effective for clearing heavy weed infestations before sowing."
+      ],
+      "crops": [
+        "Tea",
+        "Orchards",
+        "Non-crop areas"
+      ],
+      "target_pests": [
+        "Deep-rooted perennial weeds",
+        "Annual weeds",
+        "Grasses",
+        "Sedges"
+      ],
+      "dosage": "1 - 2 Liters per acre",
+      "application_method": "Directed Foliar Spray",
+      "pack_sizes": [
+        "1 Liter"
+      ],
+      "mrp": "560",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777441315714-02ab4994-7f25-49a3-bc22-237ca86677bb.jpg",
+      "product_url": "https://vanikicrop.com/product/v-clear",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e4b38a3ce9e72931d2b8c0",
+      "name": "V-MIX",
+      "category": "Herbicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Metsulfuron Methyl + Chlorimuron Ethyl",
+      "composition": "Metsulfuron Methyl 10% + Chlorimuron Ethyl 10% WP",
+      "formulation": "WP (Wettable Powder)",
+      "description": "V-MIX is a highly advanced, selective pre- and post-emergence herbicide containing Metsulfuron Methyl 10% and Chlorimuron Ethyl 10% WP. This combination inhibits the ALS enzyme, which blocks protein synthesis and stops weed growth. V-MIX is designed to control sedges and broadleaf weeds in rice fields. Its dual action targets both emerging and established weed populations, reducing weed competition during critical crop growth stages.\n\nThe recommended dosage is 8 gm per acre. For post-emergence application, apply 20-25 days after transplanting paddy when weeds are in the 2-3 leaf stage. Mix the 8 gm packet in 150-200 liters of water and spray uniformly. Ensure that there is standing water in the field at the time of application, and maintain water for 3-4 days to ensure maximum weed control efficacy.",
+      "benefits": [
+        "Selective pre- and post-emergence herbicide for transplanted paddy.",
+        "Controls sedges and broadleaf weeds at an extremely low dosage.",
+        "Combines two sulfonylurea herbicides for broad-spectrum weed control.",
+        "Safe for transplanting paddy and does not affect soil microbial health."
+      ],
+      "crops": [
+        "Paddy (Rice)"
+      ],
+      "target_pests": [
+        "Broad-leaved weeds (Ludwigia parviflora, Commelina benghalensis)",
+        "Sedges (Cyperus iria, Fimbristylis spp.)"
+      ],
+      "dosage": "8 gm per acre",
+      "application_method": "Foliar Spray or Soil Application",
+      "pack_sizes": [
+        "8 gm"
+      ],
+      "mrp": "175",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777441478733-bf5248d5-8fd0-4c78-9964-6a8b8a3a0e63.jpg",
+      "product_url": "https://vanikicrop.com/product/v-mix",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e4c0cc3ce9e72931d2b9c3",
+      "name": "VANI GOLD",
+      "category": "Herbicides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Bispyribac Sodium",
+      "composition": "Bispyribac Sodium 10% w/v SC",
+      "formulation": "SC (Suspension Concentrate)",
+      "description": "VANI GOLD is a highly selective, post-emergence herbicide containing Bispyribac Sodium 10% w/v SC. It belongs to the pyrimidinyloxybenzoic chemical family and acts by inhibiting the ALS enzyme, halting weed cell division. VANI GOLD is a premium post-emergent herbicide for paddy, offering control over major weed species, including the devastating Echinochloa grass weeds. It is highly soluble, easily absorbed by weed foliage and roots, and shows visible weed control within a week.\n\nThe standard application rate of VANI GOLD is 80 to 120 ml per acre, mixed with 150-200 liters of water. Apply when weeds are at the 2-5 leaf stage (typically 15-20 days after sowing or transplanting). Drain water from the field before spraying and re-flood the field 48 hours after application, maintaining water for 4-5 days to ensure maximum weed eradication.",
+      "benefits": [
+        "Highly selective post-emergence herbicide for nursery and transplanted rice.",
+        "Controls major grass weeds (Echinochloa spp.) along with sedges and broadleaves.",
+        "Wide window of application (10 to 25 days after transplanting).",
+        "Extremely safe to rice plants, leaving no phytotoxicity."
+      ],
+      "crops": [
+        "Paddy (Rice - Nursery & Main Field)"
+      ],
+      "target_pests": [
+        "Barnyard grass (Echinochloa crus-galli)",
+        "Sedges (Cyperus difformis)",
+        "Broadleaf weeds"
+      ],
+      "dosage": "80 - 120 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "250 ml",
+        "1 Liter",
+        "500 ml",
+        "100 ml"
+      ],
+      "mrp": "400 - 3500",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777440601390-00bbe48e-8878-445c-a324-842289e63b3d.jpg",
+      "product_url": "https://vanikicrop.com/product/vani-gold",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e4c5853ce9e72931d2bbf1",
+      "name": "HIGH POWER",
+      "category": "Bio Pesticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Seaweed Extract + Protein Hydrolysate + Humic Acid",
+      "composition": "Mixture of seaweed extract, protein hydrolysate and humic acid (Granule)",
+      "formulation": "Granule",
+      "description": "HIGH POWER is a premium organic bio-stimulant formulation in granular form, containing Seaweed Extract, Protein Hydrolysate, and Humic Acid. It works by enriching the soil biology, enhancing microbial activity, and improving chelating processes around the root zone. This allows plants to absorb nutrients more efficiently, resulting in stronger growth, increased tillering in cereals, and superior crop yields. HIGH POWER is suitable for all major crops and acts as a powerful soil conditioner.\n\nBroadcast HIGH POWER at a dosage of 5 KG per acre. For paddy and wheat, apply at the time of sowing or transplanting, or during the first top dressing. It can be mixed with chemical fertilizers (like Urea, DAP) for easy application. Regular application improves soil organic carbon and health over time, reducing dependency on excessive chemical fertilizers.",
+      "benefits": [
+        "100% organic plant growth booster and soil conditioner.",
+        "Enhances root development and nutrient uptake from the soil.",
+        "Improves soil structure, aeration, and moisture retention capability.",
+        "Increases crop tolerance to environmental stresses (drought, salinity)."
+      ],
+      "crops": [
+        "Paddy (Rice)",
+        "Sugarcane",
+        "Wheat",
+        "Vegetables",
+        "Cotton"
+      ],
+      "target_pests": [
+        "N/A (Plant Growth Promoter / Bio-stimulant)"
+      ],
+      "dosage": "5 KG per acre",
+      "application_method": "Broadcasting",
+      "pack_sizes": [
+        "5 KG"
+      ],
+      "mrp": "1180",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777442913817-a0b638ba-23f2-44c9-ac58-3fef903c02cc.jpg",
+      "product_url": "https://vanikicrop.com/product/high-power",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e5b9983ce9e72931d2bd39",
+      "name": "KASOL",
+      "category": "Bio Pesticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Seaweed Extract",
+      "composition": "SEA WEEDS",
+      "formulation": "Liquid",
+      "description": "KASOL is an organic plant growth promoter containing concentrated Seaweed Extract in liquid form. Rich in natural phytohormones (cytokinins, auxins, gibberellins), amino acids, and essential trace elements, it stimulates cellular division, cell elongation, and overall metabolic activity within the plant. KASOL is highly effective at boosting plant vigor, improving flower retention, and maximizing fruit development. It is widely used in commercial horticulture and vegetable production to secure high-quality produce.\n\nThe recommended dosage of KASOL is 250 to 500 ml per acre. Dilute in 200 liters of water and spray on the foliage during key growth phases: pre-flowering, fruit setting, and fruit development. It can also be applied through drip irrigation or root drenching. KASOL is non-toxic, safe for the environment, and compatible with most crop protection products.",
+      "benefits": [
+        "Natural organic formulation rich in auxins, cytokinins, and trace minerals.",
+        "Promotes vegetative growth, flowering, and fruit setting.",
+        "Reduces flower and fruit drop, improving harvest quality and size.",
+        "Boosts crop resistance against cold, drought, and heat stress."
+      ],
+      "crops": [
+        "Fruits (Mango, Citrus, Grapes)",
+        "Vegetables (Tomato, Chili, Potato)",
+        "Pulses",
+        "Cereals"
+      ],
+      "target_pests": [
+        "N/A (Plant Growth Promoter / Bio-stimulant)"
+      ],
+      "dosage": "250 - 500 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "250 ml",
+        "500 ml",
+        "1 Liter"
+      ],
+      "mrp": "550 - 1900",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777440432672-1f5ee706-69b8-4dad-873e-467421650d84.jpg",
+      "product_url": "https://vanikicrop.com/product/kasol",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e476933ce9e72931d2b3c3",
+      "name": "FIGHTER - 50",
+      "category": "Insecticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Diafenthiuron",
+      "composition": "Diafenthiuron 50% WP",
+      "formulation": "WP (Wettable Powder)",
+      "description": "FIGHTER - 50 is a broad-spectrum systemic insecticide and acaricide containing Diafenthiuron 50% WP. It belongs to the thiourea group and acts as an inhibitor of mitochondrial ATP synthase, leading to immediate pest paralysis and death. FIGHTER - 50 is exceptional for controlling sucking pests (whiteflies, aphids, jassids, thrips, and mites) in cotton, chili, and brinjal. It is particularly valued for its vapor action, which penetrates dense crop canopies to reach pests hidden under leaves.\n\nApply FIGHTER - 50 at a rate of 250 to 300 gm per acre in 200 liters of water. Spraying should target the foliage thoroughly. Apply as soon as sucking pests cross economic threshold levels. For diamondback moth in cabbage, ensure the spray covers the inner whorls of leaves. Follow safety guidelines and pre-harvest intervals for vegetables.",
+      "benefits": [
+        "Broad-spectrum insecticide and acaricide with a unique mode of action.",
+        "Excellent control of resistant sucking pests like whitefly and mites.",
+        "Acts via contact, stomach, and vapor action for complete canopy coverage.",
+        "Good phytotonic effect, keeping leaves clean and green."
+      ],
+      "crops": [
+        "Cotton",
+        "Cabbage",
+        "Chili",
+        "Brinjal",
+        "Cardamom"
+      ],
+      "target_pests": [
+        "Whitefly",
+        "Aphids",
+        "Jassids",
+        "Thrips",
+        "Diamondback Moth (DBM)",
+        "Mites"
+      ],
+      "dosage": "250 - 300 gm per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "250 gm"
+      ],
+      "mrp": "800",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777441585016-4e745ec5-7b6e-42db-9943-2b3ebaf69d22.jpg",
+      "product_url": "https://vanikicrop.com/product/fighter---50",
+      "availability": "In Stock"
+    },
+    {
+      "id": "69e5f6f13ce9e72931d2c10e",
+      "name": "RUBICONE",
+      "category": "Bio Pesticides",
+      "brand": "Vaniki Crop",
+      "active_ingredient": "Homobrassinolide",
+      "composition": "Homobrassinolide 0.04% w/w",
+      "formulation": "Liquid",
+      "description": "RUBICONE is a highly advanced, sixth-generation plant growth regulator containing Homobrassinolide 0.04% w/w. As a brassinosteroid, it plays a vital role in regulating cell division, cell elongation, vascular differentiation, and stress responses. RUBICONE promotes growth, enhances enzyme activity, and increases chlorophyll levels, resulting in robust crop development. It is particularly popular in viticulture to improve grape size and quality, and in cotton to enhance boll retention and fiber strength.\n\nThe recommended dosage of RUBICONE is 100 to 150 ml per acre. Spraying should be done during critical physiological stages such as vegetative growth, pre-flowering, and fruit development, diluted in 200 liters of water. Apply during the early morning or evening for maximum absorption. RUBICONE is compatible with most foliar fertilizers and crop protection agents.",
+      "benefits": [
+        "Sixth-generation natural plant hormone promoting cell division and elongation.",
+        "Enhances pollen germination and fertilization, leading to better fruit set.",
+        "Significantly reduces fruit splitting and drop in grapes and tomatoes.",
+        "Helps crops recover quickly from pesticide shock and abiotic stresses."
+      ],
+      "crops": [
+        "Grapes",
+        "Cotton",
+        "Tomato",
+        "Chili",
+        "Potato",
+        "Paddy (Rice)",
+        "Tea"
+      ],
+      "target_pests": [
+        "N/A (Plant Growth Regulator / Bio-stimulant)"
+      ],
+      "dosage": "100 - 150 ml per acre",
+      "application_method": "Foliar Spray",
+      "pack_sizes": [
+        "100 ml",
+        "250 ml"
+      ],
+      "mrp": "630 - 2300",
+      "image_url": "https://vanikicrop.com/uploads/vaniki/products/1777020001571-ef63f77f-a946-4ab3-92e1-16d10df44719.png",
+      "product_url": "https://vanikicrop.com/product/rubicone",
+      "availability": "In Stock"
+    }
+  ]
+}

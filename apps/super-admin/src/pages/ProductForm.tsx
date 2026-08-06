@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, ImagePlus, MinusCircle, PlusCircle, Star } from 'lucide-react';
+import { ArrowLeft, ImagePlus, PlusCircle, Star, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useDropzone } from 'react-dropzone';
@@ -545,73 +545,129 @@ function ProductEditor({
             </button>
           </div>
 
-          <div className="hidden grid-cols-[0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_40px] gap-2 px-4 mb-2 md:grid">
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Qty</label>
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Unit</label>
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">User Price</label>
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Admin Price</label>
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Offer Price</label>
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">HSN</label>
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">MRP</label>
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Stock</label>
-            <div />
-          </div>
-
           <div className="space-y-4">
             {fields.map((field, index) => (
-              <div key={field.id} className="grid gap-2 rounded-[1.5rem] border border-primary-100 bg-primary-50/60 p-4 md:grid-cols-[0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr_40px]">
-                <div>
-                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Qty</div>
-                  <input {...register(`variants.${index}.quantity`)} placeholder="Qty" className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3" />
-                  {errors.variants?.[index]?.quantity ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.quantity?.message}</p> : null}
-                </div>
-                <div>
-                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Unit</div>
-                  <select {...register(`variants.${index}.unit`)} className="w-full rounded-2xl border border-primary-100 bg-white px-3 py-3 text-sm">
-                    {units.map((unit) => (
-                      <option key={unit} value={unit}>
-                        {unit}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.variants?.[index]?.unit ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.unit?.message}</p> : null}
-                </div>
-                <div>
-                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">User Price</div>
-                  <input type="number" {...register(`variants.${index}.price`)} placeholder="Price" className="w-full rounded-2xl border border-primary-100 bg-white px-2 py-3 text-sm" />
-                  {errors.variants?.[index]?.price ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.price?.message}</p> : null}
-                </div>
-                <div>
-                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Admin Price</div>
-                  <input type="number" {...register(`variants.${index}.adminPrice`)} placeholder="Admin Price" className="w-full rounded-2xl border border-primary-100 bg-white px-2 py-3 text-sm" />
-                  {errors.variants?.[index]?.adminPrice ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.adminPrice?.message}</p> : null}
-                </div>
-                <div>
-                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Offer Price</div>
-                  <input type="number" {...register(`variants.${index}.offerPrice`)} placeholder="Offer Price" className="w-full rounded-2xl border border-primary-100 bg-white px-2 py-3 text-sm" />
-                  {errors.variants?.[index]?.offerPrice ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.offerPrice?.message}</p> : null}
-                </div>
-                <div>
-                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">HSN</div>
-                  <input {...register(`variants.${index}.hsnCode`)} placeholder="HSN" className="w-full rounded-2xl border border-primary-100 bg-white px-2 py-3 text-sm" />
-                  {errors.variants?.[index]?.hsnCode ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.hsnCode?.message}</p> : null}
-                </div>
-                <div>
-                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">MRP</div>
-                  <input type="number" {...register(`variants.${index}.mrp`)} placeholder="MRP" className="w-full rounded-2xl border border-primary-100 bg-white px-2 py-3 text-sm" />
-                  {errors.variants?.[index]?.mrp ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.mrp?.message}</p> : null}
-                </div>
-                <div>
-                  <div className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400 md:hidden">Stock</div>
-                  <input type="number" {...register(`variants.${index}.stock`)} placeholder="Stock" className="w-full rounded-2xl border border-primary-100 bg-white px-2 py-3 text-sm" />
-                  {errors.variants?.[index]?.stock ? <p className="mt-1 text-xs text-rose-600">{errors.variants[index]?.stock?.message}</p> : null}
-                </div>
-                <div className="flex items-center justify-center">
-                  {fields.length > 1 ? (
-                    <button type="button" onClick={() => remove(index)} className="rounded-2xl border border-rose-100 p-3 text-rose-600 hover:bg-rose-50">
-                      <MinusCircle size={16} />
+              <div key={field.id} className="relative rounded-[1.75rem] border border-primary-100 bg-primary-50/40 p-6">
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-primary-100">
+                  <span className="text-xs font-black uppercase tracking-[0.15em] text-primary-700">Variant #{index + 1}</span>
+                  {fields.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      className="rounded-xl border border-rose-100 bg-white p-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition"
+                      title="Remove Variant"
+                    >
+                      <Trash2 size={16} />
                     </button>
-                  ) : <div className="w-10" />}
+                  )}
+                </div>
+
+                <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Qty</label>
+                    <input
+                      {...register(`variants.${index}.quantity`)}
+                      placeholder="e.g. 1, 500, etc."
+                      className="w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    {errors.variants?.[index]?.quantity ? (
+                      <p className="mt-1.5 text-xs font-semibold text-rose-600">{errors.variants[index]?.quantity?.message}</p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Unit</label>
+                    <select
+                      {...register(`variants.${index}.unit`)}
+                      className="w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      {units.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {unit}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.variants?.[index]?.unit ? (
+                      <p className="mt-1.5 text-xs font-semibold text-rose-600">{errors.variants[index]?.unit?.message}</p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">HSN Code</label>
+                    <input
+                      {...register(`variants.${index}.hsnCode`)}
+                      placeholder="HSN Code"
+                      className="w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    {errors.variants?.[index]?.hsnCode ? (
+                      <p className="mt-1.5 text-xs font-semibold text-rose-600">{errors.variants[index]?.hsnCode?.message}</p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Stock</label>
+                    <input
+                      type="number"
+                      {...register(`variants.${index}.stock`)}
+                      placeholder="Available Stock"
+                      className="w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    {errors.variants?.[index]?.stock ? (
+                      <p className="mt-1.5 text-xs font-semibold text-rose-600">{errors.variants[index]?.stock?.message}</p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">MRP</label>
+                    <input
+                      type="number"
+                      {...register(`variants.${index}.mrp`)}
+                      placeholder="Max Retail Price"
+                      className="w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    {errors.variants?.[index]?.mrp ? (
+                      <p className="mt-1.5 text-xs font-semibold text-rose-600">{errors.variants[index]?.mrp?.message}</p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">User Price</label>
+                    <input
+                      type="number"
+                      {...register(`variants.${index}.price`)}
+                      placeholder="Selling Price"
+                      className="w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    {errors.variants?.[index]?.price ? (
+                      <p className="mt-1.5 text-xs font-semibold text-rose-600">{errors.variants[index]?.price?.message}</p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Admin Price</label>
+                    <input
+                      type="number"
+                      {...register(`variants.${index}.adminPrice`)}
+                      placeholder="Cost / Admin Price"
+                      className="w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    {errors.variants?.[index]?.adminPrice ? (
+                      <p className="mt-1.5 text-xs font-semibold text-rose-600">{errors.variants[index]?.adminPrice?.message}</p>
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-500">Offer Price</label>
+                    <input
+                      type="number"
+                      {...register(`variants.${index}.offerPrice`)}
+                      placeholder="Special Discount Price"
+                      className="w-full rounded-2xl border border-primary-100 bg-white px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    {errors.variants?.[index]?.offerPrice ? (
+                      <p className="mt-1.5 text-xs font-semibold text-rose-600">{errors.variants[index]?.offerPrice?.message}</p>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             ))}

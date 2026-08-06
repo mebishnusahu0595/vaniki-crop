@@ -189,7 +189,7 @@ export default function CheckoutScreen() {
       <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
         <Text className="text-lg font-black text-primary-900">Service Mode</Text>
         <Text className="mt-2 text-sm text-primary-900/70">
-          {mode === 'delivery' ? 'Delivery to your saved address' : 'Pickup from your chosen store'}
+          {mode === 'delivery' ? 'Delivery to your saved address' : 'From your chosen store'}
         </Text>
         <Pressable onPress={openSelector} className="mt-4 rounded-full bg-primary-50 px-4 py-3">
           <Text className="text-center text-xs font-black uppercase tracking-[2px] text-primary-500">

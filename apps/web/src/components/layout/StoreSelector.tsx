@@ -20,6 +20,7 @@ import { storefrontApi } from '../../utils/api';
 import type { Address, ServiceMode, Store } from '../../types/storefront';
 import { cn } from '../../utils/cn';
 import { formatStoreAddress } from '../../utils/format';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 
 interface StoreSelectorProps {
   isOpen: boolean;
@@ -93,6 +94,7 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
   const { user, isAuthenticated, updateUser } = useAuthStore();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 300);
   const [draftMode, setDraftMode] = useState<ServiceMode>(preferredMode || mode);
   const [draftAddress, setDraftAddress] = useState<Address>(address || user?.savedAddress || emptyAddress);
   const [draftStoreId, setDraftStoreId] = useState<string>(selectedStore?.id || '');
@@ -149,16 +151,26 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
   }, [isOpen]);
 
   const filteredStores = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+    const term = debouncedSearchTerm.trim().toLowerCase();
     if (!term) return availableStores;
 
     return availableStores.filter((store) =>
-      [store.name, store.address.street, store.address.city, store.address.state]
+      [
+        store.name,
+        store.address.street,
+        store.address.city,
+        store.address.district,
+        store.address.state,
+        store.address.pincode,
+        store.address.landmark,
+        store.phone,
+      ]
+        .filter(Boolean)
         .join(' ')
         .toLowerCase()
         .includes(term),
     );
-  }, [availableStores, searchTerm]);
+  }, [availableStores, debouncedSearchTerm]);
 
   useEffect(() => {
     if (!isOpen || draftMode !== 'pickup' || !draftStoreId) return;
@@ -367,36 +379,50 @@ const StoreSelector: React.FC<StoreSelectorProps> = ({ isOpen, preferredMode, on
                           const isActive = draftStoreId === store.id;
 
                           return (
-                            <button
+                            <div
                               key={store.id}
-                              onClick={() => setDraftStoreId(store.id)}
                               className={cn(
-                                'w-full rounded-[1.5rem] border p-4 text-left transition',
+                                'flex items-start gap-3 rounded-[1.5rem] border p-4 transition',
                                 isActive ? 'border-primary bg-primary text-white' : 'border-primary-100 bg-white hover:bg-primary-50',
                               )}
                             >
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h3 className="text-base font-black">{store.name}</h3>
-                                    {isActive && <CheckCircle2 size={16} />}
-                                  </div>
-                                  <p className={cn('mt-1 text-sm font-medium', isActive ? 'text-white/70' : 'text-primary-900/55')}>
-                                    {formatStoreAddress(store.address)}
-                                  </p>
-                                  <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.18em]">
-                                    <span className="inline-flex items-center gap-1.5">
-                                      <Phone size={13} />
-                                      {store.phone}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1.5">
-                                      <Clock3 size={13} />
-                                      {getOpenHoursText(store)}
-                                    </span>
-                                  </div>
+                              <button
+                                onClick={() => setDraftStoreId(store.id)}
+                                className="flex-1 text-left"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <h3 className="text-base font-black">{store.name}</h3>
+                                  {isActive && <CheckCircle2 size={16} />}
                                 </div>
-                              </div>
-                            </button>
+                                <p className={cn('mt-1 text-sm font-medium', isActive ? 'text-white/70' : 'text-primary-900/55')}>
+                                  {formatStoreAddress(store.address)}
+                                </p>
+                                <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-bold uppercase tracking-[0.18em]">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <Phone size={13} />
+                                    {store.phone}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <Clock3 size={13} />
+                                    {getOpenHoursText(store)}
+                                  </span>
+                                </div>
+                              </button>
+                              <a
+                                href={buildDirectionsUrl(store)}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(event) => event.stopPropagation()}
+                                aria-label={t('storeSelector.getDirections')}
+                                title={t('storeSelector.getDirections')}
+                                className={cn(
+                                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition',
+                                  isActive ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-primary-50 text-primary hover:bg-primary-100',
+                                )}
+                              >
+                                <Navigation size={18} />
+                              </a>
+                            </div>
                           );
                         })
                       )}

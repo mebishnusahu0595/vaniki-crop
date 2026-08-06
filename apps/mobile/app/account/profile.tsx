@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, Share, Text, TextInput, View, ScrollView } from 'react-native';
+import { Alert, Linking, Pressable, Share, Text, TextInput, View, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -8,7 +8,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
 import { storefrontApi } from '../../src/lib/api';
-import { formatStoreAddress } from '../../src/utils/format';
+import { buildStoreDirectionsUrl, formatStoreAddress } from '../../src/utils/format';
 import type { ServiceMode } from '../../src/types/storefront';
 import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
 import { lookupPincode } from '../../src/utils/pincode';
@@ -225,7 +225,7 @@ export default function ProfileScreen() {
                 className={`flex-1 rounded-full px-3 py-2.5 ${serviceMode === item ? 'bg-primary-500' : ''} active:scale-95`}
               >
                 <Text className={`text-center text-[10px] font-black uppercase tracking-[1.2px] ${serviceMode === item ? 'text-white' : 'text-primary-900/55'}`}>
-                  {item}
+                  {item === 'delivery' ? 'Delivery' : 'Store'}
                 </Text>
               </Pressable>
             ))}
@@ -233,19 +233,31 @@ export default function ProfileScreen() {
 
           {serviceMode === 'pickup' ? (
             <View className="gap-2 mt-2">
-              <Text className="mb-1 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Select Pickup Store</Text>
+              <Text className="mb-1 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Select Store</Text>
               {pickupStores.map((store) => (
                 <Pressable
                   key={store.id}
                   onPress={() => setPickupStoreId(store.id)}
                   className={`rounded-[18px] border px-4 py-4 ${pickupStoreId === store.id ? 'border-primary-500 bg-primary-50' : 'border-primary-100 bg-white'} active:scale-[0.99]`}
                 >
-                  <Text className="text-sm font-black text-primary-900">{store.name}</Text>
-                  <Text className="mt-1 text-xs text-primary-900/60">{formatStoreAddress(store.address)}</Text>
+                  <View className="flex-row items-start justify-between gap-3">
+                    <View className="flex-1">
+                      <Text className="text-sm font-black text-primary-900">{store.name}</Text>
+                      <Text className="mt-1 text-xs text-primary-900/60">{formatStoreAddress(store.address)}</Text>
+                    </View>
+                    <Pressable
+                      onPress={() => Linking.openURL(buildStoreDirectionsUrl(store)).catch(() => undefined)}
+                      hitSlop={10}
+                      accessibilityLabel="Get directions"
+                      className="h-10 w-10 items-center justify-center rounded-full bg-primary-50"
+                    >
+                      <Feather name="navigation" size={16} color="#2D6A4F" />
+                    </Pressable>
+                  </View>
                 </Pressable>
               ))}
               {!pickupStores.length ? (
-                <Text className="text-sm text-primary-900/60">No pickup stores available right now.</Text>
+                <Text className="text-sm text-primary-900/60">No stores available right now.</Text>
               ) : null}
             </View>
           ) : (
