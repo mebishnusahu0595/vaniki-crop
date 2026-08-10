@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  vaniki-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vaniki-api
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/app/uploads
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 256M
