@@ -7,15 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: vaniki-api
     restart: always
-    ports:
-      - "5000:5000"
+    network_mode: "host"
     env_file:
       - .env
     volumes:
       - ./uploads:/app/uploads
-    deploy:
-      resources:
-        limits:
-          memory: 1024M
-        reservations:
-          memory: 256M
