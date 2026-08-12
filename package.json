@@ -9,6 +9,8 @@
     "dev:super-admin": "turbo run dev --filter=@vaniki/super-admin",
     "dev:api": "turbo run dev --filter=@vaniki/api",
     "dev:mobile": "turbo run dev --filter=mobile",
+    "dev:mobile:go": "pnpm --filter mobile start:go",
+    "dev:mobile:tunnel": "pnpm --filter mobile start:tunnel",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",

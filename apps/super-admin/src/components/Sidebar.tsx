@@ -23,6 +23,7 @@ import {
   Megaphone,
   Award,
   LineChart,
+  Sprout,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink } from 'react-router-dom';
@@ -44,6 +45,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/settlements', label: 'Settlements', icon: Banknote },
   { to: '/invoices', label: 'B2B Invoices', icon: FileText },
   { to: '/products', label: 'Products', icon: Box },
+  { to: '/crops', label: 'Crops', icon: Sprout },
   { to: '/categories', label: 'Categories', icon: Tags },
   { to: '/orders', label: 'All Orders', icon: ShoppingCart },
   { to: '/payments', label: 'All Payments', icon: Banknote },

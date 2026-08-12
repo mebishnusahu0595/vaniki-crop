@@ -8,11 +8,13 @@ interface ServiceModeState {
   address: Address | null;
   selectorOpen: boolean;
   barExpanded: boolean;
+  hasChosenMode: boolean;
   setMode: (mode: ServiceMode) => void;
   setAddress: (address: Address | null) => void;
   openSelector: () => void;
   closeSelector: () => void;
   setBarExpanded: (expanded: boolean) => void;
+  setHasChosenMode: (chosen: boolean) => void;
 }
 
 export const useServiceModeStore = create<ServiceModeState>()(
@@ -22,16 +24,23 @@ export const useServiceModeStore = create<ServiceModeState>()(
       address: null,
       selectorOpen: false,
       barExpanded: true,
-      setMode: (mode) => set({ mode }),
+      hasChosenMode: false,
+      setMode: (mode) => set({ mode, hasChosenMode: true }),
       setAddress: (address) => set({ address }),
       openSelector: () => set({ selectorOpen: true }),
       closeSelector: () => set({ selectorOpen: false }),
       setBarExpanded: (expanded) => set({ barExpanded: expanded }),
+      setHasChosenMode: (hasChosenMode) => set({ hasChosenMode }),
     }),
     {
       name: 'vaniki-service-mode',
       storage: createJSONStorage(() => asyncStorage),
-      partialize: (state) => ({ mode: state.mode, address: state.address, barExpanded: state.barExpanded }),
+      partialize: (state) => ({
+        mode: state.mode,
+        address: state.address,
+        barExpanded: state.barExpanded,
+        hasChosenMode: state.hasChosenMode,
+      }),
     },
   ),
 );

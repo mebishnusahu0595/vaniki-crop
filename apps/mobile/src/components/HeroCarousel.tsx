@@ -26,19 +26,21 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
         : [
             {
               id: 'fallback-banner',
-              title: t('mobile.home.bestDeals'),
-              subtitle: t('mobile.home.title'),
+              title: 'Stronger Crops, Greater Yields.',
+              subtitle: 'Premium crop care solutions for every stage of farming',
               ctaText: t('mobile.home.viewAll'),
               ctaLink: '/products',
               image: { url: fallbackImage },
               linkedProducts: [],
             },
           ],
-    [banners],
+    [banners, t],
   );
 
+  const cardWidth = width - 32;
+
   return (
-    <View className="gap-3">
+    <View className="gap-2">
       <FlashList
         ref={listRef}
         horizontal
@@ -46,44 +48,53 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
         showsHorizontalScrollIndicator={false}
         data={items}
         onMomentumScrollEnd={(event) => {
-          const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+          const nextIndex = Math.round(event.nativeEvent.contentOffset.x / cardWidth);
           setActiveIndex(nextIndex);
         }}
         renderItem={({ item }) => (
-          <View style={{ width: width - 32 }} className="overflow-hidden rounded-[30px] bg-primary-800">
+          <View style={{ width: cardWidth, height: 185 }} className="relative overflow-hidden rounded-2xl bg-primary-900">
             <Image
               source={{ uri: item.image.mobileUrl || item.image.url || fallbackImage }}
-              style={{ width: '100%', height: 250 }}
+              style={{ width: '100%', height: '100%', position: 'absolute' }}
               contentFit="cover"
             />
-            <View className="absolute inset-0 bg-primary-900/45 px-5 py-5">
-              <View className="mt-auto rounded-[28px] bg-primary-500/80 p-5">
-                <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-100">
-                  {t('mobile.home.whatFarmersSay')}
+            <View className="absolute inset-0 bg-black/60 p-5 justify-between">
+              <View className="max-w-[88%] gap-1.5">
+                <Text className="text-[10px] font-black uppercase tracking-[2px] text-emerald-400">
+                  WHAT FARMERS SAY
                 </Text>
-                <Text className="mt-3 text-3xl font-black leading-9 text-white">{item.title}</Text>
-                <Text className="mt-2 text-sm leading-6 text-white/80">{item.subtitle}</Text>
-                <Pressable
-                  onPress={() => router.push((item.ctaLink as '/products') || '/products')}
-                  className="mt-5 self-start rounded-full bg-white px-5 py-3"
-                >
-                  <Text className="text-xs font-black uppercase tracking-[2px] text-primary-900">
-                    {item.ctaText || t('mobile.home.viewAll')}
+                <Text className="text-xl font-black leading-6 text-white shadow-sm" numberOfLines={2}>
+                  {item.title}
+                </Text>
+                {item.subtitle ? (
+                  <Text className="text-xs font-semibold leading-5 text-white/90 shadow-sm" numberOfLines={2}>
+                    {item.subtitle}
                   </Text>
-                </Pressable>
+                ) : null}
               </View>
+
+              <Pressable
+                onPress={() => router.push((item.ctaLink as '/products') || '/products')}
+                className="self-start rounded-xl bg-white px-4 py-2.5 shadow-sm active:scale-95"
+              >
+                <Text className="text-[11px] font-black uppercase tracking-[1.5px] text-primary-900">
+                  {item.ctaText || 'SHOP NOW'}
+                </Text>
+              </Pressable>
             </View>
           </View>
         )}
       />
-      <View className="flex-row justify-center gap-2">
-        {items.map((item, index) => (
-          <View
-            key={item.id}
-            className={`h-2 rounded-full ${index === activeIndex ? 'w-8 bg-primary-500' : 'w-2 bg-primary-200'}`}
-          />
-        ))}
-      </View>
+      {items.length > 1 ? (
+        <View className="flex-row justify-center gap-1.5 mt-1">
+          {items.map((item, index) => (
+            <View
+              key={item.id}
+              className={`h-1.5 rounded-full ${index === activeIndex ? 'w-6 bg-primary-500' : 'w-1.5 bg-primary-200'}`}
+            />
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 });

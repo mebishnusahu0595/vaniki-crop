@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, Pressable, Share, Text, TextInput, View, ScrollView } from 'react-native';
+import { Alert, Linking, Platform, Pressable, Share, Text, TextInput, View, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ import type { ServiceMode } from '../../src/types/storefront';
 import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
 import { lookupPincode } from '../../src/utils/pincode';
 import { SelectionModal } from '../../src/components/SelectionModal';
+import { LocationMapPicker } from '../../src/components/LocationMapPicker';
 
 export default function ProfileScreen() {
   const { user, setUser, logout } = useAuthStore();
@@ -51,7 +52,29 @@ export default function ProfileScreen() {
     setPickupStoreId(selectedStore?.id || '');
   }, [mode, selectedStore?.id]);
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <Screen>
+        <View className="flex-1 justify-center items-center px-6 py-12">
+          <View className="h-20 w-20 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200 mb-5">
+            <Feather name="lock" size={32} color="#2D6A4F" />
+          </View>
+          <Text className="text-2xl font-black text-primary-900 text-center">Login Required</Text>
+          <Text className="mt-2 text-xs leading-5 text-primary-900/60 text-center max-w-xs mb-6">
+            Please login or register to view and edit your profile details.
+          </Text>
+          <Pressable
+            onPress={() => router.push('/(auth)/login')}
+            className="rounded-full bg-primary-500 px-8 py-4 active:scale-95 shadow-md"
+          >
+            <Text className="text-center text-xs font-black uppercase tracking-[1.5px] text-white">
+              Login / Register Now
+            </Text>
+          </Pressable>
+        </View>
+      </Screen>
+    );
+  }
 
   const handleDeleteAccount = async () => {
     Alert.alert(
@@ -139,8 +162,8 @@ export default function ProfileScreen() {
   };
 
   return (
-    <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+    <Screen scroll={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, width: '100%' }} contentContainerStyle={{ width: '100%', flexGrow: 1, paddingBottom: 40 }}>
         {/* Back and Title */}
         <View className="flex-row items-center gap-3 mb-6">
           <Pressable onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm border border-primary-50 active:scale-90">
@@ -162,9 +185,25 @@ export default function ProfileScreen() {
               }
 
               const referralLink = `https://vanikicrop.com/signup?ref=${user.referralCode}`;
-              await Share.share({
-                message: `Join Vaniki Crop with my referral link: ${referralLink}`,
-              });
+              const message = `Join Vaniki Crop with my referral link: ${referralLink}`;
+
+              try {
+                if (Platform.OS !== 'web') {
+                  await Share.share({ message });
+                } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  await navigator.clipboard.writeText(referralLink);
+                  Alert.alert('Link Copied! 📋', 'Referral link has been copied to your clipboard.');
+                } else {
+                  Alert.alert('Referral Link', referralLink);
+                }
+              } catch (error) {
+                if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  await navigator.clipboard.writeText(referralLink);
+                  Alert.alert('Link Copied! 📋', 'Referral link has been copied to your clipboard.');
+                } else {
+                  Alert.alert('Referral Link', referralLink);
+                }
+              }
             }}
             className="mt-4 rounded-full border border-primary-200 bg-white py-3 active:scale-95 shadow-sm"
           >
@@ -262,6 +301,23 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <View className="gap-4 mt-2">
+              {/* Dynamic Live GPS Location & OpenStreetMap Pin Picker */}
+              <LocationMapPicker
+                currentPincode={profile.pincode}
+                currentState={profile.state}
+                currentCity={profile.city}
+                onLocationSelect={(res) => {
+                  setProfile((current) => ({
+                    ...current,
+                    street: res.street || current.street,
+                    city: res.city || current.city,
+                    state: res.state || current.state,
+                    pincode: res.pincode || current.pincode,
+                    landmark: res.landmark || current.landmark,
+                  }));
+                }}
+              />
+
               <View>
                 <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Street Address</Text>
                 <TextInput

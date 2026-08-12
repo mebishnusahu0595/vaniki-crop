@@ -8,6 +8,7 @@ import { useStoreStore } from '../store/useStoreStore';
 export function useBootstrapSession() {
   const token = useAuthStore((state) => state.token);
   const setUser = useAuthStore((state) => state.setUser);
+  const logout = useAuthStore((state) => state.logout);
   const setMode = useServiceModeStore((state) => state.setMode);
   const setAddress = useServiceModeStore((state) => state.setAddress);
   const setStore = useStoreStore((state) => state.setStore);
@@ -16,10 +17,15 @@ export function useBootstrapSession() {
     queryKey: ['mobile-session', token],
     queryFn: storefrontApi.me,
     enabled: Boolean(token),
-    retry: 1,
+    retry: false,
   });
 
   useEffect(() => {
+    if (sessionQuery.isError) {
+      logout();
+      return;
+    }
+
     const session = sessionQuery.data;
     if (!session) return;
 
@@ -31,7 +37,7 @@ export function useBootstrapSession() {
     } else {
       setStore(null);
     }
-  }, [sessionQuery.data, setAddress, setMode, setStore, setUser]);
+  }, [sessionQuery.data, sessionQuery.isError, logout, setAddress, setMode, setStore, setUser]);
 
   return sessionQuery;
 }

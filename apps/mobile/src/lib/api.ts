@@ -7,6 +7,7 @@ import type {
   AuthUser,
   Address,
   Category,
+  Crop,
   CouponValidation,
   HomepageData,
   Order,
@@ -149,7 +150,10 @@ async function request<T>(path: string, options: RequestOptions = {}) {
   const token = useAuthStore.getState().token;
   const storeId = useStoreStore.getState().selectedStore?.id;
   const serviceMode = useServiceModeStore.getState().mode;
-  const url = new URL(`${API_BASE_URL}${path}`);
+  const baseOrigin = API_BASE_URL.startsWith('http')
+    ? undefined
+    : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081');
+  const url = new URL(`${API_BASE_URL}${path}`, baseOrigin);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -234,10 +238,15 @@ export const storefrontApi = {
     return response.data;
   },
   productAvailability: async (productId: string, variantId: string) => {
-    const response = await request<Array<{ id: string; name: string; address: Store['address']; location: Store['location']; quantity: number }>>('/stores/availability', {
-      params: { productId, variantId },
-    });
-    return response.data;
+    if (!productId?.trim() || !variantId?.trim()) return [];
+    try {
+      const response = await request<Array<{ id: string; name: string; address: Store['address']; location: Store['location']; quantity: number }>>('/stores/availability', {
+        params: { productId, variantId },
+      });
+      return response.data || [];
+    } catch {
+      return [];
+    }
   },
   cartAvailability: async (items: Array<{ productId: string; variantId: string; qty: number }>) => {
     const response = await request<Array<{
@@ -479,5 +488,13 @@ export const storefrontApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+  crops: async (): Promise<Crop[]> => {
+    const response = await request<Crop[]>('/crops');
+    return response.data;
+  },
+  cropDetail: async (slug: string): Promise<Crop> => {
+    const response = await request<Crop>(`/crops/${slug}`);
+    return response.data;
   },
 };

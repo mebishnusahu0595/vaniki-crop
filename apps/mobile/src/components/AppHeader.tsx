@@ -13,16 +13,18 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { getLanguageToggleLabel, toggleAppLanguage } from '../i18n';
 
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useDrawerStore } from '../store/useDrawerStore';
+import { SidebarDrawer } from './SidebarDrawer';
 
 export const AppHeader = memo(function AppHeader() {
   const { t } = useTranslation();
-  const { settings } = useSettingsStore();
   const pathname = usePathname();
   const [query, setQuery] = useState('');
-  const [switchingLanguage, setSwitchingLanguage] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const cartCount = useCartStore((state) => state.items.reduce((sum, item) => sum + item.qty, 0));
   const { user, setShowCheckInModal } = useAuthStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
+  const openDrawer = useDrawerStore((state) => state.openDrawer);
   const debouncedQuery = useDebouncedValue(query.trim(), 160);
   const isHomepageSearch = pathname === '/(tabs)' || pathname === '/(tabs)/index' || pathname === '/';
   const shouldRunSearch = isHomepageSearch && debouncedQuery.length >= 2;
@@ -69,11 +71,13 @@ export const AppHeader = memo(function AppHeader() {
     if (trimmed) {
       router.push({ pathname: '/products', params: { search: trimmed } });
       setQuery('');
+      setIsSearchOpen(false);
       return;
     }
 
     router.push('/products');
     setQuery('');
+    setIsSearchOpen(false);
   };
 
   const openCart = () => {
@@ -82,81 +86,50 @@ export const AppHeader = memo(function AppHeader() {
     }
   };
 
-  const openAccount = () => {
-    if (user) {
-      router.push('/(tabs)/account');
-      return;
-    }
-
-    router.push('/(auth)/login');
-  };
-
-  const handleLanguageToggle = async () => {
-    if (switchingLanguage) return;
-
-    setSwitchingLanguage(true);
-    try {
-      await toggleAppLanguage();
-    } finally {
-      setSwitchingLanguage(false);
-    }
-  };
-
   return (
     <View>
-      <View className="rounded-2xl bg-primary-900 px-4 py-1.5">
-        <View className="flex-row flex-wrap items-center justify-between gap-y-1">
-          <View className="flex-row items-center gap-1.5">
-            <Feather name="truck" size={11} color="#52B788" />
-            <Text className="text-[8px] font-black uppercase tracking-[1.6px] text-white">
-              {t('mobile.topNotice.freeDelivery', { amount: settings.freeDeliveryThreshold.toLocaleString('en-IN') })}
-            </Text>
-          </View>
-          <View className="flex-row items-center gap-1.5">
-            <Feather name="phone" size={11} color="#52B788" />
-            <Text className="text-[8px] font-black uppercase tracking-[1.6px] text-white">
-              {t('mobile.topNotice.call')}: +91 9406160185
-            </Text>
-          </View>
-        </View>
-      </View>
+      <SidebarDrawer />
 
       <View className="mt-2 flex-row items-center justify-between">
-        <Pressable onPress={() => router.push('/(tabs)')} className="flex-row items-center gap-2 active:scale-95">
-          <Image
-            source={require('../../assets/icon.png')}
-            style={{ width: 22, height: 22, borderRadius: 5 }}
-            contentFit="contain"
-          />
-          <View className="flex-row items-baseline gap-0.5">
-            <Text className="text-[18px] font-black leading-tight tracking-tight text-primary-900">
-              Vaniki
-            </Text>
-            <Text className="text-[18px] font-black leading-tight tracking-tight text-primary-500">
-              Crop
-            </Text>
-          </View>
-        </Pressable>
+        <View className="flex-row items-center gap-3">
+          <Pressable
+            onPress={openDrawer}
+            className="h-9 w-9 items-center justify-center rounded-2xl border border-primary-100 bg-white active:scale-95"
+            hitSlop={8}
+          >
+            <Feather name="menu" size={18} color="#082018" />
+          </Pressable>
+
+          <Pressable onPress={() => router.push('/(tabs)')} className="flex-row items-center gap-2 active:scale-95">
+            <Image
+              source={require('../../assets/icon.png')}
+              style={{ width: 22, height: 22, borderRadius: 5 }}
+              contentFit="contain"
+            />
+            <View className="flex-row items-baseline gap-0.5">
+              <Text className="text-[18px] font-black leading-tight tracking-tight text-primary-900">
+                Vaniki
+              </Text>
+              <Text className="text-[18px] font-black leading-tight tracking-tight text-primary-500">
+                Crop
+              </Text>
+            </View>
+          </Pressable>
+        </View>
 
         <View className="flex-row items-center gap-1.5">
           <Pressable
-            onPress={() => void handleLanguageToggle()}
-            disabled={switchingLanguage}
-            className="h-9 min-w-[50px] items-center justify-center rounded-2xl border border-primary-100 bg-white px-2 active:scale-95 active:opacity-85"
+            onPress={() => setIsSearchOpen(!isSearchOpen)}
+            className={`h-9 w-9 items-center justify-center rounded-2xl border active:scale-95 ${
+              isSearchOpen ? 'bg-primary-500 border-primary-500' : 'bg-white border-primary-100'
+            }`}
           >
-            <Text
-              numberOfLines={1}
-              className={`text-[8.5px] font-black uppercase tracking-[0.5px] ${
-                switchingLanguage ? 'text-primary-900/45' : 'text-primary-900'
-              }`}
-            >
-              {getLanguageToggleLabel()}
-            </Text>
+            <Feather name="search" size={16} color={isSearchOpen ? '#FFFFFF' : '#082018'} />
           </Pressable>
 
           <Pressable
             onPress={() => setShowCheckInModal(true)}
-            className="h-9 flex-row items-center gap-1 rounded-2xl border border-amber-100 bg-amber-50 px-2 active:scale-95 active:opacity-90"
+            className="h-9 flex-row items-center gap-1 rounded-2xl border border-amber-100 bg-amber-50 px-2.5 active:scale-95 active:opacity-90"
           >
             <Image source={require('../../assets/coin.png')} style={{ width: 14, height: 14 }} />
             <Text className="text-xs font-black text-amber-900">{user?.loyaltyPoints || 0}</Text>
@@ -173,34 +146,31 @@ export const AppHeader = memo(function AppHeader() {
               </View>
             ) : null}
           </Pressable>
-
-          <Pressable
-            onPress={openAccount}
-            className="h-9 w-9 items-center justify-center rounded-2xl border border-primary-100 bg-white active:scale-95 active:opacity-85"
-          >
-            <Feather name="user" size={16} color="#082018" />
-          </Pressable>
         </View>
       </View>
 
-      <View className="relative z-20 mt-2">
-        <View className="flex-row items-center rounded-2xl border border-primary-100 bg-white px-3 py-1.5">
-          <Feather name="search" size={14} color="#527164" />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder={t('mobile.header.searchPlaceholder')}
-            className="mx-2 flex-1 py-1.5 text-xs font-semibold text-primary-900"
-            placeholderTextColor="#7a978b"
-            returnKeyType="search"
-            onSubmitEditing={submitSearch}
-          />
-          <Pressable onPress={submitSearch} className="h-7 w-7 items-center justify-center rounded-xl bg-primary-50">
-            <MaterialIcons name="arrow-forward" size={16} color="#082018" />
-          </Pressable>
-        </View>
+      {isSearchOpen || query.trim().length > 0 ? (
+        <View className="relative z-20 mt-2">
+          <View className="flex-row items-center rounded-2xl border border-primary-100 bg-white px-3 py-1.5">
+            <Feather name="search" size={14} color="#527164" />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder={t('mobile.header.searchPlaceholder')}
+              className="mx-2 flex-1 py-1.5 text-xs font-semibold text-primary-900"
+              style={{ outlineStyle: 'none', outlineWidth: 0 } as any}
+              placeholderTextColor="#7a978b"
+              underlineColorAndroid="transparent"
+              returnKeyType="search"
+              autoFocus
+              onSubmitEditing={submitSearch}
+            />
+            <Pressable onPress={submitSearch} className="h-7 w-7 items-center justify-center rounded-xl bg-primary-50">
+              <MaterialIcons name="arrow-forward" size={16} color="#082018" />
+            </Pressable>
+          </View>
 
-        {shouldShowInlinePanel ? (
+          {shouldShowInlinePanel ? (
           <View
             className="absolute left-0 right-0 top-[58px] max-h-80 rounded-2xl border border-primary-100 bg-white px-2 py-2"
             style={{
@@ -275,6 +245,7 @@ export const AppHeader = memo(function AppHeader() {
           </View>
         ) : null}
       </View>
+    ) : null}
     </View>
   );
 });

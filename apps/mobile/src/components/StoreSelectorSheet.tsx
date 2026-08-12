@@ -30,6 +30,7 @@ import type { Address, ServiceMode } from '../types/storefront';
 import { buildStoreDirectionsUrl, formatStoreAddress } from '../utils/format';
 import { useFocusAwareScroll } from '../hooks/useFocusAwareScroll';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { LocationMapPicker } from './LocationMapPicker';
 
 const emptyAddress: Address = {
   street: '',
@@ -68,6 +69,7 @@ export function StoreSelectorSheet() {
   const setMode = useServiceModeStore((state) => state.setMode);
   const setAddress = useServiceModeStore((state) => state.setAddress);
   const closeSelector = useServiceModeStore((state) => state.closeSelector);
+  const setHasChosenMode = useServiceModeStore((state) => state.setHasChosenMode);
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const setStore = useStoreStore((state) => state.setStore);
   const user = useAuthStore((state) => state.user);
@@ -301,9 +303,25 @@ export function StoreSelectorSheet() {
           >
             {draftMode === 'delivery' ? (
               <View className="gap-3 pb-4">
+                <LocationMapPicker
+                  currentPincode={draftAddress.pincode}
+                  currentState={draftAddress.state}
+                  currentCity={draftAddress.city}
+                  onLocationSelect={(res) => {
+                    setDraftAddress((current) => ({
+                      ...current,
+                      street: res.street || current.street,
+                      city: res.city || current.city,
+                      state: res.state || current.state,
+                      pincode: res.pincode || current.pincode,
+                      landmark: res.landmark || current.landmark,
+                    }));
+                  }}
+                />
+
                 {([
                   ['street', 'Street Address'],
-                  ['city', 'City'],
+                  ['city', 'City / District'],
                   ['state', 'State'],
                   ['pincode', 'Pincode'],
                   ['landmark', 'Landmark'],

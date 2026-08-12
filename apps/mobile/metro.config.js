@@ -94,6 +94,78 @@ config.transformer = {
   },
 };
 
+const https = require('https');
+const originalEnhanceMiddleware = config.server?.enhanceMiddleware;
+
+config.server = {
+  ...config.server,
+  enhanceMiddleware: (metroMiddleware, server) => {
+    const customMiddleware = (req, res, next) => {
+      if (req.url && req.url.startsWith('/api-proxy/')) {
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204;
+          res.setHeader('access-control-allow-origin', '*');
+          res.setHeader('access-control-allow-methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+          res.setHeader('access-control-allow-headers', 'Content-Type, Authorization, X-Store-Id');
+          res.end();
+          return;
+        }
+
+        const targetPath = req.url.replace('/api-proxy/', '/api/');
+        const targetUrl = new URL(`https://vanikicrop.com${targetPath}`);
+
+        const headers = { ...req.headers };
+        delete headers.host;
+        delete headers.origin;
+        delete headers.referer;
+
+        const proxyReq = https.request(
+          targetUrl,
+          {
+            method: req.method,
+            headers: {
+              ...headers,
+              host: 'vanikicrop.com',
+            },
+          },
+          (proxyRes) => {
+            res.statusCode = proxyRes.statusCode || 200;
+            Object.keys(proxyRes.headers).forEach((key) => {
+              if (key !== 'access-control-allow-origin') {
+                res.setHeader(key, proxyRes.headers[key]);
+              }
+            });
+            res.setHeader('access-control-allow-origin', '*');
+            res.setHeader('access-control-allow-methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+            res.setHeader('access-control-allow-headers', 'Content-Type, Authorization, X-Store-Id');
+
+            proxyRes.pipe(res);
+          }
+        );
+
+        proxyReq.on('error', (err) => {
+          res.statusCode = 500;
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        });
+
+        if (['POST', 'PUT', 'PATCH'].includes(req.method || '')) {
+          req.pipe(proxyReq);
+        } else {
+          proxyReq.end();
+        }
+        return;
+      }
+
+      return metroMiddleware(req, res, next);
+    };
+
+    return originalEnhanceMiddleware
+      ? originalEnhanceMiddleware(customMiddleware, server)
+      : customMiddleware;
+  },
+};
+
 module.exports = withNativeWind(config, {
   input: './global.css',
 });

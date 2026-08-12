@@ -50,19 +50,19 @@ export function Screen({
   const isAuthRoute = ['/login', '/signup', '/(auth)', '/(auth)/login', '/(auth)/signup'].some(matchesPath);
 
 
-  const showPersistentBottomNav = !isTabsRoute && !isAuthRoute;
+  const showPersistentBottomNav = false;
   const bottomPadding = (withWhatsAppFab ? 36 : 20) + insets.bottom;
-  const contentClassName = scroll ? 'bg-offwhite px-4' : 'flex-1 bg-offwhite px-4';
+  const contentClassName = scroll ? 'w-full bg-offwhite px-4' : 'flex-1 w-full bg-offwhite px-4';
 
   const content = (
-    <View className={contentClassName} style={{ paddingBottom: bottomPadding }}>
+    <View className={contentClassName} style={{ paddingBottom: bottomPadding, width: '100%' }}>
       {withHeader ? (
-        <View className="pb-2 pt-1.5">
+        <View className="pb-2 pt-1.5 w-full">
           <AppHeader />
         </View>
       ) : null}
       {withServiceBar ? (
-        <View className="pb-2">
+        <View className="pb-2 w-full">
           <ServiceModeBar />
         </View>
       ) : null}
@@ -75,6 +75,8 @@ export function Screen({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
+      contentContainerStyle={{ flexGrow: 1, width: '100%' }}
+      style={{ flex: 1, width: '100%' }}
     >
       {content}
     </ScrollView>

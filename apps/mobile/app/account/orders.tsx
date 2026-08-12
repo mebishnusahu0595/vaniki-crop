@@ -224,8 +224,35 @@ function OrderDetailPopup({ order, onClose }: { order: Order | null; onClose: ()
   );
 }
 
+import { useAuthStore } from '../../src/store/useAuthStore';
+
 export default function OrdersHistoryScreen() {
+  const { user } = useAuthStore();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  if (!user) {
+    return (
+      <Screen>
+        <View className="flex-1 justify-center items-center px-6 py-12">
+          <View className="h-20 w-20 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200 mb-5">
+            <Feather name="lock" size={32} color="#2D6A4F" />
+          </View>
+          <Text className="text-2xl font-black text-primary-900 text-center">Login Required</Text>
+          <Text className="mt-2 text-xs leading-5 text-primary-900/60 text-center max-w-xs mb-6">
+            Please login or register to view your order history and track your orders.
+          </Text>
+          <Pressable
+            onPress={() => router.push('/(auth)/login')}
+            className="rounded-full bg-primary-500 px-8 py-4 active:scale-95 shadow-md"
+          >
+            <Text className="text-center text-xs font-black uppercase tracking-[1.5px] text-white">
+              Login / Register Now
+            </Text>
+          </Pressable>
+        </View>
+      </Screen>
+    );
+  }
 
   const ordersQuery = useQuery({
     queryKey: ['mobile-orders'],

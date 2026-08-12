@@ -701,4 +701,24 @@ export const adminApi = {
     const response = await api.delete<{ success: boolean; message: string }>(`/superadmin/superadmin-staff/${id}`);
     return response.data;
   },
+  crops: async () => {
+    const response = await api.get<ApiResponse<any[]>>('/superadmin/crops');
+    return response.data.data;
+  },
+  createCrop: async (payload: FormData) => {
+    const response = await api.post<ApiResponse<any>>('/superadmin/crops', payload);
+    return response.data.data;
+  },
+  updateCrop: async (id: string, payload: FormData) => {
+    const response = await api.put<ApiResponse<any>>(`/superadmin/crops/${id}`, payload);
+    return response.data.data;
+  },
+  toggleCropActive: async (id: string, isActive: boolean) => {
+    const response = await api.patch<ApiResponse<any>>(`/superadmin/crops/${id}/toggle-active`, { isActive });
+    return response.data.data;
+  },
+  deleteCrop: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/superadmin/crops/${id}`);
+    return response.data;
+  },
 };

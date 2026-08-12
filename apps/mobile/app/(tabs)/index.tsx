@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
@@ -16,6 +16,9 @@ import { useStoreStore } from '../../src/store/useStoreStore';
 import type { Testimonial } from '../../src/types/storefront';
 import { resolveMediaUrl } from '../../src/utils/media';
 import { Skeleton } from '../../src/components/Skeleton';
+import { Feather } from '@expo/vector-icons';
+import { useSettingsStore } from '../../src/store/useSettingsStore';
+import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 
 const bestSellerTabs = ['Insecticides', 'Herbicides', 'Fungicides'] as const;
 const fallbackTestimonials: Testimonial[] = [
@@ -35,16 +38,119 @@ const fallbackTestimonials: Testimonial[] = [
   },
 ];
 
-import { useSettingsStore } from '../../src/store/useSettingsStore';
+function VerticalProductSection({
+  title,
+  subtitle,
+  badgeText,
+  products,
+  fallbackProducts = [],
+  onViewAll,
+  isLoading,
+}: {
+  title: string;
+  subtitle?: string;
+  badgeText?: string;
+  products: any[];
+  fallbackProducts?: any[];
+  onViewAll: () => void;
+  isLoading?: boolean;
+}) {
+  const itemsMap = new Map();
+  products.forEach((p) => p?.id && itemsMap.set(p.id, p));
+  fallbackProducts.forEach((p) => {
+    if (itemsMap.size < 4 && p?.id && !itemsMap.has(p.id)) {
+      itemsMap.set(p.id, p);
+    }
+  });
+
+  const displayItems = Array.from(itemsMap.values()).slice(0, 4);
+
+  return (
+    <View className="mb-8">
+      <View className="mb-3">
+        {badgeText ? (
+          <Text className="text-[10px] font-black uppercase tracking-[1.5px] text-emerald-600 mb-0.5">
+            {badgeText}
+          </Text>
+        ) : null}
+        <Text className="text-xl font-black text-primary-900 leading-6">{title}</Text>
+        {subtitle ? (
+          <Text className="text-xs font-semibold text-primary-900/60 mt-0.5">{subtitle}</Text>
+        ) : null}
+      </View>
+
+      {isLoading ? (
+        <View className="flex-row flex-wrap justify-between">
+          {[1, 2, 3, 4].map((i) => (
+            <View key={i} style={{ width: '48%' }} className="mb-3">
+              <View className="p-3 rounded-[24px] border border-primary-100 bg-white gap-2">
+                <Skeleton height={130} borderRadius={16} className="w-full" />
+                <Skeleton width={110} height={14} borderRadius={4} className="mt-1" />
+                <Skeleton width={70} height={10} borderRadius={4} />
+              </View>
+            </View>
+          ))}
+        </View>
+      ) : displayItems.length ? (
+        <>
+          <View className="flex-row flex-wrap justify-between">
+            {displayItems.map((product) => (
+              <View key={product.id} style={{ width: '48%' }} className="mb-3">
+                <ProductCard product={product} compact />
+              </View>
+            ))}
+          </View>
+          <Pressable
+            onPress={onViewAll}
+            className="mt-1 rounded-2xl border border-primary-200 bg-white py-3.5 items-center justify-center active:bg-primary-50 shadow-xs"
+          >
+            <View className="flex-row items-center gap-2">
+              <Text className="text-xs font-black uppercase tracking-[1.5px] text-primary-900">
+                View All {title}
+              </Text>
+              <Feather name="arrow-right" size={14} color="#082018" />
+            </View>
+          </Pressable>
+        </>
+      ) : (
+        <View className="rounded-2xl bg-white p-4 border border-primary-100 items-center">
+          <Text className="text-xs font-semibold text-primary-900/60">No products available in this section.</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const { t } = useTranslation();
   const selectedStore = useStoreStore((state) => state.selectedStore);
+  const { settings } = useSettingsStore();
   const setSettings = useSettingsStore((state) => state.setSettings);
   const { width } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState<(typeof bestSellerTabs)[number]>('Insecticides');
   const [activeTestimonialIndex, setActiveTestimonialIndex] = useState(0);
+  const [isNoticeDismissed, setIsNoticeDismissed] = useState(false);
   const testimonialListRef = useRef<any>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.025,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [pulseAnim]);
   const homepageQuery = useQuery({
     queryKey: ['mobile-homepage', selectedStore?.id],
     queryFn: () => storefrontApi.homepage(selectedStore?.id),
@@ -54,7 +160,7 @@ export default function HomeScreen() {
     queryFn: () =>
       storefrontApi.products({
         page: 1,
-        limit: 12,
+        limit: 40,
         sort: 'popular',
         storeId: selectedStore?.id,
       }),
@@ -75,27 +181,69 @@ export default function HomeScreen() {
   const testimonialCardWidth = Math.min(Math.max(width - 72, 220), 300);
   const testimonialSnapInterval = testimonialCardWidth + 12;
 
-  const saleProducts = useMemo(() => {
-    const directSaleProducts = homepageQuery.data?.saleProducts || [];
-    if (directSaleProducts.length) return directSaleProducts;
-
-    return (fallbackProductsQuery.data?.data || []).slice(0, 10);
-  }, [homepageQuery.data?.saleProducts, fallbackProductsQuery.data?.data]);
+  const allProducts = useMemo(() => {
+    const fromHomepage = [
+      ...(homepageQuery.data?.bestSellers || []),
+      ...(homepageQuery.data?.saleProducts || []),
+    ];
+    const fromFallback = fallbackProductsQuery.data?.data || [];
+    const map = new Map();
+    [...fromHomepage, ...fromFallback].forEach((p) => {
+      if (p?.id && !map.has(p.id)) map.set(p.id, p);
+    });
+    return Array.from(map.values());
+  }, [homepageQuery.data, fallbackProductsQuery.data]);
 
   const bestSellerProducts = useMemo(() => {
     const directBestSellers = homepageQuery.data?.bestSellers || [];
     if (directBestSellers.length) return directBestSellers;
+    return allProducts;
+  }, [homepageQuery.data?.bestSellers, allProducts]);
 
-    return fallbackProductsQuery.data?.data || [];
-  }, [homepageQuery.data?.bestSellers, fallbackProductsQuery.data?.data]);
+  const saleProducts = useMemo(() => {
+    const directSaleProducts = homepageQuery.data?.saleProducts || [];
+    if (directSaleProducts.length) return directSaleProducts;
+    return allProducts.filter((p) => (p.salePrice || p.discountPercent || 0) > 0);
+  }, [homepageQuery.data?.saleProducts, allProducts]);
 
-  const tabProducts = useMemo(() => {
-    const filtered = bestSellerProducts.filter((product) =>
-      (product.category?.name || '').toLowerCase().includes(activeTab.toLowerCase().replace('icides', 'icide')),
+  const insecticidesProducts = useMemo(() => {
+    const match = allProducts.filter((p) =>
+      (p.category?.name || '').toLowerCase().includes('insect') ||
+      (p.category?.slug || '').toLowerCase().includes('insect'),
     );
+    return match.length ? match : allProducts.slice(4, 12);
+  }, [allProducts]);
 
-    return filtered.length ? filtered : bestSellerProducts.slice(0, 10);
-  }, [activeTab, bestSellerProducts]);
+  const herbicidesProducts = useMemo(() => {
+    const match = allProducts.filter((p) =>
+      (p.category?.name || '').toLowerCase().includes('herb') ||
+      (p.category?.name || '').toLowerCase().includes('weed') ||
+      (p.category?.slug || '').toLowerCase().includes('herb'),
+    );
+    return match.length ? match : allProducts.slice(8, 16);
+  }, [allProducts]);
+
+  const fungicidesProducts = useMemo(() => {
+    const match = allProducts.filter((p) =>
+      (p.category?.name || '').toLowerCase().includes('fung') ||
+      (p.category?.slug || '').toLowerCase().includes('fung'),
+    );
+    return match.length ? match : allProducts.slice(12, 20);
+  }, [allProducts]);
+
+  const bioProducts = useMemo(() => {
+    const match = allProducts.filter((p) =>
+      (p.category?.name || '').toLowerCase().includes('bio') ||
+      (p.category?.name || '').toLowerCase().includes('growth') ||
+      (p.category?.name || '').toLowerCase().includes('tonic') ||
+      (p.category?.slug || '').toLowerCase().includes('bio'),
+    );
+    return match.length ? match : allProducts.slice(16, 24);
+  }, [allProducts]);
+
+  const topRatedProducts = useMemo(() => {
+    return [...allProducts].sort((a, b) => (b.rating || 5) - (a.rating || 5)).slice(0, 10);
+  }, [allProducts]);
   const homeCategories = useMemo(() => {
     const featured = homepageQuery.data?.featuredCategories || [];
     if (featured.length) return featured;
@@ -137,9 +285,46 @@ export default function HomeScreen() {
   return (
     <Screen>
       <View className="gap-7">
-        <View className="pt-1">
-          <Text className="text-3xl font-black text-primary-900">{t('mobile.home.title')}</Text>
-        </View>
+        {!isNoticeDismissed && (
+          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <View className="relative overflow-hidden rounded-2xl border border-emerald-500/40 shadow-md">
+              <Image
+                source={require('../../assets/dark_leaf_bg.png')}
+                style={{ width: '100%', height: '100%', position: 'absolute' }}
+                contentFit="cover"
+              />
+              <View className="bg-black/40 p-4 flex-row items-center justify-between">
+                <View className="flex-1 pr-3 gap-2.5">
+                  <View className="flex-row items-center gap-2.5">
+                    <View className="h-7 w-7 items-center justify-center rounded-xl bg-emerald-500/25 border border-emerald-400/40">
+                      <Feather name="truck" size={14} color="#52B788" />
+                    </View>
+                    <Text className="text-xs font-black uppercase tracking-wide text-white">
+                      {t('mobile.topNotice.freeDelivery', { amount: (settings?.freeDeliveryThreshold || 2000).toLocaleString('en-IN') })}
+                    </Text>
+                  </View>
+
+                  <View className="flex-row items-center gap-2.5">
+                    <View className="h-7 w-7 items-center justify-center rounded-xl bg-emerald-500/25 border border-emerald-400/40">
+                      <Feather name="phone" size={13} color="#52B788" />
+                    </View>
+                    <Text className="text-xs font-black uppercase tracking-wide text-white">
+                      {t('mobile.topNotice.call')}: +91 9406160185
+                    </Text>
+                  </View>
+                </View>
+
+                <Pressable
+                  onPress={() => setIsNoticeDismissed(true)}
+                  className="h-9 w-9 items-center justify-center rounded-full bg-rose-600 active:bg-rose-700 shadow-lg border-2 border-white"
+                  hitSlop={10}
+                >
+                  <Feather name="x" size={18} color="#FFFFFF" />
+                </Pressable>
+              </View>
+            </View>
+          </Animated.View>
+        )}
 
         {homepageQuery.isLoading ? (
           <Skeleton height={180} borderRadius={30} className="w-full" />
@@ -159,12 +344,12 @@ export default function HomeScreen() {
             }
           />
           {homeCategories.length ? (
-            <View style={{ height: 160, width: '100%' }}>
+            <View style={{ height: 120, width: '100%' }}>
               <FlashList
                 horizontal
                 data={homeCategories}
                 showsHorizontalScrollIndicator={false}
-                estimatedItemSize={100}
+                estimatedItemSize={92}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                   <CategoryCard
@@ -190,107 +375,82 @@ export default function HomeScreen() {
           )}
         </View>
 
-        <View>
-          <SectionHeader title={t('mobile.home.bestDeals')} />
-          {saleProducts.length ? (
-            <View style={{ height: 340, width: '100%' }}>
-              <FlashList
-                horizontal
-                data={saleProducts}
-                showsHorizontalScrollIndicator={false}
-                estimatedItemSize={184}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <View className="mr-3 w-[184px]">
-                    <ProductCard product={item} compact />
-                  </View>
-                )}
-              />
-            </View>
-          ) : homepageQuery.isLoading || fallbackProductsQuery.isLoading ? (
-            <View className="flex-row gap-3">
-              {[1, 2].map((i) => (
-                <View key={i} className="w-[184px] p-3 rounded-[24px] border border-primary-100 bg-white gap-2 mr-1">
-                  <Skeleton height={140} borderRadius={16} className="w-full" />
-                  <Skeleton width={120} height={14} borderRadius={4} className="mt-1" />
-                  <Skeleton width={80} height={10} borderRadius={4} />
-                  <View className="flex-row justify-between items-center mt-2">
-                    <Skeleton width={50} height={14} borderRadius={4} />
-                    <Skeleton width={70} height={28} borderRadius={14} />
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View className="rounded-[24px] bg-white px-4 py-5">
-              <Text className="text-sm font-semibold text-primary-900/65">Products will appear shortly.</Text>
-            </View>
-          )}
-        </View>
+        {/* Section 1: Best Sellers */}
+        <VerticalProductSection
+          badgeText="POPULAR CHOICE"
+          title={t('mobile.home.bestSellers')}
+          subtitle="Top choice crop care products ordered by local farmers"
+          products={bestSellerProducts}
+          fallbackProducts={allProducts}
+          isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
+          onViewAll={() => router.push({ pathname: '/products', params: { sort: 'popular' } })}
+        />
 
-        <View>
-          <SectionHeader title={t('mobile.home.bestSellers')} />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="-mx-1 mb-4"
-            contentContainerStyle={{ paddingHorizontal: 4 }}
-          >
-            <View className="flex-row gap-2">
-              {bestSellerTabs.map((tab) => (
-                <Pressable
-                  key={tab}
-                  onPress={() => setActiveTab(tab)}
-                  className={`rounded-full border px-4 py-2.5 ${
-                    activeTab === tab ? 'border-primary-500 bg-primary-500' : 'border-primary-200 bg-white'
-                  }`}
-                >
-                  <Text
-                    className={`text-[11px] font-black uppercase tracking-[1.2px] ${
-                      activeTab === tab ? 'text-white' : 'text-primary-900/65'
-                    }`}
-                  >
-                    {tab}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </ScrollView>
-          {tabProducts.length ? (
-            <View style={{ height: 340, width: '100%' }}>
-              <FlashList
-                data={tabProducts}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                estimatedItemSize={184}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <View className="mr-3 w-[184px]">
-                    <ProductCard product={item} compact />
-                  </View>
-                )}
-              />
-            </View>
-          ) : homepageQuery.isLoading || fallbackProductsQuery.isLoading ? (
-            <View className="flex-row gap-3">
-              {[1, 2].map((i) => (
-                <View key={i} className="w-[184px] p-3 rounded-[24px] border border-primary-100 bg-white gap-2 mr-1">
-                  <Skeleton height={140} borderRadius={16} className="w-full" />
-                  <Skeleton width={120} height={14} borderRadius={4} className="mt-1" />
-                  <Skeleton width={80} height={10} borderRadius={4} />
-                  <View className="flex-row justify-between items-center mt-2">
-                    <Skeleton width={50} height={14} borderRadius={4} />
-                    <Skeleton width={70} height={28} borderRadius={14} />
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View className="rounded-[24px] bg-white px-4 py-5">
-              <Text className="text-sm font-semibold text-primary-900/65">No products found for this tab yet.</Text>
-            </View>
-          )}
-        </View>
+        {/* Section 2: Best Deals & Offers */}
+        <VerticalProductSection
+          badgeText="HEAVY DISCOUNTS"
+          title={t('mobile.home.bestDeals')}
+          subtitle="Maximum savings on crop care & plant nutrition"
+          products={saleProducts}
+          fallbackProducts={allProducts}
+          isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
+          onViewAll={() => router.push({ pathname: '/products', params: { onSale: 'true' } })}
+        />
+
+        {/* Section 3: Insecticides & Pest Control */}
+        <VerticalProductSection
+          badgeText="PEST PROTECTION"
+          title="Insecticides & Pest Control"
+          subtitle="Protect your crops against caterpillars, aphids & stem borers"
+          products={insecticidesProducts}
+          fallbackProducts={allProducts}
+          isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
+          onViewAll={() => router.push({ pathname: '/products', params: { category: 'insecticides' } })}
+        />
+
+        {/* Section 4: Herbicides & Weedicides */}
+        <VerticalProductSection
+          badgeText="WEED CONTROL"
+          title="Weed Control Specialists"
+          subtitle="Keep your agricultural fields weed-free and healthy"
+          products={herbicidesProducts}
+          fallbackProducts={allProducts}
+          isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
+          onViewAll={() => router.push({ pathname: '/products', params: { category: 'herbicides' } })}
+        />
+
+        {/* Section 5: Fungicides & Disease Care */}
+        <VerticalProductSection
+          badgeText="DISEASE CARE"
+          title="Fungicides & Crop Protection"
+          subtitle="Effective cure for blight, rust, leaf spot & rot diseases"
+          products={fungicidesProducts}
+          fallbackProducts={allProducts}
+          isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
+          onViewAll={() => router.push({ pathname: '/products', params: { category: 'fungicides' } })}
+        />
+
+        {/* Section 6: Bio & Plant Growth Promoters */}
+        <VerticalProductSection
+          badgeText="ORGANIC GROWTH"
+          title="Plant Growth & Bio Solutions"
+          subtitle="Bio-stimulants & organic tonics for robust plant growth"
+          products={bioProducts}
+          fallbackProducts={allProducts}
+          isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
+          onViewAll={() => router.push({ pathname: '/products', params: { category: 'bio-pesticides' } })}
+        />
+
+        {/* Section 7: Farmer Top Rated */}
+        <VerticalProductSection
+          badgeText="HIGHLY RATED"
+          title="Farmer Top Rated"
+          subtitle="Products with top feedback from real growers"
+          products={topRatedProducts}
+          fallbackProducts={allProducts}
+          isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
+          onViewAll={() => router.push({ pathname: '/products', params: { sort: 'rating' } })}
+        />
 
         <View className="pb-4">
           <SectionHeader title={t('mobile.home.whatFarmersSay')} />

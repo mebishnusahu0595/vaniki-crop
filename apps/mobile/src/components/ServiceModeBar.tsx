@@ -11,31 +11,19 @@ export const ServiceModeBar = memo(function ServiceModeBar() {
   const mode = useServiceModeStore((state) => state.mode);
   const address = useServiceModeStore((state) => state.address);
   const openSelector = useServiceModeStore((state) => state.openSelector);
-  const barExpanded = useServiceModeStore((state) => state.barExpanded);
-  const setBarExpanded = useServiceModeStore((state) => state.setBarExpanded);
+  const hasChosenMode = useServiceModeStore((state) => state.hasChosenMode);
+  const setHasChosenMode = useServiceModeStore((state) => state.setHasChosenMode);
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const deliveryAddressText = formatStoreAddress(address);
 
-  if (!barExpanded) {
-    return (
-      <View className="flex-row justify-end">
-        <Pressable
-          onPress={() => setBarExpanded(true)}
-          className="flex-row items-center gap-1.5 rounded-full bg-primary-900 px-3 py-1.5 mb-1.5 active:scale-95"
-        >
-          <Text className="text-[9px] font-black uppercase tracking-[1px] text-white">
-            SERVICE MODE
-          </Text>
-          <Feather name="chevron-down" size={12} color="white" />
-        </Pressable>
-      </View>
-    );
+  if (hasChosenMode) {
+    return null;
   }
 
   return (
     <View className="gap-1.5 rounded-[22px] border border-primary-100 bg-white px-3 py-2.5 relative mb-1">
       <Pressable 
-        onPress={() => setBarExpanded(false)}
+        onPress={() => setHasChosenMode(true)}
         className="absolute -right-1 -top-1 z-10 rounded-full bg-white border border-primary-100 p-1 shadow-sm active:scale-90"
         hitSlop={8}
       >

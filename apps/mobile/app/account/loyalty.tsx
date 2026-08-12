@@ -1,4 +1,4 @@
-import { Pressable, Text, View, ScrollView } from 'react-native';
+import { Alert, Platform, Pressable, Share, Text, View, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -15,8 +15,8 @@ export default function LoyaltyRewardsScreen() {
   const hasClaimedToday = user.lastCheckIn && new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(user.lastCheckIn)) === todayStr;
 
   return (
-    <Screen>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+    <Screen scroll={false}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1, width: '100%' }} contentContainerStyle={{ width: '100%', flexGrow: 1, paddingBottom: 40 }}>
         {/* Back and Title */}
         <View className="flex-row items-center gap-3 mb-6">
           <Pressable onPress={() => router.back()} className="h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm border border-primary-50 active:scale-90">
@@ -40,7 +40,7 @@ export default function LoyaltyRewardsScreen() {
           </Text>
         </View>
 
-        {/* Claim section */}
+        {/* Daily Rewards Claim section */}
         <View className="mt-5 rounded-[28px] bg-white border border-primary-100 p-5 shadow-sm items-center">
           <Text className="text-sm font-black text-primary-900 text-center">Daily Rewards</Text>
           <Text className="text-xs text-primary-900/60 mt-1.5 text-center leading-5 px-4">
@@ -59,6 +59,90 @@ export default function LoyaltyRewardsScreen() {
               <Text className="text-center text-xs font-black uppercase tracking-[1.5px] text-white">Claim Daily Points</Text>
             </Pressable>
           )}
+        </View>
+
+        {/* Referral Program Card */}
+        <View className="mt-5 rounded-[28px] bg-primary-50 border border-primary-100 p-5 shadow-sm">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <View className="h-8 w-8 items-center justify-center rounded-full bg-primary-500">
+                <Feather name="users" size={16} color="#FFFFFF" />
+              </View>
+              <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-600">Referral Program</Text>
+            </View>
+            <View className="bg-amber-100 px-3 py-1 rounded-full border border-amber-200">
+              <Text className="text-[10px] font-black text-amber-800 uppercase tracking-[1px]">Earn Points</Text>
+            </View>
+          </View>
+
+          <View className="mt-4 bg-white rounded-2xl p-4 border border-primary-100">
+            <Text className="text-xs font-semibold text-primary-900/60">Your Referral Code</Text>
+            <View className="flex-row items-center justify-between mt-1">
+              <Text className="text-xl font-black text-primary-900 tracking-wider">
+                Code: {user.referralCode || 'Generating'}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  if (user.referralCode) {
+                    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                      navigator.clipboard.writeText(user.referralCode);
+                      Alert.alert('Copied! 📋', `Referral code ${user.referralCode} copied to clipboard.`);
+                    } else {
+                      Alert.alert('Referral Code', user.referralCode);
+                    }
+                  } else {
+                    Alert.alert('Referral Code', 'Code is being generated.');
+                  }
+                }}
+                className="bg-primary-50 px-3 py-1.5 rounded-xl border border-primary-100 active:scale-95 flex-row items-center gap-1.5"
+              >
+                <Feather name="copy" size={13} color="#2D6A4F" />
+                <Text className="text-xs font-black text-primary-700">Copy</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <View className="mt-3 flex-row items-center justify-between px-1">
+            <Text className="text-xs font-semibold text-primary-900/75">
+              Successful referrals: <Text className="font-black text-primary-900">{user.referralCount || 0}</Text>
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={async () => {
+              if (!user.referralCode) {
+                Alert.alert('Referral unavailable', 'Your referral code is not ready yet.');
+                return;
+              }
+
+              const referralLink = `https://vanikicrop.com/signup?ref=${user.referralCode}`;
+              const message = `Join Vaniki Crop with my referral link: ${referralLink}`;
+
+              try {
+                if (Platform.OS !== 'web') {
+                  await Share.share({ message });
+                } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  await navigator.clipboard.writeText(referralLink);
+                  Alert.alert('Link Copied! 📋', 'Referral link has been copied to your clipboard.');
+                } else {
+                  Alert.alert('Referral Link', referralLink);
+                }
+              } catch {
+                if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                  await navigator.clipboard.writeText(referralLink);
+                  Alert.alert('Link Copied! 📋', 'Referral link has been copied to your clipboard.');
+                } else {
+                  Alert.alert('Referral Link', referralLink);
+                }
+              }
+            }}
+            className="mt-4 rounded-full bg-primary-500 py-3.5 active:scale-95 shadow-sm flex-row items-center justify-center gap-2"
+          >
+            <Feather name="share-2" size={16} color="#FFFFFF" />
+            <Text className="text-center text-xs font-black uppercase tracking-[1.5px] text-white">
+              Share Invite Link
+            </Text>
+          </Pressable>
         </View>
 
         {/* Check-in Calendar */}

@@ -26,7 +26,7 @@ function RootNavigation() {
   const sessionQuery = useBootstrapSession();
   usePushNotifications(Boolean(user));
 
-  if (!hydrated || (token && sessionQuery.isLoading)) return <LoadingScreen />;
+  if (!hydrated || (token && sessionQuery.isLoading && !sessionQuery.isError)) return <LoadingScreen />;
 
   return (
     <>
@@ -59,7 +59,9 @@ export default function RootLayout() {
   const queryClient = getQueryClient();
 
   useEffect(() => {
-    useAuthStore.persist.rehydrate();
+    Promise.resolve(useAuthStore.persist.rehydrate()).finally(() => {
+      useAuthStore.getState().setHydrated(true);
+    });
     void hydrateAppLanguage();
   }, []);
 

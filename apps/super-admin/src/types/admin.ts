@@ -548,3 +548,24 @@ export interface WebsiteReporting {
   topViewedProducts: WebsiteReportingTopProduct[];
 }
 
+export interface CropSection {
+  id?: string;
+  title: string;
+  body: string;
+  sortOrder: number;
+}
+
+export interface Crop {
+  id: string;
+  name: string;
+  slug: string;
+  shortDescription: string;
+  description: string;
+  image: { url: string; publicId: string };
+  sections: CropSection[];
+  suggestedProductIds: Array<Product | string>;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -28,6 +28,7 @@ import NotificationsPage from './pages/Notifications';
 import DealersPromotionsPage from './pages/DealersPromotions';
 import WebsiteAnalyticsPage from './pages/WebsiteAnalytics';
 import EnquiriesPage from './pages/Enquiries';
+import CropsPage from './pages/Crops';
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
           <Route path="/payments" element={<PaymentsPage />} />
           <Route path="/testimonials" element={<TestimonialsPage />} />
           <Route path="/enquiries" element={<EnquiriesPage />} />
+          <Route path="/crops" element={<CropsPage />} />
           <Route path="/loyalty" element={<LoyaltyPage />} />
           <Route path="/user-loyalty" element={<UserLoyaltyPage />} />
           <Route path="/referrals" element={<ReferralPage />} />

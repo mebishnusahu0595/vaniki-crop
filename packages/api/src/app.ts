@@ -32,6 +32,7 @@ import loyaltyRoutes from './modules/loyalty/loyalty.routes.js';
 import staffRoutes from './modules/staff/staff.routes.js';
 import whatsappRoutes from './modules/whatsapp/whatsapp.routes.js';
 import promotionsRoutes from './modules/promotions/promotions.routes.js';
+import { cropPublicRouter, cropSuperadminRouter } from './modules/crops/crop.routes.js';
 import { Product } from './models/Product.model.js';
 import { Category } from './models/Category.model.js';
 
@@ -69,7 +70,12 @@ const allowedOriginMatchers: Array<string | RegExp> = [
   'https://admin.vanikicrop.com',
   'https://superadmin.vanikicrop.com',
   ...(process.env.NODE_ENV !== 'production'
-    ? [/^http:\/\/localhost:\d+$/, /^http:\/\/127\.0\.0\.1:\d+$/]
+    ? [
+        /^http:\/\/localhost:\d+$/,
+        /^http:\/\/127\.0\.0\.1:\d+$/,
+        /^http:\/\/\d+\.\d+\.\d+\.\d+(:\d+)?$/,
+        /^exp:\/\//,
+      ]
     : []),
 ];
 
@@ -226,6 +232,8 @@ app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/promotions', promotionsRoutes);
+app.use('/api/crops', cropPublicRouter);
+app.use('/api/superadmin/crops', cropSuperadminRouter);
 
 // ─── Admin API Routes ────────────────────────────────────────────────────
 app.use('/api/admin/categories', categoryAdminRoutes);

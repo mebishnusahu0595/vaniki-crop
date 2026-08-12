@@ -47,8 +47,8 @@ export default function AccountScreen() {
       route: '/account/orders' as const,
     },
     {
-      title: 'Loyalty Rewards',
-      description: 'Collect daily points, view history',
+      title: 'Loyalty Rewards & Refer',
+      description: 'Daily check-in points & referral code',
       icon: 'award' as const,
       route: '/account/loyalty' as const,
     },

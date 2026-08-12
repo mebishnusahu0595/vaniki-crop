@@ -5,12 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCartStore } from '../store/useCartStore';
 import { shadow } from '../constants/theme';
 
+import { useTranslation } from 'react-i18next';
+
 const icons: Record<string, keyof typeof Feather.glyphMap> = {
   index: 'home',
+  'select-crop': 'sun',
   categories: 'grid',
-  compare: 'sliders',
-  cart: 'shopping-cart',
-  account: 'user',
+  'agri-advisor': 'headphones',
 } as const;
 
 interface TabRoute {
@@ -29,6 +30,7 @@ interface TabBarProps {
       options: {
         tabBarLabel?: unknown;
         title?: string;
+        href?: unknown;
       };
     }
   >;
@@ -37,49 +39,60 @@ interface TabBarProps {
   };
 }
 
+const TAB_LABELS_MAP: Record<string, { en: string; hi: string }> = {
+  index: { en: 'Home', hi: 'होम' },
+  'select-crop': { en: 'Select Crop', hi: 'फसल चुनें' },
+  categories: { en: 'Categories', hi: 'श्रेणियां' },
+  'agri-advisor': { en: 'Agri Advisor', hi: 'कृषि सलाहकार' },
+};
+
+const ALLOWED_TABS = ['index', 'select-crop', 'categories', 'agri-advisor'];
+
 export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
+  const { i18n } = useTranslation();
   const insets = useSafeAreaInsets();
-  const itemCount = useCartStore((store) => store.items.reduce((sum, item) => sum + item.qty, 0));
   const isStaffApp = Constants.expoConfig?.extra?.appVariant === 'staff';
 
   if (isStaffApp) return null;
 
+  const visibleRoutes = state.routes.filter((route) => ALLOWED_TABS.includes(route.name));
+  const isHindi = i18n.language === 'hi';
+
   return (
     <View
-      style={[shadow.card, { paddingBottom: Math.max(insets.bottom, 8) + 12 }]}
-      className="bg-white px-4 pt-3"
+      style={[shadow.card, { paddingBottom: Math.max(insets.bottom, 6) + 8 }]}
+      className="bg-white px-3 pt-2"
     >
-      <View className="flex-row rounded-[28px] border border-primary-100 bg-white px-2 py-2">
-        {state.routes.map((route, index) => {
+      <View className="flex-row rounded-[28px] border border-primary-100 bg-white px-1.5 py-1.5">
+        {visibleRoutes.map((route) => {
           const { options } = descriptors[route.key];
-          const isFocused = state.index === index;
-          const label =
-            typeof options.tabBarLabel === 'string'
-              ? options.tabBarLabel
-              : options.title || route.name;
+          const isFocused = state.routes[state.index]?.name === route.name;
+          const tabConfig = TAB_LABELS_MAP[route.name];
+          const label = tabConfig
+            ? isHindi
+              ? tabConfig.hi
+              : tabConfig.en
+            : typeof options.tabBarLabel === 'string'
+            ? options.tabBarLabel
+            : options.title || route.name;
 
           return (
             <Pressable
               key={route.key}
               onPress={() => navigation.navigate(route.name)}
-              className="flex-1 items-center gap-1 rounded-[20px] py-3"
+              className="flex-1 items-center gap-1 rounded-[20px] py-2 px-1"
             >
-              <View>
-                <Feather
-                  name={icons[route.name] || 'circle'}
-                  size={18}
-                  color={isFocused ? '#000000' : '#555555'}
-                />
-                {route.name === 'cart' && itemCount ? (
-                  <View className="absolute -right-3 -top-2 min-w-[18px] rounded-full bg-rose-500 px-1.5 py-0.5">
-                    <Text className="text-center text-[10px] font-black text-white">{itemCount}</Text>
-                  </View>
-                ) : null}
-              </View>
+              <Feather
+                name={icons[route.name] || 'circle'}
+                size={22}
+                color={isFocused ? '#2D6A4F' : '#64748B'}
+              />
               <Text
                 numberOfLines={1}
-                className={`text-[9px] font-black uppercase tracking-[0.5px] ${
-                  isFocused ? 'text-black' : 'text-black/50'
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                className={`text-[11px] text-center ${
+                  isFocused ? 'text-[#2D6A4F] font-black' : 'text-slate-600 font-bold'
                 }`}
               >
                 {label}
