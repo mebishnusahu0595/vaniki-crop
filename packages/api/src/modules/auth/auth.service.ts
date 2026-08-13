@@ -609,7 +609,7 @@ export async function logout(userId: string): Promise<void> {
  * Enforces checking for registered users, throwing a 404 if not registered.
  * @param input - { mobile, email }
  */
-export async function forgotPassword(input: any): Promise<{ verificationId?: string }> {
+export async function forgotPassword(input: any): Promise<{ verificationId?: string; message?: string }> {
   const { mobile, email } = input;
 
   const query: any = {};
