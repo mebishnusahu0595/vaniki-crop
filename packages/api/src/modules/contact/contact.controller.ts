@@ -9,6 +9,6 @@ export async function submitContact(req: Request, res: Response, next: NextFunct
       message: "We'll get back to you within 24 hours",
     });
   } catch (error) {
-    next(error);
+    next(error); 
   }
 }

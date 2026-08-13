@@ -399,7 +399,7 @@ export async function login(
  * Sends OTP to a registered mobile number for login verification.
  * Only allows registered users. Unregistered users receive a 404.
  */
-export async function sendLoginOtp(input: { mobile: string }): Promise<{ verificationId: string }> {
+export async function sendLoginOtp(input: { mobile: string }): Promise<{ verificationId?: string; message?: string }> {
   const { mobile } = input;
 
   const user = await User.findOne({ mobile });
@@ -411,7 +411,23 @@ export async function sendLoginOtp(input: { mobile: string }): Promise<{ verific
     throw new AppError('Your account has been deactivated. Contact support.', 403);
   }
 
-  const verificationId = await sendOtpViaMessageCentral(mobile);
+  // Save 4-digit DB fallback OTP on user document
+  const otp = generateOtp();
+  user.otp = await bcrypt.hash(otp, 10);
+  user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+  await user.save({ validateBeforeSave: false });
+
+  let verificationId: string | undefined;
+  try {
+    verificationId = await sendOtpViaMessageCentral(mobile);
+  } catch (err: any) {
+    const errMsg = err?.message || '';
+    if (errMsg.toLowerCase().includes('already exist')) {
+      return { verificationId: 'existing', message: 'OTP already sent. Please enter the OTP received on your mobile.' };
+    }
+    console.warn('Message Central sendLoginOtp warning, using DB fallback:', errMsg);
+  }
+
   return { verificationId };
 }
 
@@ -444,31 +460,31 @@ export async function loginWithOtp(
 
   let isOtpValid = false;
 
-  if (verificationId) {
-    // Validate using Message Central CPaaS
+  // Try Message Central validation if verificationId was provided
+  if (verificationId && verificationId !== 'existing') {
     isOtpValid = await validateOtpViaMessageCentral(verificationId, otp);
-  } else {
-    // Database validation fallback
-    if (!user.otp || !user.otpExpiry) {
-      throw new AppError('No OTP requested. Please request a new one.', 400);
-    }
+  }
 
-    if (user.otpExpiry < new Date()) {
-      throw new AppError('OTP has expired. Please request a new one.', 400);
+  // Database fallback validation
+  if (!isOtpValid && user.otp && user.otpExpiry) {
+    if (user.otpExpiry >= new Date()) {
+      isOtpValid = await bcrypt.compare(otp, user.otp);
     }
-
-    isOtpValid = await bcrypt.compare(otp, user.otp);
   }
 
   if (!isOtpValid) {
+    if (!user.otp && (!verificationId || verificationId === 'existing')) {
+      throw new AppError('No OTP requested. Please request a new one.', 400);
+    }
+    if (user.otpExpiry && user.otpExpiry < new Date()) {
+      throw new AppError('OTP has expired. Please request a new one.', 400);
+    }
     throw new AppError('Invalid OTP', 400);
   }
 
-  if (!verificationId) {
-    user.otp = undefined;
-    user.otpExpiry = undefined;
-    await user.save({ validateBeforeSave: false });
-  }
+  user.otp = undefined;
+  user.otpExpiry = undefined;
+  await user.save({ validateBeforeSave: false });
 
   const tokens = await generateTokenPair(user);
   return { user, tokens };
@@ -606,18 +622,26 @@ export async function forgotPassword(input: any): Promise<{ verificationId?: str
     throw new AppError('No account found with this mobile number. Please register first.', 404);
   }
 
-  if (mobile) {
-    const verificationId = await sendOtpViaMessageCentral(mobile);
-    return { verificationId };
-  }
-
-  // Email fallback
+  // Generate 4-digit DB fallback OTP for mobile/email reset
   const otp = generateOtp();
   const hashedOtp = await bcrypt.hash(otp, 10);
-
   user.otp = hashedOtp;
   user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
   await user.save({ validateBeforeSave: false });
+
+  if (mobile) {
+    let verificationId: string | undefined;
+    try {
+      verificationId = await sendOtpViaMessageCentral(mobile);
+    } catch (err: any) {
+      const errMsg = err?.message || '';
+      if (errMsg.toLowerCase().includes('already exist')) {
+        return { verificationId: 'existing', message: 'OTP already sent. Please check your SMS or enter existing OTP.' };
+      }
+      console.warn('Message Central forgotPassword warning, using DB fallback:', errMsg);
+    }
+    return { verificationId };
+  }
 
   if (user.email) {
     addEmailToQueue({
@@ -650,30 +674,30 @@ export async function resetPassword(input: any): Promise<void> {
 
   let isOtpValid = false;
 
-  if (verificationId) {
+  if (verificationId && verificationId !== 'existing') {
     isOtpValid = await validateOtpViaMessageCentral(verificationId, otp);
-  } else {
-    if (!user.otp || !user.otpExpiry) {
-      throw new AppError('No OTP requested. Please request a new one.', 400);
-    }
+  }
 
-    if (user.otpExpiry < new Date()) {
-      throw new AppError('OTP has expired. Please request a new one.', 400);
+  if (!isOtpValid && user.otp && user.otpExpiry) {
+    if (user.otpExpiry >= new Date()) {
+      isOtpValid = await bcrypt.compare(otp, user.otp);
     }
-
-    isOtpValid = await bcrypt.compare(otp, user.otp);
   }
 
   if (!isOtpValid) {
+    if (!user.otp && (!verificationId || verificationId === 'existing')) {
+      throw new AppError('No OTP requested. Please request a new one.', 400);
+    }
+    if (user.otpExpiry && user.otpExpiry < new Date()) {
+      throw new AppError('OTP has expired. Please request a new one.', 400);
+    }
     throw new AppError('Invalid OTP', 400);
   }
 
   user.password = newPassword; // bcrypt pre-save hook will hash it
-  
-  if (!verificationId) {
-    user.otp = undefined;
-    user.otpExpiry = undefined;
-  }
+  user.otp = undefined;
+  user.otpExpiry = undefined;
+  await user.save();
   
   user.refreshToken = undefined; // Invalidate all sessions
   await user.save();

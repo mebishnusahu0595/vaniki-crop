@@ -34,6 +34,7 @@ export default function LoginScreen() {
   const [otpMobile, setOtpMobile] = useState('');
   const [loginOtp, setLoginOtp] = useState('');
   const [isSendingLoginOtp, setIsSendingLoginOtp] = useState(false);
+  const [loginVerificationId, setLoginVerificationId] = useState('');
 
   // Forgot Password state
   const [forgotMobile, setForgotMobile] = useState('');
@@ -101,8 +102,14 @@ export default function LoginScreen() {
     }
     setIsSendingLoginOtp(true);
     try {
-      await storefrontApi.sendLoginOtp({ mobile: otpMobile });
+      const res = await storefrontApi.sendLoginOtp({ mobile: otpMobile });
+      if (res.verificationId) {
+        setLoginVerificationId(res.verificationId);
+      }
       setModeState('otp-verify');
+      if (res.message) {
+        Alert.alert('Notice', res.message);
+      }
     } catch (caughtError) {
       Alert.alert('Error', caughtError instanceof Error ? caughtError.message : 'Failed to send OTP.');
     } finally {
@@ -117,7 +124,11 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const response = await storefrontApi.loginWithOtp({ mobile: otpMobile, otp: loginOtp });
+      const response = await storefrontApi.loginWithOtp({
+        mobile: otpMobile,
+        otp: loginOtp,
+        verificationId: loginVerificationId,
+      });
       onLoginSuccess(response.user, response.accessToken);
     } catch (caughtError) {
       Alert.alert('OTP Login failed', caughtError instanceof Error ? caughtError.message : 'Try again.');
@@ -139,7 +150,7 @@ export default function LoginScreen() {
         setVerificationId(res.verificationId);
       }
       setModeState('reset');
-      Alert.alert('OTP Sent', 'Enter the 4-digit OTP to verify your identity.');
+      Alert.alert(res.message ? 'Notice' : 'OTP Sent', res.message || 'Enter the 4-digit OTP to verify your identity.');
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send OTP.');
     } finally {

@@ -67,6 +67,9 @@ module.exports = {
     extra: {
       ...appJson.expo.extra,
       appVariant: 'customer',
+      eas: {
+        projectId: '5967a015-cbd1-4cea-98c5-9c25982ed651',
+      },
     },
   },
 };

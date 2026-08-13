@@ -338,12 +338,13 @@ export const storefrontApi = {
     };
   },
   sendLoginOtp: async (payload: { mobile: string }) => {
-    return request<{ success: boolean; message: string }>('/auth/send-login-otp', {
+    const response = await request<{ success: boolean; message?: string; verificationId?: string }>('/auth/send-login-otp', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+    return (response as any).data || response;
   },
-  loginWithOtp: async (payload: { mobile: string; otp: string }) => {
+  loginWithOtp: async (payload: { mobile: string; otp: string; verificationId?: string }) => {
     const response = await request<{ user: AuthUser; accessToken: string }>('/auth/login-otp', {
       method: 'POST',
       body: JSON.stringify(payload),
