@@ -9,12 +9,14 @@ import {
   ScrollView, 
   ActivityIndicator, 
   RefreshControl,
-  SafeAreaView
+  SafeAreaView,
+  Alert,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../utils/api';
 import { currencyFormatter, formatDateTime, formatAddress } from '../../utils/format';
 import { Feather } from '@expo/vector-icons';
+import * as Linking from 'expo-linking';
 import type { Order } from '../../types/admin';
 
 const Icon = Feather as any;
@@ -35,9 +37,8 @@ export default function OrdersScreen() {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusNote, setStatusNote] = useState('');
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  // Fetch orders from the server
+  // Fetch orders
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['admin-orders', statusFilter, search],
     queryFn: () => adminApi.orders({ 
@@ -55,10 +56,10 @@ export default function OrdersScreen() {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       setSelectedOrder(updatedOrder);
       setStatusNote('');
-      alert('Order status updated successfully!');
+      Alert.alert('Status Updated ✅', `Order status changed to ${updatedOrder.status.toUpperCase()}`);
     },
     onError: (error: any) => {
-      alert(error.message || 'Failed to update order status.');
+      Alert.alert('Update Failed', error.message || 'Failed to update order status.');
     }
   });
 
@@ -71,326 +72,301 @@ export default function OrdersScreen() {
     });
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'placed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'confirmed': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-      case 'processing': return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'shipped': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-      case 'delivered': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'cancelled': return 'bg-rose-100 text-rose-800 border-rose-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'pending': return 'bg-amber-50 text-amber-700 border-amber-100';
-      default: return 'bg-rose-50 text-rose-700 border-rose-100';
+      case 'placed': return { bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700', label: 'Placed' };
+      case 'confirmed': return { bg: 'bg-indigo-50 border-indigo-200', text: 'text-indigo-700', label: 'Confirmed' };
+      case 'processing': return { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700', label: 'Processing' };
+      case 'shipped': return { bg: 'bg-cyan-50 border-cyan-200', text: 'text-cyan-700', label: 'In Transit' };
+      case 'delivered': return { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', label: 'Delivered' };
+      case 'cancelled': return { bg: 'bg-rose-50 border-rose-200', text: 'text-rose-700', label: 'Cancelled' };
+      default: return { bg: 'bg-slate-50 border-slate-200', text: 'text-slate-700', label: status };
     }
   };
 
   const orders = data?.data || [];
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-50">
-      {/* Search and Filters Bar */}
-      <View className="bg-white px-4 pt-4 pb-3 border-b border-zinc-100 shadow-sm">
-        <View className="flex-row items-center bg-zinc-100 rounded-2xl px-4 py-3">
-          <Icon name="search" size={18} color="#71717A" />
+    <SafeAreaView className="flex-1 bg-slate-50">
+      {/* ─── Search & Status Filters ────────────────────────────────────────── */}
+      <View className="bg-white px-4 pt-3 pb-3 border-b border-slate-100 shadow-xs">
+        <View className="flex-row items-center bg-slate-100 rounded-2xl px-4 py-2.5">
+          <Icon name="search" size={17} color="#059669" />
           <TextInput
-            placeholder="Search orders, number, phone..."
-            placeholderTextColor="#A1A1AA"
+            placeholder="Search by Order #, customer name, mobile..."
+            placeholderTextColor="#94a3b8"
             value={search}
             onChangeText={setSearch}
-            className="flex-1 ml-2 text-zinc-900 font-semibold text-sm"
+            className="flex-1 ml-2 text-slate-900 font-semibold text-sm"
           />
           {search ? (
             <TouchableOpacity onPress={() => setSearch('')}>
-              <Icon name="x-circle" size={16} color="#A1A1AA" />
+              <Icon name="x-circle" size={16} color="#94a3b8" />
             </TouchableOpacity>
           ) : null}
         </View>
 
-        {/* Scrollable Status Filter Pills */}
+        {/* Status Pills */}
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false} 
-          className="flex-row mt-3 gap-2"
+          className="flex-row mt-3"
         >
-          {STATUS_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.label}
-              onPress={() => setStatusFilter(opt.value)}
-              className={`px-4 py-2 rounded-full border ${
-                statusFilter === opt.value 
-                  ? 'bg-emerald-950 border-emerald-950' 
-                  : 'bg-zinc-50 border-zinc-200'
-              }`}
-            >
-              <Text 
-                className={`font-black text-xs uppercase tracking-wider ${
-                  statusFilter === opt.value ? 'text-white' : 'text-zinc-600'
+          <View className="flex-row gap-2 pr-6">
+            {STATUS_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.label}
+                onPress={() => setStatusFilter(opt.value)}
+                className={`px-4 py-2 rounded-full border ${
+                  statusFilter === opt.value 
+                    ? 'bg-[#143D2E] border-[#143D2E]' 
+                    : 'bg-white border-slate-200'
                 }`}
               >
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text 
+                  className={`font-black text-xs uppercase tracking-wider ${
+                    statusFilter === opt.value ? 'text-white' : 'text-slate-600'
+                  }`}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </ScrollView>
       </View>
 
-      {/* Orders List */}
+      {/* ─── Orders List ────────────────────────────────────────────────────── */}
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#143D2E" />
-          <Text className="mt-3 text-zinc-400 font-bold">Loading orders from server...</Text>
+          <Text className="mt-3 text-slate-400 font-bold text-xs">Loading orders...</Text>
         </View>
       ) : (
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id}
-          refreshControl={
-            <RefreshControl 
-              refreshing={isFetching} 
-              onRefresh={refetch} 
-              colors={['#143D2E']} 
-            />
-          }
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          refreshControl={
+            <RefreshControl refreshing={isFetching} onRefresh={refetch} colors={['#143D2E']} />
+          }
           ListEmptyComponent={
-            <View className="flex-1 justify-center items-center py-20">
-              <Icon name="shopping-bag" size={48} color="#D4D4D8" />
-              <Text className="text-zinc-500 font-black mt-4 uppercase tracking-widest text-xs">No Orders Found</Text>
+            <View className="items-center justify-center py-20 px-6 rounded-3xl bg-white border border-dashed border-slate-200">
+              <Icon name="shopping-bag" size={40} color="#94a3b8" />
+              <Text className="mt-4 font-black text-slate-800 text-base">No orders found</Text>
+              <Text className="mt-1 text-center text-xs text-slate-400">
+                {statusFilter ? `No ${statusFilter} orders matching your criteria.` : 'New bookings from farmers will appear here.'}
+              </Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => setSelectedOrder(item)}
-              className="bg-white border border-zinc-100 rounded-3xl p-5 mb-4 shadow-sm active:scale-[0.98] transition"
-            >
-              {/* Order Card Header */}
-              <View className="flex-row justify-between items-start">
-                <View>
-                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">Order Number</Text>
-                  <Text className="text-zinc-900 font-black text-lg mt-0.5">{item.orderNumber}</Text>
-                  <Text className="text-[10px] text-zinc-400 font-medium mt-1">
-                    {formatDateTime(item.createdAt)}
-                  </Text>
-                </View>
-                <View className="items-end">
-                  <View className={`px-2.5 py-1 rounded-full border ${getStatusColor(item.status)}`}>
-                    <Text className="text-[9px] font-black uppercase tracking-wider">{item.status}</Text>
-                  </View>
-                  <View className={`px-2 py-0.5 rounded-full border mt-2 ${getPaymentStatusColor(item.paymentStatus)}`}>
-                    <Text className="text-[8px] font-black uppercase tracking-wider">{item.paymentStatus}</Text>
-                  </View>
-                </View>
-              </View>
+          renderItem={({ item }) => {
+            const badge = getStatusBadge(item.status);
+            const totalItemsCount = item.items?.reduce((sum, it) => sum + it.qty, 0) || 0;
 
-              <View className="h-px bg-zinc-100 my-4" />
+            return (
+              <TouchableOpacity
+                onPress={() => setSelectedOrder(item)}
+                activeOpacity={0.9}
+                className="mb-4 rounded-[1.75rem] border border-slate-100 bg-white p-5 shadow-xs active:scale-[0.99]"
+              >
+                {/* Top Row: Order Number & Status */}
+                <View className="flex-row items-center justify-between">
+                  <View>
+                    <Text className="text-base font-black text-slate-900 leading-none">
+                      {item.orderNumber}
+                    </Text>
+                    <Text className="text-[11px] font-semibold text-slate-400 mt-1">
+                      {formatDateTime(item.createdAt)}
+                    </Text>
+                  </View>
 
-              {/* Order Customer & Price */}
-              <View className="flex-row justify-between items-center">
-                <View>
-                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">Customer</Text>
-                  <Text className="text-zinc-800 font-black text-sm mt-0.5">{item.userId?.name || 'Guest User'}</Text>
-                  <Text className="text-xs text-zinc-500 font-bold mt-1">{item.userId?.mobile || 'No Mobile'}</Text>
+                  <View className={`rounded-full px-3 py-1 border ${badge.bg}`}>
+                    <Text className={`text-[10px] font-black uppercase tracking-wider ${badge.text}`}>
+                      {badge.label}
+                    </Text>
+                  </View>
                 </View>
-                <View className="items-end">
-                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">Total Price</Text>
-                  <Text className="text-emerald-800 font-black text-lg mt-0.5">
-                    {currencyFormatter.format(item.totalAmount)}
-                  </Text>
+
+                {/* Middle: Customer & Items Summary */}
+                <View className="mt-4 border-t border-slate-50 pt-3">
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center gap-2">
+                      <View className="h-8 w-8 rounded-full bg-emerald-50 items-center justify-center">
+                        <Icon name="user" size={14} color="#059669" />
+                      </View>
+                      <View>
+                        <Text className="text-xs font-bold text-slate-800">
+                          {item.userId?.name || 'Customer'}
+                        </Text>
+                        <Text className="text-[10px] font-semibold text-slate-400">
+                          {item.userId?.mobile || 'No phone'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View className="items-end">
+                      <Text className="text-base font-black text-emerald-800">
+                        {currencyFormatter.format(item.totalAmount)}
+                      </Text>
+                      <Text className="text-[10px] font-bold text-slate-400">
+                        {totalItemsCount} {totalItemsCount === 1 ? 'item' : 'items'}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          )}
+
+                {/* Bottom Badges */}
+                <View className="mt-3 flex-row items-center gap-2 border-t border-slate-50 pt-3">
+                  <View className={`rounded-full px-2.5 py-0.5 ${
+                    item.paymentStatus === 'paid' ? 'bg-emerald-100' : 'bg-amber-100'
+                  }`}>
+                    <Text className={`text-[9px] font-black uppercase tracking-wider ${
+                      item.paymentStatus === 'paid' ? 'text-emerald-800' : 'text-amber-800'
+                    }`}>
+                      {item.paymentStatus === 'paid' ? 'Paid' : 'Payment Due'}
+                    </Text>
+                  </View>
+
+                  <View className="rounded-full bg-slate-100 px-2.5 py-0.5">
+                    <Text className="text-[9px] font-black uppercase tracking-wider text-slate-600">
+                      {item.paymentMethod === 'cod' ? 'COD' : 'Online'}
+                    </Text>
+                  </View>
+
+                  <View className="ml-auto flex-row items-center gap-1">
+                    <Text className="text-xs font-bold text-emerald-700">Manage</Text>
+                    <Icon name="chevron-right" size={14} color="#047857" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
 
-      {/* Order Detail Modal */}
+      {/* ─── Order Detail & Progression Modal ──────────────────────────────── */}
       <Modal
-        visible={Boolean(selectedOrder)}
+        visible={!!selectedOrder}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setSelectedOrder(null)}
       >
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white rounded-t-[2.5rem] h-[85%] border-t border-zinc-200 shadow-2xl">
-            {/* Modal Header */}
-            <View className="flex-row justify-between items-center px-6 py-5 border-b border-zinc-100">
-              <View className="flex-row items-center">
-                <View className="bg-emerald-950 p-2.5 rounded-2xl text-white mr-3">
-                  <Icon name="shopping-bag" size={18} color="#fff" />
+        <View className="flex-1 justify-end bg-slate-950/60">
+          <View className="max-h-[85%] rounded-t-[2.5rem] bg-white p-6 shadow-2xl">
+            {selectedOrder && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Header */}
+                <View className="flex-row items-center justify-between pb-4 border-b border-slate-100">
+                  <View>
+                    <Text className="text-xs font-black uppercase tracking-[2px] text-emerald-800">
+                      Order Management
+                    </Text>
+                    <Text className="text-lg font-black text-slate-900 mt-0.5">
+                      {selectedOrder.orderNumber}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setSelectedOrder(null)}
+                    className="rounded-full bg-slate-100 p-2"
+                  >
+                    <Icon name="x" size={16} color="#475569" />
+                  </TouchableOpacity>
                 </View>
-                <View>
-                  <Text className="text-[10px] font-black uppercase tracking-widest text-emerald-800">Order Details</Text>
-                  <Text className="text-zinc-900 font-black text-base leading-none mt-1">
-                    {selectedOrder?.orderNumber}
+
+                {/* Customer Contact Card */}
+                <View className="mt-4 rounded-2xl bg-emerald-50/50 p-4 border border-emerald-100/50">
+                  <View className="flex-row items-center justify-between">
+                    <View>
+                      <Text className="text-sm font-black text-slate-900">
+                        {selectedOrder.userId?.name || 'Customer'}
+                      </Text>
+                      <Text className="text-xs font-bold text-slate-500 mt-0.5">
+                        {selectedOrder.userId?.mobile || 'No contact provided'}
+                      </Text>
+                    </View>
+
+                    {selectedOrder.userId?.mobile ? (
+                      <View className="flex-row gap-2">
+                        <TouchableOpacity
+                          onPress={() => Linking.openURL(`tel:${selectedOrder.userId?.mobile}`)}
+                          className="h-10 w-10 rounded-full bg-emerald-700 items-center justify-center shadow-xs"
+                        >
+                          <Icon name="phone" size={16} color="#ffffff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => Linking.openURL(`https://wa.me/91${selectedOrder.userId?.mobile}`)}
+                          className="h-10 w-10 rounded-full bg-green-600 items-center justify-center shadow-xs"
+                        >
+                          <Icon name="message-circle" size={16} color="#ffffff" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+                  </View>
+
+                  {selectedOrder.shippingAddress ? (
+                    <Text className="text-xs text-slate-600 mt-2 font-medium">
+                      📍 {formatAddress(selectedOrder.shippingAddress)}
+                    </Text>
+                  ) : null}
+                </View>
+
+                {/* Items Breakdown */}
+                <View className="mt-5">
+                  <Text className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">
+                    Ordered Formulations
                   </Text>
-                </View>
-              </View>
-              <TouchableOpacity 
-                onPress={() => {
-                  setSelectedOrder(null);
-                  setIsUpdatingStatus(false);
-                }}
-                className="bg-zinc-100 p-2 rounded-full"
-              >
-                <Icon name="x" size={20} color="#71717A" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Scrollable details */}
-            <ScrollView contentContainerStyle={{ padding: 24 }} className="flex-1">
-              {selectedOrder ? (
-                <View className="space-y-6">
-                  {/* Status & Summary Cards */}
-                  <View className="flex-row justify-between">
-                    <View className="w-[48%] rounded-2xl bg-zinc-50 border border-zinc-100 p-4">
-                      <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Order Status</Text>
-                      <View className={`px-2 py-0.5 rounded-full border self-start mt-2 ${getStatusColor(selectedOrder.status)}`}>
-                        <Text className="text-[9px] font-black uppercase tracking-wider">{selectedOrder.status}</Text>
-                      </View>
-                    </View>
-                    <View className="w-[48%] rounded-2xl bg-zinc-50 border border-zinc-100 p-4">
-                      <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Payment Status</Text>
-                      <View className={`px-2 py-0.5 rounded-full border self-start mt-2 ${getPaymentStatusColor(selectedOrder.paymentStatus)}`}>
-                        <Text className="text-[9px] font-black uppercase tracking-wider">{selectedOrder.paymentStatus}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Customer Info Card */}
-                  <View className="rounded-2xl border border-zinc-100 p-4 space-y-2 mt-4">
-                    <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-1">Customer Info</Text>
-                    <Text className="text-zinc-900 font-black text-sm">{selectedOrder.userId?.name || 'Guest User'}</Text>
-                    <Text className="text-zinc-500 font-bold text-xs">Mobile: {selectedOrder.userId?.mobile || '-'}</Text>
-                    <Text className="text-zinc-500 font-bold text-xs">Email: {selectedOrder.userId?.email || '-'}</Text>
-                    {selectedOrder.shippingAddress && (
-                      <View className="mt-2 pt-2 border-t border-zinc-100">
-                        <Text className="text-[9px] font-black uppercase tracking-wider text-zinc-400 mb-1">Shipping Address</Text>
-                        <Text className="text-zinc-600 text-xs font-semibold">{formatAddress(selectedOrder.shippingAddress)}</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Items List */}
-                  <View className="mt-4">
-                    <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-3">Items Summary</Text>
-                    {selectedOrder.items?.map((item, idx) => (
-                      <View key={idx} className="flex-row justify-between items-center bg-zinc-50/50 border border-zinc-100 rounded-2xl p-4 mb-3">
-                        <View className="flex-1 mr-3">
-                          <Text className="text-zinc-900 font-black text-sm">{item.productName}</Text>
-                          <Text className="text-zinc-500 font-bold text-xs mt-0.5">
-                            {item.qty} × {item.variantLabel}
-                          </Text>
-                        </View>
-                        <Text className="text-zinc-950 font-black text-sm">
-                          {currencyFormatter.format(item.price * item.qty)}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-
-                  {/* Pricing Breakdown */}
-                  <View className="bg-emerald-950 rounded-3xl p-5 text-white shadow-xl mt-4">
-                    <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-3">Bill Details</Text>
-                    <View className="space-y-2">
-                      <View className="flex-row justify-between">
-                        <Text className="text-xs text-zinc-300 font-semibold">Subtotal</Text>
-                        <Text className="text-xs text-white font-bold">{currencyFormatter.format(selectedOrder.subtotal)}</Text>
-                      </View>
-                      <View className="flex-row justify-between">
-                        <Text className="text-xs text-zinc-300 font-semibold">Discount</Text>
-                        <Text className="text-xs text-rose-300 font-bold">-{currencyFormatter.format(selectedOrder.couponDiscount)}</Text>
-                      </View>
-                      <View className="flex-row justify-between">
-                        <Text className="text-xs text-zinc-300 font-semibold">Delivery Charge</Text>
-                        <Text className="text-xs text-white font-bold">{currencyFormatter.format(selectedOrder.deliveryCharge)}</Text>
-                      </View>
-                      <View className="h-px bg-white/10 my-2" />
-                      <View className="flex-row justify-between items-center">
-                        <Text className="text-sm text-emerald-400 font-black uppercase tracking-wider">Total Amount</Text>
-                        <Text className="text-2xl font-black text-white">
-                          {currencyFormatter.format(selectedOrder.totalAmount)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {/* Order Status Action Sheet */}
-                  <View className="mt-4 pt-4 border-t border-zinc-100">
-                    <TouchableOpacity
-                      onPress={() => setIsUpdatingStatus(!isUpdatingStatus)}
-                      className="flex-row justify-between items-center bg-zinc-900 rounded-2xl py-4 px-5 active:scale-95"
+                  {selectedOrder.items?.map((item, idx) => (
+                    <View
+                      key={idx}
+                      className="mb-2 flex-row items-center justify-between rounded-xl bg-slate-50 p-3 border border-slate-100"
                     >
-                      <Text className="text-white font-black text-xs uppercase tracking-widest">Update Order Status</Text>
-                      <Icon name={isUpdatingStatus ? 'chevron-up' : 'chevron-down'} size={16} color="#fff" />
-                    </TouchableOpacity>
-
-                    {isUpdatingStatus && (
-                      <View className="mt-3 bg-zinc-50 border border-zinc-100 rounded-3xl p-4">
-                        <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-500 mb-2">Select Next Status</Text>
-                        <View className="flex-row flex-wrap gap-2">
-                          {['confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((st) => (
-                            <TouchableOpacity
-                              key={st}
-                              onPress={() => handleUpdateStatus(st)}
-                              className="bg-white border border-zinc-200 px-3.5 py-2 rounded-xl shadow-sm active:bg-zinc-100"
-                            >
-                              <Text className="text-zinc-800 font-black text-[10px] uppercase tracking-wider">{st}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                        <View className="mt-3 bg-white rounded-2xl border border-zinc-200 px-3 py-2.5">
-                          <TextInput
-                            placeholder="Add action note (optional)..."
-                            placeholderTextColor="#A1A1AA"
-                            value={statusNote}
-                            onChangeText={setStatusNote}
-                            className="text-zinc-800 text-xs font-semibold h-12"
-                            multiline
-                          />
-                        </View>
+                      <View className="flex-1 pr-2">
+                        <Text className="text-sm font-black text-slate-800" numberOfLines={1}>
+                          {item.productName}
+                        </Text>
+                        <Text className="text-xs font-semibold text-slate-400 mt-0.5">
+                          {item.variantLabel} × {item.qty} units
+                        </Text>
                       </View>
-                    )}
-                  </View>
+                      <Text className="text-sm font-black text-emerald-800">
+                        {currencyFormatter.format(item.price * item.qty)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
 
-                  {/* Status History Timeline */}
-                  <View className="mt-4">
-                    <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-3">Timeline History</Text>
-                    {selectedOrder.statusHistory?.map((history, hidx) => (
-                      <View key={hidx} className="flex-row items-start pb-4">
-                        <View className="items-center mr-3 mt-1">
-                          <View className="h-3 w-3 rounded-full bg-emerald-700" />
-                          {hidx < selectedOrder.statusHistory.length - 1 && (
-                            <View className="w-0.5 h-12 bg-emerald-100 my-1" />
-                          )}
-                        </View>
-                        <View className="flex-1">
-                          <View className="flex-row justify-between items-center">
-                            <Text className="text-zinc-900 font-black text-xs uppercase tracking-wider">
-                              {history.status}
-                            </Text>
-                            <Text className="text-[10px] text-zinc-400 font-bold">
-                              {formatDateTime(history.timestamp)}
-                            </Text>
-                          </View>
-                          {history.note && (
-                            <Text className="text-xs text-zinc-500 italic mt-1 font-medium bg-zinc-100/60 p-2 rounded-xl">
-                              "{history.note}"
-                            </Text>
-                          )}
-                        </View>
-                      </View>
+                {/* Status Progression Actions */}
+                <View className="mt-6 border-t border-slate-100 pt-4">
+                  <Text className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">
+                    Update Order Status
+                  </Text>
+
+                  {/* Status buttons */}
+                  <View className="flex-row flex-wrap gap-2">
+                    {[
+                      { status: 'confirmed', label: 'Confirm Order', bg: 'bg-indigo-600' },
+                      { status: 'processing', label: 'Processing', bg: 'bg-amber-600' },
+                      { status: 'shipped', label: 'Mark Dispatched', bg: 'bg-cyan-600' },
+                      { status: 'delivered', label: 'Mark Delivered', bg: 'bg-emerald-700' },
+                      { status: 'cancelled', label: 'Cancel Order', bg: 'bg-rose-600' },
+                    ].map((btn) => (
+                      <TouchableOpacity
+                        key={btn.status}
+                        onPress={() => handleUpdateStatus(btn.status)}
+                        disabled={updateStatusMutation.isPending || selectedOrder.status === btn.status}
+                        className={`rounded-xl px-4 py-2.5 ${
+                          selectedOrder.status === btn.status ? 'bg-slate-200 opacity-50' : btn.bg
+                        } active:scale-95`}
+                      >
+                        <Text className="text-xs font-black uppercase tracking-wider text-white">
+                          {btn.label}
+                        </Text>
+                      </TouchableOpacity>
                     ))}
                   </View>
                 </View>
-              ) : null}
-            </ScrollView>
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>

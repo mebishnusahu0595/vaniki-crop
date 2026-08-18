@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -9,10 +9,12 @@ import {
   RefreshControl,
   SafeAreaView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Alert,
+  Image,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { adminApi } from '../../utils/api';
 import { currencyFormatter } from '../../utils/format';
 import { resolveMediaUrl } from '../../utils/media';
@@ -20,12 +22,11 @@ import { Feather } from '@expo/vector-icons';
 import type { DealerInventoryProduct } from '../../types/admin';
 
 const Icon = Feather as any;
-const ImageComponent = Image as any;
 
 export default function InventoryScreen() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  
   const [selectedCategory, setSelectedCategory] = useState('');
 
   // Draft quantity state mapping "productId-variantId" -> number
@@ -48,10 +49,10 @@ export default function InventoryScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-inventory'] });
       setDraft({});
-      alert('Inventory updated successfully!');
+      Alert.alert('Stock Updated! ✅', 'Your store inventory counts have been updated.');
     },
     onError: (error: any) => {
-      alert(error.message || 'Failed to update inventory.');
+      Alert.alert('Update Failed', error.message || 'Failed to update inventory.');
     }
   });
 
@@ -59,12 +60,9 @@ export default function InventoryScreen() {
 
   const handleQtyChange = (productId: string, variantId: string, value: number) => {
     const key = getVariantKey(productId, variantId);
-    
-    // Find original value
     const product = inventory.find(p => p.id === productId);
     const variant = product?.variants.find(v => v.id === variantId);
     const originalQty = variant ? variant.quantity : 0;
-
     const nextQty = Math.max(0, value);
 
     setDraft(prev => {
@@ -102,53 +100,74 @@ export default function InventoryScreen() {
     return categoryMatch && searchMatch;
   });
 
+  // Calculate totals
+  const totalVariants = inventory.reduce((sum, p) => sum + (p.variants?.length || 0), 0);
+  const lowStockCount = inventory.reduce((sum, p) => {
+    return sum + (p.variants?.filter(v => (draft[getVariantKey(p.id, v.id)] ?? v.quantity) <= 5).length || 0);
+  }, 0);
+
   return (
-    <SafeAreaView className="flex-1 bg-zinc-50">
+    <SafeAreaView className="flex-1 bg-slate-50">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
       >
-        {/* Search Header */}
-        <View className="bg-white border-b border-zinc-100 shadow-sm">
-          <View className="px-4 pt-4 pb-2">
-            <View className="flex-row items-center bg-zinc-100 rounded-2xl px-4 py-3">
-              <Icon name="search" size={18} color="#71717A" />
+        {/* ─── Search & Category Filter Header ──────────────────────────────── */}
+        <View className="bg-white border-b border-slate-100 shadow-xs">
+          <View className="px-4 pt-3 pb-2">
+            <View className="flex-row items-center bg-slate-100 rounded-2xl px-4 py-2.5">
+              <Icon name="search" size={17} color="#059669" />
               <TextInput
-                placeholder="Search inventory products..."
-                placeholderTextColor="#A1A1AA"
+                placeholder="Search inventory formulations..."
+                placeholderTextColor="#94a3b8"
                 value={search}
                 onChangeText={setSearch}
-                className="flex-1 ml-2 text-zinc-900 font-semibold text-sm"
+                className="flex-1 ml-2 text-slate-900 font-semibold text-sm"
               />
               {search ? (
                 <TouchableOpacity onPress={() => setSearch('')}>
-                  <Icon name="x-circle" size={16} color="#A1A1AA" />
+                  <Icon name="x-circle" size={16} color="#94a3b8" />
                 </TouchableOpacity>
               ) : null}
             </View>
+          </View>
+
+          {/* Quick Metrics Bar */}
+          <View className="px-4 py-2 flex-row items-center justify-between border-t border-slate-50">
+            <View className="flex-row items-center gap-1.5">
+              <Icon name="package" size={14} color="#059669" />
+              <Text className="text-xs font-bold text-slate-700">{totalVariants} SKUs in Catalog</Text>
+            </View>
+
+            {lowStockCount > 0 ? (
+              <View className="flex-row items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 border border-amber-200">
+                <Icon name="alert-triangle" size={12} color="#d97706" />
+                <Text className="text-[10px] font-black uppercase text-amber-800">{lowStockCount} Low Stock</Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Horizontal Category Scroll */}
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
-            data={[{ id: '', name: 'All' }, ...categories]}
+            data={[{ id: '', name: 'All Categories' }, ...categories]}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, paddingTop: 4 }}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10, paddingTop: 2 }}
             renderItem={({ item }) => {
               const isActive = selectedCategory === item.id;
               return (
                 <TouchableOpacity
                   onPress={() => setSelectedCategory(item.id)}
-                  className={`px-4 py-2 rounded-full mr-2.5 border ${
+                  className={`px-4 py-2 rounded-full mr-2 border ${
                     isActive
-                      ? 'bg-emerald-800 border-emerald-800'
-                      : 'bg-zinc-100 border-zinc-200'
+                      ? 'bg-[#143D2E] border-[#143D2E]'
+                      : 'bg-white border-slate-200'
                   }`}
                 >
                   <Text
                     className={`text-xs font-black uppercase tracking-wider ${
-                      isActive ? 'text-white' : 'text-zinc-500'
+                      isActive ? 'text-white' : 'text-slate-600'
                     }`}
                   >
                     {item.name}
@@ -159,138 +178,151 @@ export default function InventoryScreen() {
           />
         </View>
 
-        {/* Inventory List */}
+        {/* ─── Inventory Products List ──────────────────────────────────────── */}
         {isLoading ? (
           <View className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" color="#143D2E" />
-            <Text className="mt-3 text-zinc-400 font-bold">Loading inventory items...</Text>
+            <Text className="mt-3 text-slate-400 font-bold text-xs">Loading store inventory...</Text>
           </View>
         ) : (
           <FlatList
             data={filteredProducts}
             keyExtractor={(item) => item.id}
+            contentContainerStyle={{ padding: 16, paddingBottom: 90 }}
             refreshControl={
-              <RefreshControl 
-                refreshing={isFetching} 
-                onRefresh={refetch} 
-                colors={['#143D2E']} 
-              />
+              <RefreshControl refreshing={isFetching} onRefresh={refetch} colors={['#143D2E']} />
             }
-            contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
             ListEmptyComponent={
-              <View className="flex-1 justify-center items-center py-20">
-                <Icon name="package" size={48} color="#D4D4D8" />
-                <Text className="text-zinc-500 font-black mt-4 uppercase tracking-widest text-xs">No Products Found</Text>
+              <View className="items-center justify-center py-20 px-6 rounded-3xl bg-white border border-dashed border-slate-200">
+                <Icon name="package" size={40} color="#94a3b8" />
+                <Text className="mt-4 font-black text-slate-800 text-base">No inventory products</Text>
+                <Text className="mt-1 text-center text-xs text-slate-400">
+                  {search ? 'Try a different search term.' : 'Assigned products will appear here.'}
+                </Text>
               </View>
             }
-            renderItem={({ item: product }) => (
-              <View className="bg-white border border-zinc-100 rounded-[2rem] p-5 mb-4 shadow-sm overflow-hidden">
-                {/* Product Detail Card Header */}
-                <View className="flex-row items-center">
-                  <View className="h-16 w-16 bg-zinc-50 border border-zinc-100 rounded-2xl overflow-hidden mr-4">
-                    {product.image ? (
-                      <ImageComponent
-                        source={{ uri: resolveMediaUrl(product.image) }}
-                        style={{ width: '100%', height: '100%' }}
-                        contentFit="cover"
-                      />
-                    ) : (
-                      <View className="flex-1 justify-center items-center">
-                        <Icon name="image" size={24} color="#A1A1AA" />
-                      </View>
-                    )}
+            renderItem={({ item: product }) => {
+              const imgUri = product.image ? resolveMediaUrl(product.image) : null;
+
+              return (
+                <View className="mb-4 rounded-[1.75rem] border border-slate-100 bg-white p-5 shadow-xs">
+                  {/* Product Header */}
+                  <View className="flex-row items-center gap-3">
+                    <View className="h-12 w-12 rounded-2xl bg-emerald-50/60 p-1 border border-emerald-100/40 items-center justify-center">
+                      {imgUri ? (
+                        <Image source={{ uri: imgUri }} className="h-full w-full rounded-xl" resizeMode="contain" />
+                      ) : (
+                        <Icon name="package" size={20} color="#94a3b8" />
+                      )}
+                    </View>
+
+                    <View className="flex-1">
+                      <Text className="text-base font-black text-slate-900 leading-tight">
+                        {product.name}
+                      </Text>
+                      <Text className="text-[10px] font-black uppercase tracking-wider text-emerald-700 mt-0.5">
+                        {product.category?.name || 'Crop Care'}
+                      </Text>
+                    </View>
+
+                    {/* Re-order Shortcut */}
+                    <TouchableOpacity
+                      onPress={() => router.push('/(drawer)/product-requests')}
+                      className="rounded-full bg-emerald-50 px-3 py-1.5 border border-emerald-100 flex-row items-center gap-1 active:scale-95"
+                    >
+                      <Icon name="plus" size={12} color="#047857" />
+                      <Text className="text-[10px] font-black uppercase text-emerald-800">Re-order</Text>
+                    </TouchableOpacity>
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-zinc-900 font-black text-base">{product.name}</Text>
-                    {product.shortDescription ? (
-                      <Text className="text-xs text-zinc-500 font-medium mt-0.5" numberOfLines={2}>
-                        {product.shortDescription}
-                      </Text>
-                    ) : null}
-                    {product.petiSize ? (
-                      <Text className="text-[10px] text-emerald-800 font-black uppercase tracking-wider mt-1.5 bg-emerald-50 self-start px-2 py-0.5 rounded-full">
-                        {product.petiSize} {product.petiUnit || 'Liter'} per Peti
-                      </Text>
-                    ) : null}
+
+                  {/* Variants List */}
+                  <View className="mt-4 space-y-2.5">
+                    {product.variants.map((variant) => {
+                      const currentQty = getQty(product.id, variant.id, variant.quantity);
+                      const isLow = currentQty <= 5;
+                      const hasDraftChange = draft[getVariantKey(product.id, variant.id)] !== undefined;
+
+                      return (
+                        <View
+                          key={variant.id}
+                          className={`flex-row items-center justify-between rounded-2xl p-3 border ${
+                            hasDraftChange
+                              ? 'bg-amber-50/50 border-amber-200'
+                              : isLow
+                              ? 'bg-rose-50/30 border-rose-100'
+                              : 'bg-slate-50 border-slate-100'
+                          }`}
+                        >
+                          {/* Label & Price */}
+                          <View>
+                            <Text className="text-sm font-black text-slate-800">
+                              {variant.label}
+                            </Text>
+                            <Text className="text-xs font-bold text-emerald-800 mt-0.5">
+                              {currencyFormatter.format(variant.dealerPrice || variant.adminPrice || variant.price)}
+                              <Text className="text-[10px] font-normal text-slate-400"> (MRP: {currencyFormatter.format(variant.mrp)})</Text>
+                            </Text>
+                          </View>
+
+                          {/* Stepper Controls */}
+                          <View className="flex-row items-center gap-2">
+                            <TouchableOpacity
+                              onPress={() => handleQtyChange(product.id, variant.id, currentQty - 1)}
+                              className="h-8 w-8 rounded-xl bg-white border border-slate-200 items-center justify-center shadow-xs active:bg-slate-100"
+                            >
+                              <Icon name="minus" size={14} color="#334155" />
+                            </TouchableOpacity>
+
+                            <TextInput
+                              value={String(currentQty)}
+                              onChangeText={(val) => {
+                                const parsed = parseInt(val.replace(/\D/g, ''), 10);
+                                handleQtyChange(product.id, variant.id, isNaN(parsed) ? 0 : parsed);
+                              }}
+                              keyboardType="number-pad"
+                              className="h-8 min-w-[40px] text-center text-sm font-black text-slate-900 bg-white border border-slate-200 rounded-xl px-2 shadow-xs"
+                            />
+
+                            <TouchableOpacity
+                              onPress={() => handleQtyChange(product.id, variant.id, currentQty + 1)}
+                              className="h-8 w-8 rounded-xl bg-[#143D2E] items-center justify-center shadow-xs active:bg-emerald-900"
+                            >
+                              <Icon name="plus" size={14} color="#ffffff" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
-
-                {/* Variants List */}
-                <View className="mt-4 pt-4 border-t border-zinc-100 space-y-3">
-                  {product.variants.map((variant) => {
-                    const currentQty = getQty(product.id, variant.id, variant.quantity);
-                    const isChanged = currentQty !== variant.quantity;
-
-                    return (
-                      <View 
-                        key={variant.id} 
-                        className={`flex-row justify-between items-center p-3.5 border rounded-2xl ${
-                          isChanged ? 'bg-emerald-50/30 border-emerald-300' : 'bg-zinc-50/50 border-zinc-100'
-                        }`}
-                      >
-                        <View className="flex-1 mr-2">
-                          <Text className="text-zinc-900 font-black text-sm">{variant.label}</Text>
-                          <Text className="text-xs text-zinc-500 font-bold mt-0.5">
-                            Dealer Price: {currencyFormatter.format(variant.dealerPrice || variant.price)}
-                          </Text>
-                        </View>
-
-                        {/* Quantity Counter Control */}
-                        <View className="flex-row items-center border border-zinc-200 bg-white rounded-xl overflow-hidden">
-                          <TouchableOpacity 
-                            onPress={() => handleQtyChange(product.id, variant.id, currentQty - 1)}
-                            className="p-2.5 bg-zinc-50 active:bg-zinc-100"
-                          >
-                            <Icon name="minus" size={14} color="#3F3F46" />
-                          </TouchableOpacity>
-                          
-                          <TextInput
-                            keyboardType="number-pad"
-                            value={String(currentQty)}
-                            onChangeText={(val) => {
-                              const numVal = parseInt(val.replace(/[^0-9]/g, ''), 10) || 0;
-                              handleQtyChange(product.id, variant.id, numVal);
-                            }}
-                            className="w-12 text-center text-zinc-950 font-black text-sm h-9"
-                          />
-
-                          <TouchableOpacity 
-                            onPress={() => handleQtyChange(product.id, variant.id, currentQty + 1)}
-                            className="p-2.5 bg-zinc-50 active:bg-zinc-100"
-                          >
-                            <Icon name="plus" size={14} color="#3F3F46" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
+              );
+            }}
           />
         )}
 
-        {/* Sticky Bottom Save Changes Banner */}
+        {/* ─── Sticky Save Changes Bar ──────────────────────────────────────── */}
         {hasChanges && (
-          <View className="absolute bottom-0 left-0 right-0 bg-zinc-900 px-6 py-4 flex-row justify-between items-center border-t border-zinc-800 shadow-2xl rounded-t-[2rem]">
+          <View className="absolute bottom-4 left-4 right-4 rounded-2xl bg-[#143D2E] p-4 flex-row items-center justify-between shadow-xl shadow-emerald-950/40">
             <View>
-              <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Unsaved Changes</Text>
-              <Text className="text-white font-black text-sm mt-0.5">
+              <Text className="text-xs font-black uppercase tracking-wider text-emerald-300">
+                Unsaved Stock Edits
+              </Text>
+              <Text className="text-xs font-semibold text-white">
                 {Object.keys(draft).length} items modified
               </Text>
             </View>
+
             <TouchableOpacity
               onPress={handleSave}
               disabled={updateInventoryMutation.isPending}
-              className="bg-emerald-500 px-6 py-3 rounded-2xl active:scale-95 flex-row items-center"
+              className="rounded-xl bg-white px-5 py-2.5 active:bg-slate-100"
             >
               {updateInventoryMutation.isPending ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color="#143D2E" />
               ) : (
-                <>
-                  <Icon name="save" size={14} color="#fff" />
-                  <Text className="text-white font-black text-xs uppercase tracking-widest ml-2">Save Quantity</Text>
-                </>
+                <Text className="text-xs font-black uppercase tracking-wider text-[#143D2E]">
+                  Save Changes
+                </Text>
               )}
             </TouchableOpacity>
           </View>

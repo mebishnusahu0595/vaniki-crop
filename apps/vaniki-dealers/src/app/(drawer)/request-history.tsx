@@ -8,207 +8,252 @@ import {
   ScrollView, 
   ActivityIndicator, 
   RefreshControl,
-  SafeAreaView
+  SafeAreaView,
+  TextInput,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../../utils/api';
 import { formatDateTime } from '../../utils/format';
-import { resolveMediaUrl } from '../../utils/media';
 import { Feather } from '@expo/vector-icons';
 import type { DealerProductRequest } from '../../types/admin';
 
 const Icon = Feather as any;
-const ImageComponent = Image as any;
+
+const STATUS_FILTERS = [
+  { label: 'All Requests', value: '' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Contacted', value: 'contacted' },
+  { label: 'Fulfilled', value: 'fulfilled' },
+  { label: 'Rejected', value: 'rejected' },
+];
 
 export default function RequestHistoryScreen() {
   const [selectedRequest, setSelectedRequest] = useState<DealerProductRequest | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState('');
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['admin-product-requests-history'],
-    queryFn: () => adminApi.productRequests({ limit: 50 }),
+    queryFn: () => adminApi.productRequests({ limit: 100 }),
   });
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-amber-100 text-amber-800 border-amber-200';
-      case 'fulfilled': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'rejected': return 'bg-rose-100 text-rose-800 border-rose-200';
-      default: return 'bg-zinc-100 text-zinc-800 border-zinc-200';
+      case 'pending': return { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700', label: 'Pending Factory Review' };
+      case 'contacted': return { bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700', label: 'Factory Contacted' };
+      case 'fulfilled': return { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', label: 'Dispatched / Fulfilled' };
+      case 'rejected': return { bg: 'bg-rose-50 border-rose-200', text: 'text-rose-700', label: 'Declined' };
+      default: return { bg: 'bg-slate-50 border-slate-200', text: 'text-slate-700', label: status };
     }
   };
 
-  const requests = data?.data || [];
+  const allRequests = data?.data || [];
+  const filteredRequests = allRequests.filter((r) => {
+    const matchStatus = !statusFilter || r.status === statusFilter;
+    const matchSearch = !search || r.productName?.toLowerCase().includes(search.toLowerCase()) || r.garageName?.toLowerCase().includes(search.toLowerCase());
+    return matchStatus && matchSearch;
+  });
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-50">
+    <SafeAreaView className="flex-1 bg-slate-50">
+      {/* ─── Search & Status Filters ────────────────────────────────────────── */}
+      <View className="bg-white border-b border-slate-100 shadow-xs">
+        <View className="px-4 pt-3 pb-2">
+          <View className="flex-row items-center bg-slate-100 rounded-2xl px-4 py-2.5">
+            <Icon name="search" size={17} color="#059669" />
+            <TextInput
+              placeholder="Search requested formulation, garage..."
+              placeholderTextColor="#94a3b8"
+              value={search}
+              onChangeText={setSearch}
+              className="flex-1 ml-2 text-slate-900 font-semibold text-sm"
+            />
+            {search ? (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <Icon name="x-circle" size={16} color="#94a3b8" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Filter Pills */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-4 pb-3 pt-1">
+          <View className="flex-row gap-2 pr-6">
+            {STATUS_FILTERS.map((f) => (
+              <TouchableOpacity
+                key={f.label}
+                onPress={() => setStatusFilter(f.value)}
+                className={`px-4 py-2 rounded-full border ${
+                  statusFilter === f.value
+                    ? 'bg-[#143D2E] border-[#143D2E]'
+                    : 'bg-white border-slate-200'
+                }`}
+              >
+                <Text
+                  className={`text-xs font-black uppercase tracking-wider ${
+                    statusFilter === f.value ? 'text-white' : 'text-slate-600'
+                  }`}
+                >
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+
+      {/* ─── Requests List ─────────────────────────────────────────────────── */}
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#143D2E" />
-          <Text className="mt-3 text-zinc-400 font-bold">Loading request history...</Text>
+          <Text className="mt-3 text-slate-400 font-bold text-xs">Loading request history...</Text>
         </View>
       ) : (
         <FlatList
-          data={requests}
+          data={filteredRequests}
           keyExtractor={(item) => item.id}
           refreshControl={
-            <RefreshControl 
-              refreshing={isFetching} 
-              onRefresh={refetch} 
-              colors={['#143D2E']} 
-            />
+            <RefreshControl refreshing={isFetching} onRefresh={refetch} colors={['#143D2E']} />
           }
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
           ListEmptyComponent={
-            <View className="flex-1 justify-center items-center py-20">
-              <Icon name="clock" size={48} color="#D4D4D8" />
-              <Text className="text-zinc-500 font-black mt-4 uppercase tracking-widest text-xs">No Requests Yet</Text>
+            <View className="items-center justify-center py-20 px-6 rounded-3xl bg-white border border-dashed border-slate-200">
+              <Icon name="clock" size={40} color="#94a3b8" />
+              <Text className="mt-4 font-black text-slate-800 text-base">No Requests Found</Text>
+              <Text className="mt-1 text-center text-xs text-slate-400">
+                Bulk product requisitions sent to factory superadmin will appear here.
+              </Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => setSelectedRequest(item)}
-              className="bg-white border border-zinc-100 rounded-3xl p-5 mb-4 shadow-sm active:scale-[0.98] transition"
-            >
-              <View className="flex-row justify-between items-start gap-2">
-                <View className="flex-1">
-                  <Text className="text-zinc-900 font-black text-base">{item.productName}</Text>
-                  <Text className="text-zinc-500 font-bold text-xs mt-1">
-                    {item.petiQuantity} Peti × {item.petiSize || 0} {item.petiUnit || 'Liter'}
-                  </Text>
-                  <Text className="text-[10px] text-zinc-400 font-semibold mt-1">
-                    Garage: {item.garageName || 'N/A'} · {formatDateTime(item.createdAt)}
-                  </Text>
+          renderItem={({ item }) => {
+            const badge = getStatusBadge(item.status);
+
+            return (
+              <TouchableOpacity
+                onPress={() => setSelectedRequest(item)}
+                activeOpacity={0.9}
+                className="mb-4 rounded-[1.75rem] border border-slate-100 bg-white p-5 shadow-xs active:scale-[0.99]"
+              >
+                <View className="flex-row justify-between items-start">
+                  <View className="flex-1 pr-2">
+                    <Text className="text-base font-black text-slate-900 leading-tight">
+                      {item.productName}
+                    </Text>
+                    <Text className="text-xs font-bold text-emerald-800 mt-1">
+                      {item.petiQuantity || item.requestedQuantity} Petis / Cartons
+                      {item.requestedPack ? ` (${item.requestedPack})` : ''}
+                    </Text>
+                    <Text className="text-[11px] font-semibold text-slate-400 mt-1">
+                      📍 {item.garageName || 'Central Hub'} · {formatDateTime(item.createdAt)}
+                    </Text>
+                  </View>
+
+                  <View className={`rounded-full px-3 py-1 border ${badge.bg}`}>
+                    <Text className={`text-[9px] font-black uppercase tracking-wider ${badge.text}`}>
+                      {badge.label}
+                    </Text>
+                  </View>
                 </View>
-                <View className={`px-2.5 py-1 rounded-full border ${getStatusColor(item.status)}`}>
-                  <Text className="text-[9px] font-black uppercase tracking-wider">{item.status}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          )}
+
+                {item.notes ? (
+                  <View className="mt-3 rounded-xl bg-slate-50 p-2.5 border border-slate-100">
+                    <Text className="text-xs text-slate-600 font-medium" numberOfLines={2}>
+                      💬 Note: {item.notes}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {item.superAdminNote ? (
+                  <View className="mt-2 rounded-xl bg-emerald-50 p-2.5 border border-emerald-100">
+                    <Text className="text-xs text-emerald-900 font-bold" numberOfLines={2}>
+                      🏭 Factory Response: {item.superAdminNote}
+                    </Text>
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
 
-      {/* Details Modal */}
+      {/* ─── Details Modal ─────────────────────────────────────────────────── */}
       <Modal
         visible={Boolean(selectedRequest)}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setSelectedRequest(null)}
       >
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-white rounded-t-[2.5rem] h-[75%] border-t border-zinc-200 shadow-2xl overflow-hidden">
-            {/* Header */}
-            {selectedRequest ? (() => {
-              const requestProduct = selectedRequest.productId as any;
-              const productShortDesc = requestProduct?.shortDescription || '';
-              const firstImage = requestProduct?.images?.find((img: any) => img.isPrimary) || requestProduct?.images?.[0];
-              const productImage = firstImage?.url || '';
-
-              return (
-                <View className="flex-row justify-between items-center px-6 py-5 border-b border-zinc-100">
-                  <View className="flex-row items-center flex-1 mr-4">
-                    <View className="h-12 w-12 bg-zinc-50 border border-zinc-100 rounded-xl overflow-hidden mr-3 justify-center items-center">
-                      {productImage ? (
-                        <ImageComponent
-                          source={{ uri: resolveMediaUrl(productImage) }}
-                          style={{ width: '100%', height: '100%' }}
-                          contentFit="cover"
-                        />
-                      ) : (
-                        <Icon name="package" size={20} color="#D4D4D8" />
-                      )}
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-zinc-900 font-black text-sm leading-tight" numberOfLines={1}>
-                        {selectedRequest.productName}
-                      </Text>
-                      {productShortDesc ? (
-                        <Text className="text-zinc-500 font-medium text-[10px] mt-0.5" numberOfLines={1}>
-                          {productShortDesc}
-                        </Text>
-                      ) : null}
-                    </View>
+        <View className="flex-1 justify-end bg-slate-950/60">
+          <View className="rounded-t-[2.5rem] bg-white p-6 shadow-2xl">
+            {selectedRequest && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View className="flex-row items-center justify-between pb-4 border-b border-slate-100">
+                  <View>
+                    <Text className="text-xs font-black uppercase tracking-[2px] text-emerald-800">
+                      Requisition Details
+                    </Text>
+                    <Text className="text-lg font-black text-slate-900 mt-0.5">
+                      {selectedRequest.productName}
+                    </Text>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => setSelectedRequest(null)}
-                    className="bg-zinc-100 p-2 rounded-full"
+                    className="rounded-full bg-slate-100 p-2"
                   >
-                    <Icon name="x" size={16} color="#71717A" />
+                    <Icon name="x" size={16} color="#475569" />
                   </TouchableOpacity>
                 </View>
-              );
-            })() : null}
 
-            {/* Scroll view */}
-            <ScrollView contentContainerStyle={{ padding: 24 }} className="flex-1">
-              {selectedRequest ? (() => {
-                const requestProduct = selectedRequest.productId as any;
-                const productShortDesc = requestProduct?.shortDescription || '';
-                const firstImage = requestProduct?.images?.find((img: any) => img.isPrimary) || requestProduct?.images?.[0];
-                const productImage = firstImage?.url || '';
-                
-                return (
-                  <View className="space-y-6">
-                    {/* Details Breakdown */}
-                    <View className="flex-row flex-wrap justify-between gap-y-4">
-                      <View className="w-[48%] rounded-2xl bg-zinc-50 border border-zinc-100 p-4">
-                        <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Variant Pack</Text>
-                        <Text className="text-zinc-900 font-black text-sm mt-1">{selectedRequest.requestedPack || 'N/A'}</Text>
-                      </View>
-                      <View className="w-[48%] rounded-2xl bg-zinc-50 border border-zinc-100 p-4">
-                        <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Garage</Text>
-                        <Text className="text-zinc-900 font-black text-sm mt-1">{selectedRequest.garageName || 'N/A'}</Text>
-                      </View>
-                      {selectedRequest.dealerPrice ? (
-                        <View className="w-[48%] rounded-2xl bg-zinc-50 border border-zinc-100 p-4">
-                          <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Dealer Price</Text>
-                          <Text className="text-zinc-900 font-black text-sm mt-1">₹{selectedRequest.dealerPrice}</Text>
-                        </View>
-                      ) : null}
-                      {selectedRequest.offerPrice ? (
-                        <View className="w-[48%] rounded-2xl bg-zinc-50 border border-zinc-100 p-4">
-                          <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400">Offer Price</Text>
-                          <Text className="text-emerald-700 font-black text-sm mt-1">₹{selectedRequest.offerPrice}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-
-                    {/* Volume breakdown summary */}
-                    <View className="bg-emerald-950 rounded-3xl p-5 text-white shadow-xl mt-4">
-                      <View className="flex-row justify-between items-center">
-                        <View>
-                          <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-1">Request Volume</Text>
-                          <Text className="text-2xl font-black text-white">{selectedRequest.petiQuantity} <Text className="text-sm font-semibold uppercase text-emerald-300">Peti</Text></Text>
-                        </View>
-                        <View className="border-l border-white/10 pl-5 items-end">
-                          <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-1">Total {selectedRequest.petiUnit || 'Volume'}</Text>
-                          <Text className="text-2xl font-black text-white">
-                            {(Number(selectedRequest.petiQuantity || 0) * Number(selectedRequest.petiSize || 0)).toFixed(1)} <Text className="text-sm font-semibold uppercase text-emerald-300">{selectedRequest.petiUnit}</Text>
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    {/* Notes Sections */}
-                    <View className="space-y-4 mt-4">
-                      <View>
-                        <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-2 ml-1">Dealer Notes</Text>
-                        <View className="rounded-2xl bg-zinc-50 border border-zinc-100 p-4">
-                          <Text className="text-zinc-600 font-semibold italic text-sm">
-                            "{selectedRequest.notes || 'No notes provided'}"
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
+                <View className="mt-5 space-y-3">
+                  <View className="flex-row justify-between rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
+                    <Text className="text-xs font-bold text-slate-500">Requested Quantity</Text>
+                    <Text className="text-sm font-black text-slate-900">
+                      {selectedRequest.petiQuantity || selectedRequest.requestedQuantity} Petis / Cases
+                    </Text>
                   </View>
-                );
-              })() : null}
-            </ScrollView>
+
+                  <View className="flex-row justify-between rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
+                    <Text className="text-xs font-bold text-slate-500">Packaging Size</Text>
+                    <Text className="text-sm font-black text-slate-900">
+                      {selectedRequest.requestedPack || 'Standard'}
+                    </Text>
+                  </View>
+
+                  <View className="flex-row justify-between rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
+                    <Text className="text-xs font-bold text-slate-500">Destination Garage</Text>
+                    <Text className="text-sm font-black text-slate-900">
+                      {selectedRequest.garageName || 'Main Central Godown'}
+                    </Text>
+                  </View>
+
+                  <View className="flex-row justify-between rounded-2xl bg-slate-50 p-3.5 border border-slate-100">
+                    <Text className="text-xs font-bold text-slate-500">Requisition Date</Text>
+                    <Text className="text-xs font-black text-slate-900">
+                      {formatDateTime(selectedRequest.createdAt)}
+                    </Text>
+                  </View>
+                </View>
+
+                {selectedRequest.superAdminNote ? (
+                  <View className="mt-4 rounded-2xl bg-emerald-50 p-4 border border-emerald-100">
+                    <Text className="text-xs font-black uppercase text-emerald-800">Factory Dispatch Update</Text>
+                    <Text className="text-xs font-semibold text-emerald-950 mt-1">
+                      {selectedRequest.superAdminNote}
+                    </Text>
+                  </View>
+                ) : null}
+
+                <TouchableOpacity
+                  onPress={() => setSelectedRequest(null)}
+                  className="mt-6 rounded-2xl bg-[#143D2E] py-3.5 items-center active:bg-emerald-900"
+                >
+                  <Text className="text-xs font-black uppercase tracking-wider text-white">Close Details</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }

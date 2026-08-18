@@ -2,13 +2,13 @@ import React from 'react';
 import { 
   View, 
   Text, 
-  FlatList, 
   TouchableOpacity, 
   Share, 
   ActivityIndicator, 
   RefreshControl,
   SafeAreaView,
-  ScrollView
+  ScrollView,
+  Alert,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useAdminAuthStore } from '../../store/useAdminAuthStore';
@@ -21,7 +21,6 @@ const Icon = Feather as any;
 export default function ReferralsScreen() {
   const user = useAdminAuthStore((state) => state.user);
 
-  // Fetch referrals from server
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['admin-referrals'],
     queryFn: () => adminApi.referrals({ limit: 100 }),
@@ -29,25 +28,23 @@ export default function ReferralsScreen() {
 
   const handleShareInvite = async () => {
     if (!user?.referralCode) {
-      alert('Referral code is not available yet.');
+      Alert.alert('Referral Code', 'Your referral code is being generated.');
       return;
     }
     try {
       const inviteUrl = `https://vanikicrop.com/signup?ref=${user.referralCode}`;
       await Share.share({
-        message: `Join Vaniki Crop using my dealer referral link: ${inviteUrl}\nOr register with code: ${user.referralCode}`,
+        message: `Namaste Kisan Bhai! Join Vaniki Crop using my verified dealer code: ${user.referralCode} to get genuine crop care products.\nLink: ${inviteUrl}`,
       });
-    } catch (error) {
-      alert('Failed to trigger invitation share.');
+    } catch {
+      Alert.alert('Error', 'Could not open share dialog.');
     }
   };
 
   const referrals = data?.data || [];
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-50">
-      
-      {/* Scrollable Layout */}
+    <SafeAreaView className="flex-1 bg-slate-50">
       <ScrollView
         refreshControl={
           <RefreshControl 
@@ -56,142 +53,108 @@ export default function ReferralsScreen() {
             colors={['#143D2E']} 
           />
         }
-        contentContainerStyle={{ padding: 20 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         className="flex-1"
+        showsVerticalScrollIndicator={false}
       >
-        
-        {/* Referral Card */}
-        <View className="bg-zinc-900 rounded-[2rem] border border-zinc-800 shadow-2xl p-6 overflow-hidden">
-          <View className="flex-row items-center gap-3 mb-6">
-            <View className="bg-emerald-500 p-2.5 rounded-2xl">
-              <Icon name="gift" size={18} color="#fff" />
+        {/* ─── Share & Earn Card ────────────────────────────────────────────── */}
+        <View className="rounded-3xl bg-[#143D2E] p-6 shadow-lg shadow-emerald-950/20">
+          <View className="flex-row items-center gap-3">
+            <View className="h-12 w-12 rounded-2xl bg-white/10 items-center justify-center border border-white/20">
+              <Icon name="gift" size={22} color="#34d399" />
             </View>
             <View>
-              <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Share & Earn</Text>
-              <Text className="text-white font-black text-lg mt-0.5">Your Referral Code</Text>
+              <Text className="text-[10px] font-black uppercase tracking-[2px] text-emerald-300">
+                Customer Network Outreach
+              </Text>
+              <Text className="text-xl font-black text-white mt-0.5">Dealer Invite Code</Text>
             </View>
           </View>
 
-          {/* Code display row */}
-          <View className="flex-row justify-between items-center bg-white/5 border border-white/10 rounded-2xl p-4">
+          {/* Referral Code Row */}
+          <View className="mt-5 flex-row items-center justify-between rounded-2xl bg-white/10 p-4 border border-white/15">
             <View>
-              <Text className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Unique Invite Code</Text>
-              <Text className="text-emerald-400 font-black text-3xl tracking-widest mt-1">
-                {user?.referralCode || '...'}
+              <Text className="text-[9px] font-black uppercase tracking-wider text-emerald-200">
+                Your Referral Code
+              </Text>
+              <Text className="text-2xl font-black tracking-widest text-emerald-400 mt-0.5">
+                {user?.referralCode || 'VANIKI-DEALER'}
               </Text>
             </View>
+
             <TouchableOpacity
               onPress={handleShareInvite}
-              className="bg-emerald-500 p-3.5 rounded-2xl active:scale-95"
+              activeOpacity={0.85}
+              className="flex-row items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 active:bg-slate-100"
             >
-              <Icon name="share-2" size={18} color="#fff" />
+              <Icon name="share-2" size={15} color="#143D2E" />
+              <Text className="text-xs font-black uppercase tracking-wider text-[#143D2E]">
+                Share
+              </Text>
             </TouchableOpacity>
           </View>
 
-          <Text className="text-zinc-400 font-semibold text-xs leading-5 mt-4">
-            Share this code with new growers. When they register with your code, you will earn <Text className="text-emerald-400 font-bold">1 Loyalty Point</Text> as commission.
+          <Text className="mt-4 text-xs font-semibold leading-relaxed text-emerald-100/80">
+            Share this code with farmers in your village. When they register and order online, you earn points and commission.
           </Text>
         </View>
 
-        {/* Loyalty Points Card */}
-        <View className="bg-white border border-zinc-100 rounded-[2.5rem] p-6 shadow-sm mt-6">
-          <View className="flex-row items-center gap-3 mb-4">
-            <View className="bg-amber-100 p-2.5 rounded-2xl">
-              <Icon name="award" size={18} color="#D97706" />
-            </View>
-            <View>
-              <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600">Loyalty Balance</Text>
-              <Text className="text-zinc-900 font-black text-lg mt-0.5">Total Points Earned</Text>
-            </View>
+        {/* ─── Referral Stats ────────────────────────────────────────────────── */}
+        <View className="mt-5 flex-row gap-3">
+          <View className="flex-1 rounded-2xl border border-slate-100 bg-white p-4 shadow-xs">
+            <Text className="text-[10px] font-black uppercase tracking-wider text-slate-400">Referred Farmers</Text>
+            <Text className="text-2xl font-black text-slate-900 mt-1">{referrals.length}</Text>
           </View>
-
-          <View className="flex-row items-baseline gap-2">
-            <Text className="text-amber-600 font-black text-5xl">{user?.loyaltyPoints || 0}</Text>
-            <Text className="text-amber-400 font-black uppercase tracking-widest text-sm">Points</Text>
-          </View>
-
-          <View className="h-px bg-zinc-100 my-4" />
-
-          {/* Stats Row */}
-          <View className="flex-row justify-between items-center">
-            <View>
-              <Text className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Referred signups</Text>
-              <Text className="text-zinc-900 font-black text-lg mt-0.5">{referrals.length}</Text>
-            </View>
-            <View className="h-8 w-px bg-zinc-200" />
-            <View className="items-end">
-              <Text className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Conversion Rate</Text>
-              <Text className="text-emerald-700 font-black text-lg mt-0.5">100%</Text>
-            </View>
+          <View className="flex-1 rounded-2xl border border-slate-100 bg-white p-4 shadow-xs">
+            <Text className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Farmer Orders</Text>
+            <Text className="text-2xl font-black text-emerald-800 mt-1">
+              {referrals.reduce((sum: number, r: any) => sum + (r.orderCount || 0), 0)}
+            </Text>
           </View>
         </View>
 
-        {/* Referred Users List */}
-        <View className="mt-8 space-y-4">
-          <View className="flex-row items-center gap-2 px-1 mb-2">
-            <Icon name="users" size={16} color="#143D2E" />
-            <Text className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Referred Users List</Text>
-          </View>
+        {/* ─── Referred Farmers List ────────────────────────────────────────── */}
+        <View className="mt-6">
+          <Text className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">
+            Registered Customers Ledger
+          </Text>
 
           {isLoading ? (
-            <ActivityIndicator size="small" color="#143D2E" className="py-10" />
+            <View className="py-12 items-center justify-center">
+              <ActivityIndicator size="large" color="#143D2E" />
+            </View>
+          ) : referrals.length === 0 ? (
+            <View className="items-center justify-center py-16 px-6 rounded-3xl bg-white border border-dashed border-slate-200">
+              <Icon name="users" size={36} color="#94a3b8" />
+              <Text className="mt-3 font-black text-slate-800 text-sm">No Referrals Yet</Text>
+              <Text className="mt-1 text-center text-xs text-slate-400">
+                Share your referral link on WhatsApp to invite local farmers.
+              </Text>
+            </View>
           ) : (
-            <View className="space-y-4">
-              {referrals.map((record: any) => (
-                <View 
-                  key={record.id}
-                  className="bg-white border border-zinc-100 rounded-3xl p-5 shadow-sm"
+            <View className="space-y-3">
+              {referrals.map((r, i) => (
+                <View
+                  key={i}
+                  className="rounded-2xl border border-slate-100 bg-white p-4 shadow-xs flex-row items-center justify-between"
                 >
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center">
-                      <View className="h-12 w-12 bg-emerald-50 border border-emerald-100 rounded-2xl items-center justify-center mr-3">
-                        <Text className="text-emerald-800 font-black text-lg">
-                          {(record.name || 'A').charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View>
-                        <Text className="text-zinc-900 font-black text-base">{record.name}</Text>
-                        <Text className="text-zinc-400 font-semibold text-xs mt-0.5">
-                          Joined: {formatDate(record.joinedAt)}
-                        </Text>
-                      </View>
-                    </View>
+                  <View className="flex-1 pr-2">
+                    <Text className="text-sm font-black text-slate-900">{r.name}</Text>
+                    <Text className="text-xs font-semibold text-slate-400 mt-0.5">
+                      {r.mobile} · Joined {formatDate(r.joinedAt)}
+                    </Text>
                   </View>
 
-                  <View className="h-px bg-zinc-100 my-4" />
-
-                  {/* Purchase Metas */}
-                  <View className="flex-row justify-between items-center bg-zinc-50/50 rounded-2xl p-4 border border-zinc-100">
-                    <View>
-                      <Text className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Purchases</Text>
-                      <Text className="text-zinc-800 font-black text-xs mt-0.5">{record.orderCount} Orders</Text>
-                    </View>
-                    <View className="items-end">
-                      <Text className="text-[9px] font-black uppercase tracking-wider text-zinc-400">Total Spend</Text>
-                      <Text className="text-emerald-800 font-black text-xs mt-0.5">
-                        {currencyFormatter.format(record.totalSpend)}
-                      </Text>
-                    </View>
+                  <View className="items-end">
+                    <Text className="text-sm font-black text-emerald-800">
+                      {currencyFormatter.format(r.totalSpend || 0)}
+                    </Text>
+                    <Text className="text-[10px] font-bold text-slate-400 mt-0.5">
+                      {r.orderCount || 0} orders
+                    </Text>
                   </View>
-
-                  {record.mostBoughtProduct && (
-                    <View className="mt-3 flex-row items-center bg-emerald-50/40 rounded-xl px-3 py-2 border border-emerald-100 self-start">
-                      <Icon name="tag" size={10} color="#047857" />
-                      <Text className="text-[10px] text-emerald-800 font-black uppercase tracking-wide ml-1.5 truncate max-w-[250px]">
-                        {record.mostBoughtProduct}
-                      </Text>
-                    </View>
-                  )}
                 </View>
               ))}
-
-              {referrals.length === 0 && (
-                <View className="justify-center items-center py-12 bg-white border border-zinc-100 border-dashed rounded-[2rem]">
-                  <Icon name="users" size={32} color="#D4D4D8" />
-                  <Text className="text-zinc-400 font-black text-[10px] uppercase tracking-wider mt-3">No invites yet</Text>
-                  <Text className="text-zinc-400 font-semibold text-xs mt-1">Start sharing to build your referral network!</Text>
-                </View>
-              )}
             </View>
           )}
         </View>
