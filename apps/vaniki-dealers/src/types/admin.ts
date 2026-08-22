@@ -116,7 +116,6 @@ export interface DealerInventoryProduct {
 
 export interface DealerProductRequest {
   id: string;
-  productId?: any;
   productName: string;
   requestedQuantity: number;
   requestedPack?: string;

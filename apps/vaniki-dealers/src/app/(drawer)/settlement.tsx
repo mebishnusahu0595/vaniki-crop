@@ -6,8 +6,7 @@ import {
   TouchableOpacity, 
   ActivityIndicator, 
   RefreshControl,
-  SafeAreaView,
-  Alert,
+  SafeAreaView
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../../utils/api';
@@ -31,15 +30,12 @@ export default function SettlementScreen() {
     mutationFn: (ids: string[]) => adminApi.createSettlementRequest(ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-settlement-eligible'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-product-requests'] });
       setSelectedOrderIds([]);
-      Alert.alert(
-        'Payout Request Sent! 💰',
-        'Your settlement request has been submitted to Super Admin finance team for direct bank transfer.'
-      );
+      alert('Settlement request sent to Super Admin successfully!');
     },
     onError: (error: any) => {
-      Alert.alert('Settlement Failed', error.message || 'Failed to request settlement.');
+      alert(error.message || 'Failed to request settlement.');
     }
   });
 
@@ -57,64 +53,43 @@ export default function SettlementScreen() {
     }
   };
 
-  const totalSelectedAmount = selectedOrderIds.reduce((sum, id) => {
+  const totalAmount = selectedOrderIds.reduce((sum, id) => {
     const order = eligibleOrders.find(o => o.id === id);
     return sum + (order?.totalAmount || 0);
   }, 0);
 
-  const totalEligibleAmount = eligibleOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
   const isAllSelected = eligibleOrders.length > 0 && selectedOrderIds.length === eligibleOrders.length;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      {/* ─── Wallet Overview Card ───────────────────────────────────────────── */}
-      <View className="bg-white p-4 border-b border-slate-100 shadow-xs">
-        <View className="rounded-3xl bg-gradient-to-br bg-[#143D2E] p-5 shadow-lg shadow-emerald-950/20">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-[10px] font-black uppercase tracking-[2px] text-emerald-300">
-              Dealer Settlement Wallet
-            </Text>
-            <View className="rounded-full bg-emerald-800/80 px-2.5 py-1">
-              <Text className="text-[10px] font-bold text-emerald-200">Direct Bank Payout</Text>
-            </View>
-          </View>
-
-          <Text className="mt-3 text-3xl font-black text-white">
-            {currencyFormatter.format(totalEligibleAmount)}
+    <SafeAreaView className="flex-1 bg-zinc-50">
+      
+      {/* Top Header Selector Controls */}
+      <View className="bg-white px-6 py-4 flex-row justify-between items-center border-b border-zinc-100 shadow-sm">
+        <TouchableOpacity
+          onPress={selectAll}
+          disabled={eligibleOrders.length === 0}
+          className="flex-row items-center bg-zinc-100 px-4 py-2 rounded-xl border border-zinc-200 active:scale-95 disabled:opacity-50"
+        >
+          <Icon 
+            name={isAllSelected ? 'check-square' : 'square'} 
+            size={16} 
+            color="#3F3F46" 
+          />
+          <Text className="text-zinc-700 font-black text-xs uppercase tracking-wider ml-2">
+            {isAllSelected ? 'Deselect All' : 'Select All'}
           </Text>
-          <Text className="text-xs font-semibold text-emerald-300 mt-1">
-            Available across {eligibleOrders.length} delivered & confirmed orders
-          </Text>
-        </View>
+        </TouchableOpacity>
 
-        {/* Selection bar */}
-        <View className="mt-3 flex-row items-center justify-between">
-          <TouchableOpacity
-            onPress={selectAll}
-            disabled={eligibleOrders.length === 0}
-            className="flex-row items-center rounded-xl bg-slate-100 px-3.5 py-2 border border-slate-200 disabled:opacity-40"
-          >
-            <Icon 
-              name={isAllSelected ? 'check-square' : 'square'} 
-              size={15} 
-              color="#143D2E" 
-            />
-            <Text className="ml-2 text-xs font-black uppercase tracking-wider text-slate-800">
-              {isAllSelected ? 'Deselect All' : 'Select All'}
-            </Text>
-          </TouchableOpacity>
-
-          <Text className="text-xs font-bold text-slate-400">
-            {selectedOrderIds.length} of {eligibleOrders.length} selected
-          </Text>
-        </View>
+        <Text className="text-zinc-400 font-bold text-xs">
+          {eligibleOrders.length} Orders Eligible
+        </Text>
       </View>
 
-      {/* ─── Orders List ────────────────────────────────────────────────────── */}
+      {/* Eligible List */}
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#143D2E" />
-          <Text className="mt-3 text-slate-400 font-bold text-xs">Loading settlement orders...</Text>
+          <Text className="mt-3 text-zinc-400 font-bold">Loading eligible settlements...</Text>
         </View>
       ) : (
         <FlatList
@@ -127,84 +102,85 @@ export default function SettlementScreen() {
               colors={['#143D2E']} 
             />
           }
-          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
           ListEmptyComponent={
-            <View className="items-center justify-center py-20 px-6 rounded-3xl bg-white border border-dashed border-slate-200">
-              <Icon name="check-circle" size={40} color="#10b981" />
-              <Text className="mt-4 font-black text-slate-800 text-base">All Caught Up!</Text>
-              <Text className="mt-1 text-center text-xs text-slate-400">
-                No pending delivered orders awaiting settlement.
-              </Text>
+            <View className="flex-1 justify-center items-center py-20">
+              <Icon name="clock" size={48} color="#D4D4D8" />
+              <Text className="text-zinc-500 font-black mt-4 uppercase tracking-widest text-xs">No settlements pending</Text>
             </View>
           }
-          renderItem={({ item }) => {
-            const isChecked = selectedOrderIds.includes(item.id);
-
+          renderItem={({ item: order }) => {
+            const isChecked = selectedOrderIds.includes(order.id);
             return (
               <TouchableOpacity
-                onPress={() => toggleOrder(item.id)}
-                activeOpacity={0.85}
-                className={`mb-3.5 rounded-[1.75rem] border p-5 transition ${
+                onPress={() => toggleOrder(order.id)}
+                className={`flex-row items-center border rounded-[2rem] p-5 mb-4 shadow-sm active:scale-[0.99] transition ${
                   isChecked 
-                    ? 'border-emerald-700 bg-emerald-50/50 shadow-xs' 
-                    : 'border-slate-100 bg-white shadow-xs'
+                    ? 'border-emerald-700 bg-emerald-50/20' 
+                    : 'border-zinc-100 bg-white hover:border-zinc-200'
                 }`}
               >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-3">
-                    <View className={`h-6 w-6 rounded-lg items-center justify-center border ${
-                      isChecked ? 'bg-[#143D2E] border-[#143D2E]' : 'border-slate-300 bg-white'
-                    }`}>
-                      {isChecked && <Icon name="check" size={14} color="#ffffff" />}
-                    </View>
+                <View className="mr-4">
+                  <Icon 
+                    name={isChecked ? 'check-circle' : 'circle'} 
+                    size={22} 
+                    color={isChecked ? '#047857' : '#D4D4D8'} 
+                  />
+                </View>
 
-                    <View>
-                      <Text className="text-base font-black text-slate-900 leading-tight">
-                        {item.orderNumber}
-                      </Text>
-                      <Text className="text-[11px] font-semibold text-slate-400 mt-0.5">
-                        {formatDateTime(item.createdAt)}
-                      </Text>
-                    </View>
+                <View className="flex-1 min-w-0">
+                  <View className="flex-row items-center gap-1.5 flex-wrap">
+                    <Text className="text-zinc-900 font-black text-base">{order.orderNumber}</Text>
+                    <Text className="bg-emerald-100 text-emerald-800 text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-emerald-200">
+                      Delivered
+                    </Text>
                   </View>
-
-                  <Text className="text-base font-black text-emerald-800">
-                    {currencyFormatter.format(item.totalAmount)}
+                  <Text className="text-xs text-zinc-500 font-bold mt-1">
+                    {formatDateTime(order.createdAt)} · {order.items?.length || 0} Items
                   </Text>
                 </View>
+
+                <Text className="text-zinc-950 font-black text-base ml-2">
+                  {currencyFormatter.format(order.totalAmount)}
+                </Text>
               </TouchableOpacity>
             );
           }}
         />
       )}
 
-      {/* ─── Sticky Payout Claim Bar ───────────────────────────────────────── */}
+      {/* Floating Bottom Claim Summary */}
       {selectedOrderIds.length > 0 && (
-        <View className="absolute bottom-4 left-4 right-4 rounded-2xl bg-[#143D2E] p-4 flex-row items-center justify-between shadow-xl shadow-emerald-950/40">
-          <View>
-            <Text className="text-[10px] font-black uppercase tracking-wider text-emerald-300">
-              Claim Settlement Payout
-            </Text>
-            <Text className="text-lg font-black text-white">
-              {currencyFormatter.format(totalSelectedAmount)}
-            </Text>
+        <View className="absolute bottom-0 left-0 right-0 bg-zinc-900 px-6 py-5 border-t border-zinc-800 shadow-2xl rounded-t-[2.5rem]">
+          <View className="flex-row justify-between items-center mb-4">
+            <View>
+              <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Total Selection</Text>
+              <Text className="text-white font-black text-sm mt-0.5">
+                {selectedOrderIds.length} orders chosen
+              </Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Claim Amount</Text>
+              <Text className="text-emerald-400 font-black text-xl mt-0.5">
+                {currencyFormatter.format(totalAmount)}
+              </Text>
+            </View>
           </View>
 
           <TouchableOpacity
             onPress={() => createSettlementMutation.mutate(selectedOrderIds)}
             disabled={createSettlementMutation.isPending}
-            className="rounded-xl bg-white px-5 py-2.5 active:bg-slate-100"
+            className="w-full rounded-2xl bg-emerald-500 py-4 items-center justify-center shadow-lg active:scale-95 disabled:opacity-50"
           >
             {createSettlementMutation.isPending ? (
-              <ActivityIndicator size="small" color="#143D2E" />
+              <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text className="text-xs font-black uppercase tracking-wider text-[#143D2E]">
-                Submit Claim ({selectedOrderIds.length})
-              </Text>
+              <Text className="text-white font-black text-xs uppercase tracking-[0.2em]">Request Settlement</Text>
             )}
           </TouchableOpacity>
         </View>
       )}
+
     </SafeAreaView>
   );
 }

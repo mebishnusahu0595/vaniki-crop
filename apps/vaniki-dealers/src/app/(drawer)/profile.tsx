@@ -6,7 +6,7 @@ import {
   TextInput, 
   TouchableOpacity, 
   ActivityIndicator, 
-  SafeAreaView, 
+  SafeAreaView,
   Alert,
   KeyboardAvoidingView,
   Platform
@@ -17,12 +17,11 @@ import { adminApi } from '../../utils/api';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const Icon = Feather as any;
-
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, setUser, clearSession } = useAdminAuthStore();
 
+  // Tab switching state between 'profile' and 'password'
   const [activeTab, setActiveTab] = useState<'details' | 'security'>('details');
 
   // Text inputs states
@@ -42,23 +41,25 @@ export default function ProfileScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Profile update mutation
   const updateProfileMutation = useMutation({
     mutationFn: (payload: any) => adminApi.updateMe(payload),
     onSuccess: (updatedUser) => {
       setUser(updatedUser);
-      Alert.alert('Profile Saved! ✅', 'Your dealer store details have been updated.');
+      Alert.alert('Success', 'Profile settings updated successfully.');
     },
     onError: (error: any) => {
-      Alert.alert('Update Failed', error.message || 'Failed to update profile.');
+      Alert.alert('Update Failed', error.message || 'Failed to update profile settings.');
     }
   });
 
+  // Password update mutation
   const changePasswordMutation = useMutation({
     mutationFn: (payload: any) => adminApi.changePassword(payload),
     onSuccess: () => {
       Alert.alert(
-        'Password Changed ✅', 
-        'Password updated successfully! Please log in again with your new credentials.',
+        'Password Changed', 
+        'Password changed successfully! Please log in again with your new credentials.',
         [
           { 
             text: 'OK', 
@@ -77,11 +78,11 @@ export default function ProfileScreen() {
 
   const handleSaveProfile = () => {
     if (!name.trim()) {
-      Alert.alert('Missing Name', 'Store / Owner name must not be empty.');
+      Alert.alert('Error', 'Name must not be empty.');
       return;
     }
     if (!/^[6-9]\d{9}$/.test(mobile.trim())) {
-      Alert.alert('Invalid Mobile', 'Please enter a valid 10-digit mobile number.');
+      Alert.alert('Error', 'Please enter a valid 10-digit mobile number.');
       return;
     }
 
@@ -103,270 +104,260 @@ export default function ProfileScreen() {
     updateProfileMutation.mutate(payload);
   };
 
-  const handleChangePassword = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Missing Fields', 'All password fields are required.');
+  const handleUpdatePassword = () => {
+    if (!currentPassword || currentPassword.length < 6) {
+      Alert.alert('Error', 'Current password must be at least 6 characters.');
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      Alert.alert('Error', 'New password must be at least 6 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Mismatch', 'New password and confirm password do not match.');
+      Alert.alert('Error', 'New password and confirm password must match.');
       return;
     }
-    if (newPassword.length < 6) {
-      Alert.alert('Weak Password', 'Password must be at least 6 characters.');
+    if (currentPassword === newPassword) {
+      Alert.alert('Error', 'New password must be different from current password.');
       return;
     }
 
-    changePasswordMutation.mutate({ currentPassword, newPassword });
+    changePasswordMutation.mutate({
+      currentPassword,
+      newPassword
+    });
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out from this device?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await adminApi.logout();
-            } catch {}
-            clearSession();
-            router.replace('/(auth)/login');
-          }
-        }
-      ]
-    );
-  };
+  const initials = (user?.name || 'A').slice(0, 1).toUpperCase();
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView className="flex-1 bg-zinc-50">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
       >
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-          {/* ─── Profile Header ───────────────────────────────────────────────── */}
-          <View className="rounded-3xl bg-[#143D2E] p-6 shadow-lg shadow-emerald-950/20">
-            <View className="flex-row items-center gap-4">
-              <View className="h-16 w-16 rounded-2xl bg-white/10 items-center justify-center border border-white/20">
-                <Icon name="shield" size={28} color="#34d399" />
-              </View>
-              <View className="flex-1">
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-lg font-black text-white" numberOfLines={1}>
-                    {user?.name || 'Agri Dealer'}
-                  </Text>
-                  <Icon name="check-circle" size={16} color="#34d399" />
-                </View>
-                <Text className="text-xs font-semibold text-emerald-300 mt-0.5">
-                  {user?.mobile || '+91 - Authorized Dealer'}
-                </Text>
-                <View className="mt-2 self-start rounded-full bg-emerald-800/80 px-2.5 py-0.5">
-                  <Text className="text-[9px] font-black uppercase tracking-wider text-emerald-200">
-                    Certified Vaniki Center
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
+        {/* Tab Selectors */}
+        <View className="bg-white border-b border-zinc-100 shadow-sm flex-row px-6 pt-4 pb-1 gap-6">
+          <TouchableOpacity 
+            onPress={() => setActiveTab('details')}
+            className={`pb-3 border-b-2 ${activeTab === 'details' ? 'border-emerald-700' : 'border-transparent'}`}
+          >
+            <Text className={`font-black text-sm uppercase tracking-wider ${activeTab === 'details' ? 'text-emerald-800' : 'text-zinc-400'}`}>
+              Profile Info
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => setActiveTab('security')}
+            className={`pb-3 border-b-2 ${activeTab === 'security' ? 'border-emerald-700' : 'border-transparent'}`}
+          >
+            <Text className={`font-black text-sm uppercase tracking-wider ${activeTab === 'security' ? 'text-emerald-800' : 'text-zinc-400'}`}>
+              Security & Password
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-          {/* ─── Navigation Tabs ──────────────────────────────────────────────── */}
-          <View className="mt-5 flex-row rounded-2xl bg-white p-1 border border-slate-100 shadow-xs">
-            <TouchableOpacity
-              onPress={() => setActiveTab('details')}
-              className={`flex-1 py-2.5 rounded-xl items-center ${
-                activeTab === 'details' ? 'bg-[#143D2E]' : 'bg-transparent'
-              }`}
-            >
-              <Text className={`text-xs font-black uppercase tracking-wider ${
-                activeTab === 'details' ? 'text-white' : 'text-slate-500'
-              }`}>
-                Store Details
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setActiveTab('security')}
-              className={`flex-1 py-2.5 rounded-xl items-center ${
-                activeTab === 'security' ? 'bg-[#143D2E]' : 'bg-transparent'
-              }`}
-            >
-              <Text className={`text-xs font-black uppercase tracking-wider ${
-                activeTab === 'security' ? 'text-white' : 'text-slate-500'
-              }`}>
-                Security & Login
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* ─── Tab Content ──────────────────────────────────────────────────── */}
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} className="flex-1">
           {activeTab === 'details' ? (
-            <View className="mt-5 space-y-4">
-              <View className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xs">
-                <Text className="text-xs font-black uppercase tracking-wider text-emerald-800 mb-4">
-                  Owner & Store Profile
-                </Text>
+            <View className="space-y-6">
+              {/* Profile Avatar Block */}
+              <View className="bg-white border border-zinc-100 rounded-[2.2rem] p-5 shadow-sm flex-row items-center">
+                <View className="h-16 w-16 bg-emerald-50 rounded-2xl items-center justify-center mr-4 border border-emerald-100">
+                  <Text className="text-emerald-800 font-black text-2xl">{initials}</Text>
+                </View>
+                <View>
+                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">Registered Role</Text>
+                  <Text className="text-zinc-900 font-black text-base mt-0.5">Dealer Store Administrator</Text>
+                </View>
+              </View>
 
-                <View className="space-y-3">
+              {/* Text Fields */}
+              <View className="bg-white border border-zinc-100 rounded-[2.2rem] p-5 shadow-sm space-y-4">
+                <Text className="text-zinc-900 font-black text-base mb-2">Personal Details</Text>
+
+                <View>
+                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Full Name</Text>
+                  <TextInput
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Dealer Name"
+                    placeholderTextColor="#A1A1AA"
+                    className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                  />
+                </View>
+
+                <View>
+                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Mobile Number</Text>
+                  <TextInput
+                    value={mobile}
+                    onChangeText={setMobile}
+                    placeholder="9876543210"
+                    placeholderTextColor="#A1A1AA"
+                    keyboardType="phone-pad"
+                    className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                  />
+                </View>
+
+                <View>
+                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Email Address</Text>
+                  <TextInput
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="dealer@example.com"
+                    placeholderTextColor="#A1A1AA"
+                    keyboardType="email-address"
+                    className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                  />
+                </View>
+              </View>
+
+              {/* Read Only GST Profile Data */}
+              <View className="bg-white border border-zinc-100 rounded-[2.2rem] p-5 shadow-sm space-y-3">
+                <Text className="text-zinc-900 font-black text-base mb-1">Company Credentials</Text>
+                
+                <View className="flex-row justify-between items-center bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
                   <View>
-                    <Text className="text-[11px] font-bold text-slate-500 mb-1">Dealership / Owner Name</Text>
+                    <Text className="text-[9px] font-black uppercase tracking-wider text-zinc-400">GST Number</Text>
+                    <Text className="text-zinc-800 font-black text-sm mt-0.5 font-mono">
+                      {(user as any)?.dealerProfile?.gstNumber || '-'}
+                    </Text>
+                  </View>
+                  <View className="border-l border-zinc-200 pl-4">
+                    <Text className="text-[9px] font-black uppercase tracking-wider text-zinc-400">SGST Number</Text>
+                    <Text className="text-zinc-800 font-black text-sm mt-0.5 font-mono">
+                      {(user as any)?.dealerProfile?.sgstNumber || '-'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Personal Address Blocks */}
+              <View className="bg-white border border-zinc-100 rounded-[2.2rem] p-5 shadow-sm space-y-4">
+                <Text className="text-zinc-900 font-black text-base mb-2">Personal Address</Text>
+
+                <View>
+                  <TextInput
+                    value={street}
+                    onChangeText={setStreet}
+                    placeholder="Street Address"
+                    placeholderTextColor="#A1A1AA"
+                    className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                  />
+                </View>
+
+                <View className="flex-row gap-4">
+                  <View className="flex-1">
                     <TextInput
-                      value={name}
-                      onChangeText={setName}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
+                      value={city}
+                      onChangeText={setCity}
+                      placeholder="City / District"
+                      placeholderTextColor="#A1A1AA"
+                      className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
                     />
                   </View>
-
-                  <View>
-                    <Text className="text-[11px] font-bold text-slate-500 mb-1">Registered Mobile</Text>
+                  <View className="flex-1">
                     <TextInput
-                      value={mobile}
-                      onChangeText={setMobile}
-                      keyboardType="phone-pad"
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
+                      value={state}
+                      onChangeText={setState}
+                      placeholder="State"
+                      placeholderTextColor="#A1A1AA"
+                      className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
                     />
                   </View>
+                </View>
 
-                  <View>
-                    <Text className="text-[11px] font-bold text-slate-500 mb-1">Email Address</Text>
+                <View className="flex-row gap-4">
+                  <View className="flex-1">
                     <TextInput
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      placeholder="e.g. store@vanikicrop.com"
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
+                      value={pincode}
+                      onChangeText={setPincode}
+                      placeholder="Pincode"
+                      placeholderTextColor="#A1A1AA"
+                      keyboardType="number-pad"
+                      className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <TextInput
+                      value={landmark}
+                      onChangeText={setLandmark}
+                      placeholder="Landmark"
+                      placeholderTextColor="#A1A1AA"
+                      className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
                     />
                   </View>
                 </View>
               </View>
 
-              {/* Godown Address */}
-              <View className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xs">
-                <Text className="text-xs font-black uppercase tracking-wider text-emerald-800 mb-4">
-                  Shop & Godown Address
-                </Text>
-
-                <View className="space-y-3">
-                  <View>
-                    <Text className="text-[11px] font-bold text-slate-500 mb-1">Street / Market Location</Text>
-                    <TextInput
-                      value={street}
-                      onChangeText={setStreet}
-                      placeholder="e.g. Main Krishi Mandi Road"
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
-                    />
-                  </View>
-
-                  <View className="flex-row gap-3">
-                    <View className="flex-1">
-                      <Text className="text-[11px] font-bold text-slate-500 mb-1">City / Tehsil</Text>
-                      <TextInput
-                        value={city}
-                        onChangeText={setCity}
-                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
-                      />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-[11px] font-bold text-slate-500 mb-1">PIN Code</Text>
-                      <TextInput
-                        value={pincode}
-                        onChangeText={setPincode}
-                        keyboardType="number-pad"
-                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
-                      />
-                    </View>
-                  </View>
-                </View>
-              </View>
-
-              {/* Save Button */}
+              {/* Submit Trigger */}
               <TouchableOpacity
                 onPress={handleSaveProfile}
                 disabled={updateProfileMutation.isPending}
-                className="rounded-2xl bg-[#143D2E] py-4 items-center shadow-lg shadow-emerald-950/20 active:bg-emerald-900"
+                className="w-full rounded-2xl bg-emerald-700 py-4 items-center justify-center shadow-lg active:scale-95 disabled:opacity-50"
               >
                 {updateProfileMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text className="text-xs font-black uppercase tracking-[1.5px] text-white">
-                    Save Profile Changes
-                  </Text>
+                  <Text className="text-white font-black text-xs uppercase tracking-[0.2em]">Save Profile Settings</Text>
                 )}
               </TouchableOpacity>
             </View>
           ) : (
-            <View className="mt-5 space-y-4">
-              <View className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xs">
-                <Text className="text-xs font-black uppercase tracking-wider text-emerald-800 mb-4">
-                  Change Access Password
-                </Text>
+            <View className="space-y-6">
+              {/* Security Panels */}
+              <View className="bg-white border border-zinc-100 rounded-[2.2rem] p-5 shadow-sm space-y-4">
+                <Text className="text-zinc-900 font-black text-base mb-2">Change Password</Text>
 
-                <View className="space-y-3">
-                  <View>
-                    <Text className="text-[11px] font-bold text-slate-500 mb-1">Current Password</Text>
-                    <TextInput
-                      value={currentPassword}
-                      onChangeText={setCurrentPassword}
-                      secureTextEntry
-                      placeholder="••••••••"
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
-                    />
-                  </View>
+                <View>
+                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Current Password</Text>
+                  <TextInput
+                    value={currentPassword}
+                    onChangeText={setCurrentPassword}
+                    placeholder="Enter current password..."
+                    placeholderTextColor="#A1A1AA"
+                    secureTextEntry
+                    className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                  />
+                </View>
 
-                  <View>
-                    <Text className="text-[11px] font-bold text-slate-500 mb-1">New Password</Text>
-                    <TextInput
-                      value={newPassword}
-                      onChangeText={setNewPassword}
-                      secureTextEntry
-                      placeholder="••••••••"
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
-                    />
-                  </View>
+                <View>
+                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">New Password</Text>
+                  <TextInput
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    placeholder="Enter new password (min 6 chars)..."
+                    placeholderTextColor="#A1A1AA"
+                    secureTextEntry
+                    className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                  />
+                </View>
 
-                  <View>
-                    <Text className="text-[11px] font-bold text-slate-500 mb-1">Confirm New Password</Text>
-                    <TextInput
-                      value={confirmPassword}
-                      onChangeText={setConfirmPassword}
-                      secureTextEntry
-                      placeholder="••••••••"
-                      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900"
-                    />
-                  </View>
+                <View>
+                  <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500 mb-2">Confirm New Password</Text>
+                  <TextInput
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Re-enter new password..."
+                    placeholderTextColor="#A1A1AA"
+                    secureTextEntry
+                    className="bg-zinc-50 border border-zinc-200 rounded-2xl py-3.5 px-4 text-zinc-900 font-bold text-sm h-12"
+                  />
                 </View>
               </View>
 
+              {/* Password Trigger */}
               <TouchableOpacity
-                onPress={handleChangePassword}
+                onPress={handleUpdatePassword}
                 disabled={changePasswordMutation.isPending}
-                className="rounded-2xl bg-[#143D2E] py-4 items-center shadow-lg shadow-emerald-950/20 active:bg-emerald-900"
+                className="w-full rounded-2xl bg-emerald-700 py-4 items-center justify-center shadow-lg active:scale-95 disabled:opacity-50"
               >
                 {changePasswordMutation.isPending ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text className="text-xs font-black uppercase tracking-[1.5px] text-white">
-                    Update Password
-                  </Text>
+                  <Text className="text-white font-black text-xs uppercase tracking-[0.2em]">Update Security Password</Text>
                 )}
               </TouchableOpacity>
             </View>
           )}
-
-          {/* ─── Sign Out Action ──────────────────────────────────────────────── */}
-          <TouchableOpacity
-            onPress={handleLogout}
-            activeOpacity={0.8}
-            className="mt-8 flex-row items-center justify-center gap-2 rounded-2xl bg-rose-50 py-3.5 border border-rose-200 active:bg-rose-100"
-          >
-            <Icon name="log-out" size={16} color="#e11d48" />
-            <Text className="text-xs font-black uppercase tracking-wider text-rose-700">
-              Sign Out from Dealership
-            </Text>
-          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -448,6 +448,7 @@ export default function ProductRequestsScreen() {
             <Text className="text-zinc-900 font-black text-base mb-4 uppercase tracking-wider">Select Garage Warehouse</Text>
             <FlatList
               data={garages}
+
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity

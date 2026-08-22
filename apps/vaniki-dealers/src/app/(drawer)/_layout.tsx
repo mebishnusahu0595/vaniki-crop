@@ -18,8 +18,6 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
   }),
 });
 
@@ -127,16 +125,7 @@ export default function DrawerLayout() {
       <Drawer.Screen 
         name="index" 
         options={{ 
-          title: 'Home', 
-          drawerLabel: 'Home',
-          drawerIcon: ({ color, size }) => <Icon name="home" size={size} color={color} />
-        }} 
-      />
-
-      <Drawer.Screen 
-        name="dashboard" 
-        options={{ 
-          title: 'Performance & Analytics', 
+          title: 'Dashboard', 
           drawerLabel: 'Dashboard',
           drawerIcon: ({ color, size }) => <Icon name="grid" size={size} color={color} />
         }} 
