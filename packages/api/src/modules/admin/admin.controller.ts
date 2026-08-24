@@ -120,6 +120,16 @@ export async function createStoreStaff(req: Request, res: Response, next: NextFu
   }
 }
 
+export async function updateStoreStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const data = await adminService.updateStoreStaff(req.userStoreId!, id as string, req.body);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function deleteStoreStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = req.params;
@@ -129,4 +139,5 @@ export async function deleteStoreStaff(req: Request, res: Response, next: NextFu
     next(error);
   }
 }
+
 

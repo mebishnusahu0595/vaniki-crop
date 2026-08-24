@@ -155,7 +155,7 @@ export interface Order {
   serviceMode?: 'delivery' | 'pickup';
   status: OrderStatusHistoryEntry['status'];
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
-  paymentMethod: 'razorpay' | 'cod';
+  paymentMethod: 'razorpay' | 'cod' | 'cash' | 'upi';
   totalAmount: number;
   couponCode?: string;
   couponDiscount: number;

@@ -108,7 +108,7 @@ export const CheckInModal = () => {
                 <Pressable 
                   onPress={() => {
                     setShowCheckInModal(false);
-                    router.push('/(auth)/login');
+                    (router.push as any)('/(auth)/login');
                   }} 
                   style={styles.button}
                 >

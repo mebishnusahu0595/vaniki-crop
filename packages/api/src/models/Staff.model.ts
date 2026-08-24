@@ -9,6 +9,8 @@ export interface IStaff extends Document {
   referralCode: string;
   role: 'delivery' | 'referral' | 'dealer-staff';
   storeId?: mongoose.Types.ObjectId;
+  upiId?: string;
+  upiQrCode?: string;
   fcmToken?: string;
   expoPushToken?: string;
   isActive: boolean;
@@ -26,6 +28,8 @@ const staffSchema = new Schema<IStaff>(
     referralCode: { type: String, required: true, unique: true, uppercase: true, trim: true },
     role: { type: String, enum: ['delivery', 'referral', 'dealer-staff'], default: 'delivery' },
     storeId: { type: Schema.Types.ObjectId, ref: 'Store', default: null },
+    upiId: { type: String, trim: true },
+    upiQrCode: { type: String, trim: true },
     fcmToken: { type: String, trim: true },
     expoPushToken: { type: String, trim: true },
     isActive: { type: Boolean, default: true },

@@ -23,8 +23,13 @@ function customerMobile(task: DeliveryTask) {
 
 function PickupCard({ task }: { task: DeliveryTask }) {
   const queryClient = useQueryClient();
+  const staff = useStaffAuthStore((state) => state.staff);
   const [otp, setOtp] = useState('');
   const [isSendingOtpCode, setIsSendingOtpCode] = useState(false);
+  const [upiModalVisible, setUpiModalVisible] = useState(false);
+  const [txnId, setTxnId] = useState('');
+
+  const staffUpiId = staff?.upiId || `${staff?.mobile || 'dealer'}@upi`;
 
   const handleSendOtp = async () => {
     setIsSendingOtpCode(true);
@@ -54,12 +59,32 @@ function PickupCard({ task }: { task: DeliveryTask }) {
     mutationFn: (method: 'cash' | 'upi') => staffApi.collectPayment(task.id, { method }),
     onSuccess: (_data, method) => {
       invalidateTasks();
-      Alert.alert('Payment Recorded', `Marked as paid via ${method.toUpperCase()}.`);
+      setUpiModalVisible(false);
+      setTxnId('');
+      Alert.alert('Payment Recorded 🎉', `Marked as paid via ${method.toUpperCase()} (${currencyFormatter.format(task.totalAmount)}).`);
     },
     onError: (error) => Alert.alert('Could not record payment', error instanceof Error ? error.message : 'Please try again.'),
   });
 
+  const handleCashClick = () => {
+    Alert.alert(
+      'Collect Cash',
+      `Collect cash payment of ${currencyFormatter.format(task.totalAmount)} from customer?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm Cash Received',
+          onPress: () => collectPaymentMutation.mutate('cash'),
+        },
+      ]
+    );
+  };
+
   const isPaid = task.paymentStatus === 'paid';
+
+  const upiPaymentUri = `upi://pay?pa=${staffUpiId}&pn=${encodeURIComponent(
+    staff?.name || 'Vaniki Store'
+  )}&am=${task.totalAmount}&cu=INR&tn=Order_${task.orderNumber}`;
 
   return (
     <View className="rounded-[28px] bg-white p-5 border border-primary-50 shadow-sm">
@@ -116,25 +141,90 @@ function PickupCard({ task }: { task: DeliveryTask }) {
           <>
             <Text className="mt-1 text-xs text-primary-900/55">How did the customer pay?</Text>
             <View className="mt-3 flex-row gap-3">
-              {(['cash', 'upi'] as const).map((method) => (
-                <Pressable
-                  key={method}
-                  onPress={() => collectPaymentMutation.mutate(method)}
-                  disabled={collectPaymentMutation.isPending}
-                  className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-primary-900 px-4 py-3.5 active:scale-[0.98] disabled:opacity-60"
-                >
-                  {collectPaymentMutation.isPending && collectPaymentMutation.variables === method ? (
-                    <ActivityIndicator color="#ffffff" size="small" />
-                  ) : (
-                    <Feather name={method === 'cash' ? 'dollar-sign' : 'smartphone'} size={15} color="#ffffff" />
-                  )}
-                  <Text className="text-[11px] font-black uppercase tracking-[1px] text-white">{method}</Text>
-                </Pressable>
-              ))}
+              {/* Cash Button */}
+              <Pressable
+                onPress={handleCashClick}
+                disabled={collectPaymentMutation.isPending}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-slate-800 px-4 py-3.5 active:scale-[0.98] disabled:opacity-60"
+              >
+                {collectPaymentMutation.isPending && collectPaymentMutation.variables === 'cash' ? (
+                  <ActivityIndicator color="#ffffff" size="small" />
+                ) : (
+                  <Feather name="dollar-sign" size={15} color="#ffffff" />
+                )}
+                <Text className="text-[11px] font-black uppercase tracking-[1px] text-white">Cash</Text>
+              </Pressable>
+
+              {/* UPI QR Button */}
+              <Pressable
+                onPress={() => setUpiModalVisible(true)}
+                disabled={collectPaymentMutation.isPending}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-emerald-700 px-4 py-3.5 active:scale-[0.98] disabled:opacity-60"
+              >
+                <Feather name="smartphone" size={15} color="#ffffff" />
+                <Text className="text-[11px] font-black uppercase tracking-[1px] text-white">UPI QR</Text>
+              </Pressable>
             </View>
           </>
         )}
       </View>
+
+      {/* Staff Assigned UPI QR Modal for this Order */}
+      {upiModalVisible && (
+        <View className="mt-4 rounded-[28px] bg-emerald-950 p-5 border border-emerald-700 shadow-lg items-center">
+          <View className="w-full flex-row items-center justify-between pb-3 border-b border-emerald-800">
+            <View>
+              <Text className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Scan & Pay via UPI</Text>
+              <Text className="text-base font-black text-white">{task.orderNumber}</Text>
+            </View>
+            <Pressable onPress={() => setUpiModalVisible(false)} className="p-1">
+              <Feather name="x-circle" size={20} color="#93C5FD" />
+            </Pressable>
+          </View>
+
+          {/* Amount Badge */}
+          <View className="my-3 rounded-2xl bg-emerald-900/80 px-6 py-2 border border-emerald-600">
+            <Text className="text-2xl font-black text-white text-center">
+              {currencyFormatter.format(task.totalAmount)}
+            </Text>
+          </View>
+
+          {/* Dynamic UPI QR Code Image */}
+          <View className="p-4 rounded-3xl bg-white shadow-md my-2 items-center justify-center">
+            <Image
+              source={{
+                uri: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                  upiPaymentUri
+                )}`,
+              }}
+              style={{ width: 180, height: 180, borderRadius: 8 }}
+              contentFit="contain"
+            />
+          </View>
+
+          <Text className="text-xs font-bold text-emerald-200 mt-2 text-center">
+            UPI ID: <Text className="font-black text-white">{staffUpiId}</Text>
+          </Text>
+          <Text className="text-[10px] font-semibold text-emerald-400 text-center mt-0.5 mb-4">
+            Customer can scan using GPay, PhonePe, Paytm, BHIM or any UPI app.
+          </Text>
+
+          {/* Confirm Payment Received */}
+          <Pressable
+            onPress={() => collectPaymentMutation.mutate('upi')}
+            disabled={collectPaymentMutation.isPending}
+            className="w-full rounded-2xl bg-emerald-500 py-3.5 items-center justify-center active:scale-95 shadow-md"
+          >
+            {collectPaymentMutation.isPending ? (
+              <ActivityIndicator color="#064E3B" />
+            ) : (
+              <Text className="text-xs font-black uppercase tracking-wider text-emerald-950">
+                Confirm UPI Payment Received ({currencyFormatter.format(task.totalAmount)})
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      )}
 
       <View className="mt-4 rounded-[24px] border border-primary-100 p-4">
         <View className="flex-row items-center justify-between mb-1">

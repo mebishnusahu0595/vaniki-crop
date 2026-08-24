@@ -8,6 +8,8 @@ export interface DeliveryStaff {
   mobile: string;
   email?: string;
   referralCode?: string;
+  upiId?: string;
+  upiQrCode?: string;
 }
 
 interface StaffAuthState {

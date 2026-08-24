@@ -193,10 +193,27 @@ export default function OrdersScreen() {
 
               {/* Order Customer & Price */}
               <View className="flex-row justify-between items-center">
-                <View>
+                <View className="flex-1 pr-2">
                   <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">Customer</Text>
-                  <Text className="text-zinc-800 font-black text-sm mt-0.5">{item.userId?.name || 'Guest User'}</Text>
-                  <Text className="text-xs text-zinc-500 font-bold mt-1">{item.userId?.mobile || 'No Mobile'}</Text>
+                  <Text className="text-zinc-800 font-black text-sm mt-0.5">{item.userId?.name || 'Customer'}</Text>
+                  <Text className="text-xs text-zinc-500 font-bold mt-0.5">{item.userId?.mobile || '-'}</Text>
+
+                  {/* Payment Method Badge */}
+                  <View className="mt-2 flex-row items-center gap-1.5">
+                    <View className={`rounded-lg px-2 py-0.5 border ${
+                      item.paymentMethod === 'upi'
+                        ? 'bg-emerald-50 border-emerald-200'
+                        : item.paymentMethod === 'cash'
+                        ? 'bg-slate-100 border-slate-200'
+                        : 'bg-zinc-50 border-zinc-200'
+                    }`}>
+                      <Text className={`text-[9px] font-black uppercase ${
+                        item.paymentMethod === 'upi' ? 'text-emerald-800' : 'text-slate-800'
+                      }`}>
+                        {item.paymentMethod === 'upi' ? '⚡ Paid via UPI QR' : item.paymentMethod === 'cash' ? '💵 Paid Cash' : item.paymentMethod}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
                 <View className="items-end">
                   <Text className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">Total Price</Text>

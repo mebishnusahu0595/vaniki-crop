@@ -67,28 +67,28 @@ export const AppHeader = memo(function AppHeader() {
     const trimmed = query.trim();
 
     if (trimmed) {
-      router.push({ pathname: '/products', params: { search: trimmed } });
+      (router.push as any)({ pathname: '/products', params: { search: trimmed } });
       setQuery('');
       return;
     }
 
-    router.push('/products');
+    (router.push as any)('/products');
     setQuery('');
   };
 
   const openCart = () => {
     if (pathname !== '/(tabs)/cart') {
-      router.push('/(tabs)/cart');
+      (router.push as any)('/(tabs)/cart');
     }
   };
 
   const openAccount = () => {
     if (user) {
-      router.push('/(tabs)/account');
+      (router.push as any)('/(tabs)/account');
       return;
     }
 
-    router.push('/(auth)/login');
+    (router.push as any)('/(auth)/login');
   };
 
   const handleLanguageToggle = async () => {
@@ -122,7 +122,7 @@ export const AppHeader = memo(function AppHeader() {
       </View>
 
       <View className="mt-3 flex-row items-center justify-between">
-        <Pressable onPress={() => router.push('/(tabs)')} className="flex-row items-baseline gap-1">
+        <Pressable onPress={() => (router.push as any)('/(tabs)')} className="flex-row items-baseline gap-1">
           <Text className="text-[20px] font-black leading-tight tracking-tight text-primary-900">
             Vaniki
           </Text>
@@ -221,7 +221,7 @@ export const AppHeader = memo(function AppHeader() {
                       key={category.id}
                       onPress={() => {
                         setQuery('');
-                        router.push({ pathname: '/products', params: { category: category.slug } });
+                        (router.push as any)({ pathname: '/products', params: { category: category.slug } });
                       }}
                       className="rounded-xl px-3 py-3"
                     >
@@ -242,7 +242,7 @@ export const AppHeader = memo(function AppHeader() {
                       key={product.id}
                       onPress={() => {
                         setQuery('');
-                        router.push({ pathname: '/product/[slug]', params: { slug: product.slug } });
+                        (router.push as any)({ pathname: '/product/[slug]', params: { slug: product.slug } });
                       }}
                       className="rounded-xl px-3 py-3"
                     >

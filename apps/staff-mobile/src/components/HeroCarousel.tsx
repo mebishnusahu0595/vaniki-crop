@@ -64,7 +64,7 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
                 <Text className="mt-3 text-3xl font-black leading-9 text-white">{item.title}</Text>
                 <Text className="mt-2 text-sm leading-6 text-white/80">{item.subtitle}</Text>
                 <Pressable
-                  onPress={() => router.push((item.ctaLink as '/products') || '/products')}
+                  onPress={() => (router.push as any)((item.ctaLink as any) || '/products')}
                   className="mt-5 self-start rounded-full bg-white px-5 py-3"
                 >
                   <Text className="text-xs font-black uppercase tracking-[2px] text-primary-900">

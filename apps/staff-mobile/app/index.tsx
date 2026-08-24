@@ -82,6 +82,27 @@ function TaskCard({ task }: { task: DeliveryTask }) {
   });
 
   const isPaid = task.paymentStatus === 'paid';
+  const staff = useStaffAuthStore((state) => state.staff);
+  const [upiModalVisible, setUpiModalVisible] = useState(false);
+
+  const staffUpiId = staff?.upiId || `${staff?.mobile || 'delivery'}@upi`;
+  const upiPaymentUri = `upi://pay?pa=${staffUpiId}&pn=${encodeURIComponent(
+    staff?.name || 'Vaniki Delivery'
+  )}&am=${task.totalAmount}&cu=INR&tn=Order_${task.orderNumber}`;
+
+  const handleCashClick = () => {
+    Alert.alert(
+      'Collect Cash',
+      `Collect cash payment of ${currencyFormatter.format(task.totalAmount)} from customer?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm Cash Received',
+          onPress: () => collectPaymentMutation.mutate('cash'),
+        },
+      ]
+    );
+  };
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -121,15 +142,8 @@ function TaskCard({ task }: { task: DeliveryTask }) {
         </View>
       </View>
 
-      <View className="mt-4 rounded-[22px] bg-primary-50 p-4">
-        <Text className="text-[10px] font-black uppercase tracking-[1.6px] text-primary-500">Delivery Address</Text>
-        <Text className="mt-2 text-sm leading-6 text-primary-900">
-          {address ? formatStoreAddress(address) : 'Address not available'}
-        </Text>
-      </View>
-
       <View className="mt-4 gap-3">
-        {task.items.map((item, index) => (
+        {(task.items ?? []).map((item, index) => (
           <View key={`${item.productId}-${index}`} className="flex-row items-center gap-3 rounded-[20px] border border-primary-100 p-3">
             {item.image ? (
               <Image source={{ uri: resolveMediaUrl(item.image) }} style={{ width: 48, height: 48, borderRadius: 14 }} />
@@ -146,6 +160,13 @@ function TaskCard({ task }: { task: DeliveryTask }) {
         ))}
       </View>
 
+      {address ? (
+        <View className="mt-4 rounded-[22px] bg-primary-50 p-4">
+          <Text className="text-[10px] font-black uppercase tracking-[1.4px] text-primary-500">Delivery Address</Text>
+          <Text className="mt-1 text-sm font-bold text-primary-900 leading-relaxed">{formatStoreAddress(address)}</Text>
+        </View>
+      ) : null}
+
       <View className="mt-4 flex-row gap-3">
         <View className="flex-1 rounded-[20px] bg-emerald-50 p-3">
           <Text className="text-[10px] font-black uppercase tracking-[1px] text-emerald-700">Amount</Text>
@@ -153,7 +174,7 @@ function TaskCard({ task }: { task: DeliveryTask }) {
         </View>
         <View className="flex-1 rounded-[20px] bg-amber-50 p-3">
           <Text className="text-[10px] font-black uppercase tracking-[1px] text-amber-700">Payment</Text>
-          <Text className="mt-1 text-base font-black text-primary-900">{task.paymentMethod.toUpperCase()} · {task.paymentStatus}</Text>
+          <Text className="mt-1 text-base font-black text-primary-900">{(task.paymentMethod ?? '-').toUpperCase()} · {task.paymentStatus ?? '-'}</Text>
         </View>
       </View>
 
@@ -170,25 +191,87 @@ function TaskCard({ task }: { task: DeliveryTask }) {
           <>
             <Text className="mt-1 text-xs text-primary-900/55">How did the customer pay?</Text>
             <View className="mt-3 flex-row gap-3">
-              {(['cash', 'upi'] as const).map((method) => (
-                <Pressable
-                  key={method}
-                  onPress={() => collectPaymentMutation.mutate(method)}
-                  disabled={collectPaymentMutation.isPending}
-                  className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-primary-900 px-4 py-3.5 active:scale-[0.98] disabled:opacity-60"
-                >
-                  {collectPaymentMutation.isPending && collectPaymentMutation.variables === method ? (
-                    <ActivityIndicator color="#ffffff" size="small" />
-                  ) : (
-                    <Feather name={method === 'cash' ? 'dollar-sign' : 'smartphone'} size={15} color="#ffffff" />
-                  )}
-                  <Text className="text-[11px] font-black uppercase tracking-[1px] text-white">{method}</Text>
-                </Pressable>
-              ))}
+              <Pressable
+                onPress={handleCashClick}
+                disabled={collectPaymentMutation.isPending}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-slate-800 px-4 py-3.5 active:scale-[0.98] disabled:opacity-60"
+              >
+                {collectPaymentMutation.isPending && collectPaymentMutation.variables === 'cash' ? (
+                  <ActivityIndicator color="#ffffff" size="small" />
+                ) : (
+                  <Feather name="dollar-sign" size={15} color="#ffffff" />
+                )}
+                <Text className="text-[11px] font-black uppercase tracking-[1px] text-white">Cash</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setUpiModalVisible(true)}
+                disabled={collectPaymentMutation.isPending}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-emerald-700 px-4 py-3.5 active:scale-[0.98] disabled:opacity-60"
+              >
+                <Feather name="smartphone" size={15} color="#ffffff" />
+                <Text className="text-[11px] font-black uppercase tracking-[1px] text-white">UPI QR</Text>
+              </Pressable>
             </View>
           </>
         )}
       </View>
+
+      {upiModalVisible && (
+        <View className="mt-4 rounded-[28px] bg-emerald-950 p-5 border border-emerald-700 shadow-lg items-center">
+          <View className="w-full flex-row items-center justify-between pb-3 border-b border-emerald-800">
+            <View>
+              <Text className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Scan & Pay via UPI</Text>
+              <Text className="text-base font-black text-white">{task.orderNumber}</Text>
+            </View>
+            <Pressable onPress={() => setUpiModalVisible(false)} className="p-1">
+              <Feather name="x-circle" size={20} color="#93C5FD" />
+            </Pressable>
+          </View>
+
+          <View className="my-3 rounded-2xl bg-emerald-900/80 px-6 py-2 border border-emerald-600">
+            <Text className="text-2xl font-black text-white text-center">
+              {currencyFormatter.format(task.totalAmount)}
+            </Text>
+          </View>
+
+          <View className="p-4 rounded-3xl bg-white shadow-md my-2 items-center justify-center">
+            <Image
+              source={{
+                uri: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                  upiPaymentUri
+                )}`,
+              }}
+              style={{ width: 180, height: 180, borderRadius: 8 }}
+              contentFit="contain"
+            />
+          </View>
+
+          <Text className="text-xs font-bold text-emerald-200 mt-2 text-center">
+            UPI ID: <Text className="font-black text-white">{staffUpiId}</Text>
+          </Text>
+          <Text className="text-[10px] font-semibold text-emerald-400 text-center mt-0.5 mb-4">
+            Customer can scan using GPay, PhonePe, Paytm, BHIM or any UPI app.
+          </Text>
+
+          <Pressable
+            onPress={() => {
+              collectPaymentMutation.mutate('upi');
+              setUpiModalVisible(false);
+            }}
+            disabled={collectPaymentMutation.isPending}
+            className="w-full rounded-2xl bg-emerald-500 py-3.5 items-center justify-center active:scale-95 shadow-md"
+          >
+            {collectPaymentMutation.isPending ? (
+              <ActivityIndicator color="#064E3B" />
+            ) : (
+              <Text className="text-xs font-black uppercase tracking-wider text-emerald-950">
+                Confirm UPI Payment Received ({currencyFormatter.format(task.totalAmount)})
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      )}
 
       <TextInput
         value={description}

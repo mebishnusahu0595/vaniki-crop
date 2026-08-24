@@ -61,7 +61,7 @@ export function PersistentBottomNav() {
           return (
             <Pressable
               key={item.key}
-              onPress={() => router.push(item.path)}
+              onPress={() => (router.push as any)(item.path)}
               className="flex-1 items-center gap-1 rounded-[20px] py-3"
             >
               <View>

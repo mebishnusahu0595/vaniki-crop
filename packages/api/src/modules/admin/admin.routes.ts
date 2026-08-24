@@ -18,7 +18,10 @@ router.post('/settlements', adminController.createSettlementRequest);
 router.get('/referrals', adminController.listReferrals);
 router.get('/staff', adminController.listStoreStaff);
 router.post('/staff', adminController.createStoreStaff);
+router.patch('/staff/:id', adminController.updateStoreStaff);
+router.put('/staff/:id', adminController.updateStoreStaff);
 router.delete('/staff/:id', adminController.deleteStoreStaff);
 
 export default router;
+
 

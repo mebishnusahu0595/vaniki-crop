@@ -460,7 +460,7 @@ export async function listStoreStaff(storeId: string) {
 }
 
 export async function createStoreStaff(storeId: string, payload: any) {
-  const { name, mobile, password } = payload;
+  const { name, mobile, password, upiId, upiQrCode } = payload;
   if (!name || !mobile || !password) {
     throw new AppError('Name, mobile, and password are required', 400);
   }
@@ -488,8 +488,27 @@ export async function createStoreStaff(storeId: string, payload: any) {
     password,
     role: 'dealer-staff',
     storeId,
-    isActive: true
+    upiId: upiId ? upiId.trim() : undefined,
+    upiQrCode: upiQrCode ? upiQrCode.trim() : undefined,
+    isActive: true,
   });
+}
+
+export async function updateStoreStaff(storeId: string, staffId: string, payload: any) {
+  const staff = await Staff.findOne({ _id: staffId, storeId, role: 'dealer-staff' });
+  if (!staff) {
+    throw new AppError('Staff member not found or does not belong to your store', 404);
+  }
+
+  const { name, upiId, upiQrCode, password, isActive } = payload;
+  if (name) staff.name = name.trim();
+  if (upiId !== undefined) staff.upiId = upiId ? upiId.trim() : undefined;
+  if (upiQrCode !== undefined) staff.upiQrCode = upiQrCode ? upiQrCode.trim() : undefined;
+  if (typeof isActive === 'boolean') staff.isActive = isActive;
+  if (password && password.length >= 6) staff.password = password;
+
+  await staff.save();
+  return staff;
 }
 
 export async function deleteStoreStaff(storeId: string, staffId: string) {
@@ -499,4 +518,5 @@ export async function deleteStoreStaff(storeId: string, staffId: string) {
   }
   await Staff.deleteOne({ _id: staffId });
 }
+
 

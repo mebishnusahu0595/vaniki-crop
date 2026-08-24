@@ -100,7 +100,7 @@ export default function RequestHistoryScreen() {
           <View className="bg-white rounded-t-[2.5rem] h-[75%] border-t border-zinc-200 shadow-2xl overflow-hidden">
             {/* Header */}
             {selectedRequest ? (() => {
-              const requestProduct = selectedRequest.productId as any;
+              const requestProduct = (selectedRequest as any).productId;
               const productShortDesc = requestProduct?.shortDescription || '';
               const firstImage = requestProduct?.images?.find((img: any) => img.isPrimary) || requestProduct?.images?.[0];
               const productImage = firstImage?.url || '';
@@ -143,7 +143,7 @@ export default function RequestHistoryScreen() {
             {/* Scroll view */}
             <ScrollView contentContainerStyle={{ padding: 24 }} className="flex-1">
               {selectedRequest ? (() => {
-                const requestProduct = selectedRequest.productId as any;
+                const requestProduct = (selectedRequest as any).productId;
                 const productShortDesc = requestProduct?.shortDescription || '';
                 const firstImage = requestProduct?.images?.find((img: any) => img.isPrimary) || requestProduct?.images?.[0];
                 const productImage = firstImage?.url || '';

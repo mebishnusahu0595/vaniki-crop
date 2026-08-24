@@ -358,6 +358,10 @@ export const adminApi = {
     const response = await api.post<ApiResponse<any>>('/admin/staff', payload);
     return response.data.data;
   },
+  updateStoreStaff: async (id: string, payload: Record<string, any>) => {
+    const response = await api.patch<ApiResponse<any>>(`/admin/staff/${id}`, payload);
+    return response.data.data;
+  },
   deleteStoreStaff: async (id: string) => {
     const response = await api.delete<ApiResponse<any>>(`/admin/staff/${id}`);
     return response.data.data;

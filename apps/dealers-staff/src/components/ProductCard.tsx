@@ -43,7 +43,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
   const handleToggleWishlist = async () => {
     if (!user) {
       Alert.alert('Login required', 'Please login to save wishlist products.');
-      router.push('/(auth)/login');
+      (router.push as any)('/(auth)/login');
       return;
     }
 
@@ -65,7 +65,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
   return (
     <Pressable
       onPress={() =>
-        router.push({
+        (router.push as any)({
           pathname: '/product/[slug]',
           params: { slug: product.slug, image: primaryImage },
         })
