@@ -22,6 +22,9 @@ publicRouter.get('/', validate(productListQuerySchema), productController.getPro
 /** GET /api/products/search?q=... — Full-text fuzzy search */
 publicRouter.get('/search', validate(searchQuerySchema), productController.searchProducts);
 
+/** GET /api/products/bulk-catalogue — All active products with MOQ for dealer app */
+publicRouter.get('/bulk-catalogue', productController.getBulkCatalogue);
+
 /** GET /api/products/:slug — Full product detail with reviews */
 publicRouter.get('/:slug', validate(productSlugSchema), productController.getProductBySlug);
 
@@ -52,6 +55,13 @@ adminRouter.put(
   upload.array('images', 5),
   validate(updateProductSchema),
   productController.updateProduct,
+);
+
+/** PATCH /api/admin/products/:id/moq — SuperAdmin: Set minimum order quantity */
+adminRouter.patch(
+  '/:id/moq',
+  validate(productIdSchema),
+  productController.updateProductMoq,
 );
 
 /** PATCH /api/admin/products/:id/deactivate — Soft deactivate */

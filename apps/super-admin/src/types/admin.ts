@@ -50,6 +50,7 @@ export interface Product {
   maxLoyaltyPoints?: number;
   petiSize?: number;
   petiUnit?: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';
+  moq?: number;
   metaTitle?: string;
   metaDescription?: string;
   totalSold?: number;

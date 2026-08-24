@@ -1,0 +1,7 @@
+# Ignore heavy cache and dependencies for customer app
+node_modules/
+.expo/
+.turbo/
+dist/
+android/
+ios/

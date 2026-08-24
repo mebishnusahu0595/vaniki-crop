@@ -72,6 +72,8 @@ export interface IProduct extends Document {
   taxRate: number;
   petiSize: number;
   petiUnit: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';
+  /** Minimum Order Quantity for B2B/Dealer bulk orders */
+  moq: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -195,7 +197,8 @@ const productSchema = new Schema<IProduct>(
     hsnCode: { type: String, trim: true },
     taxRate: { type: Number, default: 0, min: 0 },
     petiSize: { type: Number, default: 12 },
-  petiUnit: { type: String, enum: ['ml', 'Liter', 'gm', 'KG', 'Packet', 'piece'], default: 'Liter' },
+    petiUnit: { type: String, enum: ['ml', 'Liter', 'gm', 'KG', 'Packet', 'piece'], default: 'Liter' },
+    moq: { type: Number, default: 1, min: [1, 'MOQ must be at least 1'] },
   },
   {
     timestamps: true,

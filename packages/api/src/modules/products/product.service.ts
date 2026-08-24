@@ -793,3 +793,71 @@ export async function deleteProduct(
   await invalidateHomepageCache(storeIds);
   return product;
 }
+
+// ─── MOQ / Bulk Order ─────────────────────────────────────────────────────
+
+/**
+ * PATCH /api/admin/products/:id/moq
+ * SuperAdmin only — set Minimum Order Quantity for dealer bulk ordering.
+ */
+export async function updateProductMoq(
+  id: string,
+  moq: number,
+  userRole: string,
+): Promise<IProduct> {
+  if (userRole !== 'superAdmin') {
+    throw new AppError('Only super admin can set MOQ', 403);
+  }
+
+  const moqNum = Number(moq);
+  if (!Number.isInteger(moqNum) || moqNum < 1) {
+    throw new AppError('MOQ must be a positive integer (minimum 1)', 400);
+  }
+
+  const product = await Product.findByIdAndUpdate(
+    id,
+    { moq: moqNum },
+    { new: true, runValidators: true },
+  ).populate('category', 'name slug');
+
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  return product;
+}
+
+/**
+ * GET /api/products/bulk-catalogue
+ * Public — returns all active products with MOQ for the Dealer Play app.
+ * Sorted by category then name. Includes name, slug, images, variants, moq, category.
+ */
+export async function getBulkCatalogue(
+  query: Record<string, any> = {},
+): Promise<{ data: IProduct[]; pagination: any }> {
+  const { page, limit, skip } = parsePagination(query);
+
+  const filter: Record<string, any> = { isActive: true };
+
+  if (query.category) {
+    const cat = await Category.findOne({ slug: query.category }).select('_id').lean();
+    if (cat) filter.category = cat._id;
+  }
+
+  if (query.search) {
+    filter.$text = { $search: query.search };
+  }
+
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .populate('category', 'name slug')
+      .select('name slug shortDescription images variants moq category isFeatured petiSize petiUnit')
+      .sort({ category: 1, name: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Product.countDocuments(filter),
+  ]);
+
+  return createPaginationResponse(products as any, total, page, limit);
+}

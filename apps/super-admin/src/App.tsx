@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AdminLayout } from './layouts/AdminLayout';
 import DashboardPage from './pages/Dashboard';
 import LoginPage from './pages/Login';
+import BulkOrdersPage from './pages/BulkOrders';
 import ProductsPage from './pages/Products';
 import ProductFormPage from './pages/ProductForm';
 import CategoriesPage from './pages/Categories';
@@ -45,6 +46,7 @@ function App() {
           <Route path="/product-requests" element={<ProductRequestsPage />} />
           <Route path="/settlements" element={<SettlementsPage />} />
           <Route path="/invoices" element={<InvoicesPage />} />
+          <Route path="/bulk-orders" element={<BulkOrdersPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/new" element={<ProductFormPage />} />
           <Route path="/products/:id/edit" element={<ProductFormPage />} />

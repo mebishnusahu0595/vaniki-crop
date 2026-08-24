@@ -66,6 +66,23 @@ export async function getProductBySlug(req: Request, res: Response, next: NextFu
   }
 }
 
+/**
+ * GET /api/products/bulk-catalogue
+ * Public — returns all active products with MOQ for Dealer Play app.
+ */
+export async function getBulkCatalogue(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await productService.getBulkCatalogue(req.query);
+    res.status(200).json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ─── Admin Controllers ───────────────────────────────────────────────────
 
 /**
@@ -186,6 +203,27 @@ export async function deleteProduct(req: Request, res: Response, next: NextFunct
     res.status(200).json({
       success: true,
       message: 'Product deleted successfully',
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * PATCH /api/admin/products/:id/moq
+ * SuperAdmin only: set minimum order quantity (MOQ) for dealer bulk ordering.
+ */
+export async function updateProductMoq(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const product = await productService.updateProductMoq(
+      req.params.id as string,
+      req.body.moq,
+      req.userRole!,
+    );
+    res.status(200).json({
+      success: true,
+      message: 'MOQ updated successfully',
       data: product,
     });
   } catch (error) {

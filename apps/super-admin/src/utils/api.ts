@@ -302,6 +302,10 @@ export const adminApi = {
     const response = await api.put<ApiResponse<Product>>(`/admin/products/${id}`, payload);
     return response.data.data;
   },
+  updateProductMoq: async (id: string, moq: number) => {
+    const response = await api.patch<ApiResponse<Product>>(`/admin/products/${id}/moq`, { moq });
+    return response.data.data;
+  },
   deactivateProduct: async (id: string) => {
     const response = await api.patch<ApiResponse<Product>>(`/admin/products/${id}/deactivate`);
     return response.data.data;
