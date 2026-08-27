@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import type { Category } from '../types/storefront';
 import { resolveMediaUrl } from '../utils/media';
+import { translateCategory } from '../utils/translator';
 
 interface CategoryCardProps {
   category: Category;
@@ -12,6 +13,7 @@ interface CategoryCardProps {
 
 export const CategoryCard = memo(function CategoryCard({ category, onPress }: CategoryCardProps) {
   const imageUrl = resolveMediaUrl(category.image?.url, category.image?.publicId);
+  const displayName = translateCategory(category.name || category.slug);
 
   return (
     <Pressable onPress={onPress} style={{ width: 76, marginRight: 16 }} className="items-center active:scale-95">
@@ -25,7 +27,7 @@ export const CategoryCard = memo(function CategoryCard({ category, onPress }: Ca
         )}
       </View>
       <Text className="mt-2 w-full text-center text-[11px] font-extrabold text-primary-900 leading-tight" numberOfLines={2}>
-        {category.name}
+        {displayName}
       </Text>
     </Pressable>
   );

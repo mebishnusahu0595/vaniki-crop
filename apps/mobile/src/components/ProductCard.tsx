@@ -10,6 +10,7 @@ import { useCompareStore } from '../store/useCompareStore';
 import { storefrontApi } from '../lib/api';
 import type { Product, ProductVariant } from '../types/storefront';
 import { currencyFormatter, getDefaultVariant, getDiscountPercent, getPrimaryImage } from '../utils/format';
+import { translateCategory, useTranslatedContent } from '../utils/translator';
 
 interface ProductCardProps {
   product: Product;
@@ -172,7 +173,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
 
         <View className={compact ? 'p-2.5' : 'p-3'}>
           <Text className="text-[9px] font-black uppercase tracking-[1.5px] text-primary-400">
-            {product.category?.name || 'Crop Care'}
+            {translateCategory(product.category?.name || product.category?.slug)}
           </Text>
           <Text
             numberOfLines={1}
@@ -185,7 +186,7 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
               numberOfLines={1}
               className="mt-0.5 text-[10px] font-semibold text-primary-900/60"
             >
-              {product.shortDescription}
+              {useTranslatedContent(product.shortDescription)}
             </Text>
           ) : null}
           <View className="mt-2 flex-row items-center gap-1.5">

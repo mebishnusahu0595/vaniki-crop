@@ -19,9 +19,12 @@ import { useStoreStore } from '../../src/store/useStoreStore';
 import { currencyFormatter, getDiscountPercent, getPrimaryImage } from '../../src/utils/format';
 import { stripHtml } from '../../src/utils/html';
 import { resolveMediaUrl } from '../../src/utils/media';
+import { translateCategory, useTranslatedContent } from '../../src/utils/translator';
+import { getAppLanguage } from '../../src/i18n';
 
 export default function ProductDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isHindi = getAppLanguage() === 'hi';
   const { slug, image: routeImage } = useLocalSearchParams<{ slug: string; image?: string }>();
   const { width } = useWindowDimensions();
   const addItem = useCartStore((state) => state.addItem);
@@ -52,6 +55,10 @@ export default function ProductDetailScreen() {
   const selectedVariant =
     product?.variants.find((variant) => variant.id === selectedVariantId) || product?.variants[0];
 
+  // Dynamic Hindi translation of database content
+  const translatedDescription = useTranslatedContent(product?.description ? stripHtml(product.description) : '');
+  const translatedShortDescription = useTranslatedContent(product?.shortDescription || '');
+
   // Dealer availability query for this product & variant
   const storeAvailabilityQuery = useQuery({
     queryKey: ['mobile-product-dealer-availability', product?.id, selectedVariant?.id],
@@ -79,76 +86,38 @@ export default function ProductDetailScreen() {
     enabled: Boolean(product?.category?.slug),
   });
 
-  // 2. Best Sellers Products Query
+  // 2. Best Sellers Fallback Query
   const bestSellersQuery = useQuery({
-    queryKey: ['mobile-bestsellers-footer'],
+    queryKey: ['mobile-best-sellers-fallback'],
     queryFn: () =>
       storefrontApi.products({
-        limit: 8,
         sort: 'popular',
+        limit: 8,
       }),
+    staleTime: 5 * 60 * 1000,
   });
 
-  const relatedProducts = useMemo(
-    () => (relatedQuery.data?.data || []).filter((item) => item.slug !== product?.slug),
-    [product?.slug, relatedQuery.data?.data],
-  );
+  const relatedProducts = useMemo(() => {
+    const list = relatedQuery.data?.data || [];
+    return list.filter((p) => p.id !== product?.id);
+  }, [relatedQuery.data?.data, product?.id]);
 
-  const bestSellerProducts = useMemo(
-    () => (bestSellersQuery.data?.data || []).filter((item) => item.slug !== product?.slug),
-    [product?.slug, bestSellersQuery.data?.data],
-  );
+  const bestSellerProducts = useMemo(() => {
+    const list = bestSellersQuery.data?.data || [];
+    return list.filter((p) => p.id !== product?.id);
+  }, [bestSellersQuery.data?.data, product?.id]);
 
-  const galleryImages = useMemo(
-    () =>
-      [...(product?.images || [])]
-        .filter((image) => Boolean(image.url?.trim()))
-        .sort((left, right) => Number(Boolean(right.isPrimary)) - Number(Boolean(left.isPrimary))),
-    [product?.images],
-  );
-  const galleryImageWidth = Math.max(width - 32, 240);
-
-  const maxStock = Math.max(selectedVariant?.stock || 0, 0);
-  const canIncrease = maxStock > quantityInCart;
-  const isOutOfStock = maxStock === 0 || isSelectedStoreOutOfStock;
-  const wishlistIds = (user?.wishlist || []).map((entry) => (typeof entry === 'string' ? entry : entry.id));
-  const isWishlisted = wishlistIds.includes(product?.id || '');
-  const isCompared = comparedProducts.some((entry) => entry.id === product?.id);
-
-  if (!product || !selectedVariant) {
-    return (
-      <Screen>
-        <View className="gap-4 pb-10">
-          <Skeleton height={280} borderRadius={28} className="w-full" />
-          <View className="flex-row justify-center gap-1.5 mt-1">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} width={8} height={8} borderRadius={4} />
-            ))}
-          </View>
-          <View className="flex-row justify-center gap-2 mt-1">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} width={50} height={50} borderRadius={12} />
-            ))}
-          </View>
-          <View className="gap-2.5 mt-3">
-            <Skeleton width="40%" height={10} borderRadius={4} />
-            <Skeleton width="85%" height={24} borderRadius={6} />
-            <Skeleton width="30%" height={14} borderRadius={4} />
-          </View>
-          <View className="flex-row items-center gap-3 mt-1">
-            <Skeleton width={80} height={24} borderRadius={6} />
-            <Skeleton width={60} height={16} borderRadius={4} />
-            <Skeleton width={50} height={14} borderRadius={4} />
-          </View>
-          <Skeleton height={48} borderRadius={24} className="w-full mt-4" />
-        </View>
-      </Screen>
-    );
-  }
+  const wishlistIds = (user?.wishlist || []).map((item) => (typeof item === 'string' ? item : item.id));
+  const isWishlisted = product ? wishlistIds.includes(product.id) : false;
+  const isCompared = product ? comparedProducts.some((item) => item.id === product.id) : false;
 
   const handleToggleWishlist = async () => {
+    if (!product) return;
     if (!user) {
-      Alert.alert('Login required', 'Please login to save wishlist products.');
+      Alert.alert(
+        isHindi ? 'लॉगिन आवश्यक है' : 'Login required',
+        isHindi ? 'पसंदीदा दवाइयां सहेजने के लिए कृपया लॉगिन करें।' : 'Please login to save wishlist products.',
+      );
       router.push('/(auth)/login');
       return;
     }
@@ -157,94 +126,116 @@ export default function ProductDetailScreen() {
       const updatedUser = await storefrontApi.toggleWishlist(product.id);
       setUser(updatedUser);
     } catch (caughtError) {
-      Alert.alert('Wishlist update failed', caughtError instanceof Error ? caughtError.message : 'Please try again.');
+      Alert.alert(
+        isHindi ? 'विशलिस्ट अपडेट विफल' : 'Wishlist update failed',
+        caughtError instanceof Error ? caughtError.message : 'Please try again.',
+      );
     }
   };
 
   const handleToggleCompare = () => {
+    if (!product) return;
     const result = toggleCompareProduct(product);
     if (result.message.includes('up to 3')) {
-      Alert.alert('Compare limit', result.message);
+      Alert.alert(isHindi ? 'तुलना सीमा' : 'Compare limit', result.message);
     }
   };
 
+  if (productQuery.isLoading) {
+    return (
+      <Screen>
+        <Skeleton height={260} borderRadius={28} className="w-full" />
+        <Skeleton width={120} height={14} borderRadius={4} className="mt-6" />
+        <Skeleton width={220} height={24} borderRadius={8} className="mt-3" />
+        <Skeleton width={160} height={18} borderRadius={6} className="mt-4" />
+        <Skeleton height={90} borderRadius={24} className="mt-6 w-full" />
+      </Screen>
+    );
+  }
+
+  if (!product || !selectedVariant) {
+    return (
+      <Screen>
+        <View className="rounded-[28px] bg-white p-8 items-center">
+          <Text className="text-2xl font-black text-primary-900">
+            {isHindi ? 'उत्पाद नहीं मिला।' : 'Product not found.'}
+          </Text>
+          <Text className="mt-3 text-sm leading-6 text-primary-900/70 text-center">
+            {isHindi ? 'यह उत्पाद अब उपलब्ध नहीं है या हटा दिया गया है।' : 'The item you are looking for is no longer available.'}
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  const primaryImage = routeImage || getPrimaryImage(product);
+  const galleryImages =
+    product.images && product.images.length > 0
+      ? product.images
+      : [{ url: primaryImage, publicId: '', isPrimary: true }];
+
+  const galleryImageWidth = Math.max(width - 48, 260);
+  const maxStock = Math.max(selectedVariant.stock || 0, 0);
+  const isOutOfStock = maxStock === 0;
+  const canIncrease = quantityInCart < maxStock;
+
   return (
     <Screen>
-      {/* Gallery Section Block Wrapper */}
-      <View className="mb-6 gap-3">
-        {/* Main Image Box */}
-        <View className="relative w-full rounded-[28px] bg-[#f4f7f6] overflow-hidden items-center justify-center border border-slate-200/60 shadow-xs">
-          {/* Wishlist & Compare Icon Buttons on Image Top Right */}
-          <View className="absolute right-3 top-3 z-30 flex-col gap-2">
-            <Pressable
-              onPress={() => void handleToggleWishlist()}
-              className={`h-9 w-9 items-center justify-center rounded-full border active:scale-90 shadow-md ${
-                isWishlisted ? 'border-rose-200 bg-rose-50' : 'border-white/85 bg-white/95'
-              }`}
-            >
-              <Feather name="heart" size={16} color={isWishlisted ? '#E11D48' : '#082018'} />
-            </Pressable>
-            <Pressable
-              onPress={handleToggleCompare}
-              className={`h-9 w-9 items-center justify-center rounded-full border active:scale-90 shadow-md ${
-                isCompared ? 'border-primary-500 bg-primary-500' : 'border-white/85 bg-white/95'
-              }`}
-            >
-              <Feather name="sliders" size={16} color={isCompared ? '#FFFFFF' : '#082018'} />
-            </Pressable>
-          </View>
-
-          {/* Main Product Image Carousel */}
-          <ScrollView
-            ref={galleryRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={(event) => {
-              const contentOffsetX = event.nativeEvent.contentOffset.x;
-              const index = Math.round(contentOffsetX / galleryImageWidth);
-              if (index !== activeImageIndex) {
-                setActiveImageIndex(index);
-              }
-            }}
-            scrollEventThrottle={16}
-            style={{ width: galleryImageWidth, height: 280 }}
-          >
-            {galleryImages.length ? (
-              galleryImages.map((image) => {
-                const imageUrl = resolveMediaUrl(image.url, image.publicId);
-                return (
-                  <View
-                    key={image.url}
-                    style={{ width: galleryImageWidth, height: 280 }}
-                    className="items-center justify-center relative"
-                  >
-                    <Image
-                      source={{ uri: imageUrl }}
-                      style={{ width: '100%', height: '100%' }}
-                      contentFit="contain"
-                    />
-                  </View>
-                );
-              })
-            ) : (
+      {/* Top Media Gallery with Floating Wishlist/Compare */}
+      <View className="relative mb-6">
+        <ScrollView
+          ref={galleryRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(event) => {
+            const index = Math.round(event.nativeEvent.contentOffset.x / galleryImageWidth);
+            setActiveImageIndex(index);
+          }}
+          className="rounded-[32px] bg-white overflow-hidden border border-primary-100 shadow-sm"
+        >
+          {galleryImages.map((image, index) => {
+            const imageUrl = resolveMediaUrl(image.url, image.publicId);
+            return (
               <View
+                key={`${image.url}-${index}`}
                 style={{ width: galleryImageWidth, height: 280 }}
-                className="items-center justify-center relative"
+                className="items-center justify-center p-4"
               >
                 <Image
-                  source={{ uri: getPrimaryImage(product, routeImage) }}
+                  source={{ uri: imageUrl }}
                   style={{ width: '100%', height: '100%' }}
                   contentFit="contain"
+                  transition={200}
                 />
               </View>
-            )}
-          </ScrollView>
+            );
+          })}
+        </ScrollView>
+
+        {/* Floating Action Buttons */}
+        <View className="absolute right-4 top-4 z-20 flex-row gap-2">
+          <Pressable
+            onPress={handleToggleWishlist}
+            className={`h-10 w-10 items-center justify-center rounded-full border active:scale-90 shadow-md ${
+              isWishlisted ? 'border-rose-200 bg-rose-50' : 'border-white/90 bg-white/95'
+            }`}
+          >
+            <Feather name="heart" size={18} color={isWishlisted ? '#E11D48' : '#082018'} />
+          </Pressable>
+          <Pressable
+            onPress={handleToggleCompare}
+            className={`h-10 w-10 items-center justify-center rounded-full border active:scale-90 shadow-md ${
+              isCompared ? 'border-primary-500 bg-primary-500' : 'border-white/90 bg-white/95'
+            }`}
+          >
+            <Feather name="sliders" size={18} color={isCompared ? '#FFFFFF' : '#082018'} />
+          </Pressable>
         </View>
 
         {/* Dots indicator */}
         {galleryImages.length > 1 ? (
-          <View className="flex-row justify-center gap-1.5 py-1">
+          <View className="flex-row justify-center gap-1.5 mt-3">
             {galleryImages.map((_, index) => (
               <Pressable
                 key={index}
@@ -291,11 +282,11 @@ export default function ProductDetailScreen() {
 
       {/* Product Details Information */}
       <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-500">
-        {product.category?.name || 'Crop Care'}
+        {translateCategory(product.category?.name || product.category?.slug)}
       </Text>
-      <Text className="mt-1 text-3xl font-black text-primary-900">{product.name}</Text>
-      {product.shortDescription ? (
-        <Text className="mt-2 text-sm leading-6 text-primary-900/70">{product.shortDescription}</Text>
+      <Text className="mt-1 text-2xl font-black text-primary-900">{product.name}</Text>
+      {translatedShortDescription ? (
+        <Text className="mt-2 text-sm leading-6 text-primary-900/70">{translatedShortDescription}</Text>
       ) : null}
 
       <View className="mt-4 flex-row items-center gap-3">
@@ -325,7 +316,7 @@ export default function ProductDetailScreen() {
           </Text>
         </View>
         <Text className="text-[10px] font-black uppercase tracking-[1px] text-primary-900/40">
-          Dealer Inventory
+          {isHindi ? 'डीलर इन्वेंटरी' : 'Dealer Inventory'}
         </Text>
       </View>
 
@@ -335,10 +326,14 @@ export default function ProductDetailScreen() {
           <Feather name="alert-triangle" size={18} color="#E11D48" className="mt-0.5" />
           <View className="flex-1">
             <Text className="text-xs font-black text-rose-900">
-              Selected Dealer Out of Stock!
+              {isHindi ? 'चयनित डीलर पर स्टॉक समाप्त!' : 'Selected Dealer Out of Stock!'}
             </Text>
             <Text className="text-xs text-rose-700 mt-0.5 leading-5">
-              Product is out of stock at <Text className="font-black">{selectedStore?.name}</Text>. Please select another dealer below to order.
+              {isHindi ? (
+                <>यह उत्पाद <Text className="font-black">{selectedStore?.name}</Text> पर उपलब्ध नहीं है। कृपया नीचे से दूसरा डीलर चुनें।</>
+              ) : (
+                <>Product is out of stock at <Text className="font-black">{selectedStore?.name}</Text>. Please select another dealer below to order.</>
+              )}
             </Text>
           </View>
         </View>
@@ -395,22 +390,24 @@ export default function ProductDetailScreen() {
       )}
 
       {/* ========================================================================= */}
-      {/* NEW SECTION: DEALER AVAILABILITY CHECK                                   */}
+      {/* DEALER AVAILABILITY CHECK                                                 */}
       {/* ========================================================================= */}
       <View className="mt-8 rounded-[28px] bg-white p-5 border border-primary-100 shadow-xs">
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center gap-2">
             <Feather name="map-pin" size={18} color="#166534" />
             <Text className="text-base font-black text-primary-900">
-              {t('mobile.sidebar.myFarm')}
+              {isHindi ? 'डीलर और स्टोर में उपलब्धता' : 'Dealer & Store Availability'}
             </Text>
           </View>
           <Text className="text-[10px] font-bold uppercase text-emerald-800 bg-emerald-50 px-2 py-1 rounded-full">
-            Realtime Stock
+            {isHindi ? 'लाइव स्टॉक' : 'Realtime Stock'}
           </Text>
         </View>
         <Text className="text-xs text-slate-500 mb-4">
-          {t('mobile.serviceMode.searchStore')}
+          {isHindi
+            ? 'देखें आपके क्षेत्र में किन Vaniki प्रमाणित कृषि डीलरों के पास स्टॉक उपलब्ध है:'
+            : 'Check which registered Vaniki Agri dealers have stock available in your area:'}
         </Text>
 
         {storeAvailabilityQuery.isLoading ? (
@@ -431,8 +428,10 @@ export default function ProductDetailScreen() {
                     setStore(store as any);
                     if (!inStock) {
                       Alert.alert(
-                        'Out of Stock Dealer Selected',
-                        `${store.name} is currently out of stock for this item. Please choose an in-stock dealer to order.`,
+                        isHindi ? 'स्टॉक समाप्त डीलर चयनित' : 'Out of Stock Dealer Selected',
+                        isHindi
+                          ? `${store.name} पर यह उत्पाद अभी उपलब्ध नहीं है। कृपया स्टॉक वाले डीलर से ऑर्डर करें।`
+                          : `${store.name} is currently out of stock for this item. Please choose an in-stock dealer to order.`,
                       );
                     }
                   }}
@@ -447,7 +446,7 @@ export default function ProductDetailScreen() {
                       <Text className="text-xs font-black text-slate-900">{store.name}</Text>
                       {isCurrentSelected ? (
                         <Text className="text-[9px] font-black uppercase text-emerald-800 bg-emerald-200 px-1.5 py-0.5 rounded-md">
-                          Active Store
+                          {isHindi ? 'सक्रिय स्टोर' : 'Active Store'}
                         </Text>
                       ) : null}
                     </View>
@@ -458,7 +457,9 @@ export default function ProductDetailScreen() {
 
                   <View className={`rounded-full px-3 py-1.5 ${inStock ? 'bg-emerald-100' : 'bg-rose-100'}`}>
                     <Text className={`text-[10px] font-black uppercase tracking-[0.5px] ${inStock ? 'text-emerald-800' : 'text-rose-700'}`}>
-                      {inStock ? `${t('mobile.actions.unitsAvailable', { count: store.quantity })}` : t('mobile.actions.outOfStock')}
+                      {inStock
+                        ? isHindi ? `स्टॉक में (${store.quantity})` : `In Stock (${store.quantity})`
+                        : isHindi ? 'स्टॉक समाप्त' : 'Out of Stock'}
                     </Text>
                   </View>
                 </Pressable>
@@ -468,7 +469,7 @@ export default function ProductDetailScreen() {
         ) : (
           <View className="rounded-2xl bg-slate-50 p-4 items-center">
             <Text className="text-xs font-semibold text-slate-500">
-              {t('mobile.serviceMode.noStores')}
+              {isHindi ? 'इस उत्पाद के लिए कोई स्थानीय डीलर मैप नहीं है। केंद्रीय डिलीवरी उपलब्ध है।' : 'No specific store mapped for this product. Central delivery available.'}
             </Text>
           </View>
         )}
@@ -481,44 +482,62 @@ export default function ProductDetailScreen() {
       {/* SECTION 1: Product Description */}
       <View className="mt-6 rounded-[28px] bg-white p-5 border border-primary-100 shadow-xs">
         <Text className="text-lg font-black text-primary-900">{t('mobile.productDetail.description')}</Text>
-        <Text className="mt-3 text-sm leading-7 text-primary-900/70">{stripHtml(product.description)}</Text>
+        <Text className="mt-3 text-sm leading-7 text-primary-900/70">
+          {translatedDescription || stripHtml(product.description)}
+        </Text>
       </View>
 
       {/* SECTION 2: Why Choose Vaniki Crop */}
       <View className="mt-6 rounded-[28px] bg-white p-5 border border-primary-100 shadow-xs">
         <Text className="text-xs font-black uppercase tracking-[2px] text-[#2D6A4F] mb-4">
-          Why Choose Vaniki Crop Science
+          {isHindi ? 'VANIKI CROP SCIENCE क्यों चुनें' : 'Why Choose Vaniki Crop Science'}
         </Text>
         <View className="flex-row flex-wrap justify-between gap-y-3">
           <View style={{ width: '48.5%' }} className="flex-row items-center gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200 min-h-[64px]">
             <Feather name="shield" size={18} color="#166534" />
             <View className="flex-1">
-              <Text style={{ color: '#0F172A' }} className="text-xs font-black">100% Genuine</Text>
-              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">Certified Crop Care</Text>
+              <Text style={{ color: '#0F172A' }} className="text-xs font-black">
+                {isHindi ? '100% असली उत्पाद' : '100% Genuine'}
+              </Text>
+              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">
+                {isHindi ? 'प्रमाणित फसल सुरक्षा' : 'Certified Crop Care'}
+              </Text>
             </View>
           </View>
 
           <View style={{ width: '48.5%' }} className="flex-row items-center gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200 min-h-[64px]">
             <Feather name="truck" size={18} color="#166534" />
             <View className="flex-1">
-              <Text style={{ color: '#0F172A' }} className="text-xs font-black">Fast Delivery</Text>
-              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">Local Store Dispatch</Text>
+              <Text style={{ color: '#0F172A' }} className="text-xs font-black">
+                {isHindi ? 'तेज़ डिलीवरी' : 'Fast Delivery'}
+              </Text>
+              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">
+                {isHindi ? 'नजदीकी स्टोर से' : 'Local Store Dispatch'}
+              </Text>
             </View>
           </View>
 
           <View style={{ width: '48.5%' }} className="flex-row items-center gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200 min-h-[64px]">
             <Feather name="tag" size={18} color="#166534" />
             <View className="flex-1">
-              <Text style={{ color: '#0F172A' }} className="text-xs font-black">Best Price</Text>
-              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">Dealer Discount</Text>
+              <Text style={{ color: '#0F172A' }} className="text-xs font-black">
+                {isHindi ? 'उचित मूल्य' : 'Best Price'}
+              </Text>
+              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">
+                {isHindi ? 'डीलर विशेष छूट' : 'Dealer Discount'}
+              </Text>
             </View>
           </View>
 
           <View style={{ width: '48.5%' }} className="flex-row items-center gap-2.5 bg-slate-50 p-3 rounded-2xl border border-slate-200 min-h-[64px]">
             <Feather name="phone-call" size={18} color="#166534" />
             <View className="flex-1">
-              <Text style={{ color: '#0F172A' }} className="text-xs font-black">Agri Expert</Text>
-              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">Free Consultation</Text>
+              <Text style={{ color: '#0F172A' }} className="text-xs font-black">
+                {isHindi ? 'कृषि विशेषज्ञ' : 'Agri Expert'}
+              </Text>
+              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">
+                {isHindi ? 'मुफ्त परामर्श' : 'Free Consultation'}
+              </Text>
             </View>
           </View>
         </View>
@@ -526,7 +545,9 @@ export default function ProductDetailScreen() {
 
       {/* SECTION 3: Usage Instructions & FAQs Accordion */}
       <View className="mt-6 rounded-[28px] bg-white p-5 border border-primary-100 shadow-xs">
-        <Text className="text-lg font-black text-primary-900 mb-3">Usage & Crop Safety Guide</Text>
+        <Text className="text-lg font-black text-primary-900 mb-3">
+          {isHindi ? 'उपयोग विधि एवं फसल सुरक्षा गाइड' : 'Usage & Crop Safety Guide'}
+        </Text>
         
         <View className="gap-2.5">
           <Pressable
@@ -534,12 +555,16 @@ export default function ProductDetailScreen() {
             className="rounded-2xl bg-slate-50 border border-slate-200 p-4"
           >
             <View className="flex-row items-center justify-between">
-              <Text className="text-xs font-black text-slate-900">🧪 Recommended Dosage & Method</Text>
+              <Text className="text-xs font-black text-slate-900">
+                {isHindi ? '🧪 अनुशंसित मात्रा एवं छिड़काव विधि' : '🧪 Recommended Dosage & Method'}
+              </Text>
               <Feather name={expandedFaq === 'dosage' ? 'chevron-up' : 'chevron-down'} size={18} color="#082018" />
             </View>
             {expandedFaq === 'dosage' ? (
               <Text className="mt-2.5 text-xs leading-5 text-slate-600 border-t border-slate-200 pt-2">
-                Mix 250ml to 500ml per acre with 150-200 liters of clean water for foliar spray. Ensure uniform coverage on healthy leaves.
+                {isHindi
+                  ? '250 मिली से 500 मिली प्रति एकड़ की दर से 150-200 लीटर साफ पानी में घोलकर पत्तियों पर समान रूप से छिड़काव करें।'
+                  : 'Mix 250ml to 500ml per acre with 150-200 liters of clean water for foliar spray. Ensure uniform coverage on healthy leaves.'}
               </Text>
             ) : null}
           </Pressable>
@@ -549,12 +574,16 @@ export default function ProductDetailScreen() {
             className="rounded-2xl bg-slate-50 border border-slate-200 p-4"
           >
             <View className="flex-row items-center justify-between">
-              <Text className="text-xs font-black text-slate-900">🌿 Target Crops & Compatibility</Text>
+              <Text className="text-xs font-black text-slate-900">
+                {isHindi ? '🌿 उपयुक्त फसलें एवं अनुकूलता' : '🌿 Target Crops & Compatibility'}
+              </Text>
               <Feather name={expandedFaq === 'crops' ? 'chevron-up' : 'chevron-down'} size={18} color="#082018" />
             </View>
             {expandedFaq === 'crops' ? (
               <Text className="mt-2.5 text-xs leading-5 text-slate-600 border-t border-slate-200 pt-2">
-                Suitable for Rice, Paddy, Cotton, Soybean, Vegetables (Tomato, Chilli, Brinjal) and Fruit Crops. Compatible with most standard crop nutrients.
+                {isHindi
+                  ? 'धान, गेहूं, कपास, सोयाबीन, सब्जियों (टमाटर, मिर्च, बैंगन) और फलदार फसलों के लिए उपयुक्त। सभी सामान्य फसल पोषकों के साथ अनुकूल।'
+                  : 'Suitable for Rice, Paddy, Cotton, Soybean, Vegetables (Tomato, Chilli, Brinjal) and Fruit Crops. Compatible with most standard crop nutrients.'}
               </Text>
             ) : null}
           </Pressable>
@@ -564,12 +593,16 @@ export default function ProductDetailScreen() {
             className="rounded-2xl bg-slate-50 border border-slate-200 p-4"
           >
             <View className="flex-row items-center justify-between">
-              <Text className="text-xs font-black text-slate-900">⚠️ Safety & Storage Precautions</Text>
+              <Text className="text-xs font-black text-slate-900">
+                {isHindi ? '⚠️ सुरक्षा एवं भंडारण सावधानियां' : '⚠️ Safety & Storage Precautions'}
+              </Text>
               <Feather name={expandedFaq === 'safety' ? 'chevron-up' : 'chevron-down'} size={18} color="#082018" />
             </View>
             {expandedFaq === 'safety' ? (
               <Text className="mt-2.5 text-xs leading-5 text-slate-600 border-t border-slate-200 pt-2">
-                Store in a cool, dry place away from direct sunlight. Keep out of reach of children and domestic animals. Wear protective gloves during application.
+                {isHindi
+                  ? 'धूप से दूर ठंडी व सूखी जगह पर रखें। बच्चों और पशुओं की पहुंच से दूर रखें। छिड़काव के समय दस्ताने और मास्क का उपयोग करें।'
+                  : 'Store in a cool, dry place away from direct sunlight. Keep out of reach of children and domestic animals. Wear protective gloves during application.'}
               </Text>
             ) : null}
           </Pressable>
@@ -579,9 +612,13 @@ export default function ProductDetailScreen() {
       {/* SECTION 4: Related Category Products Carousel */}
       <View className="mt-6">
         <View className="flex-row items-center justify-between mb-3 px-1">
-          <Text className="text-lg font-black text-primary-900">Similar Category Products</Text>
+          <Text className="text-lg font-black text-primary-900">
+            {isHindi ? 'संबंधित फसल सुरक्षा दवाइयां' : 'Similar Category Products'}
+          </Text>
           <Pressable onPress={() => router.push('/products')}>
-            <Text className="text-xs font-bold text-emerald-700">View All →</Text>
+            <Text className="text-xs font-bold text-emerald-700">
+              {isHindi ? 'सभी देखें →' : 'View All →'}
+            </Text>
           </Pressable>
         </View>
 
@@ -602,7 +639,7 @@ export default function ProductDetailScreen() {
           </View>
         ) : (
           <Text className="text-xs font-semibold text-primary-900/60 pl-1">
-            No related category products found.
+            {isHindi ? 'कोई संबंधित उत्पाद नहीं मिला।' : 'No related category products found.'}
           </Text>
         )}
       </View>
@@ -611,9 +648,13 @@ export default function ProductDetailScreen() {
       {bestSellerProducts.length > 0 ? (
         <View className="mt-6">
           <View className="flex-row items-center justify-between mb-3 px-1">
-            <Text className="text-lg font-black text-primary-900">Best Seller Recommendations</Text>
+            <Text className="text-lg font-black text-primary-900">
+              {isHindi ? 'सबसे ज्यादा बिकने वाली दवाइयां' : 'Best Seller Recommendations'}
+            </Text>
             <Pressable onPress={() => router.push('/products')}>
-              <Text className="text-xs font-bold text-emerald-700">Explore Store →</Text>
+              <Text className="text-xs font-bold text-emerald-700">
+                {isHindi ? 'स्टोर देखें →' : 'Explore Store →'}
+              </Text>
             </Pressable>
           </View>
 
@@ -636,32 +677,36 @@ export default function ProductDetailScreen() {
 
       {/* SECTION 6: Customer Reviews & Rating Summary */}
       <View className="mt-6 rounded-[28px] bg-white p-5 border border-primary-100 shadow-xs">
-        <Text className="text-lg font-black text-primary-900">Customer Reviews ({product.reviews?.length || 0})</Text>
+        <Text className="text-lg font-black text-primary-900">
+          {isHindi ? `किसान समीक्षाएं (${product.reviews?.length || 0})` : `Customer Reviews (${product.reviews?.length || 0})`}
+        </Text>
         
         <View className="mt-4 gap-3">
           {(product.reviews || []).length > 0 ? (
             (product.reviews || []).map((review) => (
               <View key={review.id} className="rounded-[22px] bg-primary-50 p-4">
                 <ReviewStars rating={review.rating} />
-                <Text className="mt-2 text-sm font-black text-primary-900">{review.userId?.name || 'Verified Farmer'}</Text>
+                <Text className="mt-2 text-sm font-black text-primary-900">{review.userId?.name || (isHindi ? 'प्रमाणित किसान' : 'Verified Farmer')}</Text>
                 <Text className="mt-1 text-sm leading-6 text-primary-900/70">{review.comment}</Text>
               </View>
             ))
           ) : (
             <Text className="text-xs font-semibold text-slate-500 py-2">
-              No reviews yet for this product. Be the first farmer to review!
+              {isHindi ? 'इस उत्पाद के लिए अभी कोई समीक्षा नहीं है। पहले समीक्षक बनें!' : 'No reviews yet for this product. Be the first farmer to review!'}
             </Text>
           )}
         </View>
 
         {user ? (
           <View className="mt-5 gap-3 pt-3 border-t border-slate-100">
-            <Text className="text-xs font-black uppercase tracking-[1px] text-slate-900">Write Your Review</Text>
+            <Text className="text-xs font-black uppercase tracking-[1px] text-slate-900">
+              {isHindi ? 'अपनी समीक्षा लिखें' : 'Write Your Review'}
+            </Text>
             <ReviewStars rating={rating} onChange={setRating} />
             <TextInput
               value={comment}
               onChangeText={setComment}
-              placeholder="Share your crop results and experience..."
+              placeholder={isHindi ? 'अपनी फसल के परिणाम और अनुभव साझा करें...' : 'Share your crop results and experience...'}
               multiline
               className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-3.5 text-sm text-primary-900"
               placeholderTextColor="#7a978b"
@@ -670,29 +715,34 @@ export default function ProductDetailScreen() {
               onPress={async () => {
                 await storefrontApi.submitReview({ productId: product.id, rating, comment });
                 setComment('');
-                Alert.alert('Review Submitted! ⭐', 'Thank you for reviewing this product.');
+                Alert.alert(
+                  isHindi ? 'समीक्षा सबमिट हो गई! ⭐' : 'Review Submitted! ⭐',
+                  isHindi ? 'इस उत्पाद की समीक्षा के लिए धन्यवाद।' : 'Thank you for reviewing this product.',
+                );
               }}
               style={{ backgroundColor: '#166534' }}
               className="rounded-full py-3.5 items-center justify-center active:scale-95 shadow-xs"
             >
               <Text className="text-xs font-black uppercase tracking-[1.5px] text-white">
-                Submit Review
+                {isHindi ? 'समीक्षा सबमिट करें' : 'Submit Review'}
               </Text>
             </Pressable>
           </View>
         ) : null}
       </View>
 
-      {/* SECTION 7: Agri Expert Assistance Footer CTA Banner (Pure Bright White Text) */}
+      {/* SECTION 7: Agri Expert Assistance Footer CTA Banner */}
       <View style={{ backgroundColor: '#0B281E' }} className="mt-6 mb-10 rounded-[28px] p-6 border border-emerald-800 shadow-md items-center">
         <View className="h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 mb-3">
           <Feather name="message-circle" size={24} color="#34D399" />
         </View>
         <Text style={{ color: '#FFFFFF' }} className="text-base font-black text-center">
-          Need Help With Crop Dosage or Disease Treatment?
+          {isHindi ? 'फसल में बीमारी या दवा की मात्रा के लिए सलाह चाहिए?' : 'Need Help With Crop Dosage or Disease Treatment?'}
         </Text>
         <Text style={{ color: '#FFFFFF' }} className="mt-1.5 text-xs font-bold text-center px-4">
-          Chat directly with our Agri Advisory Team on WhatsApp for free crop consultation!
+          {isHindi
+            ? 'मुफ्त फसल डॉक्टर परामर्श के लिए सीधे व्हाट्सऐप पर हमारी टीम से बात करें!'
+            : 'Chat directly with our Agri Advisory Team on WhatsApp for free crop consultation!'}
         </Text>
 
         <Pressable
@@ -702,7 +752,7 @@ export default function ProductDetailScreen() {
         >
           <Feather name="message-square" size={16} color="#FFFFFF" />
           <Text style={{ color: '#FFFFFF' }} className="text-xs font-black uppercase tracking-[1px]">
-            Chat On WhatsApp
+            {isHindi ? 'व्हाट्सऐप पर बात करें' : 'Chat On WhatsApp'}
           </Text>
         </Pressable>
       </View>
