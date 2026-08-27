@@ -80,6 +80,9 @@ export const signupSchema = z.object({
     district: z.string().trim().min(2, 'District is required').optional(),
     state: z.string().trim().min(2, 'State is required').optional(),
     pincode: z.string().trim().regex(/^\d{6}$/, 'Pincode must be 6 digits').optional(),
+    latitude: z.coerce.number().optional(),
+    longitude: z.coerce.number().optional(),
+    visitorId: z.string().trim().optional(),
   }),
 });
 

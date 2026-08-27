@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, type IUser } from '../../models/User.model.js';
+import { Visitor } from '../../models/Visitor.model.js';
 import { sendOtpViaMessageCentral, validateOtpViaMessageCentral } from '../../utils/messageCentral.js';
 import { Staff } from '../../models/Staff.model.js';
 import { firebaseAdmin } from '../../config/firebase.js';
@@ -133,7 +134,8 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<void> {
  * @returns Created user and token pair
  */
 export async function signup(
-  input: SignupInput,
+  input: SignupInput & { latitude?: number; longitude?: number; visitorId?: string },
+  meta?: { ip?: string; userAgent?: string },
 ): Promise<{ user: IUser; tokens: TokenPair }> {
   const { name, email, mobile, password, otp, referralCode } = input;
 
@@ -194,6 +196,9 @@ export async function signup(
   }
 
   const ownReferralCode = await generateUniqueReferralCode(name, mobile);
+  const coords = (input.latitude != null && input.longitude != null)
+    ? { latitude: input.latitude, longitude: input.longitude }
+    : undefined;
 
   // Create or update user
   let user: IUser;
@@ -214,14 +219,27 @@ export async function signup(
       existingUser.referralSource = referralSource;
     }
     
+    if (coords) {
+      existingUser.coordinates = coords;
+    }
+    if (meta?.ip) {
+      existingUser.registrationIp = existingUser.registrationIp || meta.ip;
+      existingUser.lastIp = meta.ip;
+    }
+    if (meta?.userAgent) {
+      existingUser.deviceInfo = { userAgent: meta.userAgent };
+    }
+
     // Update address if provided
-    if (input.address || input.district || input.state || input.pincode) {
+    if (input.address || input.district || input.state || input.pincode || coords) {
       existingUser.savedAddress = {
         street: input.address || existingUser.savedAddress?.street || '',
         district: input.district || existingUser.savedAddress?.district || '',
         state: input.state || existingUser.savedAddress?.state || '',
         city: input.district || existingUser.savedAddress?.city || '',
         pincode: input.pincode || existingUser.savedAddress?.pincode || '',
+        latitude: input.latitude ?? existingUser.savedAddress?.latitude,
+        longitude: input.longitude ?? existingUser.savedAddress?.longitude,
       };
     }
 
@@ -239,16 +257,48 @@ export async function signup(
       ...(referredById ? { referredBy: referredById } : {}),
       ...(referredByStaffId ? { referredByStaff: referredByStaffId } : {}),
       ...(referralSource ? { referralSource } : {}),
+      ...(coords ? { coordinates: coords } : {}),
+      ...(meta?.ip ? { registrationIp: meta.ip, lastIp: meta.ip } : {}),
+      ...(meta?.userAgent ? { deviceInfo: { userAgent: meta.userAgent } } : {}),
       savedAddress: {
         street: input.address || '',
         district: input.district || '',
         state: input.state || '',
         city: input.district || '',
         pincode: input.pincode || '',
+        latitude: input.latitude,
+        longitude: input.longitude,
       },
       isActive: true,
     });
     shouldIncrementReferrer = Boolean(referredById);
+  }
+
+  // Also sync/link with Visitor telemetry record if visitorId is provided or by IP/Mobile
+  if (input.visitorId || meta?.ip) {
+    const visitorQuery = input.visitorId ? { visitorId: input.visitorId } : { ip: meta?.ip };
+    await Visitor.findOneAndUpdate(
+      visitorQuery,
+      {
+        $set: {
+          userId: user._id,
+          userName: user.name,
+          userMobile: user.mobile,
+          isRegistered: true,
+          ip: meta?.ip,
+          ...(coords ? { coordinates: coords } : {}),
+          location: {
+            city: input.district,
+            district: input.district,
+            state: input.state,
+            pincode: input.pincode,
+            formattedAddress: input.address,
+          },
+          lastSeen: new Date(),
+        },
+      },
+      { upsert: Boolean(input.visitorId) }
+    ).catch(() => {});
   }
 
   if (shouldIncrementReferrer && referredById) {

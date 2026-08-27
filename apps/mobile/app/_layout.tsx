@@ -14,6 +14,7 @@ import { usePushNotifications } from '../src/hooks/usePushNotifications';
 import { LoadingScreen } from '../src/components/LoadingScreen';
 import { hydrateAppLanguage } from '../src/i18n';
 import { CheckInModal } from '../src/components/CheckInModal';
+import { requestLocationAndTrack } from '../src/utils/telemetry';
 
 bindOnlineManager();
 
@@ -25,6 +26,16 @@ function RootNavigation() {
 
   const sessionQuery = useBootstrapSession();
   usePushNotifications(Boolean(user));
+
+  // Request location permission once on app/web open & sync coordinates + IP with SuperAdmin
+  useEffect(() => {
+    void requestLocationAndTrack({
+      promptPermission: true,
+      userMobile: user?.mobile,
+      userName: user?.name,
+      url: pathname,
+    });
+  }, [user?.mobile, user?.name, pathname]);
 
   if (!hydrated || (token && sessionQuery.isLoading && !sessionQuery.isError)) return <LoadingScreen />;
 

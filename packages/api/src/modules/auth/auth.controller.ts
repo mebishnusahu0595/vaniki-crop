@@ -58,7 +58,9 @@ export async function verifyOtp(req: Request, res: Response, next: NextFunction)
  */
 export async function signup(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { user, tokens } = await authService.signup(req.body);
+    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '') as string;
+    const userAgent = (req.headers['user-agent'] || '') as string;
+    const { user, tokens } = await authService.signup(req.body, { ip, userAgent });
 
     res.cookie(REFRESH_TOKEN_COOKIE, tokens.refreshToken, cookieOptions);
 

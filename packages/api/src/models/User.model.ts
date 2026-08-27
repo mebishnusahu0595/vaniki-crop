@@ -11,6 +11,8 @@ export interface ISavedAddress {
   state: string;
   pincode: string;
   landmark?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 /** User role enum */
@@ -51,6 +53,14 @@ export interface IUser extends Document {
   selectedStore?: mongoose.Types.ObjectId;
   serviceMode: ServiceMode;
   savedAddress?: ISavedAddress;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+  };
+  registrationIp?: string;
+  lastIp?: string;
+  deviceInfo?: any;
   wishlist: mongoose.Types.ObjectId[];
   referralCode: string;
   referredBy?: mongoose.Types.ObjectId | null;
@@ -87,6 +97,8 @@ const savedAddressSchema = new Schema<ISavedAddress>(
     state: { type: String, trim: true },
     pincode: { type: String, trim: true },
     landmark: { type: String, trim: true },
+    latitude: { type: Number },
+    longitude: { type: Number },
   },
   { _id: false },
 );
@@ -167,6 +179,14 @@ const userSchema = new Schema<IUser>(
       default: 'delivery',
     },
     savedAddress: savedAddressSchema,
+    coordinates: {
+      latitude: { type: Number },
+      longitude: { type: Number },
+      accuracy: { type: Number },
+    },
+    registrationIp: { type: String, trim: true },
+    lastIp: { type: String, trim: true },
+    deviceInfo: { type: Schema.Types.Mixed },
     wishlist: [
       {
         type: Schema.Types.ObjectId,

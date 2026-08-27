@@ -265,14 +265,55 @@ export interface Customer {
   lastOrderDate?: string;
   totalSpend: number;
   isActive?: boolean;
-  savedAddress?: Address;
+  savedAddress?: Address & { latitude?: number; longitude?: number };
+  coordinates?: { latitude: number; longitude: number; accuracy?: number } | null;
+  mapsUrl?: string | null;
+  ip?: string;
   area?: string;
   district?: string;
+  state?: string;
+  pincode?: string;
   mostBoughtProduct?: string;
   mostBoughtCategory?: string;
   loyaltyPoints?: number;
   checkInHistory?: string[];
   lastCheckIn?: string;
+  createdAt?: string;
+}
+
+export interface VisitorRecord {
+  id: string;
+  visitorId: string;
+  userId?: string;
+  userName?: string;
+  userMobile?: string;
+  isRegistered: boolean;
+  ip: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+  } | null;
+  mapsUrl?: string | null;
+  location?: {
+    city?: string;
+    district?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
+    formattedAddress?: string;
+  } | null;
+  device?: {
+    platform?: string;
+    os?: string;
+    browser?: string;
+    appVariant?: string;
+    userAgent?: string;
+  } | null;
+  firstSeen: string;
+  lastSeen: string;
+  visitCount: number;
+  recentPages: string[];
 }
 
 export interface NotificationCampaign {

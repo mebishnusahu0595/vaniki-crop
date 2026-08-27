@@ -3,6 +3,7 @@ import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Review } from '../../models/Review.model.js';
 import { PageView } from '../../models/PageView.model.js';
+import { Visitor } from '../../models/Visitor.model.js';
 import { redisConnection } from '../../config/redis.js';
 
 const ANALYTICS_CACHE_TTL = 300; // 5 minutes in seconds
@@ -382,4 +383,140 @@ export async function getWebsiteReporting() {
   await redisConnection.setex(cacheKey, 180, JSON.stringify(report));
 
   return report;
+}
+
+/**
+ * Record live visitor telemetry (IP, GPS Coordinates, Location, Device)
+ */
+export async function recordTelemetry(data: {
+  visitorId: string;
+  userId?: string;
+  userName?: string;
+  userMobile?: string;
+  coordinates?: { latitude: number; longitude: number; accuracy?: number };
+  location?: { city?: string; district?: string; state?: string; pincode?: string; country?: string; formattedAddress?: string };
+  device?: { platform?: string; os?: string; browser?: string; appVariant?: string; userAgent?: string };
+  url?: string;
+  ip?: string;
+}) {
+  const { visitorId, userId, userName, userMobile, coordinates, location, device, url, ip } = data;
+  if (!visitorId) return null;
+
+  const updateDoc: any = {
+    $set: {
+      lastSeen: new Date(),
+      ip: ip || 'Unknown',
+    },
+    $inc: { visitCount: 1 },
+    $setOnInsert: {
+      firstSeen: new Date(),
+    },
+  };
+
+  if (userId) updateDoc.$set.userId = userId;
+  if (userName) updateDoc.$set.userName = userName;
+  if (userMobile) {
+    updateDoc.$set.userMobile = userMobile;
+    updateDoc.$set.isRegistered = true;
+  }
+  if (coordinates && typeof coordinates.latitude === 'number' && typeof coordinates.longitude === 'number') {
+    updateDoc.$set.coordinates = coordinates;
+  }
+  if (location && (location.city || location.state || location.pincode || location.formattedAddress)) {
+    updateDoc.$set.location = location;
+  }
+  if (device) {
+    updateDoc.$set.device = device;
+  }
+  if (url) {
+    updateDoc.$push = {
+      recentPages: {
+        $each: [url],
+        $slice: -15,
+      },
+    };
+  }
+
+  const visitor = await Visitor.findOneAndUpdate(
+    { visitorId },
+    updateDoc,
+    { upsert: true, new: true }
+  );
+
+  return visitor;
+}
+
+/**
+ * List visitors with coordinates and IP for SuperAdmin
+ */
+export async function listVisitors(query: Record<string, any>) {
+  const page = Math.max(Number(query.page) || 1, 1);
+  const limit = Math.min(Math.max(Number(query.limit) || 25, 1), 100);
+  const skip = (page - 1) * limit;
+
+  const filter: Record<string, any> = {};
+
+  if (query.search && typeof query.search === 'string' && query.search.trim()) {
+    const searchRegex = new RegExp(query.search.trim(), 'i');
+    filter.$or = [
+      { visitorId: searchRegex },
+      { ip: searchRegex },
+      { userName: searchRegex },
+      { userMobile: searchRegex },
+      { 'location.city': searchRegex },
+      { 'location.state': searchRegex },
+      { 'location.pincode': searchRegex },
+      { 'device.platform': searchRegex },
+      { 'device.os': searchRegex },
+    ];
+  }
+
+  if (query.isRegistered === 'registered') {
+    filter.isRegistered = true;
+  } else if (query.isRegistered === 'visitor') {
+    filter.isRegistered = false;
+  }
+
+  if (query.hasCoordinates === 'true' || query.hasCoordinates === true) {
+    filter['coordinates.latitude'] = { $exists: true, $ne: null };
+  }
+
+  const [visitors, total] = await Promise.all([
+    Visitor.find(filter)
+      .sort({ lastSeen: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Visitor.countDocuments(filter),
+  ]);
+
+  const mapped = visitors.map((v: any) => ({
+    id: v._id?.toString() || v.visitorId,
+    visitorId: v.visitorId,
+    userId: v.userId,
+    userName: v.userName,
+    userMobile: v.userMobile,
+    isRegistered: Boolean(v.isRegistered),
+    ip: v.ip || 'Unknown IP',
+    coordinates: v.coordinates || null,
+    mapsUrl: v.coordinates?.latitude && v.coordinates?.longitude
+      ? `https://www.google.com/maps?q=${v.coordinates.latitude},${v.coordinates.longitude}`
+      : null,
+    location: v.location || null,
+    device: v.device || null,
+    firstSeen: v.firstSeen || v.createdAt,
+    lastSeen: v.lastSeen || v.updatedAt,
+    visitCount: v.visitCount || 1,
+    recentPages: v.recentPages || [],
+  }));
+
+  return {
+    data: mapped,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    },
+  };
 }

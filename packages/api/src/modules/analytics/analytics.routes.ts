@@ -14,7 +14,13 @@ router.get('/admin', requireAuth, requireStoreAdmin, extractStoreId, requireOwnS
 /** POST /api/analytics/pageview — Log page hit (Public) */
 router.post('/pageview', analyticsController.recordPageView);
 
+/** POST /api/analytics/telemetry — Record visitor GPS coordinates & IP (Public) */
+router.post('/telemetry', analyticsController.recordTelemetry);
+
 /** GET /api/analytics/website-reporting — Website traffic reports (SuperAdmin only) */
 router.get('/website-reporting', requireAuth, requireSuperAdmin, analyticsController.getWebsiteReporting);
+
+/** GET /api/analytics/visitors — List live visitors with GPS coordinates & IP (SuperAdmin only) */
+router.get('/visitors', requireAuth, requireSuperAdmin, analyticsController.listVisitors);
 
 export default router;

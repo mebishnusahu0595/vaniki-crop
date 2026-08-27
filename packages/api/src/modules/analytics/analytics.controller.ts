@@ -75,3 +75,40 @@ export async function getWebsiteReporting(_req: Request, res: Response, next: Ne
     next(error);
   }
 }
+
+/**
+ * POST /api/analytics/telemetry
+ * Record visitor location & device telemetry (Public)
+ */
+export async function recordTelemetry(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '') as string;
+    const userAgent = (req.headers['user-agent'] || '') as string;
+
+    const data = await analyticsService.recordTelemetry({
+      ...req.body,
+      ip: ip || req.body.ip,
+      device: {
+        ...req.body.device,
+        userAgent: userAgent || req.body.device?.userAgent,
+      },
+    });
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/analytics/visitors
+ * List all live visitors with GPS coordinates & IP for SuperAdmin
+ */
+export async function listVisitors(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = await analyticsService.listVisitors(req.query);
+    res.status(200).json({ success: true, ...data });
+  } catch (error) {
+    next(error);
+  }
+}

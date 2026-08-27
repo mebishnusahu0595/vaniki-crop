@@ -371,11 +371,14 @@ export const storefrontApi = {
     email?: string; 
     mobile: string; 
     password: string; 
-    otp: string;
+    otp?: string;
     address?: string;
     district?: string;
     state?: string;
     pincode?: string;
+    latitude?: number;
+    longitude?: number;
+    visitorId?: string;
     referralCode?: string 
   }) => {
     const response = await request<{ user: AuthUser; accessToken: string }>('/auth/signup', {
@@ -386,6 +389,20 @@ export const storefrontApi = {
       ...response.data,
       user: normalizeAuthUser(response.data.user as AuthUserLike),
     };
+  },
+  recordTelemetry: async (payload: {
+    visitorId: string;
+    coordinates?: { latitude: number; longitude: number; accuracy?: number };
+    location?: { city?: string; district?: string; state?: string; pincode?: string; country?: string; formattedAddress?: string };
+    device?: { platform?: string; os?: string; browser?: string; appVariant?: string; userAgent?: string };
+    url?: string;
+    userMobile?: string;
+    userName?: string;
+  }) => {
+    return request<{ success: boolean }>('/analytics/telemetry', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }).catch(() => null);
   },
   me: async () => {
     const response = await request<AuthUser>('/auth/me');

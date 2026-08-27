@@ -1127,6 +1127,10 @@ export async function listCustomers(query: Record<string, any>) {
         lastOrderDate: 1,
         totalSpend: 1,
         savedAddress: 1,
+        coordinates: 1,
+        registrationIp: 1,
+        lastIp: 1,
+        deviceInfo: 1,
         orderItems: 1,
         lastOrder: 1,
         loyaltyPoints: 1,
@@ -1177,11 +1181,18 @@ export async function listCustomers(query: Record<string, any>) {
 
     const address = row.savedAddress || {};
     const lastShipping = row.lastOrder?.shippingAddress || {};
+    const lat = row.coordinates?.latitude || address.latitude;
+    const lng = row.coordinates?.longitude || address.longitude;
 
     return {
       ...row,
-      area: address.landmark || lastShipping.street || '-',
-      district: address.city || lastShipping.city || '-',
+      area: address.street || address.landmark || lastShipping.street || '-',
+      district: address.district || address.city || lastShipping.city || '-',
+      state: address.state || lastShipping.state || '-',
+      pincode: address.pincode || lastShipping.pincode || '-',
+      coordinates: lat && lng ? { latitude: lat, longitude: lng } : null,
+      mapsUrl: lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : null,
+      ip: row.lastIp || row.registrationIp || '-',
       mostBoughtProduct: mostBoughtProduct || '-',
       mostBoughtCategory: mostBoughtCategory || '-',
       // Cleanup

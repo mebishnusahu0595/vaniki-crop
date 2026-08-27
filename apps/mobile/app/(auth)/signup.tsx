@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View, ActivityIndicator } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import type { AuthUser } from '../../src/types/storefront';
 import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
 import { lookupPincode } from '../../src/utils/pincode';
 import { SelectionModal } from '../../src/components/SelectionModal';
+import { getCachedUserLocation, getOrCreateVisitorId, requestLocationAndTrack } from '../../src/utils/telemetry';
 
 export default function SignupScreen() {
   const setSession = useAuthStore((state) => state.setSession);
@@ -27,6 +28,7 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [stateModalVisible, setStateModalVisible] = useState(false);
   const [districtModalVisible, setDistrictModalVisible] = useState(false);
+  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
 
   // OTP Verification state
   const [isOtpSent, setIsOtpSent] = useState(false);
@@ -47,6 +49,11 @@ export default function SignupScreen() {
     referralCode: typeof params.ref === 'string' ? params.ref : '',
   });
   const { scrollRef, onInputFocus } = useFocusAwareScroll(110);
+
+  // Auto-detect user GPS coordinates and location on signup screen load
+  useEffect(() => {
+    void handleDetectLocation(true);
+  }, []);
 
   const handleSendOtp = async () => {
     if (!form.mobile || !/^[6-9]\d{9}$/.test(form.mobile)) {
@@ -82,33 +89,55 @@ export default function SignupScreen() {
     }
   };
 
-  const handleDetectLocation = async () => {
-    if (!isMobileVerified) return;
+  const handleDetectLocation = async (silent = false) => {
     setDetecting(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required to detect your address.');
-        return;
+      // 1. Check if cached location exists first
+      const cached = await getCachedUserLocation();
+      if (cached && cached.coordinates) {
+        setCoordinates({
+          latitude: cached.coordinates.latitude,
+          longitude: cached.coordinates.longitude,
+        });
+        if (cached.location) {
+          setForm((prev) => ({
+            ...prev,
+            address: prev.address || cached.location?.formattedAddress || '',
+            district: prev.district || cached.location?.district || '',
+            state: prev.state || cached.location?.state || '',
+            pincode: prev.pincode || cached.location?.pincode || '',
+          }));
+        }
       }
 
-      const location = await Location.getCurrentPositionAsync({});
-      const [address] = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+      // 2. Fetch fresh live GPS coordinates
+      const fresh = await requestLocationAndTrack({
+        promptPermission: !silent,
+        userMobile: form.mobile,
+        userName: form.name,
+        url: '/signup',
       });
 
-      if (address) {
-        setForm(prev => ({
-          ...prev,
-          address: `${address.name || ''} ${address.street || ''}`.trim(),
-          district: address.district || address.city || address.subregion || '',
-          state: address.region || '',
-          pincode: address.postalCode || '',
-        }));
+      if (fresh && fresh.coordinates) {
+        setCoordinates({
+          latitude: fresh.coordinates.latitude,
+          longitude: fresh.coordinates.longitude,
+        });
+
+        if (fresh.location) {
+          setForm((prev) => ({
+            ...prev,
+            address: fresh.location?.formattedAddress || prev.address,
+            district: fresh.location?.district || prev.district,
+            state: fresh.location?.state || prev.state,
+            pincode: fresh.location?.pincode || prev.pincode,
+          }));
+        }
       }
     } catch (error) {
-      Alert.alert('Detection failed', 'Could not detect your location. Please enter manually.');
+      if (!silent) {
+        Alert.alert('Detection failed', 'Could not detect your location. Please enter manually.');
+      }
     } finally {
       setDetecting(false);
     }
@@ -140,9 +169,9 @@ export default function SignupScreen() {
           keyboardDismissMode="on-drag"
           contentContainerStyle={{ paddingBottom: 300 }}
         >
-          <View className="mt-10 rounded-[32px] bg-white p-8">
-            <Text className="text-[11px] font-black uppercase tracking-[2px] text-primary-400">Create Account</Text>
-            <Text className="mt-3 text-3xl font-black text-primary-900">Start shopping with Vaniki Crop.</Text>
+          <View className="mt-6 rounded-[32px] bg-white p-6 md:p-8 shadow-xs border border-primary-100">
+            <Text className="text-[11px] font-black uppercase tracking-[2px] text-primary-500">Create Account</Text>
+            <Text className="mt-2 text-2xl font-black text-primary-900">Start shopping with Vaniki Crop.</Text>
             
             <View className="mt-6 gap-3">
               {/* Mobile Number Input with Verification Locks */}
@@ -157,11 +186,11 @@ export default function SignupScreen() {
                     keyboardType="number-pad"
                     maxLength={10}
                     editable={!isMobileVerified}
-                    className="flex-1 rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                    className="flex-1 rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-3.5 text-base text-primary-900"
                     placeholderTextColor="#7a978b"
                   />
                   {isMobileVerified ? (
-                    <View className="rounded-full bg-emerald-100 px-3 py-3.5 flex-row items-center gap-1.5 border border-emerald-200">
+                    <View className="rounded-full bg-emerald-100 px-3 py-3 flex-row items-center gap-1.5 border border-emerald-200">
                       <Feather name="check-circle" size={14} color="#059669" />
                       <Text className="text-xs font-black uppercase text-emerald-700">Verified</Text>
                     </View>
@@ -169,7 +198,7 @@ export default function SignupScreen() {
                     <Pressable
                       disabled={isSendingOtp || !form.mobile || form.mobile.length !== 10}
                       onPress={handleSendOtp}
-                      className="rounded-[22px] bg-primary-900 px-4 py-4 disabled:opacity-50"
+                      className="rounded-[22px] bg-primary-900 px-4 py-3.5 disabled:opacity-50"
                     >
                       <Text className="text-xs font-black uppercase text-white tracking-[1px]">
                         {isSendingOtp ? 'Sending...' : isOtpSent ? 'Resend' : 'Send OTP'}
@@ -207,166 +236,137 @@ export default function SignupScreen() {
                 </View>
               )}
 
-              {/* Other Registration fields wrapped with opacity & editable conditions */}
-              <View style={{ opacity: isMobileVerified ? 1 : 0.5 }} className="gap-3">
+              {/* Form details */}
+              <View className="gap-3 mt-1">
                 <View>
                   <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Full Name</Text>
                   <TextInput
                     value={form.name}
                     onChangeText={(value) => setForm((current) => ({ ...current, name: value }))}
                     onFocus={onInputFocus}
-                    placeholder="Full Name"
-                    editable={isMobileVerified}
-                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                    placeholder="Farmer / Customer Name"
+                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-3.5 text-base text-primary-900"
                     placeholderTextColor="#7a978b"
                   />
                 </View>
 
                 <View>
-                  <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Email Address</Text>
+                  <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Email Address (Optional)</Text>
                   <TextInput
                     value={form.email}
                     onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
                     onFocus={onInputFocus}
-                    placeholder="Email Address"
+                    placeholder="email@example.com"
                     keyboardType="email-address"
-                    editable={isMobileVerified}
-                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                    autoCapitalize="none"
+                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-3.5 text-base text-primary-900"
                     placeholderTextColor="#7a978b"
                   />
                 </View>
 
-                <View className="mt-2 rounded-3xl bg-primary-50/50 p-4 border border-primary-100">
-                  <View className="flex-row items-center justify-between mb-4">
-                    <Text className="text-xs font-black uppercase tracking-widest text-primary-900">Address Details</Text>
-                    <Pressable 
-                      onPress={handleDetectLocation} 
-                      disabled={!isMobileVerified || detecting}
-                      className="flex-row items-center bg-primary-500 px-3 py-2 rounded-full disabled:opacity-50"
+                {/* Auto Location & Address */}
+                <View className="gap-3">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="mb-1 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">
+                      Delivery Address & Location
+                    </Text>
+                    <Pressable
+                      disabled={detecting}
+                      onPress={() => handleDetectLocation(false)}
+                      className="flex-row items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 border border-emerald-200 active:scale-95"
                     >
                       {detecting ? (
-                        <ActivityIndicator size="small" color="#fff" />
+                        <ActivityIndicator size="small" color="#166534" />
                       ) : (
-                        <>
-                          <Feather name="map-pin" size={12} color="#fff" />
-                          <Text className="ml-1.5 text-[10px] font-black text-white uppercase">Detect</Text>
-                        </>
+                        <Feather name="map-pin" size={13} color="#166534" />
                       )}
+                      <Text className="text-[10px] font-black uppercase text-emerald-800 tracking-[0.5px]">
+                        {detecting ? 'Detecting...' : coordinates ? 'GPS Detected ✓' : 'Auto Detect'}
+                      </Text>
                     </Pressable>
                   </View>
 
-                  <View className="gap-4">
-                    <View>
-                      <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">Street / Village / House No</Text>
-                      <TextInput
-                        value={form.address}
-                        onChangeText={(v) => setForm(f => ({ ...f, address: v }))}
-                        placeholder="Enter address"
-                        editable={isMobileVerified}
-                        className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
-                        placeholderTextColor="#7a978b"
-                      />
-                    </View>
-                    <View className="flex-row gap-2">
-                      <View className="flex-1">
-                        <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">State</Text>
-                        <Pressable 
-                          onPress={() => isMobileVerified && setStateModalVisible(true)}
-                          className="rounded-2xl border border-primary-100 bg-white px-4 py-4"
-                        >
-                          <Text style={{ color: form.state ? '#143D2E' : '#7a978b' }} className="text-sm font-medium">
-                            {form.state || 'Select State'}
-                          </Text>
-                        </Pressable>
-                      </View>
-                      <View className="flex-1">
-                        <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">District</Text>
-                        {STATE_DISTRICTS[form.state] ? (
-                          <Pressable 
-                            onPress={() => isMobileVerified && setDistrictModalVisible(true)}
-                            className="rounded-2xl border border-primary-100 bg-white px-4 py-4"
-                          >
-                            <Text style={{ color: form.district ? '#143D2E' : '#7a978b' }} className="text-sm font-medium">
-                              {form.district || 'Select District'}
-                            </Text>
-                          </Pressable>
-                        ) : (
-                          <TextInput
-                            value={form.district}
-                            onChangeText={(v) => setForm(f => ({ ...f, district: v }))}
-                            placeholder="District"
-                            editable={isMobileVerified}
-                            className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
-                            placeholderTextColor="#7a978b"
-                          />
-                        )}
-                      </View>
-                    </View>
-                    <View>
-                      <Text className="mb-2 ml-1 text-[10px] font-black uppercase tracking-[1px] text-primary-900/60">Pincode</Text>
-                      <TextInput
-                        value={form.pincode}
-                        onChangeText={async (v) => {
-                          if (!isMobileVerified) return;
-                          const pincode = v.replace(/\D/g, '');
-                          setForm(f => ({ ...f, pincode }));
-                          if (pincode.length === 6) {
-                            const result = await lookupPincode(pincode);
-                            if (result) {
-                              setForm(prev => ({
-                                ...prev,
-                                state: result.state,
-                                district: result.district,
-                              }));
-                            }
+                  <TextInput
+                    value={form.address}
+                    onChangeText={(value) => setForm((current) => ({ ...current, address: value }))}
+                    onFocus={onInputFocus}
+                    placeholder="Village / House / Street Name"
+                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-3.5 text-base text-primary-900"
+                    placeholderTextColor="#7a978b"
+                  />
+
+                  {/* Pincode with instant lookup */}
+                  <View>
+                    <TextInput
+                      value={form.pincode}
+                      onChangeText={async (value) => {
+                        const cleanPincode = value.replace(/\D/g, '').slice(0, 6);
+                        setForm((current) => ({ ...current, pincode: cleanPincode }));
+                        if (cleanPincode.length === 6) {
+                          const res = await lookupPincode(cleanPincode);
+                          if (res) {
+                            setForm((current) => ({
+                              ...current,
+                              district: res.district || current.district,
+                              state: res.state || current.state,
+                            }));
                           }
-                        }}
-                        placeholder="400001"
-                        keyboardType="number-pad"
-                        maxLength={6}
-                        editable={isMobileVerified}
-                        className="rounded-2xl border border-primary-100 bg-white px-4 py-4 text-sm text-primary-900"
-                        placeholderTextColor="#7a978b"
-                      />
-                    </View>
+                        }
+                      }}
+                      onFocus={onInputFocus}
+                      placeholder="6-Digit Pincode"
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-3.5 text-base text-primary-900"
+                      placeholderTextColor="#7a978b"
+                    />
+                  </View>
+
+                  {/* State and District Pickers */}
+                  <View className="flex-row gap-3">
+                    <Pressable
+                      onPress={() => setStateModalVisible(true)}
+                      className="flex-1 rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-3.5 justify-center"
+                    >
+                      <Text className={`text-sm ${form.state ? 'font-black text-primary-900' : 'text-[#7a978b]'}`} numberOfLines={1}>
+                        {form.state || 'Select State'}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      onPress={() => {
+                        if (!form.state) {
+                          Alert.alert('Select State', 'Please select state first');
+                          return;
+                        }
+                        setDistrictModalVisible(true);
+                      }}
+                      className="flex-1 rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-3.5 justify-center"
+                    >
+                      <Text className={`text-sm ${form.district ? 'font-black text-primary-900' : 'text-[#7a978b]'}`} numberOfLines={1}>
+                        {form.district || 'Select District'}
+                      </Text>
+                    </Pressable>
                   </View>
                 </View>
 
-                <SelectionModal
-                  visible={stateModalVisible}
-                  onClose={() => setStateModalVisible(false)}
-                  title="Select State"
-                  options={INDIAN_STATES}
-                  selectedValue={form.state}
-                  onSelect={(state) => setForm(f => ({ ...f, state, district: '' }))}
-                />
-
-                <SelectionModal
-                  visible={districtModalVisible}
-                  onClose={() => setDistrictModalVisible(false)}
-                  title="Select District"
-                  options={STATE_DISTRICTS[form.state] || []}
-                  selectedValue={form.district}
-                  onSelect={(district) => setForm(f => ({ ...f, district }))}
-                />
-
+                {/* Password Input */}
                 <View>
                   <Text className="mb-2 ml-1 text-[11px] font-black uppercase tracking-[1px] text-primary-900/60">Password</Text>
-                  <View className="relative">
+                  <View className="flex-row items-center rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-1">
                     <TextInput
                       value={form.password}
                       onChangeText={(value) => setForm((current) => ({ ...current, password: value }))}
                       onFocus={onInputFocus}
-                      placeholder="Password"
+                      placeholder="At least 6 characters"
                       secureTextEntry={!showPassword}
-                      editable={isMobileVerified}
-                      className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 pr-12 text-base text-primary-900"
+                      className="flex-1 py-3 text-base text-primary-900"
                       placeholderTextColor="#7a978b"
                     />
                     <Pressable
-                      onPress={() => isMobileVerified && setShowPassword((current) => !current)}
-                      className="absolute right-4 top-1/2 -mt-3 h-6 w-6 items-center justify-center"
-                      hitSlop={8}
+                      onPress={() => setShowPassword((prev) => !prev)}
+                      hitSlop={10}
+                      className="p-2"
                     >
                       <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#527164" />
                     </Pressable>
@@ -380,8 +380,7 @@ export default function SignupScreen() {
                     onChangeText={(value) => setForm((current) => ({ ...current, referralCode: value.toUpperCase() }))}
                     placeholder="Referral Code"
                     autoCapitalize="characters"
-                    editable={isMobileVerified}
-                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+                    className="rounded-[22px] border border-primary-100 bg-primary-50 px-4 py-3.5 text-base text-primary-900"
                     placeholderTextColor="#7a978b"
                   />
                 </View>
@@ -391,7 +390,7 @@ export default function SignupScreen() {
             <Pressable
               onPress={async () => {
                 if (!isMobileVerified) {
-                  Alert.alert('Verification required', 'Please verify your mobile number first.');
+                  Alert.alert('Verification required', 'Please verify your mobile number first with OTP.');
                   return;
                 }
                 if (!form.name || !form.password) {
@@ -400,6 +399,7 @@ export default function SignupScreen() {
                 }
                 setLoading(true);
                 try {
+                  const visitorId = await getOrCreateVisitorId();
                   const response = await storefrontApi.signup({
                     name: form.name,
                     email: form.email,
@@ -410,6 +410,9 @@ export default function SignupScreen() {
                     district: form.district,
                     state: form.state,
                     pincode: form.pincode,
+                    latitude: coordinates?.latitude,
+                    longitude: coordinates?.longitude,
+                    visitorId: visitorId,
                     referralCode: form.referralCode || undefined,
                   });
 
@@ -444,6 +447,30 @@ export default function SignupScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <SelectionModal
+        visible={stateModalVisible}
+        title="Select State"
+        options={INDIAN_STATES}
+        selectedValue={form.state}
+        onSelect={(item) => {
+          setForm((prev) => ({ ...prev, state: item, district: '' }));
+          setStateModalVisible(false);
+        }}
+        onClose={() => setStateModalVisible(false)}
+      />
+
+      <SelectionModal
+        visible={districtModalVisible}
+        title="Select District"
+        options={(STATE_DISTRICTS as Record<string, string[]>)[form.state] || []}
+        selectedValue={form.district}
+        onSelect={(item) => {
+          setForm((prev) => ({ ...prev, district: item }));
+          setDistrictModalVisible(false);
+        }}
+        onClose={() => setDistrictModalVisible(false)}
+      />
     </Screen>
   );
 }

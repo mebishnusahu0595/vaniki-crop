@@ -27,6 +27,7 @@ import type {
   Testimonial,
   DealerPromotion,
   WebsiteReporting,
+  VisitorRecord,
 } from '../types/admin';
 
 export interface ApiResponse<T, TSummary = PaymentSummary> {
@@ -352,6 +353,10 @@ export const adminApi = {
   },
   customers: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<Customer[]>>('/superadmin/customers', { params });
+    return { data: response.data.data, pagination: response.data.pagination! };
+  },
+  visitors: async (params?: Record<string, unknown>) => {
+    const response = await api.get<ApiResponse<VisitorRecord[]>>('/analytics/visitors', { params });
     return { data: response.data.data, pagination: response.data.pagination! };
   },
   createCustomer: async (payload: { name: string; email?: string; mobile: string; password?: string; isActive?: boolean; loyaltyPoints?: number }) => {
