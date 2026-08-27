@@ -132,6 +132,26 @@ export default function HomeScreen() {
   const [isNoticeDismissed, setIsNoticeDismissed] = useState(false);
   const testimonialListRef = useRef<any>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const noticeOpacityAnim = useRef(new Animated.Value(1)).current;
+
+  const dismissNotice = () => {
+    Animated.timing(noticeOpacityAnim, {
+      toValue: 0,
+      duration: 350,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsNoticeDismissed(true);
+    });
+  };
+
+  // 10-second auto-dismiss timer for the top delivery notice banner
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      dismissNotice();
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -286,7 +306,7 @@ export default function HomeScreen() {
     <Screen>
       <View className="gap-7">
         {!isNoticeDismissed && (
-          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          <Animated.View style={{ transform: [{ scale: pulseAnim }], opacity: noticeOpacityAnim }}>
             <View className="relative overflow-hidden rounded-2xl border border-emerald-500/40 shadow-md">
               <Image
                 source={require('../../assets/dark_leaf_bg.png')}
@@ -315,7 +335,7 @@ export default function HomeScreen() {
                 </View>
 
                 <Pressable
-                  onPress={() => setIsNoticeDismissed(true)}
+                  onPress={dismissNotice}
                   className="h-9 w-9 items-center justify-center rounded-full bg-rose-600 active:bg-rose-700 shadow-lg border-2 border-white"
                   hitSlop={10}
                 >
