@@ -347,7 +347,7 @@ export default function HomeScreen() {
         )}
 
         {homepageQuery.isLoading ? (
-          <Skeleton height={180} borderRadius={30} className="w-full" />
+          <Skeleton height={250} borderRadius={0} className="-mx-4" />
         ) : (
           <HeroCarousel banners={homepageQuery.data?.banners || []} />
         )}
