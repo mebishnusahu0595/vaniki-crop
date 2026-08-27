@@ -216,18 +216,30 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
               style={{ color: isOutOfStock ? '#94A3B8' : '#FFFFFF' }}
               className={`text-center font-black uppercase ${compact ? 'text-[10px] tracking-[1px]' : 'text-[11px] tracking-[1.5px]'}`}
             >
-              {isOutOfStock ? t('mobile.actions.outOfStock') : 'BUY NOW'}
+              {isOutOfStock ? t('mobile.actions.outOfStock') : t('mobile.actions.buyNow')}
             </Text>
           </Pressable>
         </View>
       </Pressable>
 
       {/* Select Variant / Quick Checkout Bottom Sheet Modal */}
-      <Modal visible={isQuickBuyOpen} transparent animationType="slide" onRequestClose={() => setIsQuickBuyOpen(false)}>
-        <Pressable className="flex-1 bg-black/75 justify-end" onPress={() => setIsQuickBuyOpen(false)}>
-          <Pressable
-            className="w-full bg-white rounded-t-[32px] border-t-2 border-emerald-200 p-5 max-h-[90%]"
-            onPress={(e) => e.stopPropagation()}
+      <Modal 
+        visible={isQuickBuyOpen} 
+        transparent 
+        animationType="slide" 
+        onRequestClose={() => setIsQuickBuyOpen(false)}
+        statusBarTranslucent
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
+          {/* Backdrop Click Dismiss */}
+          <Pressable 
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} 
+            onPress={() => setIsQuickBuyOpen(false)} 
+          />
+
+          <View
+            onStartShouldSetResponder={() => true}
+            className="w-full bg-white rounded-t-[32px] border-t-2 border-emerald-200 p-5 max-h-[90%] relative z-10"
           >
             {/* Modal Header */}
             <View className="flex-row items-center justify-between pb-3 border-b border-slate-100">
@@ -238,7 +250,9 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
                   </Pressable>
                 ) : null}
                 <Text className="text-base font-black text-slate-900">
-                  {modalStep === 'variants' ? 'Select Variant' : 'Quick Checkout'}
+                  {modalStep === 'variants'
+                    ? (t('mobile.productDetail.packSize'))
+                    : (t('mobile.cartPage.proceedBtn'))}
                 </Text>
               </View>
 
@@ -545,8 +559,8 @@ export const ProductCard = memo(function ProductCard({ product, compact = false 
                 </View>
               )}
             </ScrollView>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </>
   );

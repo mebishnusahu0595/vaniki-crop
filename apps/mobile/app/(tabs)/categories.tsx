@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
 import { CategoryCard } from '../../src/components/CategoryCard';
 import { SectionHeader } from '../../src/components/SectionHeader';
@@ -11,6 +12,7 @@ import { storefrontApi } from '../../src/lib/api';
 import { Skeleton } from '../../src/components/Skeleton';
 
 export default function CategoriesScreen() {
+  const { t } = useTranslation();
   const categoriesQuery = useQuery({
     queryKey: ['mobile-categories'],
     queryFn: storefrontApi.categories,
@@ -45,11 +47,14 @@ export default function CategoriesScreen() {
           estimatedItemSize={120}
           ListHeaderComponent={
             <View>
-              <SectionHeader title="Categories" kicker="Shop by crop need" />
+              <SectionHeader 
+                title={t('mobile.categoriesPage.title')} 
+                kicker={t('mobile.categoriesPage.kicker')} 
+              />
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Search category"
+                placeholder={t('mobile.categoriesPage.searchPlaceholder')}
                 editable={!isLoading}
                 className="mb-5 rounded-[22px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
                 placeholderTextColor="#7a978b"
@@ -82,7 +87,7 @@ export default function CategoriesScreen() {
             !isLoading ? (
               <View className="rounded-[24px] bg-white px-4 py-8">
                 <Text className="text-center text-sm font-semibold text-primary-900/65">
-                  No categories found.
+                  {t('mobile.categoriesPage.noCategories')}
                 </Text>
               </View>
             ) : null
@@ -90,10 +95,10 @@ export default function CategoriesScreen() {
           ListFooterComponent={
             <Pressable
               onPress={() => router.push('/products')}
-              className="mt-4 mb-8 rounded-full bg-primary-500 px-5 py-4 active:scale-95"
+              className="mt-4 mb-8 rounded-full bg-primary-500 px-5 py-4 active:scale-95 shadow-md"
             >
               <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
-                Browse All Products
+                {t('mobile.categoriesPage.browseAllProducts')}
               </Text>
             </Pressable>
           }

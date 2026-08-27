@@ -2,10 +2,9 @@ import { Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useCartStore } from '../store/useCartStore';
 import { shadow } from '../constants/theme';
-
 import { useTranslation } from 'react-i18next';
+import { getAppLanguage } from '../i18n';
 
 const icons: Record<string, keyof typeof Feather.glyphMap> = {
   index: 'home',
@@ -43,7 +42,7 @@ const TAB_LABELS_MAP: Record<string, { en: string; hi: string }> = {
   index: { en: 'Home', hi: 'होम' },
   'select-crop': { en: 'Select Crop', hi: 'फसल चुनें' },
   categories: { en: 'Categories', hi: 'श्रेणियां' },
-  'agri-advisor': { en: 'Agri Advisor', hi: 'कृषि सलाहकार' },
+  'agri-advisor': { en: 'Agri Advisor', hi: 'कृषि सलाह' },
 };
 
 const ALLOWED_TABS = ['index', 'select-crop', 'categories', 'agri-advisor'];
@@ -56,7 +55,7 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
   if (isStaffApp) return null;
 
   const visibleRoutes = state.routes.filter((route) => ALLOWED_TABS.includes(route.name));
-  const isHindi = i18n.language === 'hi';
+  const isHindi = getAppLanguage() === 'hi';
 
   return (
     <View

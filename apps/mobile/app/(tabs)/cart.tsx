@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
 import { useCartStore } from '../../src/store/useCartStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
@@ -12,6 +13,7 @@ import { resolveMediaUrl } from '../../src/utils/media';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 
 export default function CartScreen() {
+  const { t } = useTranslation();
   const { settings } = useSettingsStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const { items, couponCode, couponDiscount, increaseQty, decreaseQty, setCouponCode, clearCoupon } = useCartStore();
@@ -19,19 +21,26 @@ export default function CartScreen() {
   const [couponMessage, setCouponMessage] = useState('');
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.qty, 0), [items]);
-  const deliveryCharge = subtotal >= settings.freeDeliveryThreshold ? 0 : settings.standardDeliveryCharge;
+  const deliveryCharge = subtotal >= (settings?.freeDeliveryThreshold || 2000) ? 0 : (settings?.standardDeliveryCharge || 50);
   const total = subtotal - couponDiscount + deliveryCharge;
 
   if (!items.length) {
     return (
       <Screen>
-        <View className="rounded-[28px] bg-white p-8">
-          <Text className="text-2xl font-black text-primary-900">Your cart is empty.</Text>
-          <Text className="mt-3 text-sm leading-6 text-primary-900/70">
-            Add products from your nearby Vaniki store to start checkout.
+        <View className="rounded-[28px] bg-white p-8 items-center border border-primary-100 shadow-sm">
+          <Text className="text-2xl font-black text-primary-900 text-center">
+            {t('mobile.cartPage.emptyTitle')}
           </Text>
-          <Pressable onPress={() => router.push('/products')} className="mt-6 rounded-full bg-primary-500 px-5 py-4">
-            <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">Shop Now</Text>
+          <Text className="mt-3 text-sm leading-6 text-primary-900/70 text-center">
+            {t('mobile.cartPage.emptySub')}
+          </Text>
+          <Pressable 
+            onPress={() => router.push('/products')} 
+            className="mt-6 rounded-full bg-primary-500 px-6 py-4 active:scale-95 shadow-md"
+          >
+            <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
+              {t('mobile.cartPage.startShopping')}
+            </Text>
           </Pressable>
         </View>
       </Screen>
@@ -40,10 +49,13 @@ export default function CartScreen() {
 
   return (
     <Screen>
-      <Text className="text-3xl font-black text-primary-900">Cart</Text>
+      <Text className="text-3xl font-black text-primary-900">
+        {t('mobile.cartPage.title')}
+      </Text>
+      
       <View className="mt-5 gap-4">
         {items.map((item) => (
-          <View key={item.variantId} className="rounded-[28px] bg-white p-4">
+          <View key={item.variantId} className="rounded-[28px] bg-white p-4 border border-primary-100 shadow-2xs">
             <View className="flex-row gap-4">
               <Image
                 source={{ uri: resolveMediaUrl(item.image) }}
@@ -57,11 +69,11 @@ export default function CartScreen() {
                   {currencyFormatter.format(item.price * item.qty)}
                 </Text>
                 <View className="mt-3 flex-row items-center gap-3">
-                  <Pressable onPress={() => decreaseQty(item.variantId)} className="rounded-full bg-primary-50 px-3 py-2">
+                  <Pressable onPress={() => decreaseQty(item.variantId)} className="rounded-full bg-primary-50 px-3 py-2 active:scale-90">
                     <Text className="text-sm font-black text-primary-900">-</Text>
                   </Pressable>
                   <Text className="text-sm font-black text-primary-900">{item.qty}</Text>
-                  <Pressable onPress={() => increaseQty(item.variantId)} className="rounded-full bg-primary-50 px-3 py-2">
+                  <Pressable onPress={() => increaseQty(item.variantId)} className="rounded-full bg-primary-50 px-3 py-2 active:scale-90">
                     <Text className="text-sm font-black text-primary-900">+</Text>
                   </Pressable>
                 </View>
@@ -71,20 +83,23 @@ export default function CartScreen() {
         ))}
       </View>
 
-      <View className="mt-6 rounded-[28px] bg-white p-5">
-        <Text className="text-lg font-black text-primary-900">Coupon</Text>
+      {/* Coupon Box */}
+      <View className="mt-6 rounded-[28px] bg-white p-5 border border-primary-100 shadow-2xs">
+        <Text className="text-base font-black text-primary-900">
+          {t('mobile.cartPage.couponTitle')}
+        </Text>
         <View className="mt-4 flex-row gap-3">
           <TextInput
             value={couponInput}
             onChangeText={setCouponInput}
-            placeholder="Enter coupon code"
-            className="flex-1 rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-4 text-base text-primary-900"
+            placeholder={t('mobile.cartPage.couponPlaceholder')}
+            className="flex-1 rounded-[20px] border border-primary-100 bg-primary-50 px-4 py-3.5 text-base text-primary-900 font-bold"
             placeholderTextColor="#7a978b"
           />
           <Pressable
             onPress={async () => {
               if (!selectedStore) {
-                setCouponMessage('Please choose a store first.');
+                setCouponMessage(t('mobile.cartPage.storeWarning'));
                 return;
               }
 
@@ -96,46 +111,63 @@ export default function CartScreen() {
                 });
                 if (response.valid) {
                   setCouponCode(couponInput, response.discount || 0);
+                  setCouponMessage(t('mobile.cartPage.couponApplied'));
                 } else {
                   clearCoupon();
+                  setCouponMessage(response.message || 'Invalid coupon code');
                 }
-                setCouponMessage(response.message);
-              } catch (caughtError) {
-                setCouponMessage(caughtError instanceof Error ? caughtError.message : 'Coupon could not be validated.');
+              } catch (err: any) {
+                setCouponMessage(err?.message || 'Could not validate coupon');
               }
             }}
-            className="justify-center rounded-[20px] bg-primary-500 px-4"
+            className="rounded-2xl bg-emerald-700 px-5 py-3.5 items-center justify-center active:scale-95"
           >
-            <Text className="text-xs font-black uppercase tracking-[1px] text-white">Validate</Text>
+            <Text className="text-xs font-black uppercase tracking-wider text-white">
+              {t('mobile.cartPage.applyBtn')}
+            </Text>
           </Pressable>
         </View>
-        {Boolean(couponMessage) ? (
-          <Text className="mt-3 text-sm font-semibold text-primary-500">{couponMessage}</Text>
+        {couponMessage ? (
+          <Text className="mt-2 text-xs font-bold text-emerald-700">{couponMessage}</Text>
         ) : null}
       </View>
 
-      <View className="mt-6 rounded-[28px] bg-primary-900 p-5">
-        <Text className="text-lg font-black text-white">Order Summary</Text>
-        <View className="mt-4 gap-3">
-          <View className="flex-row justify-between">
-            <Text className="text-sm text-white/75">Subtotal</Text>
-            <Text className="text-sm font-bold text-white">{currencyFormatter.format(subtotal)}</Text>
+      {/* Bill Breakdown */}
+      <View className="mt-6 rounded-[28px] bg-white p-5 border border-primary-100 shadow-2xs">
+        <Text className="text-lg font-black text-primary-900 mb-3">
+          {t('mobile.cartPage.billDetails')}
+        </Text>
+        <View className="space-y-2.5">
+          <View className="flex-row justify-between py-1">
+            <Text className="text-sm font-semibold text-primary-900/60">{t('mobile.cartPage.subtotal')}</Text>
+            <Text className="text-sm font-black text-primary-900">{currencyFormatter.format(subtotal)}</Text>
           </View>
-          <View className="flex-row justify-between">
-            <Text className="text-sm text-white/75">Coupon Discount</Text>
-            <Text className="text-sm font-bold text-white">- {currencyFormatter.format(couponDiscount)}</Text>
+          {couponDiscount > 0 ? (
+            <View className="flex-row justify-between py-1">
+              <Text className="text-sm font-semibold text-emerald-600">{t('mobile.cartPage.discount')}</Text>
+              <Text className="text-sm font-black text-emerald-600">-{currencyFormatter.format(couponDiscount)}</Text>
+            </View>
+          ) : null}
+          <View className="flex-row justify-between py-1">
+            <Text className="text-sm font-semibold text-primary-900/60">{t('mobile.cartPage.deliveryFee')}</Text>
+            <Text className="text-sm font-black text-primary-900">
+              {deliveryCharge === 0 ? t('mobile.cartPage.freeDeliveryNotice') : currencyFormatter.format(deliveryCharge)}
+            </Text>
           </View>
-          <View className="flex-row justify-between">
-            <Text className="text-sm text-white/75">Delivery Charge</Text>
-            <Text className="text-sm font-bold text-white">{currencyFormatter.format(deliveryCharge)}</Text>
-          </View>
-          <View className="mt-2 flex-row justify-between border-t border-white/10 pt-3">
-            <Text className="text-base font-black text-white">Total</Text>
-            <Text className="text-base font-black text-white">{currencyFormatter.format(total)}</Text>
+          <View className="h-px bg-primary-100 my-2" />
+          <View className="flex-row justify-between items-center py-1">
+            <Text className="text-base font-black text-primary-900">{t('mobile.cartPage.totalAmount')}</Text>
+            <Text className="text-2xl font-black text-emerald-700">{currencyFormatter.format(total)}</Text>
           </View>
         </View>
-        <Pressable onPress={() => router.push('/checkout')} className="mt-5 rounded-full bg-white px-5 py-4">
-          <Text className="text-center text-xs font-black uppercase tracking-[2px] text-primary-900">Checkout</Text>
+
+        <Pressable
+          onPress={() => router.push('/checkout')}
+          className="mt-6 rounded-full bg-primary-500 py-4 items-center active:scale-95 shadow-md"
+        >
+          <Text className="text-center text-xs font-black uppercase tracking-[2px] text-white">
+            {t('mobile.cartPage.proceedBtn')}
+          </Text>
         </Pressable>
       </View>
     </Screen>

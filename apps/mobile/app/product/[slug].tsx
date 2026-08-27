@@ -389,7 +389,7 @@ export default function ProductDetailScreen() {
           className={`mt-6 rounded-full px-5 py-4 active:scale-95 active:opacity-90 ${isOutOfStock ? 'bg-slate-200' : 'bg-primary-500'}`}
         >
           <Text className={`text-center text-sm font-black uppercase tracking-[2px] ${isOutOfStock ? 'text-slate-500' : 'text-white'}`}>
-            {isSelectedStoreOutOfStock ? 'Out of Stock at Selected Dealer' : isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+            {isSelectedStoreOutOfStock ? (t('mobile.actions.outOfStock')) : isOutOfStock ? t('mobile.actions.outOfStock') : t('mobile.actions.addToCart')}
           </Text>
         </Pressable>
       )}
@@ -401,14 +401,16 @@ export default function ProductDetailScreen() {
         <View className="flex-row items-center justify-between mb-3">
           <View className="flex-row items-center gap-2">
             <Feather name="map-pin" size={18} color="#166534" />
-            <Text className="text-base font-black text-primary-900">Dealer & Store Availability</Text>
+            <Text className="text-base font-black text-primary-900">
+              {t('mobile.sidebar.myFarm')}
+            </Text>
           </View>
           <Text className="text-[10px] font-bold uppercase text-emerald-800 bg-emerald-50 px-2 py-1 rounded-full">
             Realtime Stock
           </Text>
         </View>
         <Text className="text-xs text-slate-500 mb-4">
-          Check which registered Vaniki Agri dealers have stock available in your area:
+          {t('mobile.serviceMode.searchStore')}
         </Text>
 
         {storeAvailabilityQuery.isLoading ? (
@@ -456,7 +458,7 @@ export default function ProductDetailScreen() {
 
                   <View className={`rounded-full px-3 py-1.5 ${inStock ? 'bg-emerald-100' : 'bg-rose-100'}`}>
                     <Text className={`text-[10px] font-black uppercase tracking-[0.5px] ${inStock ? 'text-emerald-800' : 'text-rose-700'}`}>
-                      {inStock ? `In Stock (${store.quantity})` : 'Out of Stock'}
+                      {inStock ? `${t('mobile.actions.unitsAvailable', { count: store.quantity })}` : t('mobile.actions.outOfStock')}
                     </Text>
                   </View>
                 </Pressable>
@@ -466,7 +468,7 @@ export default function ProductDetailScreen() {
         ) : (
           <View className="rounded-2xl bg-slate-50 p-4 items-center">
             <Text className="text-xs font-semibold text-slate-500">
-              No specific store mapped for this product. Central delivery available.
+              {t('mobile.serviceMode.noStores')}
             </Text>
           </View>
         )}
@@ -478,11 +480,11 @@ export default function ProductDetailScreen() {
 
       {/* SECTION 1: Product Description */}
       <View className="mt-6 rounded-[28px] bg-white p-5 border border-primary-100 shadow-xs">
-        <Text className="text-lg font-black text-primary-900">Description</Text>
+        <Text className="text-lg font-black text-primary-900">{t('mobile.productDetail.description')}</Text>
         <Text className="mt-3 text-sm leading-7 text-primary-900/70">{stripHtml(product.description)}</Text>
       </View>
 
-      {/* SECTION 2: Why Choose Vaniki Crop (4 Trust Badges Grid - Perfectly Aligned) */}
+      {/* SECTION 2: Why Choose Vaniki Crop */}
       <View className="mt-6 rounded-[28px] bg-white p-5 border border-primary-100 shadow-xs">
         <Text className="text-xs font-black uppercase tracking-[2px] text-[#2D6A4F] mb-4">
           Why Choose Vaniki Crop Science
@@ -500,7 +502,7 @@ export default function ProductDetailScreen() {
             <Feather name="truck" size={18} color="#166534" />
             <View className="flex-1">
               <Text style={{ color: '#0F172A' }} className="text-xs font-black">Fast Delivery</Text>
-              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">Across Pin Codes</Text>
+              <Text style={{ color: '#64748B' }} className="text-[10px] font-bold">Local Store Dispatch</Text>
             </View>
           </View>
 

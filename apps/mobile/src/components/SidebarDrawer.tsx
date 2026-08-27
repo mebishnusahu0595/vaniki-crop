@@ -15,12 +15,12 @@ import { useTranslation } from 'react-i18next';
 import { useDrawerStore } from '../store/useDrawerStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { storefrontApi } from '../lib/api';
-import { toggleAppLanguage } from '../i18n';
+import { setAppLanguage, getAppLanguage, type AppLanguage } from '../i18n';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.78, 320);
+const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
 
 export function SidebarDrawer() {
   const insets = useSafeAreaInsets();
@@ -34,6 +34,8 @@ export function SidebarDrawer() {
   const { user, logout } = useAuthStore();
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const [authModalItem, setAuthModalItem] = useState<string | null>(null);
+
+  const currentLang = getAppLanguage();
 
   useEffect(() => {
     if (isOpen) {
@@ -136,32 +138,37 @@ export function SidebarDrawer() {
     },
   ];
 
-  const handleLanguageSelect = async (lang: string) => {
-    if (i18n.language !== lang) {
-      await toggleAppLanguage();
-    }
+  const handleLanguageSelect = async (lang: AppLanguage) => {
+    await setAppLanguage(lang);
     closeLanguageModal();
   };
 
-  const topHeaderPadding = Math.max(insets.top, 24) + 24;
+  const topHeaderPadding = Math.max(insets.top, 24) + 20;
 
   return (
     <>
-      {/* Sidebar Drawer */}
-      <Modal visible={isOpen} transparent animationType="none" onRequestClose={closeDrawer}>
-        <View className="flex-1 relative" style={{ height: '100%', width: '100%' }}>
-          {/* Dark Backdrop Touch to Close */}
-          <Pressable className="absolute inset-0 bg-black/60" onPress={closeDrawer} />
-
+      {/* Sidebar Drawer Modal */}
+      <Modal 
+        visible={isOpen} 
+        transparent 
+        animationType="none" 
+        onRequestClose={closeDrawer}
+        statusBarTranslucent
+      >
+        <View style={{ flex: 1, flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.65)' }}>
+          {/* Animated Drawer Panel on Left */}
           <Animated.View
             style={{
               width: DRAWER_WIDTH,
               height: '100%',
               backgroundColor: '#FFFFFF',
-              zIndex: 99999,
               transform: [{ translateX: slideAnim }],
+              elevation: 25,
+              shadowColor: '#000',
+              shadowOffset: { width: 4, height: 0 },
+              shadowOpacity: 0.3,
+              shadowRadius: 15,
             }}
-            className="bg-white shadow-2xl relative z-50 flex-1"
           >
             <ScrollView
               showsVerticalScrollIndicator={false}
@@ -171,10 +178,10 @@ export function SidebarDrawer() {
               {/* Top User Profile Header */}
               {user ? (
                 <View style={{ paddingTop: topHeaderPadding }} className="bg-[#0B281E] px-6 pb-6 items-center">
-                  <View className="h-20 w-20 items-center justify-center rounded-full bg-white border-2 border-emerald-400 shadow-md mb-3">
-                    <Feather name="user" size={36} color="#0B281E" />
+                  <View className="h-16 w-16 items-center justify-center rounded-full bg-white border-2 border-emerald-400 shadow-md mb-2.5">
+                    <Feather name="user" size={32} color="#0B281E" />
                   </View>
-                  <Text className="text-lg font-black text-white text-center" numberOfLines={1}>
+                  <Text className="text-base font-black text-white text-center" numberOfLines={1}>
                     {user.name}
                   </Text>
                   <Text className="text-xs font-semibold text-emerald-200 mt-0.5 text-center">
@@ -183,10 +190,10 @@ export function SidebarDrawer() {
                 </View>
               ) : (
                 <View style={{ paddingTop: topHeaderPadding }} className="bg-emerald-50/80 px-6 pb-6 items-center">
-                  <View className="h-20 w-20 items-center justify-center rounded-full bg-white border border-emerald-200 shadow-sm mb-3">
-                    <Feather name="user" size={36} color="#0B281E" />
+                  <View className="h-16 w-16 items-center justify-center rounded-full bg-white border border-emerald-200 shadow-sm mb-2.5">
+                    <Feather name="user" size={32} color="#0B281E" />
                   </View>
-                  <Text className="text-lg font-black text-slate-900 text-center" numberOfLines={1}>
+                  <Text className="text-base font-black text-slate-900 text-center" numberOfLines={1}>
                     {t('mobile.sidebar.guestUser')}
                   </Text>
                   <Text className="text-xs font-semibold text-slate-600 mt-0.5 text-center">
@@ -250,76 +257,105 @@ export function SidebarDrawer() {
 
               {/* Footer */}
               <View className="px-6 py-4 border-t border-primary-100 flex-row items-center justify-center gap-1 mt-auto">
-                <Feather name="heart" size={12} color="#DC2626" />
-                <Text className="text-[11px] font-bold text-primary-900/60">Made with ❤️ in India</Text>
+                <Text className="text-[11px] font-bold text-primary-900/60">{t('mobile.sidebar.madeWithLove')}</Text>
               </View>
             </ScrollView>
           </Animated.View>
+
+          {/* Explicit Full Clickable Area to Close Drawer on Outside Tap */}
+          <Pressable 
+            style={{ flex: 1, height: '100%' }} 
+            onPress={closeDrawer} 
+            accessibilityLabel="Close Drawer"
+          />
         </View>
       </Modal>
 
       {/* Language Selector Modal */}
-      <Modal visible={languageModalOpen} transparent animationType="fade" onRequestClose={closeLanguageModal}>
-        <Pressable className="flex-1 bg-black/75 justify-center items-center p-5" onPress={closeLanguageModal}>
-          <View className="w-full max-w-sm rounded-3xl bg-white border-2 border-emerald-200 p-6 shadow-2xl">
-            <Text className="text-lg font-black text-slate-900 mb-2 text-center">Select App Language / भाषा चुने</Text>
-            <Text className="text-xs text-slate-500 mb-5 text-center">Choose your preferred language for Vaniki Crop</Text>
+      <Modal 
+        visible={languageModalOpen} 
+        transparent 
+        animationType="fade" 
+        onRequestClose={closeLanguageModal}
+        statusBarTranslucent
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          {/* Backdrop Click */}
+          <Pressable 
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} 
+            onPress={closeLanguageModal} 
+          />
+
+          <View className="w-full max-w-sm rounded-3xl bg-white border-2 border-emerald-200 p-6 shadow-2xl relative z-10">
+            <Text className="text-lg font-black text-slate-900 mb-1 text-center">
+              {t('mobile.sidebar.selectLanguage')}
+            </Text>
+            <Text className="text-xs text-slate-500 mb-5 text-center">
+              {t('mobile.sidebar.selectLanguageSub')}
+            </Text>
 
             <Pressable
               onPress={() => handleLanguageSelect('en')}
               className={`p-4 rounded-2xl border-2 mb-3 flex-row items-center justify-between ${
-                i18n.language === 'en' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200 bg-white'
+                currentLang === 'en' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200 bg-white'
               }`}
             >
               <View className="flex-row items-center gap-3">
                 <Text className="text-xl">🇬🇧</Text>
                 <Text className="text-sm font-black text-slate-900">English</Text>
               </View>
-              {i18n.language === 'en' ? <Feather name="check-circle" size={18} color="#2D6A4F" /> : null}
+              {currentLang === 'en' ? <Feather name="check-circle" size={18} color="#2D6A4F" /> : null}
             </Pressable>
 
             <Pressable
               onPress={() => handleLanguageSelect('hi')}
               className={`p-4 rounded-2xl border-2 flex-row items-center justify-between ${
-                i18n.language === 'hi' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200 bg-white'
+                currentLang === 'hi' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200 bg-white'
               }`}
             >
               <View className="flex-row items-center gap-3">
                 <Text className="text-xl">🇮🇳</Text>
                 <Text className="text-sm font-black text-slate-900">हिंदी (Hindi)</Text>
               </View>
-              {i18n.language === 'hi' ? <Feather name="check-circle" size={18} color="#2D6A4F" /> : null}
+              {currentLang === 'hi' ? <Feather name="check-circle" size={18} color="#2D6A4F" /> : null}
             </Pressable>
 
-            <Pressable onPress={closeLanguageModal} className="mt-5 py-2">
-              <Text className="text-center text-xs font-bold uppercase tracking-wider text-emerald-800">
-                {i18n.language === 'hi' ? 'बंद करें' : 'Close'}
+            <Pressable 
+              onPress={closeLanguageModal} 
+              className="mt-5 py-2 rounded-xl bg-slate-100 active:bg-slate-200 items-center justify-center"
+            >
+              <Text className="text-xs font-black uppercase tracking-wider text-slate-700">
+                {t('common.close')}
               </Text>
             </Pressable>
           </View>
-        </Pressable>
+        </View>
       </Modal>
 
       {/* Login Prompt Modal for Guests */}
-      <Modal visible={!!authModalItem} transparent animationType="fade" onRequestClose={() => setAuthModalItem(null)}>
-        <Pressable className="flex-1 bg-black/75 justify-center items-center p-5" onPress={() => setAuthModalItem(null)}>
-          <View className="w-full max-w-sm rounded-3xl bg-white border-2 border-emerald-200 p-6 shadow-2xl items-center">
+      <Modal 
+        visible={!!authModalItem} 
+        transparent 
+        animationType="fade" 
+        onRequestClose={() => setAuthModalItem(null)}
+        statusBarTranslucent
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          {/* Backdrop Click */}
+          <Pressable 
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} 
+            onPress={() => setAuthModalItem(null)} 
+          />
+
+          <View className="w-full max-w-sm rounded-3xl bg-white border-2 border-emerald-200 p-6 shadow-2xl items-center relative z-10">
             <View className="h-16 w-16 items-center justify-center rounded-full bg-amber-50 border border-amber-200 mb-4">
               <Feather name="lock" size={28} color="#D97706" />
             </View>
             <Text className="text-xl font-black text-slate-900 text-center">
-              {i18n.language === 'hi' ? 'लॉगिन आवश्यक है' : 'Login Required'}
+              {t('mobile.sidebar.loginRequired')}
             </Text>
             <Text className="mt-2 text-xs leading-5 text-slate-600 text-center mb-6">
-              {i18n.language === 'hi' ? (
-                <>
-                  <Text className="font-bold text-slate-900">{authModalItem}</Text> फ़ीचर का उपयोग करने के लिए कृपया पहले लॉगिन या साइनअप करें।
-                </>
-              ) : (
-                <>
-                  Please login or signup first to access the <Text className="font-bold text-slate-900">{authModalItem}</Text> feature.
-                </>
-              )}
+              <Text className="font-bold text-slate-900">{authModalItem}</Text> {t('mobile.sidebar.loginRequiredSub')}
             </Text>
 
             <Pressable
@@ -332,17 +368,17 @@ export function SidebarDrawer() {
               className="w-full rounded-2xl py-3.5 items-center justify-center active:scale-95 shadow-md mb-3"
             >
               <Text style={{ color: '#FFFFFF' }} className="text-xs font-black uppercase tracking-[1.5px]">
-                {i18n.language === 'hi' ? 'लॉगिन / साइनअप करें' : 'Login / Signup Now'}
+                {t('mobile.sidebar.loginNow')}
               </Text>
             </Pressable>
 
             <Pressable onPress={() => setAuthModalItem(null)} className="py-2">
               <Text style={{ color: '#475569' }} className="text-xs font-bold uppercase tracking-wider">
-                {i18n.language === 'hi' ? 'रद्द करें' : 'Cancel'}
+                {t('common.cancel')}
               </Text>
             </Pressable>
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </>
   );

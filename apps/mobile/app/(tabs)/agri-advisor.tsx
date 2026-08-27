@@ -93,10 +93,12 @@ function FormattedMarkdownText({ content, isUser }: { content: string; isUser: b
   );
 }
 
+import { getAppLanguage } from '../../src/i18n';
+
 export default function AgriAdvisorScreen() {
-  const { i18n } = useTranslation();
-  const currentLang = i18n.language || 'en';
-  const isHindi = currentLang.startsWith('hi');
+  const { t, i18n } = useTranslation();
+  const currentLang = getAppLanguage();
+  const isHindi = currentLang === 'hi';
 
   const defaultWelcomeText = isHindi ? WELCOME_HI : WELCOME_EN;
   const quickSuggestions = isHindi ? QUICK_SUGGESTIONS_HI : QUICK_SUGGESTIONS_EN;

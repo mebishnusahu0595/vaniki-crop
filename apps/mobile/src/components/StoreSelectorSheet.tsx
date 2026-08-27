@@ -243,16 +243,27 @@ export function StoreSelectorSheet() {
   };
 
   return (
-    <Modal visible={isOpen} animationType="fade" transparent onRequestClose={animateClose}>
-      <View className="flex-1 justify-end bg-primary-900/40">
-        <Pressable className="flex-1" onPress={animateClose} />
+    <Modal visible={isOpen} animationType="fade" transparent onRequestClose={closeSelector}>
+      <View className="flex-1 justify-end bg-black/60">
+        <Pressable className="flex-1" onPress={closeSelector} />
         <Animated.View
           style={[sheetStyle, { maxHeight: MAX_HEIGHT }]}
           className="w-full rounded-t-[32px] bg-offwhite px-5 pb-8 pt-3"
         >
+          <View className="flex-row items-center justify-between px-1 mb-2">
+            <View className="w-8" />
+            <View className="h-1.5 w-14 rounded-full bg-primary-200 self-center" />
+            <Pressable 
+              onPress={closeSelector} 
+              className="h-8 w-8 rounded-full bg-slate-100 items-center justify-center active:bg-slate-200"
+              hitSlop={8}
+            >
+              <Feather name="x" size={16} color="#334155" />
+            </Pressable>
+          </View>
+
           <GestureDetector gesture={panGesture}>
             <View className="pb-2">
-              <View className="mb-4 mt-1 h-1.5 w-14 self-center rounded-full bg-primary-100" />
               <View className="flex-row rounded-full bg-primary-50 p-1">
                 {(['delivery', 'pickup'] as const).map((item) => (
                   <Pressable
@@ -405,10 +416,10 @@ export function StoreSelectorSheet() {
           <Pressable
             onPress={handleSave}
             disabled={saving}
-            className="mt-5 rounded-full bg-primary-500 px-5 py-4"
+            className="mt-5 rounded-full bg-primary-500 px-5 py-4 active:scale-95"
           >
             <Text className="text-center text-sm font-black uppercase tracking-[2px] text-white">
-              {saving ? 'Saving...' : 'Save Preference'}
+              {saving ? t('common.loading') : t('mobile.serviceMode.savePreference')}
             </Text>
           </Pressable>
         </Animated.View>

@@ -377,9 +377,9 @@ export default function HomeScreen() {
 
         {/* Section 1: Best Sellers */}
         <VerticalProductSection
-          badgeText="POPULAR CHOICE"
+          badgeText={t('mobile.home.popularChoice')}
           title={t('mobile.home.bestSellers')}
-          subtitle="Top choice crop care products ordered by local farmers"
+          subtitle={t('mobile.home.bestSellersSub')}
           products={bestSellerProducts}
           fallbackProducts={allProducts}
           isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
@@ -388,9 +388,9 @@ export default function HomeScreen() {
 
         {/* Section 2: Best Deals & Offers */}
         <VerticalProductSection
-          badgeText="HEAVY DISCOUNTS"
+          badgeText={t('mobile.home.heavyDiscount')}
           title={t('mobile.home.bestDeals')}
-          subtitle="Maximum savings on crop care & plant nutrition"
+          subtitle={t('mobile.home.bestDealsSub')}
           products={saleProducts}
           fallbackProducts={allProducts}
           isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
@@ -399,9 +399,9 @@ export default function HomeScreen() {
 
         {/* Section 3: Insecticides & Pest Control */}
         <VerticalProductSection
-          badgeText="PEST PROTECTION"
-          title="Insecticides & Pest Control"
-          subtitle="Protect your crops against caterpillars, aphids & stem borers"
+          badgeText={t('mobile.home.pestProtection')}
+          title={t('mobile.home.insecticides')}
+          subtitle={t('mobile.home.insecticidesSub')}
           products={insecticidesProducts}
           fallbackProducts={allProducts}
           isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
@@ -410,9 +410,9 @@ export default function HomeScreen() {
 
         {/* Section 4: Herbicides & Weedicides */}
         <VerticalProductSection
-          badgeText="WEED CONTROL"
-          title="Weed Control Specialists"
-          subtitle="Keep your agricultural fields weed-free and healthy"
+          badgeText={t('mobile.home.weedControl')}
+          title={t('mobile.home.herbicides')}
+          subtitle={t('mobile.home.herbicidesSub')}
           products={herbicidesProducts}
           fallbackProducts={allProducts}
           isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
@@ -421,9 +421,9 @@ export default function HomeScreen() {
 
         {/* Section 5: Fungicides & Disease Care */}
         <VerticalProductSection
-          badgeText="DISEASE CARE"
-          title="Fungicides & Crop Protection"
-          subtitle="Effective cure for blight, rust, leaf spot & rot diseases"
+          badgeText={t('mobile.home.diseaseCare')}
+          title={t('mobile.home.fungicides')}
+          subtitle={t('mobile.home.fungicidesSub')}
           products={fungicidesProducts}
           fallbackProducts={allProducts}
           isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
@@ -432,9 +432,9 @@ export default function HomeScreen() {
 
         {/* Section 6: Bio & Plant Growth Promoters */}
         <VerticalProductSection
-          badgeText="ORGANIC GROWTH"
-          title="Plant Growth & Bio Solutions"
-          subtitle="Bio-stimulants & organic tonics for robust plant growth"
+          badgeText={t('mobile.home.organicGrowth')}
+          title={t('mobile.home.bioPesticides')}
+          subtitle={t('mobile.home.bioPesticidesSub')}
           products={bioProducts}
           fallbackProducts={allProducts}
           isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
@@ -443,9 +443,9 @@ export default function HomeScreen() {
 
         {/* Section 7: Farmer Top Rated */}
         <VerticalProductSection
-          badgeText="HIGHLY RATED"
-          title="Farmer Top Rated"
-          subtitle="Products with top feedback from real growers"
+          badgeText={t('mobile.home.highlyRated')}
+          title={t('mobile.home.topRated')}
+          subtitle={t('mobile.home.topRatedSub')}
           products={topRatedProducts}
           fallbackProducts={allProducts}
           isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
