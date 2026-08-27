@@ -1,83 +1,92 @@
 import { Pressable, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
-import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { shadow } from '../constants/theme';
-import { useCartStore } from '../store/useCartStore';
+import { getAppLanguage } from '../i18n';
 
-const navItems: Array<{
-  key: 'index' | 'categories' | 'compare' | 'cart' | 'account';
-  path: '/(tabs)' | '/(tabs)/categories' | '/(tabs)/compare' | '/(tabs)/cart' | '/(tabs)/account';
-  icon: keyof typeof Feather.glyphMap;
-  labelKey: string;
-}> = [
-  { key: 'index', path: '/(tabs)', icon: 'home', labelKey: 'mobile.tabs.home' },
-  { key: 'categories', path: '/(tabs)/categories', icon: 'grid', labelKey: 'mobile.tabs.categories' },
-  { key: 'compare', path: '/(tabs)/compare', icon: 'sliders', labelKey: 'mobile.tabs.compare' },
-  { key: 'cart', path: '/(tabs)/cart', icon: 'shopping-cart', labelKey: 'mobile.tabs.cart' },
-  { key: 'account', path: '/(tabs)/account', icon: 'user', labelKey: 'mobile.tabs.account' },
-];
-
-function matchesRoute(pathname: string, routePath: string) {
-  if (routePath === '/(tabs)') {
-    return pathname === '/(tabs)' || pathname === '/';
-  }
-
-  return pathname === routePath || pathname.startsWith(`${routePath}/`);
-}
-
-function resolveActiveKey(pathname: string): (typeof navItems)[number]['key'] {
-  const matched = navItems.find((item) => matchesRoute(pathname, item.path));
-  if (matched) return matched.key;
-
-  if (pathname.startsWith('/checkout') || pathname.startsWith('/order-success')) {
-    return 'cart';
-  }
-
-  if (pathname.startsWith('/products') || pathname.startsWith('/product/')) {
-    return 'categories';
-  }
-
-  return 'index';
-}
+const navTabs = [
+  {
+    key: 'index',
+    path: '/(tabs)' as const,
+    icon: 'home' as const,
+    labelEn: 'Home',
+    labelHi: 'होम',
+  },
+  {
+    key: 'select-crop',
+    path: '/(tabs)/select-crop' as const,
+    icon: 'sun' as const,
+    labelEn: 'Select Crop',
+    labelHi: 'फसल चुनें',
+  },
+  {
+    key: 'categories',
+    path: '/(tabs)/categories' as const,
+    icon: 'grid' as const,
+    labelEn: 'Categories',
+    labelHi: 'श्रेणियां',
+  },
+  {
+    key: 'agri-advisor',
+    path: '/(tabs)/agri-advisor' as const,
+    icon: 'headphones' as const,
+    labelEn: 'Agri Advisor',
+    labelHi: 'कृषि सलाह',
+  },
+] as const;
 
 export function PersistentBottomNav() {
-  const { t } = useTranslation();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const itemCount = useCartStore((store) => store.items.reduce((sum, item) => sum + item.qty, 0));
-  const activeKey = resolveActiveKey(pathname);
+  const isHindi = getAppLanguage() === 'hi';
+
+  const isFocused = (tabKey: string) => {
+    if (tabKey === 'index') {
+      return pathname === '/' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
+    }
+    if (tabKey === 'categories') {
+      return pathname.includes('categor') || pathname.startsWith('/products') || pathname.startsWith('/product/');
+    }
+    if (tabKey === 'select-crop') {
+      return pathname.includes('select-crop') || pathname.includes('/crop/');
+    }
+    if (tabKey === 'agri-advisor') {
+      return pathname.includes('agri-advisor');
+    }
+    return false;
+  };
 
   return (
     <View
-      style={[shadow.card, { paddingBottom: Math.max(insets.bottom, 8) + 12 }]}
-      className="bg-white px-4 pt-3"
+      style={[shadow.card, { paddingBottom: Math.max(insets.bottom, 6) + 8 }]}
+      className="bg-white px-3 pt-2"
     >
-      <View className="flex-row rounded-[28px] border border-primary-100 bg-white px-2 py-2">
-        {navItems.map((item) => {
-          const isFocused = activeKey === item.key;
+      <View className="flex-row rounded-[28px] border border-primary-100 bg-white px-1.5 py-1.5">
+        {navTabs.map((item) => {
+          const focused = isFocused(item.key);
+          const label = isHindi ? item.labelHi : item.labelEn;
 
           return (
             <Pressable
               key={item.key}
               onPress={() => router.push(item.path)}
-              className="flex-1 items-center gap-1 rounded-[20px] py-3"
+              className="flex-1 items-center gap-1 rounded-[20px] py-2 px-1 active:scale-95"
             >
-              <View>
-                <Feather name={item.icon} size={18} color={isFocused ? '#000000' : '#555555'} />
-                {item.key === 'cart' && itemCount ? (
-                  <View className="absolute -right-3 -top-2 min-w-[18px] rounded-full bg-rose-500 px-1.5 py-0.5">
-                    <Text className="text-center text-[10px] font-black text-white">{itemCount}</Text>
-                  </View>
-                ) : null}
-              </View>
+              <Feather
+                name={item.icon}
+                size={22}
+                color={focused ? '#2D6A4F' : '#64748B'}
+              />
               <Text
-                className={`text-[10px] font-black uppercase tracking-[1px] ${
-                  isFocused ? 'text-black' : 'text-black/50'
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                className={`text-[11px] text-center ${
+                  focused ? 'text-[#2D6A4F] font-black' : 'text-slate-600 font-bold'
                 }`}
               >
-                {t(item.labelKey)}
+                {label}
               </Text>
             </Pressable>
           );

@@ -181,8 +181,51 @@ export default function ProductDetailScreen() {
 
   return (
     <Screen>
-      {/* Top Media Gallery with Floating Wishlist/Compare */}
+      {/* Top Back Navigation Bar */}
+      <View className="flex-row items-center justify-between mb-3">
+        <Pressable
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.push('/(tabs)');
+            }
+          }}
+          className="flex-row items-center gap-2 rounded-2xl bg-white border border-primary-100 px-3.5 py-2 active:scale-95 shadow-2xs"
+          hitSlop={8}
+        >
+          <Feather name="arrow-left" size={16} color="#082018" />
+          <Text className="text-xs font-black text-primary-900">
+            {isHindi ? 'वापस जाएं' : 'Back'}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push('/(tabs)/cart')}
+          className="h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 border border-primary-100 active:scale-95"
+        >
+          <Feather name="shopping-cart" size={16} color="#082018" />
+        </Pressable>
+      </View>
+
+      {/* Top Media Gallery with Floating Wishlist/Compare & Back Arrow */}
       <View className="relative mb-6">
+        {/* Floating Back Button on Top-Left */}
+        <Pressable
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.push('/(tabs)');
+            }
+          }}
+          className="absolute left-4 top-4 z-20 h-10 w-10 items-center justify-center rounded-full border border-white/90 bg-white/95 active:scale-90 shadow-md"
+          hitSlop={8}
+          accessibilityLabel="Go Back"
+        >
+          <Feather name="arrow-left" size={20} color="#082018" />
+        </Pressable>
+
         <ScrollView
           ref={galleryRef}
           horizontal

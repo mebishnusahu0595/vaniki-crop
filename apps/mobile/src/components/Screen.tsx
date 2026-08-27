@@ -36,11 +36,15 @@ export function Screen({
   const isTabsRoute = [
     '/',
     '/categories',
+    '/select-crop',
+    '/agri-advisor',
     '/compare',
     '/cart',
     '/account',
     '/(tabs)',
     '/(tabs)/index',
+    '/(tabs)/select-crop',
+    '/(tabs)/agri-advisor',
     '/(tabs)/categories',
     '/(tabs)/compare',
     '/(tabs)/cart',
@@ -49,8 +53,7 @@ export function Screen({
 
   const isAuthRoute = ['/login', '/signup', '/(auth)', '/(auth)/login', '/(auth)/signup'].some(matchesPath);
 
-
-  const showPersistentBottomNav = false;
+  const showPersistentBottomNav = !isTabsRoute && !isAuthRoute;
   const bottomPadding = (withWhatsAppFab ? 36 : 20) + insets.bottom;
   const contentClassName = scroll ? 'w-full bg-offwhite px-4' : 'flex-1 w-full bg-offwhite px-4';
 
