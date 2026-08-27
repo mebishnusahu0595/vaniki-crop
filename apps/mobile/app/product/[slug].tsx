@@ -370,39 +370,80 @@ export default function ProductDetailScreen() {
         ))}
       </View>
 
-      {/* Add / Quantity Counter */}
-      {quantityInCart > 0 ? (
-        <View className="mt-6 flex-row items-center justify-between rounded-full bg-primary-50 px-3 py-2">
-          <Pressable onPress={() => decreaseQty(selectedVariant.id)} className="h-10 w-10 items-center justify-center rounded-full bg-white active:scale-90">
-            <Feather name="minus" size={16} color="#082018" />
-          </Pressable>
-          <Text className="text-sm font-black text-primary-900">{quantityInCart}</Text>
-          <Pressable
-            onPress={() => {
-              if (canIncrease && !isSelectedStoreOutOfStock) {
-                increaseQty(selectedVariant.id);
-              }
-            }}
-            disabled={!canIncrease || Boolean(isSelectedStoreOutOfStock)}
-            className={`h-10 w-10 items-center justify-center rounded-full active:scale-90 ${canIncrease && !isSelectedStoreOutOfStock ? 'bg-primary-500' : 'bg-primary-100'}`}
-          >
-            <Feather name="plus" size={16} color={canIncrease && !isSelectedStoreOutOfStock ? '#FFFFFF' : '#6D8A7D'} />
-          </Pressable>
+      {/* Action Buttons: Side-by-Side Add to Cart and Buy Now */}
+      {isOutOfStock || isSelectedStoreOutOfStock ? (
+        <View className="mt-6 rounded-full bg-slate-200 py-4 items-center justify-center">
+          <Text className="text-center text-sm font-black uppercase tracking-[2px] text-slate-500">
+            {isSelectedStoreOutOfStock
+              ? isHindi
+                ? 'चयनित डीलर पर स्टॉक समाप्त'
+                : 'Out of Stock at Selected Dealer'
+              : isHindi
+              ? 'स्टॉक समाप्त'
+              : 'Out of Stock'}
+          </Text>
         </View>
       ) : (
-        <Pressable
-          onPress={() => {
-            if (!isOutOfStock) {
-              addItem(product, selectedVariant);
-            }
-          }}
-          disabled={isOutOfStock}
-          className={`mt-6 rounded-full px-5 py-4 active:scale-95 active:opacity-90 ${isOutOfStock ? 'bg-slate-200' : 'bg-primary-500'}`}
-        >
-          <Text className={`text-center text-sm font-black uppercase tracking-[2px] ${isOutOfStock ? 'text-slate-500' : 'text-white'}`}>
-            {isSelectedStoreOutOfStock ? (t('mobile.actions.outOfStock')) : isOutOfStock ? t('mobile.actions.outOfStock') : t('mobile.actions.addToCart')}
-          </Text>
-        </Pressable>
+        <View className="mt-6 flex-row items-center gap-3">
+          {/* Button 1: Add to Cart / Qty Controller */}
+          {quantityInCart > 0 ? (
+            <View className="flex-1 flex-row items-center justify-between rounded-full bg-emerald-50 border border-emerald-200 px-2 py-1.5 shadow-2xs">
+              <Pressable
+                onPress={() => decreaseQty(selectedVariant.id)}
+                className="h-9 w-9 items-center justify-center rounded-full bg-white active:scale-90 shadow-xs border border-emerald-100"
+              >
+                <Feather name="minus" size={14} color="#082018" />
+              </Pressable>
+              <Text className="text-xs font-black text-emerald-900">{quantityInCart}</Text>
+              <Pressable
+                onPress={() => {
+                  if (canIncrease && !isSelectedStoreOutOfStock) {
+                    increaseQty(selectedVariant.id);
+                  }
+                }}
+                disabled={!canIncrease || Boolean(isSelectedStoreOutOfStock)}
+                className={`h-9 w-9 items-center justify-center rounded-full active:scale-90 shadow-xs ${
+                  canIncrease && !isSelectedStoreOutOfStock
+                    ? 'bg-emerald-700 border border-emerald-800'
+                    : 'bg-slate-200'
+                }`}
+              >
+                <Feather
+                  name="plus"
+                  size={14}
+                  color={canIncrease && !isSelectedStoreOutOfStock ? '#FFFFFF' : '#94A3B8'}
+                />
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => addItem(product, selectedVariant)}
+              className="flex-1 flex-row items-center justify-center gap-1.5 rounded-full border-2 border-emerald-700 bg-emerald-50/90 py-3.5 px-2 active:scale-95 shadow-2xs"
+            >
+              <Feather name="shopping-cart" size={15} color="#15803D" />
+              <Text className="text-[11px] font-black uppercase tracking-[1px] text-emerald-800">
+                {isHindi ? 'कार्ट में जोड़ें' : 'Add to Cart'}
+              </Text>
+            </Pressable>
+          )}
+
+          {/* Button 2: Buy Now */}
+          <Pressable
+            onPress={() => {
+              if (quantityInCart === 0) {
+                addItem(product, selectedVariant);
+              }
+              router.push('/checkout');
+            }}
+            style={{ backgroundColor: '#166534' }}
+            className="flex-1 flex-row items-center justify-center gap-1.5 rounded-full py-3.5 px-2 active:scale-95 shadow-md"
+          >
+            <Feather name="zap" size={15} color="#FFFFFF" />
+            <Text className="text-[11px] font-black uppercase tracking-[1.5px] text-white">
+              {isHindi ? 'अभी खरीदें' : 'Buy Now'}
+            </Text>
+          </Pressable>
+        </View>
       )}
 
       {/* ========================================================================= */}
