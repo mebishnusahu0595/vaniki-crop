@@ -235,7 +235,7 @@ async function syncPendingInvoices() {
 
           // Report sync success back to Vaniki Server
           await makeRequest(
-            `${config.serverApiUrl}/sync-result`,
+            `${activeApiUrl}/sync-result`,
             {
               method: 'POST',
               headers: {
@@ -255,7 +255,7 @@ async function syncPendingInvoices() {
 
           // Report failure back to Vaniki Server
           await makeRequest(
-            `${config.serverApiUrl}/sync-result`,
+            `${activeApiUrl}/sync-result`,
             {
               method: 'POST',
               headers: {
@@ -274,7 +274,7 @@ async function syncPendingInvoices() {
         console.error(`❌ ${COLORS.red}Could not connect to Tally on Port ${config.tallyPort}. Is Tally running? (${tallyErr.message})${COLORS.reset}`);
 
         await makeRequest(
-          `${config.serverApiUrl}/sync-result`,
+          `${activeApiUrl}/sync-result`,
           {
             method: 'POST',
             headers: {
