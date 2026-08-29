@@ -240,7 +240,10 @@ export async function createDealerProductRequest(
   const results: any[] = [];
 
   for (const item of items) {
-    const requestedQuantity = Number(item.requestedQuantity || item.quantity || 0);
+    const rawPetiQty = Number(item.petiQuantity || 1);
+    const rawPetiSize = Number(item.petiSize || 12);
+    const fallbackQty = (rawPetiQty > 0 ? rawPetiQty : 1) * (rawPetiSize > 0 ? rawPetiSize : 1);
+    const requestedQuantity = Number(item.requestedQuantity || item.quantity || fallbackQty || 1);
     if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
       throw new AppError('Requested quantity must be greater than 0', 400);
     }

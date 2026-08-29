@@ -117,8 +117,10 @@ export default function ProductRequestsPage() {
         notes: requestNotes,
         items: cart.map(item => ({
           productId: item.productId,
+          productName: item.productName,
           petiQuantity: item.petiQuantity,
           petiSize: item.petiSize,
+          requestedQuantity: item.petiQuantity * (item.petiSize || 1),
           requestedPack: item.variantLabel,
           price: item.price,
           dealerPrice: item.dealerPrice,
