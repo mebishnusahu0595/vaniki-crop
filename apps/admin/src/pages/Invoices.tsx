@@ -88,7 +88,6 @@ export default function InvoicesPage() {
 
               <div className="mt-8 flex items-center justify-between">
                 <div className="flex -space-x-2">
-                   {/* Avatar placeholders or icons for items? Just a visual touch */}
                    <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-[10px] font-bold text-slate-600">
                      {invoice.items?.length || 0}
                    </div>
@@ -97,15 +96,12 @@ export default function InvoicesPage() {
 
                 <button
                   onClick={() => handleDownload(invoice._id, invoice.invoiceNumber)}
-                  className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-primary-600 hover:shadow-primary-500/25 active:scale-95"
+                  className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-emerald-700 active:scale-95 z-10"
                 >
                   <Download size={16} />
                   Download
                 </button>
               </div>
-
-              {/* Decorative background element */}
-              <div className="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-primary-50 opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
           ))
         ) : (
