@@ -306,33 +306,44 @@ export default function ProductRequestsPage() {
           </div>
 
           <div className="flex-1 p-6 space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-            {cart.map((item) => (
-              <div key={item.id} className="group relative rounded-2xl border border-primary-50 bg-primary-50/20 p-4 transition hover:bg-white hover:shadow-md">
-                <button
-                  onClick={() => removeFromCart(item.id)}
-                  className="absolute -right-2 -top-2 rounded-full bg-rose-500 p-1.5 text-white shadow-lg opacity-0 transition group-hover:opacity-100"
-                >
-                  <Trash2 size={12} />
-                </button>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-black text-slate-900 leading-tight">{item.productName}</p>
-                    <p className="text-[10px] font-bold text-primary-600 mt-0.5">
-                      {item.variantLabel}
-                      {item.price ? ` • Dealer: ₹${item.price}` : ''}
-                      {item.offerPrice ? ` • Offer: ₹${item.offerPrice}` : ''}
-                    </p>
-                    <p className="mt-1 text-[10px] text-slate-500 italic line-clamp-1">
-                      {item.hsnCode ? `HSN: ${item.hsnCode} • ` : ''}{item.shortDescription}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black text-slate-900">{item.petiQuantity} Peti</p>
-                    <p className="text-[10px] font-bold text-slate-400">{item.petiQuantity * item.petiSize} {item.petiUnit}</p>
+            {cart.map((item) => {
+              const units = item.petiQuantity * item.petiSize;
+              const rate = Number(item.offerPrice || item.dealerPrice || item.price || 0);
+              const itemTaxable = units * rate;
+              const itemGst = itemTaxable * 0.18;
+              const itemTotalWithGst = itemTaxable + itemGst;
+
+              return (
+                <div key={item.id} className="group relative rounded-2xl border border-primary-100 bg-primary-50/20 p-4 transition hover:bg-white hover:shadow-md">
+                  <button
+                    onClick={() => removeFromCart(item.id)}
+                    className="absolute -right-2 -top-2 rounded-full bg-rose-500 p-1.5 text-white shadow-lg opacity-0 transition group-hover:opacity-100"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 pr-2">
+                      <p className="font-black text-slate-900 leading-tight text-xs">{item.productName}</p>
+                      <p className="text-[10px] font-bold text-primary-600 mt-0.5">
+                        {item.variantLabel} • Rate: ₹{rate}/unit
+                      </p>
+                      <p className="mt-1 text-[10px] text-slate-500 italic line-clamp-1">
+                        {item.hsnCode ? `HSN: ${item.hsnCode} • ` : ''}{item.shortDescription}
+                      </p>
+                      <div className="mt-2 text-[10px] font-bold text-slate-600 space-y-0.5">
+                        <p>Taxable: ₹{itemTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-emerald-700">+ GST (18%): +₹{itemGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black text-slate-900">{item.petiQuantity} Peti</p>
+                      <p className="text-[10px] font-bold text-slate-400">{units} {item.petiUnit}</p>
+                      <p className="mt-3 text-xs font-black text-primary-700">₹{itemTotalWithGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {cart.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-slate-300">
@@ -341,6 +352,30 @@ export default function ProductRequestsPage() {
               </div>
             )}
           </div>
+
+          {/* Pricing Totals Footer */}
+          {cart.length > 0 && (() => {
+            const totalTaxable = cart.reduce((sum, item) => sum + ((item.petiQuantity * item.petiSize) * Number(item.offerPrice || item.dealerPrice || item.price || 0)), 0);
+            const totalGst = totalTaxable * 0.18;
+            const grandTotal = totalTaxable + totalGst;
+
+            return (
+              <div className="px-6 py-4 bg-primary-50/50 border-t border-primary-100 space-y-2">
+                <div className="flex justify-between text-xs font-bold text-slate-600">
+                  <span>Taxable Subtotal:</span>
+                  <span>₹{totalTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between text-xs font-bold text-emerald-700">
+                  <span>+ GST (18%):</span>
+                  <span>+ ₹{totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="pt-2 border-t border-primary-100 flex justify-between text-base font-black text-slate-900">
+                  <span>Total Amount (Incl. GST):</span>
+                  <span className="text-primary-700">₹{grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="p-6 bg-slate-50 border-t border-primary-100">
             <button
@@ -473,6 +508,33 @@ export default function ProductRequestsPage() {
                     HSN Code: {hsnCode}
                   </p>
                 )}
+
+                {/* Live GST Calculation Preview */}
+                {(() => {
+                  const selectedV = product.variants.find(v => v.label === requestedPack);
+                  const curRate = offerPrice > 0 ? offerPrice : (selectedV?.dealerPrice || selectedV?.price || price || 0);
+                  const totalUnits = (Number(petiQuantity) || 1) * (Number(petiSize) || 12);
+                  const lineTaxable = totalUnits * curRate;
+                  const lineGst = lineTaxable * 0.18;
+                  const lineTotalWithGst = lineTaxable + lineGst;
+
+                  return (
+                    <div className="rounded-2xl border border-primary-100 bg-primary-50/50 p-4 space-y-2">
+                      <div className="flex justify-between text-xs font-bold text-slate-600">
+                        <span>Taxable Amount ({totalUnits} {product.petiUnit || 'Units'} @ ₹{curRate}):</span>
+                        <span>₹{lineTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-bold text-emerald-700">
+                        <span>+ GST (18%):</span>
+                        <span>+ ₹{lineGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="pt-2 border-t border-primary-100 flex justify-between text-sm font-black text-slate-900">
+                        <span>Estimated Total (Incl. GST):</span>
+                        <span className="text-primary-700">₹{lineTotalWithGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="pt-4 flex gap-3">

@@ -263,31 +263,53 @@ export default function ProductRequestsScreen() {
           </View>
 
           {/* Staged Batch Summary Card (AT THE TOP) */}
-          {batchItems.length > 0 && (
-            <View className="mb-4" style={{ marginHorizontal: 2 }}>
-              <View className="bg-emerald-950 rounded-3xl overflow-hidden" style={{ elevation: 6, padding: 20 }}>
-                <View className="flex-row items-center gap-2 mb-4">
-                  <Icon name="info" size={16} color="#34D399" />
-                  <Text className="text-xs font-bold uppercase text-emerald-400">Request Volume Summary</Text>
-                </View>
-                <View className="flex-row justify-between items-center">
-                  <View style={{ flex: 1 }}>
-                    <Text className="text-[9px] font-bold uppercase text-emerald-300">Total Items</Text>
-                    <View className="flex-row items-baseline mt-1 gap-1">
-                      <Text className="text-2xl font-extrabold text-white">{batchItems.length}</Text>
-                      <Text className="text-xs font-bold text-emerald-200">items</Text>
+          {batchItems.length > 0 && (() => {
+            const totalTaxable = batchItems.reduce((acc, it) => acc + ((it.petiQuantity * it.petiSize) * (it.variant.offerPrice || it.variant.dealerPrice || it.variant.price || 0)), 0);
+            const totalGst = totalTaxable * 0.18;
+            const totalGross = totalTaxable + totalGst;
+
+            return (
+              <View className="mb-4" style={{ marginHorizontal: 2 }}>
+                <View className="bg-emerald-950 rounded-3xl overflow-hidden p-5" style={{ elevation: 6 }}>
+                  <View className="flex-row items-center gap-2 mb-3">
+                    <Icon name="info" size={16} color="#34D399" />
+                    <Text className="text-xs font-bold uppercase text-emerald-400">Request Bill & Volume Summary</Text>
+                  </View>
+                  <View className="flex-row justify-between items-center mb-3">
+                    <View style={{ flex: 1 }}>
+                      <Text className="text-[9px] font-bold uppercase text-emerald-300">Total Items</Text>
+                      <View className="flex-row items-baseline mt-0.5 gap-1">
+                        <Text className="text-2xl font-extrabold text-white">{batchItems.length}</Text>
+                        <Text className="text-xs font-bold text-emerald-200">items</Text>
+                      </View>
+                    </View>
+                    <View style={{ flex: 1.5, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.1)', paddingLeft: 16, alignItems: 'flex-end' }}>
+                      <Text className="text-[9px] font-bold uppercase text-emerald-300">Total Volume</Text>
+                      <Text className="text-base font-extrabold text-white mt-0.5 text-right" numberOfLines={2}>
+                        {totalVolumeText}
+                      </Text>
                     </View>
                   </View>
-                  <View style={{ flex: 1.5, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.1)', paddingLeft: 20, alignItems: 'flex-end' }}>
-                    <Text className="text-[9px] font-bold uppercase text-emerald-300">Estimated Volume</Text>
-                    <Text className="text-lg font-extrabold text-white mt-1 text-right" numberOfLines={2}>
-                      {totalVolumeText}
-                    </Text>
+
+                  {/* GST & Total Amount Breakdown */}
+                  <View className="pt-3 border-t border-emerald-800/60 space-y-1">
+                    <View className="flex-row justify-between">
+                      <Text className="text-[11px] font-bold text-emerald-300">Taxable Subtotal:</Text>
+                      <Text className="text-[11px] font-bold text-white">₹{totalTaxable.toFixed(2)}</Text>
+                    </View>
+                    <View className="flex-row justify-between">
+                      <Text className="text-[11px] font-bold text-emerald-400">+ GST (18%):</Text>
+                      <Text className="text-[11px] font-bold text-emerald-400">+ ₹{totalGst.toFixed(2)}</Text>
+                    </View>
+                    <View className="flex-row justify-between pt-1 border-t border-emerald-800/80">
+                      <Text className="text-xs font-black text-white">Est. Total (Incl. GST):</Text>
+                      <Text className="text-sm font-black text-emerald-300">₹{totalGross.toFixed(2)}</Text>
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
-          )}
+            );
+          })()}
 
           {/* Product Cards Grid */}
           <View className="mb-6">
@@ -348,30 +370,41 @@ export default function ProductRequestsScreen() {
           {batchItems.length > 0 && (
             <View className="mb-6">
               <Text className="text-[10px] font-black uppercase tracking-wider text-zinc-400 mb-3 ml-2">Request Batch Items</Text>
-              {batchItems.map((item, idx) => (
-                <View key={idx} className="flex-row justify-between items-center bg-white border border-zinc-100 rounded-3xl p-5 mb-3 shadow-sm">
-                  <View className="flex-1 mr-3">
-                    <Text className="text-zinc-900 font-black text-sm leading-tight">{item.product.name}</Text>
-                    <Text className="text-[10px] font-bold text-emerald-600 mt-1">
-                      {item.variant.label}
-                      {item.variant.dealerPrice || item.variant.price ? ` • Dealer: ₹${item.variant.dealerPrice || item.variant.price}` : ''}
-                      {item.variant.offerPrice ? ` • Offer: ₹${item.variant.offerPrice}` : ''}
-                    </Text>
-                    <Text className="mt-1 text-[10px] text-zinc-500 italic" numberOfLines={1}>
-                      {item.product.hsnCode ? `HSN: ${item.product.hsnCode} • ` : ''}{item.product.shortDescription}
-                    </Text>
-                    <Text className="text-zinc-500 font-bold text-xs mt-2">
-                      Qty: <Text className="text-zinc-800">{item.petiQuantity} Peti ({item.petiQuantity * item.petiSize} {item.product.petiUnit || 'Liter'})</Text>
-                    </Text>
+              {batchItems.map((item, idx) => {
+                const units = item.petiQuantity * item.petiSize;
+                const rate = Number(item.variant.offerPrice || item.variant.dealerPrice || item.variant.price || 0);
+                const itemTaxable = units * rate;
+                const itemGst = itemTaxable * 0.18;
+                const itemGross = itemTaxable + itemGst;
+
+                return (
+                  <View key={idx} className="flex-row justify-between items-start bg-white border border-zinc-100 rounded-3xl p-5 mb-3 shadow-sm">
+                    <View className="flex-1 mr-3">
+                      <Text className="text-zinc-900 font-black text-sm leading-tight">{item.product.name}</Text>
+                      <Text className="text-[10px] font-bold text-emerald-700 mt-1">
+                        {item.variant.label} • Rate: ₹{rate}/unit
+                      </Text>
+                      <Text className="mt-0.5 text-[10px] text-zinc-500 italic" numberOfLines={1}>
+                        {item.product.hsnCode ? `HSN: ${item.product.hsnCode} • ` : ''}{item.product.shortDescription}
+                      </Text>
+                      <Text className="text-zinc-600 font-bold text-xs mt-1.5">
+                        Qty: {item.petiQuantity} Peti ({units} {item.product.petiUnit || 'Liter'})
+                      </Text>
+                      <View className="mt-1.5 bg-emerald-50/70 rounded-xl p-2 border border-emerald-100 space-y-0.5">
+                        <Text className="text-[10px] text-zinc-600 font-semibold">Taxable: ₹{itemTaxable.toFixed(2)}</Text>
+                        <Text className="text-[10px] text-emerald-800 font-bold">+ GST (18%): +₹{itemGst.toFixed(2)}</Text>
+                        <Text className="text-xs text-zinc-900 font-black pt-0.5 border-t border-emerald-200">Total: ₹{itemGross.toFixed(2)}</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => handleRemoveStagedItem(idx)}
+                      className="bg-rose-50 border border-rose-100 p-2.5 rounded-full"
+                    >
+                      <Icon name="trash-2" size={14} color="#E11D48" />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => handleRemoveStagedItem(idx)}
-                    className="bg-rose-50 border border-rose-100 p-2.5 rounded-full"
-                  >
-                    <Icon name="trash-2" size={14} color="#E11D48" />
-                  </TouchableOpacity>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
 
@@ -578,6 +611,34 @@ export default function ProductRequestsScreen() {
                   />
                 </View>
               </View>
+
+              {/* Live GST Calculation Preview */}
+              {(() => {
+                const curRate = Number(selectedVariant?.offerPrice || selectedVariant?.dealerPrice || selectedVariant?.price || 0);
+                const pQty = Number(petiQtyInput) || 1;
+                const pSize = Number(petiSizeInput) || 12;
+                const units = pQty * pSize;
+                const taxable = units * curRate;
+                const gst = taxable * 0.18;
+                const gross = taxable + gst;
+
+                return (
+                  <View className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 space-y-1.5 mt-2">
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-zinc-600 text-xs font-bold">Taxable ({units} {selectedProduct?.petiUnit || 'Units'} @ ₹{curRate}):</Text>
+                      <Text className="text-zinc-900 text-xs font-bold">₹{taxable.toFixed(2)}</Text>
+                    </View>
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-emerald-700 text-xs font-bold">+ GST (18%):</Text>
+                      <Text className="text-emerald-700 text-xs font-bold">+ ₹{gst.toFixed(2)}</Text>
+                    </View>
+                    <View className="flex-row justify-between items-center pt-1.5 border-t border-emerald-200">
+                      <Text className="text-zinc-900 text-xs font-black">Estimated Total (Incl. GST):</Text>
+                      <Text className="text-emerald-800 text-sm font-black">₹{gross.toFixed(2)}</Text>
+                    </View>
+                  </View>
+                );
+              })()}
             </ScrollView>
 
             {/* Bottom Actions */}

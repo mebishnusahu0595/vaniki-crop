@@ -376,8 +376,9 @@ export default function ProductRequestsPage() {
                       <th className="pb-3 pr-4">Pack Size</th>
                       <th className="pb-3 pr-4">HSN</th>
                       <th className="pb-3 pr-4 text-center">Peti Qty</th>
-                      <th className="pb-3 pr-4 text-right">Price / Offer</th>
-                      <th className="pb-3 text-right">Line Total</th>
+                      <th className="pb-3 pr-4 text-right">Taxable Rate</th>
+                      <th className="pb-3 pr-4 text-right">GST Rate</th>
+                      <th className="pb-3 text-right">Total (Incl. GST)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -386,7 +387,9 @@ export default function ProductRequestsPage() {
                       const pSize = Number(item.petiSize || 12);
                       const totalUnits = Number(item.requestedQuantity || (pQty * pSize) || pQty || 1);
                       const unitPrice = Number(item.offerPrice || item.dealerPrice || item.price || 0);
-                      const lineTotal = totalUnits * unitPrice;
+                      const lineTaxable = totalUnits * unitPrice;
+                      const lineGst = lineTaxable * 0.18;
+                      const lineTotalWithGst = lineTaxable + lineGst;
 
                       return (
                         <tr key={item.id} className="hover:bg-slate-50/60 transition">
@@ -418,28 +421,51 @@ export default function ProductRequestsPage() {
                               <span className="font-bold text-slate-900">₹{item.dealerPrice || item.price || 0}</span>
                             )}
                           </td>
-                          <td className="py-3 text-right font-black text-slate-900">
-                            {currencyFormatter.format(lineTotal)}
+                          <td className="py-3 pr-4 text-right text-xs font-black text-emerald-700">
+                            18% GST
+                            <span className="block text-[10px] text-emerald-600 font-bold">(+₹{lineGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })})</span>
+                          </td>
+                          <td className="py-3 text-right">
+                            <span className="font-black text-slate-900 text-sm">
+                              {currencyFormatter.format(lineTotalWithGst)}
+                            </span>
+                            <span className="block text-[10px] text-slate-400 font-bold">
+                              Taxable: {currencyFormatter.format(lineTaxable)}
+                            </span>
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t-2 border-slate-200 bg-slate-50/50">
-                      <td colSpan={4} className="py-3 pl-2 text-xs font-black uppercase text-slate-500">
-                        Order Summary
-                      </td>
-                      <td className="py-3 text-center text-xs font-black text-slate-900">
-                        {totalPetis} Petis Total
-                      </td>
-                      <td className="py-3 text-right text-xs font-black uppercase text-slate-400">
-                        Est. Amount:
-                      </td>
-                      <td className="py-3 text-right text-base font-black text-primary-700">
-                        {currencyFormatter.format(totalEstAmount)}
-                      </td>
-                    </tr>
+                    {(() => {
+                      const totalTaxable = group.items.reduce((sum: number, it: any) => {
+                        const pQty = Number(it.petiQuantity || 1);
+                        const pSize = Number(it.petiSize || 12);
+                        const totalUnits = Number(it.requestedQuantity || (pQty * pSize) || pQty || 1);
+                        const unitPrice = Number(it.offerPrice || it.dealerPrice || it.price || 0);
+                        return sum + (totalUnits * unitPrice);
+                      }, 0);
+                      const totalGst = totalTaxable * 0.18;
+                      const grandTotal = totalTaxable + totalGst;
+
+                      return (
+                        <tr className="border-t-2 border-slate-200 bg-slate-50/50">
+                          <td colSpan={4} className="py-3 pl-2 text-xs font-black uppercase text-slate-500">
+                            Order Summary ({totalPetis} Petis Total)
+                          </td>
+                          <td colSpan={3} className="py-3 pr-2 text-right">
+                            <div className="inline-flex flex-wrap items-center gap-4 text-xs font-bold text-slate-600">
+                              <span>Taxable: <strong className="text-slate-900 font-black">{currencyFormatter.format(totalTaxable)}</strong></span>
+                              <span className="text-emerald-700">+ GST (18%): <strong className="text-emerald-800 font-black">+{currencyFormatter.format(totalGst)}</strong></span>
+                              <span className="text-sm font-black text-slate-900 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-sm">
+                                Grand Total: <strong className="text-primary-700">{currencyFormatter.format(grandTotal)}</strong>
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })()}
                   </tfoot>
                 </table>
               </div>
@@ -640,14 +666,18 @@ export default function ProductRequestsPage() {
                         <th className="p-3">Product Name</th>
                         <th className="p-3">HSN</th>
                         <th className="p-3 text-right">Qty (Units)</th>
-                        <th className="p-3 text-right">Price / Unit</th>
-                        <th className="p-3 text-right">Tax Rate</th>
-                        <th className="p-3 text-right">Line Total</th>
+                        <th className="p-3 text-right">Taxable Rate</th>
+                        <th className="p-3 text-right">GST Rate</th>
+                        <th className="p-3 text-right">Taxable Total</th>
+                        <th className="p-3 text-right">Total (Incl. GST)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {approvalForm.items.map((item, idx) => {
-                        const lineTotal = Number(item.qty || 0) * Number(item.price || 0);
+                        const lineTaxable = Number(item.qty || 0) * Number(item.price || 0);
+                        const lineGst = lineTaxable * (Number(item.taxRate || 18) / 100);
+                        const lineGross = lineTaxable + lineGst;
+
                         return (
                           <tr key={idx} className="hover:bg-slate-50">
                             <td className="p-3 font-bold text-slate-400">{idx + 1}</td>
@@ -687,9 +717,17 @@ export default function ProductRequestsPage() {
                                 className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-900 text-right outline-none focus:ring-1 focus:ring-primary-500"
                               />
                             </td>
-                            <td className="p-3 text-right font-bold text-slate-600">18% GST</td>
-                            <td className="p-3 text-right font-black text-slate-900">
-                              {currencyFormatter.format(lineTotal)}
+                            <td className="p-3 text-right font-bold text-emerald-700">18% GST</td>
+                            <td className="p-3 text-right font-bold text-slate-700">
+                              {currencyFormatter.format(lineTaxable)}
+                            </td>
+                            <td className="p-3 text-right">
+                              <span className="font-black text-slate-900 text-sm">
+                                {currencyFormatter.format(lineGross)}
+                              </span>
+                              <span className="block text-[10px] text-emerald-700 font-bold">
+                                (+{currencyFormatter.format(lineGst)} GST)
+                              </span>
                             </td>
                           </tr>
                         );
@@ -801,18 +839,19 @@ export default function ProductRequestsPage() {
 
               {/* Total Calculation Display */}
               {(() => {
-                const totalGross = approvalForm.items.reduce((acc, i) => acc + (Number(i.qty || 0) * Number(i.price || 0)), 0);
-                const taxable = totalGross / 1.18;
-                const cgst = (totalGross - taxable) / 2;
-                const sgst = (totalGross - taxable) / 2;
+                const totalTaxable = approvalForm.items.reduce((acc, i) => acc + (Number(i.qty || 0) * Number(i.price || 0)), 0);
+                const totalGst = approvalForm.items.reduce((acc, i) => acc + ((Number(i.qty || 0) * Number(i.price || 0) * Number(i.taxRate || 18)) / 100), 0);
+                const totalGross = totalTaxable + totalGst;
+                const cgst = totalGst / 2;
+                const sgst = totalGst / 2;
 
                 return (
                   <div className="flex flex-wrap items-center justify-between rounded-2xl bg-slate-900 p-6 text-white shadow-xl">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Total Invoice Amount</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Total Invoice Amount (Incl. GST)</p>
                       <p className="text-3xl font-black mt-0.5">{currencyFormatter.format(totalGross)}</p>
                       <p className="text-xs text-slate-400 mt-1">
-                        Taxable: {currencyFormatter.format(taxable)} | CGST 9%: {currencyFormatter.format(cgst)} | SGST 9%: {currencyFormatter.format(sgst)}
+                        Taxable Subtotal: <strong className="text-white">{currencyFormatter.format(totalTaxable)}</strong> | CGST 9%: <strong className="text-emerald-400">+{currencyFormatter.format(cgst)}</strong> | SGST 9%: <strong className="text-emerald-400">+{currencyFormatter.format(sgst)}</strong> (Total GST: <strong className="text-emerald-400">+{currencyFormatter.format(totalGst)}</strong>)
                       </p>
                     </div>
 
