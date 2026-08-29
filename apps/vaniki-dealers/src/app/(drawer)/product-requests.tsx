@@ -162,18 +162,24 @@ export default function ProductRequestsScreen() {
     const payload = {
       garageName: selectedGarage,
       notes: notes || undefined,
-      items: batchItems.map(item => ({
-        productId: item.product.id,
-        requestedPack: item.variant.label,
-        petiQuantity: item.petiQuantity,
-        petiSize: item.petiSize,
-        quantity: item.petiQuantity * item.petiSize,
-        requestedQuantity: item.petiQuantity * item.petiSize,
-        price: item.variant.dealerPrice || item.variant.price,
-        dealerPrice: item.variant.dealerPrice,
-        offerPrice: item.variant.offerPrice,
-        hsnCode: item.product.hsnCode
-      }))
+      items: batchItems.map(item => {
+        const brand = (item.product.name || '').trim();
+        const desc = (item.product.shortDescription || '').trim();
+        const fullName = brand && desc && !brand.toLowerCase().includes(desc.toLowerCase()) ? `${brand} (${desc})` : (brand || desc);
+        return {
+          productId: item.product.id,
+          productName: fullName,
+          requestedPack: item.variant.label,
+          petiQuantity: item.petiQuantity,
+          petiSize: item.petiSize,
+          quantity: item.petiQuantity * item.petiSize,
+          requestedQuantity: item.petiQuantity * item.petiSize,
+          price: item.variant.dealerPrice || item.variant.price,
+          dealerPrice: item.variant.dealerPrice,
+          offerPrice: item.variant.offerPrice,
+          hsnCode: item.product.hsnCode
+        };
+      })
     };
 
     createRequestMutation.mutate(payload);

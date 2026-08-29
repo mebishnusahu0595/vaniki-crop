@@ -11,6 +11,8 @@ export interface IStaff extends Document {
   storeId?: mongoose.Types.ObjectId;
   upiId?: string;
   upiQrCode?: string;
+  qrCode?: string;
+  canAccessInventory?: boolean;
   fcmToken?: string;
   expoPushToken?: string;
   isActive: boolean;
@@ -30,6 +32,8 @@ const staffSchema = new Schema<IStaff>(
     storeId: { type: Schema.Types.ObjectId, ref: 'Store', default: null },
     upiId: { type: String, trim: true },
     upiQrCode: { type: String, trim: true },
+    qrCode: { type: String, trim: true },
+    canAccessInventory: { type: Boolean, default: false },
     fcmToken: { type: String, trim: true },
     expoPushToken: { type: String, trim: true },
     isActive: { type: Boolean, default: true },

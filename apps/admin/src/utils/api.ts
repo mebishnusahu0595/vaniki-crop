@@ -336,8 +336,12 @@ export const adminApi = {
     const response = await api.get<ApiResponse<any[]>>('/admin/staff');
     return response.data.data;
   },
-  createStoreStaff: async (payload: { name: string; mobile: string; password: string }) => {
+  createStoreStaff: async (payload: { name: string; mobile: string; password?: string; upiId?: string; upiQrCode?: string; qrCode?: string; canAccessInventory?: boolean }) => {
     const response = await api.post<ApiResponse<any>>('/admin/staff', payload);
+    return response.data.data;
+  },
+  updateStoreStaff: async (id: string, payload: { name?: string; mobile?: string; password?: string; upiId?: string; upiQrCode?: string; qrCode?: string; canAccessInventory?: boolean; isActive?: boolean }) => {
+    const response = await api.patch<ApiResponse<any>>(`/admin/staff/${id}`, payload);
     return response.data.data;
   },
   deleteStoreStaff: async (id: string) => {

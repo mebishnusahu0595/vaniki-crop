@@ -77,6 +77,8 @@ export default function ProductRequestsPage() {
     if (!product || !requestedPack) return;
 
     const variant = product.variants.find(v => v.label === requestedPack);
+    if (!variant) return;
+
     const brandName = product.name?.trim() || '';
     const techDesc = product.shortDescription?.trim() || '';
     const fullDisplayName = brandName && techDesc && !brandName.toLowerCase().includes(techDesc.toLowerCase())

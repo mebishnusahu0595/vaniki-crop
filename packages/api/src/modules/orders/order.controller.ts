@@ -189,6 +189,55 @@ export async function updateOrderStatus(req: Request, res: Response, next: NextF
   }
 }
 
+import { Product } from '../../models/Product.model.js';
+import { DealerInventory } from '../../models/DealerInventory.model.js';
+
+export async function syncInvoiceItemsToDealerInventory(invoice: any) {
+  try {
+    const storeId = invoice.storeId?._id || invoice.storeId;
+    if (!storeId || !Array.isArray(invoice.items)) return;
+
+    for (const item of invoice.items) {
+      const addedQty = Number(item.qty || 0);
+      if (addedQty <= 0) continue;
+
+      const rawName = (item.productName || '').trim();
+      const cleanBrand = rawName.split('(')[0].trim();
+
+      const product = await Product.findOne({
+        $or: [
+          { name: { $regex: new RegExp(`^${cleanBrand}`, 'i') } },
+          { shortDescription: { $regex: new RegExp(cleanBrand, 'i') } },
+          { name: rawName },
+        ],
+      }).select('variants name');
+
+      if (product && product.variants?.length > 0) {
+        const variant = product.variants[0];
+        const existingRow = await DealerInventory.findOne({
+          storeId,
+          productId: product._id,
+          variantId: variant._id,
+        });
+
+        if (existingRow) {
+          existingRow.quantity = (existingRow.quantity || 0) + addedQty;
+          await existingRow.save();
+        } else {
+          await DealerInventory.create({
+            storeId,
+            productId: product._id,
+            variantId: variant._id,
+            quantity: Math.max(5, addedQty),
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Inventory Sync] Failed to auto-add invoice items to dealer inventory:', err);
+  }
+}
+
 /**
  * POST /api/b2b-invoices/super-admin/create
  * Generates and persists a B2B invoice from platform to store.
@@ -249,6 +298,9 @@ export async function createB2BInvoice(req: Request, res: Response, next: NextFu
       paymentTerms: paymentTerms || 'Immediate / On Delivery',
       tallySyncStatus: 'pending',
     });
+
+    // Auto-add stock to dealer inventory
+    await syncInvoiceItemsToDealerInventory(invoice);
 
     res.status(201).json({ success: true, data: invoice });
   } catch (error) {

@@ -33,6 +33,7 @@ export default function StaffScreen() {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [upiId, setUpiId] = useState('');
+  const [canAccessInventory, setCanAccessInventory] = useState(false);
 
   // Fetch store staff
   const { data: staffList = [], isLoading, refetch, isFetching } = useQuery({
@@ -42,7 +43,7 @@ export default function StaffScreen() {
 
   // Create Staff mutation
   const createStaffMutation = useMutation({
-    mutationFn: (payload: Record<string, string>) => adminApi.createStoreStaff(payload),
+    mutationFn: (payload: Record<string, any>) => adminApi.createStoreStaff(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-staff-list'] });
       resetForm();
@@ -85,6 +86,7 @@ export default function StaffScreen() {
     setMobile('');
     setPassword('');
     setUpiId('');
+    setCanAccessInventory(false);
   };
 
   const handleOpenCreate = () => {
@@ -93,6 +95,7 @@ export default function StaffScreen() {
     setMobile('');
     setPassword('');
     setUpiId('');
+    setCanAccessInventory(false);
     setModalVisible(true);
   };
 
@@ -102,6 +105,7 @@ export default function StaffScreen() {
     setMobile(staff.mobile || '');
     setPassword('');
     setUpiId(staff.upiId || '');
+    setCanAccessInventory(Boolean(staff.canAccessInventory));
     setModalVisible(true);
   };
 
@@ -130,11 +134,13 @@ export default function StaffScreen() {
         mobile: mobile.trim(),
         password: password.trim(),
         upiId: upiId.trim(),
+        canAccessInventory,
       });
     } else {
       const payload: Record<string, any> = {
         name: name.trim(),
         upiId: upiId.trim(),
+        canAccessInventory,
       };
       if (password.trim() && password.length >= 6) {
         payload.password = password.trim();
@@ -230,8 +236,8 @@ export default function StaffScreen() {
                       📞 Mobile: {staff.mobile}
                     </Text>
 
-                    {/* Assigned UPI Badge */}
-                    <View className="mt-2.5 flex-row items-center gap-1.5">
+                    {/* Assigned UPI Badge & Inventory Permission */}
+                    <View className="mt-2.5 flex-row items-center gap-1.5 flex-wrap">
                       <View className={`rounded-lg px-2.5 py-1 flex-row items-center gap-1 border ${
                         hasUpi ? 'bg-primary-50 border-primary-100' : 'bg-amber-50 border-amber-100'
                       }`}>
@@ -240,6 +246,17 @@ export default function StaffScreen() {
                           hasUpi ? 'text-primary-800' : 'text-amber-800'
                         }`}>
                           {hasUpi ? `UPI: ${staff.upiId}` : 'No UPI ID assigned'}
+                        </Text>
+                      </View>
+
+                      <View className={`rounded-lg px-2.5 py-1 flex-row items-center gap-1 border ${
+                        staff.canAccessInventory ? 'bg-emerald-50 border-emerald-200' : 'bg-zinc-100 border-zinc-200'
+                      }`}>
+                        <Icon name={staff.canAccessInventory ? "check-circle" : "slash"} size={11} color={staff.canAccessInventory ? "#065F46" : "#71717A"} />
+                        <Text className={`text-[10px] font-black ${
+                          staff.canAccessInventory ? 'text-emerald-800' : 'text-zinc-500'
+                        }`}>
+                          {staff.canAccessInventory ? 'Stock Edit: Allowed' : 'Stock Edit: Off'}
                         </Text>
                       </View>
                     </View>
@@ -363,6 +380,27 @@ export default function StaffScreen() {
                     When this staff delivers/takes an order, this UPI QR will be displayed to customer for instant payment.
                   </Text>
                 </View>
+
+                {/* Inventory Access Permission Toggle */}
+                <TouchableOpacity
+                  onPress={() => setCanAccessInventory(!canAccessInventory)}
+                  activeOpacity={0.8}
+                  className={`p-4 rounded-xl border flex-row items-center justify-between ${
+                    canAccessInventory ? 'bg-emerald-50/70 border-emerald-300' : 'bg-zinc-50 border-zinc-200'
+                  }`}
+                >
+                  <View className="flex-1 pr-3">
+                    <Text className="text-xs font-black text-zinc-900">📦 Inventory Access Permission</Text>
+                    <Text className="text-[10px] text-zinc-500 font-medium mt-0.5">
+                      Allow this staff to view and update store stock quantities.
+                    </Text>
+                  </View>
+                  <View className={`w-11 h-6 rounded-full px-1 justify-center ${
+                    canAccessInventory ? 'bg-emerald-600 items-end' : 'bg-zinc-300 items-start'
+                  }`}>
+                    <View className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                  </View>
+                </TouchableOpacity>
               </View>
 
               {/* Submit Button */}

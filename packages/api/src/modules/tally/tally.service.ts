@@ -433,6 +433,10 @@ export async function recordTallySyncResult(
     invoice.tallyVoucherGuid = result.tallyVoucherGuid;
     invoice.tallySyncAt = new Date();
     invoice.tallySyncError = undefined;
+
+    // Auto-add stock to dealer inventory
+    const { syncInvoiceItemsToDealerInventory } = await import('../orders/order.controller.js');
+    await syncInvoiceItemsToDealerInventory(invoice);
   } else {
     invoice.tallySyncError = result.error || 'Failed to push into Tally';
   }

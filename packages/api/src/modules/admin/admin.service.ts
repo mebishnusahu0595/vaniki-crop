@@ -166,7 +166,7 @@ export async function listDealerInventory(storeId: string) {
         offerPrice: variant.offerPrice,
         hsnCode: variant.hsnCode,
         mrp: variant.mrp,
-        quantity: quantityByVariant.get(key) ?? 0,
+        quantity: quantityByVariant.has(key) ? Math.max(5, quantityByVariant.get(key)!) : 5,
       };
     }),
   }));
@@ -469,7 +469,7 @@ export async function listStoreStaff(storeId: string) {
 }
 
 export async function createStoreStaff(storeId: string, payload: any) {
-  const { name, mobile, password, upiId, upiQrCode } = payload;
+  const { name, mobile, password, upiId, upiQrCode, qrCode, canAccessInventory } = payload;
   if (!name || !mobile || !password) {
     throw new AppError('Name, mobile, and password are required', 400);
   }
@@ -492,13 +492,15 @@ export async function createStoreStaff(storeId: string, payload: any) {
   }
 
   return Staff.create({
-    name,
+    name: name.trim(),
     mobile: cleanedMobile,
     password,
     role: 'dealer-staff',
     storeId,
     upiId: upiId ? upiId.trim() : undefined,
     upiQrCode: upiQrCode ? upiQrCode.trim() : undefined,
+    qrCode: qrCode ? qrCode.trim() : (upiQrCode ? upiQrCode.trim() : undefined),
+    canAccessInventory: Boolean(canAccessInventory),
     isActive: true,
   });
 }
@@ -509,10 +511,12 @@ export async function updateStoreStaff(storeId: string, staffId: string, payload
     throw new AppError('Staff member not found or does not belong to your store', 404);
   }
 
-  const { name, upiId, upiQrCode, password, isActive } = payload;
+  const { name, upiId, upiQrCode, qrCode, canAccessInventory, password, isActive } = payload;
   if (name) staff.name = name.trim();
   if (upiId !== undefined) staff.upiId = upiId ? upiId.trim() : undefined;
   if (upiQrCode !== undefined) staff.upiQrCode = upiQrCode ? upiQrCode.trim() : undefined;
+  if (qrCode !== undefined) staff.qrCode = qrCode ? qrCode.trim() : undefined;
+  if (canAccessInventory !== undefined) staff.canAccessInventory = Boolean(canAccessInventory);
   if (typeof isActive === 'boolean') staff.isActive = isActive;
   if (password && password.length >= 6) staff.password = password;
 

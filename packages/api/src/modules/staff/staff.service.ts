@@ -657,7 +657,7 @@ export async function collectPayment(
 }
 
 /** Resolves the store a dealer-staff member belongs to (for inventory management). */
-async function getDealerStaffStoreId(staffId: string) {
+async function getDealerStaffStoreId(staffId: string, checkInventoryAccess = false) {
   const staff = await Staff.findById(staffId);
   if (!staff || !staff.isActive) {
     throw new AppError('Staff account not found or inactive', 401);
@@ -668,12 +668,15 @@ async function getDealerStaffStoreId(staffId: string) {
   if (!staff.storeId) {
     throw new AppError('Dealer staff is not associated with any store', 400);
   }
+  if (checkInventoryAccess && !staff.canAccessInventory) {
+    throw new AppError('Access denied. You do not have permission to view or modify store inventory. Please contact your store admin to enable inventory access.', 403);
+  }
   return staff.storeId.toString();
 }
 
 /** Lists the dealer-staff's store inventory (same shape as the dealer admin app). */
 export async function listStaffInventory(staffId: string) {
-  const storeId = await getDealerStaffStoreId(staffId);
+  const storeId = await getDealerStaffStoreId(staffId, true);
   return listDealerInventory(storeId);
 }
 
@@ -682,7 +685,7 @@ export async function updateStaffInventory(
   staffId: string,
   entries: Array<{ productId: string; variantId: string; quantity: number }>,
 ) {
-  const storeId = await getDealerStaffStoreId(staffId);
+  const storeId = await getDealerStaffStoreId(staffId, true);
   return upsertDealerInventory(storeId, staffId, entries);
 }
 
