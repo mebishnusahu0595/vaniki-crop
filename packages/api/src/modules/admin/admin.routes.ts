@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireStoreAdmin } from '../auth/auth.middleware.js';
+import { upload } from '../../middleware/upload.js';
 import * as adminController from './admin.controller.js';
 
 const router: Router = Router();
@@ -17,9 +18,9 @@ router.get('/settlements/eligible', adminController.getSettlementEligibleOrders)
 router.post('/settlements', adminController.createSettlementRequest);
 router.get('/referrals', adminController.listReferrals);
 router.get('/staff', adminController.listStoreStaff);
-router.post('/staff', adminController.createStoreStaff);
-router.patch('/staff/:id', adminController.updateStoreStaff);
-router.put('/staff/:id', adminController.updateStoreStaff);
+router.post('/staff', upload.single('qrCodeImage'), adminController.createStoreStaff);
+router.patch('/staff/:id', upload.single('qrCodeImage'), adminController.updateStoreStaff);
+router.put('/staff/:id', upload.single('qrCodeImage'), adminController.updateStoreStaff);
 router.delete('/staff/:id', adminController.deleteStoreStaff);
 
 export default router;

@@ -8,6 +8,7 @@ import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { User } from '../../models/User.model.js';
 import { Staff } from '../../models/Staff.model.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
+import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 
 export async function searchAdminStoreData(storeId: string, query: string) {
   const searchTerm = query.trim();
@@ -474,7 +475,7 @@ export async function listStoreStaff(storeId: string) {
   return Staff.find({ storeId, role: 'dealer-staff' }).sort({ createdAt: -1 });
 }
 
-export async function createStoreStaff(storeId: string, payload: any) {
+export async function createStoreStaff(storeId: string, payload: any, file?: Express.Multer.File) {
   const { name, mobile, password, upiId, upiQrCode, qrCode, canAccessInventory } = payload;
   if (!name || !mobile || !password) {
     throw new AppError('Name, mobile, and password are required', 400);
@@ -497,6 +498,12 @@ export async function createStoreStaff(storeId: string, payload: any) {
     throw new AppError('Staff with this mobile number already exists', 400);
   }
 
+  let qrUrl = qrCode || upiQrCode;
+  if (file) {
+    const uploaded = await uploadToCloudinary(file.buffer, 'vaniki/staff/qr');
+    qrUrl = uploaded.url;
+  }
+
   return Staff.create({
     name: name.trim(),
     mobile: cleanedMobile,
@@ -504,14 +511,14 @@ export async function createStoreStaff(storeId: string, payload: any) {
     role: 'dealer-staff',
     storeId,
     upiId: upiId ? upiId.trim() : undefined,
-    upiQrCode: upiQrCode ? upiQrCode.trim() : undefined,
-    qrCode: qrCode ? qrCode.trim() : (upiQrCode ? upiQrCode.trim() : undefined),
-    canAccessInventory: Boolean(canAccessInventory),
+    upiQrCode: qrUrl ? qrUrl.trim() : undefined,
+    qrCode: qrUrl ? qrUrl.trim() : undefined,
+    canAccessInventory: typeof canAccessInventory === 'string' ? canAccessInventory === 'true' : Boolean(canAccessInventory),
     isActive: true,
   });
 }
 
-export async function updateStoreStaff(storeId: string, staffId: string, payload: any) {
+export async function updateStoreStaff(storeId: string, staffId: string, payload: any, file?: Express.Multer.File) {
   const staff = await Staff.findOne({ _id: staffId, storeId, role: 'dealer-staff' });
   if (!staff) {
     throw new AppError('Staff member not found or does not belong to your store', 404);
@@ -520,10 +527,22 @@ export async function updateStoreStaff(storeId: string, staffId: string, payload
   const { name, upiId, upiQrCode, qrCode, canAccessInventory, password, isActive } = payload;
   if (name) staff.name = name.trim();
   if (upiId !== undefined) staff.upiId = upiId ? upiId.trim() : undefined;
-  if (upiQrCode !== undefined) staff.upiQrCode = upiQrCode ? upiQrCode.trim() : undefined;
-  if (qrCode !== undefined) staff.qrCode = qrCode ? qrCode.trim() : undefined;
-  if (canAccessInventory !== undefined) staff.canAccessInventory = Boolean(canAccessInventory);
-  if (typeof isActive === 'boolean') staff.isActive = isActive;
+  
+  if (file) {
+    const uploaded = await uploadToCloudinary(file.buffer, 'vaniki/staff/qr');
+    staff.qrCode = uploaded.url;
+    staff.upiQrCode = uploaded.url;
+  } else {
+    if (upiQrCode !== undefined) staff.upiQrCode = upiQrCode ? upiQrCode.trim() : undefined;
+    if (qrCode !== undefined) staff.qrCode = qrCode ? qrCode.trim() : undefined;
+  }
+
+  if (canAccessInventory !== undefined) {
+    staff.canAccessInventory = typeof canAccessInventory === 'string' ? canAccessInventory === 'true' : Boolean(canAccessInventory);
+  }
+  if (typeof isActive === 'boolean' || typeof isActive === 'string') {
+    staff.isActive = typeof isActive === 'string' ? isActive === 'true' : Boolean(isActive);
+  }
   if (password && password.length >= 6) staff.password = password;
 
   await staff.save();

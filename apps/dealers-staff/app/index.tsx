@@ -86,6 +86,9 @@ function PickupCard({ task }: { task: DeliveryTask }) {
     staff?.name || 'Vaniki Store'
   )}&am=${task.totalAmount}&cu=INR&tn=Order_${task.orderNumber}`;
 
+  const customQrUrl = staff?.qrCode || staff?.upiQrCode;
+  const [activeQrTab, setActiveQrTab] = useState<'custom' | 'dynamic'>('custom');
+
   return (
     <View className="rounded-[28px] bg-white p-5 border border-primary-50 shadow-sm">
       <View className="flex-row items-start justify-between gap-3">
@@ -157,7 +160,10 @@ function PickupCard({ task }: { task: DeliveryTask }) {
 
               {/* UPI QR Button */}
               <Pressable
-                onPress={() => setUpiModalVisible(true)}
+                onPress={() => {
+                  setActiveQrTab(customQrUrl ? 'custom' : 'dynamic');
+                  setUpiModalVisible(true);
+                }}
                 disabled={collectPaymentMutation.isPending}
                 className="flex-1 flex-row items-center justify-center gap-2 rounded-full bg-emerald-700 px-4 py-3.5 active:scale-[0.98] disabled:opacity-60"
               >
@@ -189,21 +195,51 @@ function PickupCard({ task }: { task: DeliveryTask }) {
             </Text>
           </View>
 
-          {/* Dynamic UPI QR Code Image */}
+          {/* Tab Switcher if custom QR is uploaded */}
+          {customQrUrl && (
+            <View className="flex-row rounded-full bg-emerald-900/90 p-1 mb-2 border border-emerald-700 w-full">
+              <Pressable
+                onPress={() => setActiveQrTab('custom')}
+                className={`flex-1 py-2 rounded-full items-center ${activeQrTab === 'custom' ? 'bg-emerald-500' : ''}`}
+              >
+                <Text className={`text-[10px] font-black uppercase tracking-wider ${activeQrTab === 'custom' ? 'text-emerald-950' : 'text-emerald-300'}`}>
+                  Store QR Code
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setActiveQrTab('dynamic')}
+                className={`flex-1 py-2 rounded-full items-center ${activeQrTab === 'dynamic' ? 'bg-emerald-500' : ''}`}
+              >
+                <Text className={`text-[10px] font-black uppercase tracking-wider ${activeQrTab === 'dynamic' ? 'text-emerald-950' : 'text-emerald-300'}`}>
+                  Amount QR
+                </Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* QR Code Container */}
           <View className="p-4 rounded-3xl bg-white shadow-md my-2 items-center justify-center">
-            <Image
-              source={{
-                uri: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
-                  upiPaymentUri
-                )}`,
-              }}
-              style={{ width: 180, height: 180, borderRadius: 8 }}
-              contentFit="contain"
-            />
+            {activeQrTab === 'custom' && customQrUrl ? (
+              <Image
+                source={{ uri: resolveMediaUrl(customQrUrl) }}
+                style={{ width: 200, height: 200, borderRadius: 8 }}
+                contentFit="contain"
+              />
+            ) : (
+              <Image
+                source={{
+                  uri: `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                    upiPaymentUri
+                  )}`,
+                }}
+                style={{ width: 180, height: 180, borderRadius: 8 }}
+                contentFit="contain"
+              />
+            )}
           </View>
 
           <Text className="text-xs font-bold text-emerald-200 mt-2 text-center">
-            UPI ID: <Text className="font-black text-white">{staffUpiId}</Text>
+            {staffUpiId ? `UPI ID: ${staffUpiId}` : `Staff: ${staff?.name || 'Store Staff'}`}
           </Text>
           <Text className="text-[10px] font-semibold text-emerald-400 text-center mt-0.5 mb-4">
             Customer can scan using GPay, PhonePe, Paytm, BHIM or any UPI app.

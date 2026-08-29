@@ -336,11 +336,37 @@ export const adminApi = {
     const response = await api.get<ApiResponse<any[]>>('/admin/staff');
     return response.data.data;
   },
-  createStoreStaff: async (payload: { name: string; mobile: string; password?: string; upiId?: string; upiQrCode?: string; qrCode?: string; canAccessInventory?: boolean }) => {
+  createStoreStaff: async (payload: { name: string; mobile: string; password?: string; upiId?: string; upiQrCode?: string; qrCode?: string; canAccessInventory?: boolean; qrCodeImage?: File }) => {
+    if (payload.qrCodeImage) {
+      const formData = new FormData();
+      formData.append('name', payload.name);
+      formData.append('mobile', payload.mobile);
+      if (payload.password) formData.append('password', payload.password);
+      if (payload.upiId) formData.append('upiId', payload.upiId);
+      if (payload.canAccessInventory !== undefined) formData.append('canAccessInventory', String(payload.canAccessInventory));
+      formData.append('qrCodeImage', payload.qrCodeImage);
+      const response = await api.post<ApiResponse<any>>('/admin/staff', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data.data;
+    }
     const response = await api.post<ApiResponse<any>>('/admin/staff', payload);
     return response.data.data;
   },
-  updateStoreStaff: async (id: string, payload: { name?: string; mobile?: string; password?: string; upiId?: string; upiQrCode?: string; qrCode?: string; canAccessInventory?: boolean; isActive?: boolean }) => {
+  updateStoreStaff: async (id: string, payload: { name?: string; mobile?: string; password?: string; upiId?: string; upiQrCode?: string; qrCode?: string; canAccessInventory?: boolean; isActive?: boolean; qrCodeImage?: File }) => {
+    if (payload.qrCodeImage) {
+      const formData = new FormData();
+      if (payload.name) formData.append('name', payload.name);
+      if (payload.password) formData.append('password', payload.password);
+      if (payload.upiId !== undefined) formData.append('upiId', payload.upiId);
+      if (payload.canAccessInventory !== undefined) formData.append('canAccessInventory', String(payload.canAccessInventory));
+      if (payload.isActive !== undefined) formData.append('isActive', String(payload.isActive));
+      formData.append('qrCodeImage', payload.qrCodeImage);
+      const response = await api.patch<ApiResponse<any>>(`/admin/staff/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data.data;
+    }
     const response = await api.patch<ApiResponse<any>>(`/admin/staff/${id}`, payload);
     return response.data.data;
   },

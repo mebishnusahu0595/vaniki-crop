@@ -113,7 +113,7 @@ export async function listStoreStaff(req: Request, res: Response, next: NextFunc
 
 export async function createStoreStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const data = await adminService.createStoreStaff(req.userStoreId!, req.body);
+    const data = await adminService.createStoreStaff(req.userStoreId!, req.body, req.file);
     res.status(201).json({ success: true, data });
   } catch (error) {
     next(error);
@@ -123,7 +123,7 @@ export async function createStoreStaff(req: Request, res: Response, next: NextFu
 export async function updateStoreStaff(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = req.params;
-    const data = await adminService.updateStoreStaff(req.userStoreId!, id as string, req.body);
+    const data = await adminService.updateStoreStaff(req.userStoreId!, id as string, req.body, req.file);
     res.status(200).json({ success: true, data });
   } catch (error) {
     next(error);

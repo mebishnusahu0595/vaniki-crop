@@ -10,6 +10,8 @@ export interface DeliveryStaff {
   referralCode?: string;
   upiId?: string;
   upiQrCode?: string;
+  qrCode?: string;
+  canAccessInventory?: boolean;
 }
 
 interface StaffAuthState {
