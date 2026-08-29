@@ -268,8 +268,12 @@ export async function createDealerProductRequest(
         throw new AppError('Selected product not found', 404);
       }
       productId = product._id as mongoose.Types.ObjectId;
-      if (!productName) {
-        productName = product.shortDescription || product.name;
+      const brandName = product.name?.trim() || '';
+      const techDesc = product.shortDescription?.trim() || '';
+      if (brandName && techDesc && !brandName.toLowerCase().includes(techDesc.toLowerCase())) {
+        productName = `${brandName} (${techDesc})`;
+      } else {
+        productName = brandName || techDesc || productName;
       }
       if (typeof item.petiSize === 'number' && item.petiSize > 0) {
         petiSize = item.petiSize;

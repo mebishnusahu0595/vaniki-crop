@@ -1541,7 +1541,7 @@ export async function listProductRequests(query: Record<string, any>) {
     ProductRequest.find(filter)
       .populate('storeId', 'name phone address')
       .populate('adminId', 'name mobile email')
-      .populate('productId', 'name slug variants')
+      .populate('productId', 'name slug shortDescription variants')
       .populate('invoiceId', 'invoiceNumber invoiceDate totalAmount tallySyncStatus tallyVoucherNumber')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -1556,7 +1556,7 @@ export async function updateProductRequestStatus(productRequestId: string, input
   const request = await ProductRequest.findById(productRequestId)
     .populate('storeId', 'name phone address')
     .populate('adminId', 'name mobile email')
-    .populate('productId', 'name slug variants')
+    .populate('productId', 'name slug shortDescription variants')
     .populate('invoiceId', 'invoiceNumber invoiceDate totalAmount tallySyncStatus tallyVoucherNumber');
 
   if (!request) {

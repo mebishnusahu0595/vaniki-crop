@@ -77,12 +77,16 @@ export default function ProductRequestsPage() {
     if (!product || !requestedPack) return;
 
     const variant = product.variants.find(v => v.label === requestedPack);
-    if (!variant) return;
+    const brandName = product.name?.trim() || '';
+    const techDesc = product.shortDescription?.trim() || '';
+    const fullDisplayName = brandName && techDesc && !brandName.toLowerCase().includes(techDesc.toLowerCase())
+      ? `${brandName} (${techDesc})`
+      : brandName || techDesc;
 
     const newItem: CartItem = {
       id: Math.random().toString(36).substr(2, 9),
       productId: product.id,
-      productName: product.name,
+      productName: fullDisplayName,
       shortDescription: product.shortDescription || '',
       petiQuantity: Number(petiQuantity) || 1,
       petiSize: Number(petiSize) || product.petiSize || 12,

@@ -11,6 +11,25 @@ const ACTION_STATUSES = ['approved', 'rejected', 'fulfilled'] as const;
 
 type ActionStatus = (typeof ACTION_STATUSES)[number];
 
+function getProductDisplayName(item: any): string {
+  const pObj = typeof item.productId === 'object' ? item.productId : null;
+  const brand = pObj?.name?.trim();
+  const tech = pObj?.shortDescription?.trim();
+  const rawName = item.productName?.trim() || '';
+
+  if (brand && tech) {
+    if (brand.toLowerCase() === tech.toLowerCase()) return brand;
+    if (rawName.includes('(') && rawName.includes(')')) return rawName;
+    return `${brand} (${tech})`;
+  }
+  if (brand && rawName && brand.toLowerCase() !== rawName.toLowerCase()) {
+    if (!rawName.includes('(')) {
+      return `${brand} (${rawName})`;
+    }
+  }
+  return rawName || brand || tech || 'Product';
+}
+
 export default function ProductRequestsPage() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('');
@@ -141,7 +160,7 @@ export default function ProductRequestsPage() {
 
       return {
         requestId: item.id,
-        productName: item.productName || 'Product',
+        productName: getProductDisplayName(item),
         hsnCode: item.hsnCode || '38089190',
         qty: totalUnits,
         price: unitPrice,
@@ -373,7 +392,7 @@ export default function ProductRequestsPage() {
                         <tr key={item.id} className="hover:bg-slate-50/60 transition">
                           <td className="py-3 pr-4 font-bold text-slate-400">{idx + 1}</td>
                           <td className="py-3 pr-4 font-black text-slate-900">
-                            {item.productName}
+                            {getProductDisplayName(item)}
                           </td>
                           <td className="py-3 pr-4 text-xs font-bold text-slate-600">
                             {item.requestedPack || `${item.petiSize} ${item.petiUnit}`}
