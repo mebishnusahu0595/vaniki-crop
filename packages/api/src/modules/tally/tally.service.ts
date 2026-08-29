@@ -55,7 +55,7 @@ export function buildTallySalesVoucherXml(
 ): string {
   const dateStr = formatTallyDate(invoice.invoiceDate || new Date());
   const invoiceNum = escapeXml(invoice.invoiceNumber);
-  const partyName = escapeXml(store.name || 'Cash Customer');
+  const partyName = escapeXml(store.name || 'Sundry Debtors');
   const partyLedgerName = escapeXml(store.name || 'Sundry Debtors');
   const partyState = store.address?.state || config.companyState || 'Chhattisgarh';
   const partyGstin = escapeXml(store.gstin || 'URP');
@@ -92,11 +92,18 @@ export function buildTallySalesVoucherXml(
         <ALLINVENTORYENTRIES.LIST>
           <STOCKITEMNAME>${pName}</STOCKITEMNAME>
           <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
-          <RATE>${rate}/Nos</RATE>
+          <RATE>${rate}/NOS</RATE>
           <AMOUNT>${itemAmount}</AMOUNT>
-          <ACTUALQTY>${qty} Nos</ACTUALQTY>
-          <BILLEDQTY>${qty} Nos</BILLEDQTY>
+          <ACTUALQTY>${qty} NOS</ACTUALQTY>
+          <BILLEDQTY>${qty} NOS</BILLEDQTY>
           ${hsn}
+          <BATCHALLOCATIONS.LIST>
+            <GODOWNNAME>Main Location</GODOWNNAME>
+            <BATCHNAME>Primary Batch</BATCHNAME>
+            <AMOUNT>${itemAmount}</AMOUNT>
+            <ACTUALQTY>${qty} NOS</ACTUALQTY>
+            <BILLEDQTY>${qty} NOS</BILLEDQTY>
+          </BATCHALLOCATIONS.LIST>
           <ACCOUNTINGALLOCATIONS.LIST>
             <LEDGERNAME>${escapeXml(config.salesLedger)}</LEDGERNAME>
             <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
@@ -110,29 +117,47 @@ export function buildTallySalesVoucherXml(
   let taxLedgersXml = '';
   if (isInterState && igstTotal > 0) {
     taxLedgersXml += `
-        <ALLLEDGERENTRIES.LIST>
+        <LEDGERENTRIES.LIST>
           <LEDGERNAME>${escapeXml(config.igstLedger)}</LEDGERNAME>
           <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
           <AMOUNT>${igstTotal.toFixed(2)}</AMOUNT>
-        </ALLLEDGERENTRIES.LIST>`;
+        </LEDGERENTRIES.LIST>`;
   } else {
     if (cgstTotal > 0) {
       taxLedgersXml += `
-        <ALLLEDGERENTRIES.LIST>
+        <LEDGERENTRIES.LIST>
           <LEDGERNAME>${escapeXml(config.cgstLedger)}</LEDGERNAME>
           <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
           <AMOUNT>${cgstTotal.toFixed(2)}</AMOUNT>
-        </ALLLEDGERENTRIES.LIST>`;
+        </LEDGERENTRIES.LIST>`;
     }
     if (sgstTotal > 0) {
       taxLedgersXml += `
-        <ALLLEDGERENTRIES.LIST>
+        <LEDGERENTRIES.LIST>
           <LEDGERNAME>${escapeXml(config.sgstLedger)}</LEDGERNAME>
           <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
           <AMOUNT>${sgstTotal.toFixed(2)}</AMOUNT>
-        </ALLLEDGERENTRIES.LIST>`;
+        </LEDGERENTRIES.LIST>`;
     }
   }
+
+  // Stock Items auto-creation XML
+  const stockItemsCreationXml = invoice.items
+    .map((item) => {
+      const pName = escapeXml(item.productName);
+      const hsn = item.hsnCode ? `<HSNCODE>${escapeXml(item.hsnCode)}</HSNCODE>` : '';
+      return `
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <STOCKITEM NAME="${pName}" ACTION="Create">
+            <NAME>${pName}</NAME>
+            <BASEUNITS>NOS</BASEUNITS>
+            <ISBATCHWISEON>No</ISBATCHWISEON>
+            <GSTAPPLICABLE>Applicable</GSTAPPLICABLE>
+            ${hsn}
+          </STOCKITEM>
+        </TALLYMESSAGE>`;
+    })
+    .join('');
 
   const xml = `<ENVELOPE>
   <HEADER>
@@ -143,10 +168,94 @@ export function buildTallySalesVoucherXml(
       <REQUESTDESC>
         <REPORTNAME>Vouchers</REPORTNAME>
         <STATICVARIABLES>
-          <SVCURRENTCOMPANY>${escapeXml(config.companyName)}</SVCURRENTCOMPANY>
+          <SVCURRENTCOMPANY>${escapeXml(config.companyName || 'Vaniki Crop Science Pvt Ltd')}</SVCURRENTCOMPANY>
         </STATICVARIABLES>
       </REQUESTDESC>
       <REQUESTDATA>
+        <!-- 0. Auto-create Godown / Location -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <GODOWN NAME="Main Location" ACTION="Create">
+            <NAME>Main Location</NAME>
+            <PARENT/>
+          </GODOWN>
+        </TALLYMESSAGE>
+
+        <!-- 1. Auto-create Units -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <UNIT NAME="NOS" ACTION="Create">
+            <NAME>NOS</NAME>
+            <ISSIMPLEUNIT>Yes</ISSIMPLEUNIT>
+            <DECIMALPLACES>0</DECIMALPLACES>
+            <ORIGINALNAME>Numbers</ORIGINALNAME>
+          </UNIT>
+        </TALLYMESSAGE>
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <UNIT NAME="Nos" ACTION="Create">
+            <NAME>Nos</NAME>
+            <ISSIMPLEUNIT>Yes</ISSIMPLEUNIT>
+            <DECIMALPLACES>0</DECIMALPLACES>
+            <ORIGINALNAME>Numbers</ORIGINALNAME>
+          </UNIT>
+        </TALLYMESSAGE>
+
+        <!-- 2. Auto-create Sales Ledger -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER NAME="${escapeXml(config.salesLedger)}" ACTION="Create">
+            <NAME>${escapeXml(config.salesLedger)}</NAME>
+            <PARENT>Sales Accounts</PARENT>
+            <ISBILLWISEON>No</ISBILLWISEON>
+            <AFFECTSSTOCK>Yes</AFFECTSSTOCK>
+            <GSTTYPE>Applicable</GSTTYPE>
+          </LEDGER>
+        </TALLYMESSAGE>
+
+        <!-- 3. Auto-create CGST Ledger -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER NAME="${escapeXml(config.cgstLedger)}" ACTION="Create">
+            <NAME>${escapeXml(config.cgstLedger)}</NAME>
+            <PARENT>Duties &amp; Taxes</PARENT>
+            <TAXTYPE>GST</TAXTYPE>
+            <GSTDUTYHEAD>Central Tax</GSTDUTYHEAD>
+          </LEDGER>
+        </TALLYMESSAGE>
+
+        <!-- 4. Auto-create SGST Ledger -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER NAME="${escapeXml(config.sgstLedger)}" ACTION="Create">
+            <NAME>${escapeXml(config.sgstLedger)}</NAME>
+            <PARENT>Duties &amp; Taxes</PARENT>
+            <TAXTYPE>GST</TAXTYPE>
+            <GSTDUTYHEAD>State Tax</GSTDUTYHEAD>
+          </LEDGER>
+        </TALLYMESSAGE>
+
+        <!-- 5. Auto-create IGST Ledger -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER NAME="${escapeXml(config.igstLedger)}" ACTION="Create">
+            <NAME>${escapeXml(config.igstLedger)}</NAME>
+            <PARENT>Duties &amp; Taxes</PARENT>
+            <TAXTYPE>GST</TAXTYPE>
+            <GSTDUTYHEAD>Integrated Tax</GSTDUTYHEAD>
+          </LEDGER>
+        </TALLYMESSAGE>
+
+        <!-- 6. Auto-create Stock Items -->
+        ${stockItemsCreationXml}
+
+        <!-- 7. Auto-create Party Ledger under Sundry Debtors if not present -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER NAME="${partyLedgerName}" ACTION="Create">
+            <NAME>${partyLedgerName}</NAME>
+            <PARENT>Sundry Debtors</PARENT>
+            <OPENINGBALANCE>0</OPENINGBALANCE>
+            <ISBILLWISEON>Yes</ISBILLWISEON>
+            <STATENAME>${escapeXml(partyState)}</STATENAME>
+            <COUNTRYNAME>India</COUNTRYNAME>
+            <PARTYGSTIN>${partyGstin}</PARTYGSTIN>
+          </LEDGER>
+        </TALLYMESSAGE>
+
+        <!-- 8. Create Official Sales Voucher -->
         <TALLYMESSAGE xmlns:UDF="TallyUDF">
           <VOUCHER VCHTYPE="Sales" ACTION="Create" OBJVIEW="Invoice Voucher View">
             <DATE>${dateStr}</DATE>
@@ -164,12 +273,17 @@ export function buildTallySalesVoucherXml(
             <PERSISTEDVIEW>Invoice Voucher View</PERSISTEDVIEW>
 
             <!-- Party Ledger (Sundry Debtors) Debit Entry -->
-            <ALLLEDGERENTRIES.LIST>
+            <LEDGERENTRIES.LIST>
               <LEDGERNAME>${partyLedgerName}</LEDGERNAME>
               <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
               <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
               <AMOUNT>-${totalAmount.toFixed(2)}</AMOUNT>
-            </ALLLEDGERENTRIES.LIST>
+              <BILLALLOCATIONS.LIST>
+                <NAME>${invoiceNum}</NAME>
+                <BILLTYPE>New Ref</BILLTYPE>
+                <AMOUNT>-${totalAmount.toFixed(2)}</AMOUNT>
+              </BILLALLOCATIONS.LIST>
+            </LEDGERENTRIES.LIST>
 
             <!-- Stock Items / Inventory Allocations -->
             ${inventoryXml}
@@ -200,7 +314,7 @@ export async function getPendingTallySyncInvoices(limit = 20) {
   const settings = await SiteSetting.findOne({ singletonKey: 'default' });
   const config: TallyConfig = {
     ...DEFAULT_TALLY_CONFIG,
-    companyName: settings?.platformName || DEFAULT_TALLY_CONFIG.companyName,
+    companyName: 'Vaniki Crop Science Pvt Ltd',
     companyState: settings?.address?.state || DEFAULT_TALLY_CONFIG.companyState,
     companyGstin: settings?.gstNumber || DEFAULT_TALLY_CONFIG.companyGstin,
   };
