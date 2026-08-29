@@ -104,6 +104,8 @@ export const createProductSchema = z.object({
     isFeatured: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
     loyaltyPointEligible: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
     maxLoyaltyPoints: z.coerce.number().min(0).optional(),
+    taxRate: z.coerce.number().min(0).max(100).optional(),
+    hsnCode: z.string().trim().optional(),
     petiSize: z.coerce.number().min(0.1).optional(),
     petiUnit: z.enum(['ml', 'Liter', 'gm', 'KG', 'Packet', 'piece']).optional(),
     metaTitle: z.string().trim().max(70).optional(),
@@ -137,6 +139,8 @@ export const updateProductSchema = z.object({
     isFeatured: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
     loyaltyPointEligible: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
     maxLoyaltyPoints: z.coerce.number().min(0).optional(),
+    taxRate: z.coerce.number().min(0).max(100).optional(),
+    hsnCode: z.string().trim().optional(),
     existingImages: z.union([
       z.string().transform((val) => parseJsonField(val, 'existingImages')),
       z.array(existingImageSchema),

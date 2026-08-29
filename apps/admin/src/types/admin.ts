@@ -52,6 +52,10 @@ export interface Product {
   reviewCount?: number;
   loyaltyPointEligible?: boolean;
   maxLoyaltyPoints?: number;
+  taxRate?: number;
+  hsnCode?: string;
+  petiSize?: number;
+  petiUnit?: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';
   storeId?: Array<{ id: string; name: string }> | string[];
   createdAt?: string;
   updatedAt?: string;
@@ -111,6 +115,7 @@ export interface DealerInventoryProduct {
   petiSize?: number;
   petiUnit?: 'Liter' | 'Kg';
   hsnCode?: string;
+  taxRate?: number;
   variants: DealerInventoryVariant[];
 }
 
@@ -127,6 +132,7 @@ export interface DealerProductRequest {
   dealerPrice?: number;
   offerPrice?: number;
   hsnCode?: string;
+  taxRate?: number;
   status: 'pending' | 'contacted' | 'fulfilled' | 'rejected';
   superAdminNote?: string;
   createdAt: string;

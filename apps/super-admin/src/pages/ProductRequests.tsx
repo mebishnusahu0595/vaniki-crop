@@ -161,10 +161,10 @@ export default function ProductRequestsPage() {
       return {
         requestId: item.id,
         productName: getProductDisplayName(item),
-        hsnCode: item.hsnCode || '38089190',
+        hsnCode: item.hsnCode || item.productId?.hsnCode || '38089190',
         qty: totalUnits,
         price: unitPrice,
-        taxRate: 18,
+        taxRate: Number(item.taxRate !== undefined ? item.taxRate : (item.productId?.taxRate !== undefined ? item.productId.taxRate : 18)),
       };
     });
 
@@ -388,7 +388,8 @@ export default function ProductRequestsPage() {
                       const totalUnits = Number(item.requestedQuantity || (pQty * pSize) || pQty || 1);
                       const unitPrice = Number(item.offerPrice || item.dealerPrice || item.price || 0);
                       const lineTaxable = totalUnits * unitPrice;
-                      const lineGst = lineTaxable * 0.18;
+                      const rowTaxRate = Number(item.taxRate !== undefined ? item.taxRate : (item.productId?.taxRate !== undefined ? item.productId.taxRate : 18));
+                      const lineGst = lineTaxable * (rowTaxRate / 100);
                       const lineTotalWithGst = lineTaxable + lineGst;
 
                       return (
@@ -401,7 +402,7 @@ export default function ProductRequestsPage() {
                             {item.requestedPack || `${item.petiSize} ${item.petiUnit}`}
                           </td>
                           <td className="py-3 pr-4 text-xs font-mono text-slate-500">
-                            {item.hsnCode || '38089190'}
+                            {item.hsnCode || item.productId?.hsnCode || '38089190'}
                           </td>
                           <td className="py-3 pr-4 text-center">
                             <span className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-black text-primary-800">
@@ -422,7 +423,7 @@ export default function ProductRequestsPage() {
                             )}
                           </td>
                           <td className="py-3 pr-4 text-right text-xs font-black text-emerald-700">
-                            18% GST
+                            {rowTaxRate}% GST
                             <span className="block text-[10px] text-emerald-600 font-bold">(+₹{lineGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })})</span>
                           </td>
                           <td className="py-3 text-right">
@@ -446,7 +447,14 @@ export default function ProductRequestsPage() {
                         const unitPrice = Number(it.offerPrice || it.dealerPrice || it.price || 0);
                         return sum + (totalUnits * unitPrice);
                       }, 0);
-                      const totalGst = totalTaxable * 0.18;
+                      const totalGst = group.items.reduce((sum: number, it: any) => {
+                        const pQty = Number(it.petiQuantity || 1);
+                        const pSize = Number(it.petiSize || 12);
+                        const totalUnits = Number(it.requestedQuantity || (pQty * pSize) || pQty || 1);
+                        const unitPrice = Number(it.offerPrice || it.dealerPrice || it.price || 0);
+                        const tRate = Number(it.taxRate !== undefined ? it.taxRate : (it.productId?.taxRate !== undefined ? it.productId.taxRate : 18));
+                        return sum + (totalUnits * unitPrice * (tRate / 100));
+                      }, 0);
                       const grandTotal = totalTaxable + totalGst;
 
                       return (
@@ -457,7 +465,7 @@ export default function ProductRequestsPage() {
                           <td colSpan={3} className="py-3 pr-2 text-right">
                             <div className="inline-flex flex-wrap items-center gap-4 text-xs font-bold text-slate-600">
                               <span>Taxable: <strong className="text-slate-900 font-black">{currencyFormatter.format(totalTaxable)}</strong></span>
-                              <span className="text-emerald-700">+ GST (18%): <strong className="text-emerald-800 font-black">+{currencyFormatter.format(totalGst)}</strong></span>
+                              <span className="text-emerald-700">+ GST: <strong className="text-emerald-800 font-black">+{currencyFormatter.format(totalGst)}</strong></span>
                               <span className="text-sm font-black text-slate-900 bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-sm">
                                 Grand Total: <strong className="text-primary-700">{currencyFormatter.format(grandTotal)}</strong>
                               </span>

@@ -48,6 +48,8 @@ export interface Product {
   isFeatured: boolean;
   loyaltyPointEligible?: boolean;
   maxLoyaltyPoints?: number;
+  taxRate?: number;
+  hsnCode?: string;
   petiSize?: number;
   petiUnit?: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';
   moq?: number;

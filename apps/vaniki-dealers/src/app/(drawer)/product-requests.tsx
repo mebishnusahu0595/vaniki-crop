@@ -265,7 +265,12 @@ export default function ProductRequestsScreen() {
           {/* Staged Batch Summary Card (AT THE TOP) */}
           {batchItems.length > 0 && (() => {
             const totalTaxable = batchItems.reduce((acc, it) => acc + ((it.petiQuantity * it.petiSize) * (it.variant.offerPrice || it.variant.dealerPrice || it.variant.price || 0)), 0);
-            const totalGst = totalTaxable * 0.18;
+            const totalGst = batchItems.reduce((acc, it) => {
+              const units = it.petiQuantity * it.petiSize;
+              const rate = Number(it.variant.offerPrice || it.variant.dealerPrice || it.variant.price || 0);
+              const tRate = it.product.taxRate !== undefined ? it.product.taxRate : 18;
+              return acc + (units * rate * (tRate / 100));
+            }, 0);
             const totalGross = totalTaxable + totalGst;
 
             return (
@@ -298,7 +303,7 @@ export default function ProductRequestsScreen() {
                       <Text className="text-[11px] font-bold text-white">₹{totalTaxable.toFixed(2)}</Text>
                     </View>
                     <View className="flex-row justify-between">
-                      <Text className="text-[11px] font-bold text-emerald-400">+ GST (18%):</Text>
+                      <Text className="text-[11px] font-bold text-emerald-400">+ Total GST:</Text>
                       <Text className="text-[11px] font-bold text-emerald-400">+ ₹{totalGst.toFixed(2)}</Text>
                     </View>
                     <View className="flex-row justify-between pt-1 border-t border-emerald-800/80">
@@ -374,7 +379,8 @@ export default function ProductRequestsScreen() {
                 const units = item.petiQuantity * item.petiSize;
                 const rate = Number(item.variant.offerPrice || item.variant.dealerPrice || item.variant.price || 0);
                 const itemTaxable = units * rate;
-                const itemGst = itemTaxable * 0.18;
+                const taxPercent = item.product.taxRate !== undefined ? item.product.taxRate : 18;
+                const itemGst = itemTaxable * (taxPercent / 100);
                 const itemGross = itemTaxable + itemGst;
 
                 return (
@@ -392,7 +398,7 @@ export default function ProductRequestsScreen() {
                       </Text>
                       <View className="mt-1.5 bg-emerald-50/70 rounded-xl p-2 border border-emerald-100 space-y-0.5">
                         <Text className="text-[10px] text-zinc-600 font-semibold">Taxable: ₹{itemTaxable.toFixed(2)}</Text>
-                        <Text className="text-[10px] text-emerald-800 font-bold">+ GST (18%): +₹{itemGst.toFixed(2)}</Text>
+                        <Text className="text-[10px] text-emerald-800 font-bold">+ GST ({taxPercent}%): +₹{itemGst.toFixed(2)}</Text>
                         <Text className="text-xs text-zinc-900 font-black pt-0.5 border-t border-emerald-200">Total: ₹{itemGross.toFixed(2)}</Text>
                       </View>
                     </View>
@@ -619,7 +625,8 @@ export default function ProductRequestsScreen() {
                 const pSize = Number(petiSizeInput) || 12;
                 const units = pQty * pSize;
                 const taxable = units * curRate;
-                const gst = taxable * 0.18;
+                const curTaxRate = selectedProduct?.taxRate !== undefined ? selectedProduct.taxRate : 18;
+                const gst = taxable * (curTaxRate / 100);
                 const gross = taxable + gst;
 
                 return (
@@ -629,7 +636,7 @@ export default function ProductRequestsScreen() {
                       <Text className="text-zinc-900 text-xs font-bold">₹{taxable.toFixed(2)}</Text>
                     </View>
                     <View className="flex-row justify-between items-center">
-                      <Text className="text-emerald-700 text-xs font-bold">+ GST (18%):</Text>
+                      <Text className="text-emerald-700 text-xs font-bold">+ GST ({curTaxRate}%):</Text>
                       <Text className="text-emerald-700 text-xs font-bold">+ ₹{gst.toFixed(2)}</Text>
                     </View>
                     <View className="flex-row justify-between items-center pt-1.5 border-t border-emerald-200">

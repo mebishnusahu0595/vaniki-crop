@@ -20,6 +20,7 @@ interface CartItem {
   dealerPrice?: number;
   offerPrice?: number;
   hsnCode?: string;
+  taxRate?: number;
 }
 
 export default function ProductRequestsPage() {
@@ -99,6 +100,7 @@ export default function ProductRequestsPage() {
       dealerPrice: variant.dealerPrice,
       offerPrice: offerPrice > 0 ? offerPrice : variant.offerPrice,
       hsnCode: hsnCode.trim() || undefined,
+      taxRate: product.taxRate !== undefined ? product.taxRate : 18,
     };
 
     setCart([...cart, newItem]);
@@ -132,6 +134,7 @@ export default function ProductRequestsPage() {
           dealerPrice: item.dealerPrice,
           offerPrice: item.offerPrice,
           hsnCode: item.hsnCode,
+          taxRate: item.taxRate !== undefined ? item.taxRate : 18,
         })),
       }),
     onSuccess: () => {
@@ -310,7 +313,8 @@ export default function ProductRequestsPage() {
               const units = item.petiQuantity * item.petiSize;
               const rate = Number(item.offerPrice || item.dealerPrice || item.price || 0);
               const itemTaxable = units * rate;
-              const itemGst = itemTaxable * 0.18;
+              const taxPercent = item.taxRate !== undefined ? item.taxRate : 18;
+              const itemGst = itemTaxable * (taxPercent / 100);
               const itemTotalWithGst = itemTaxable + itemGst;
 
               return (
@@ -332,7 +336,7 @@ export default function ProductRequestsPage() {
                       </p>
                       <div className="mt-2 text-[10px] font-bold text-slate-600 space-y-0.5">
                         <p>Taxable: ₹{itemTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
-                        <p className="text-emerald-700">+ GST (18%): +₹{itemGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-emerald-700">+ GST ({taxPercent}%): +₹{itemGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -356,7 +360,12 @@ export default function ProductRequestsPage() {
           {/* Pricing Totals Footer */}
           {cart.length > 0 && (() => {
             const totalTaxable = cart.reduce((sum, item) => sum + ((item.petiQuantity * item.petiSize) * Number(item.offerPrice || item.dealerPrice || item.price || 0)), 0);
-            const totalGst = totalTaxable * 0.18;
+            const totalGst = cart.reduce((sum, item) => {
+              const units = item.petiQuantity * item.petiSize;
+              const rate = Number(item.offerPrice || item.dealerPrice || item.price || 0);
+              const tRate = item.taxRate !== undefined ? item.taxRate : 18;
+              return sum + (units * rate * (tRate / 100));
+            }, 0);
             const grandTotal = totalTaxable + totalGst;
 
             return (
@@ -366,7 +375,7 @@ export default function ProductRequestsPage() {
                   <span>₹{totalTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between text-xs font-bold text-emerald-700">
-                  <span>+ GST (18%):</span>
+                  <span>+ Total GST:</span>
                   <span>+ ₹{totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="pt-2 border-t border-primary-100 flex justify-between text-base font-black text-slate-900">
@@ -515,7 +524,8 @@ export default function ProductRequestsPage() {
                   const curRate = offerPrice > 0 ? offerPrice : (selectedV?.dealerPrice || selectedV?.price || price || 0);
                   const totalUnits = (Number(petiQuantity) || 1) * (Number(petiSize) || 12);
                   const lineTaxable = totalUnits * curRate;
-                  const lineGst = lineTaxable * 0.18;
+                  const curTaxRate = product.taxRate !== undefined ? product.taxRate : 18;
+                  const lineGst = lineTaxable * (curTaxRate / 100);
                   const lineTotalWithGst = lineTaxable + lineGst;
 
                   return (
@@ -525,7 +535,7 @@ export default function ProductRequestsPage() {
                         <span>₹{lineTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div className="flex justify-between text-xs font-bold text-emerald-700">
-                        <span>+ GST (18%):</span>
+                        <span>+ GST ({curTaxRate}%):</span>
                         <span>+ ₹{lineGst.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div className="pt-2 border-t border-primary-100 flex justify-between text-sm font-black text-slate-900">

@@ -195,7 +195,7 @@ const productSchema = new Schema<IProduct>(
     loyaltyPointEligible: { type: Boolean, default: false },
     maxLoyaltyPoints: { type: Number, default: 0 },
     hsnCode: { type: String, trim: true },
-    taxRate: { type: Number, default: 0, min: 0 },
+    taxRate: { type: Number, default: 18, min: 0 },
     petiSize: { type: Number, default: 12 },
     petiUnit: { type: String, enum: ['ml', 'Liter', 'gm', 'KG', 'Packet', 'piece'], default: 'Liter' },
     moq: { type: Number, default: 1, min: [1, 'MOQ must be at least 1'] },

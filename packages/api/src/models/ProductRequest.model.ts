@@ -20,6 +20,7 @@ export interface IProductRequest extends Document {
   dealerPrice?: number;
   offerPrice?: number;
   hsnCode?: string;
+  taxRate?: number;
   superAdminNote?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -104,6 +105,7 @@ const productRequestSchema = new Schema<IProductRequest>(
     dealerPrice: { type: Number },
     offerPrice: { type: Number },
     hsnCode: { type: String, trim: true },
+    taxRate: { type: Number, default: 18 },
     superAdminNote: {
       type: String,
       trim: true,

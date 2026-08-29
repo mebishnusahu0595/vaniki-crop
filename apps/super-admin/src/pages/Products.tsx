@@ -137,6 +137,7 @@ export default function ProductsPage() {
               <th className="px-5 py-4">Image</th>
               <th className="px-5 py-4">Product</th>
               <th className="px-5 py-4">Category</th>
+              <th className="px-5 py-4">GST Rate</th>
               <th className="px-5 py-4">Variants</th>
               <th className="px-5 py-4">Stock</th>
               <th className="px-5 py-4">Status</th>
@@ -174,9 +175,15 @@ export default function ProductsPage() {
                     <p className="font-black text-slate-900">{product.name}</p>
                     <p className="mt-1 text-xs text-slate-500">
                       {product.variants[0] ? currencyFormatter.format(product.variants[0].price) : '-'}
+                      {product.hsnCode ? ` • HSN: ${product.hsnCode}` : ''}
                     </p>
                   </td>
                   <td className="px-5 py-4 text-sm text-slate-600">{product.category?.name || '-'}</td>
+                  <td className="px-5 py-4">
+                    <span className="inline-flex items-center rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-800 border border-emerald-100">
+                      {product.taxRate !== undefined ? `${product.taxRate}% GST` : '18% GST'}
+                    </span>
+                  </td>
                   <td className="px-5 py-4 text-sm text-slate-600">{product.variants.length}</td>
                   <td className="px-5 py-4 text-sm text-slate-600">{totalStock}</td>
                   <td className="px-5 py-4">
@@ -253,7 +260,12 @@ export default function ProductsPage() {
                   </span>
                   <p className="text-lg font-black text-slate-900">{product.name}</p>
                 </div>
-                <p className="text-sm text-slate-500">{product.category?.name || 'Uncategorized'}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm text-slate-500">{product.category?.name || 'Uncategorized'}</p>
+                  <span className="rounded-lg bg-emerald-50 px-2 py-0.5 text-[10px] font-black text-emerald-800 border border-emerald-100">
+                    {product.taxRate !== undefined ? `${product.taxRate}% GST` : '18% GST'}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={async () => {

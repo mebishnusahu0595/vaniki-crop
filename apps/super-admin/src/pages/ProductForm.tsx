@@ -56,6 +56,8 @@ const productSchema = z.object({
   variants: z.array(variantSchema).min(1),
   loyaltyPointEligible: z.boolean().default(true),
   maxLoyaltyPoints: requiredNumber('Max Loyalty Points').default(0),
+  taxRate: requiredNumber('GST / Tax Rate (%)').default(18),
+  hsnCode: z.string().optional(),
   petiSize: requiredNumber('Peti Size').default(12),
   petiUnit: z.enum(units).default('Liter'),
 });
@@ -87,6 +89,8 @@ const productDefaultValues: ProductFormInput = {
   variants: [{ quantity: '', unit: 'Liter', price: '', adminPrice: '', offerPrice: '', hsnCode: '', mrp: '', stock: '' }],
   loyaltyPointEligible: true,
   maxLoyaltyPoints: 0,
+  taxRate: 18,
+  hsnCode: '',
   petiSize: 12,
   petiUnit: 'Liter',
 };
@@ -117,6 +121,8 @@ function getProductDefaultValues(product?: Product): ProductFormInput {
     })),
     loyaltyPointEligible: product.loyaltyPointEligible ?? true,
     maxLoyaltyPoints: product.maxLoyaltyPoints ?? 0,
+    taxRate: product.taxRate !== undefined ? product.taxRate : 18,
+    hsnCode: product.hsnCode || '',
     petiSize: product.petiSize || 12,
     petiUnit: product.petiUnit || 'Liter',
   };
@@ -436,6 +442,8 @@ function ProductEditor({
         );
         payload.append('loyaltyPointEligible', String(values.loyaltyPointEligible));
         payload.append('maxLoyaltyPoints', String(values.maxLoyaltyPoints));
+        payload.append('taxRate', String(values.taxRate ?? 18));
+        if (values.hsnCode) payload.append('hsnCode', values.hsnCode);
         payload.append('petiSize', String(values.petiSize));
         payload.append('petiUnit', values.petiUnit);
 
@@ -497,6 +505,25 @@ function ProductEditor({
                 ))}
               </select>
               {errors.category ? <p className="mt-2 text-sm text-rose-600">{errors.category.message}</p> : null}
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-emerald-700 font-bold flex items-center justify-between">
+                <span>GST / Tax Rate (%)</span>
+                <span className="text-[10px] text-emerald-600 lowercase bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Custom per product</span>
+              </label>
+              <select {...register('taxRate')} className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value={0}>0% (Tax Exempt / Nil)</option>
+                <option value={5}>5% GST</option>
+                <option value={12}>12% GST</option>
+                <option value={18}>18% GST (Standard Agrochemicals)</option>
+                <option value={28}>28% GST</option>
+              </select>
+              {errors.taxRate ? <p className="mt-2 text-sm text-rose-600">{errors.taxRate.message}</p> : null}
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">HSN Code (Product)</label>
+              <input {...register('hsnCode')} placeholder="e.g. 38089190" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-mono font-bold text-slate-900" />
+              {errors.hsnCode ? <p className="mt-2 text-sm text-rose-600">{errors.hsnCode.message}</p> : null}
             </div>
             <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Peti Size</label>

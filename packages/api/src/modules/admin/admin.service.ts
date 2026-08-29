@@ -131,7 +131,7 @@ export async function listStoreCustomers(storeId: string, query: Record<string, 
 
 export async function listDealerInventory(storeId: string) {
   const products = await Product.find({ isActive: true })
-    .select('name slug images category variants isActive shortDescription petiSize petiUnit hsnCode')
+    .select('name slug images category variants isActive shortDescription petiSize petiUnit hsnCode taxRate')
     .populate('category', 'name')
     .sort({ updatedAt: -1 });
 
@@ -155,6 +155,7 @@ export async function listDealerInventory(storeId: string) {
     petiSize: product.petiSize,
     petiUnit: product.petiUnit,
     hsnCode: product.hsnCode,
+    taxRate: product.taxRate !== undefined ? product.taxRate : 18,
     variants: product.variants.map((variant: any) => {
       const variantId = variant._id.toString();
       const key = `${(product._id as mongoose.Types.ObjectId).toString()}:${variantId}`;
@@ -261,9 +262,11 @@ export async function createDealerProductRequest(
     let productName = typeof item.productName === 'string' ? item.productName.trim() : '';
     let petiSize = 12;
     let petiUnit = 'Liter';
+    let productTaxRate = 18;
+    let productHsnCode = item.hsnCode || '';
 
     if (typeof item.productId === 'string' && mongoose.Types.ObjectId.isValid(item.productId)) {
-      const product = await Product.findById(item.productId).select('name petiSize petiUnit shortDescription');
+      const product = await Product.findById(item.productId).select('name petiSize petiUnit shortDescription taxRate hsnCode');
       if (!product) {
         throw new AppError('Selected product not found', 404);
       }
@@ -281,6 +284,8 @@ export async function createDealerProductRequest(
         petiSize = product.petiSize;
       }
       if (product.petiUnit) petiUnit = product.petiUnit;
+      if (product.taxRate !== undefined) productTaxRate = product.taxRate;
+      if (!productHsnCode && product.hsnCode) productHsnCode = product.hsnCode;
     }
 
     if (!productName) {
@@ -303,7 +308,8 @@ export async function createDealerProductRequest(
       status: 'pending',
       dealerPrice: item.dealerPrice || item.price,
       offerPrice: item.offerPrice,
-      hsnCode: item.hsnCode,
+      hsnCode: productHsnCode,
+      taxRate: item.taxRate !== undefined ? Number(item.taxRate) : productTaxRate,
     });
 
     results.push(request);
