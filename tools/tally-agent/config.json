@@ -1,5 +1,10 @@
 {
   "serverApiUrl": "https://vanikicrop.com/api/tally",
+  "fallbackApiUrls": [
+    "http://192.168.1.36/api/tally",
+    "http://192.168.1.36:5000/api/tally",
+    "http://192.168.1.57:5000/api/tally"
+  ],
   "agentSecretKey": "vaniki_tally_sec_2026_x9k",
   "tallyHost": "127.0.0.1",
   "tallyPort": 9000,

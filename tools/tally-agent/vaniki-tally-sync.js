@@ -29,6 +29,11 @@ const COLORS = {
 const configPath = path.join(__dirname, 'config.json');
 let config = {
   serverApiUrl: 'https://vanikicrop.com/api/tally',
+  fallbackApiUrls: [
+    'http://192.168.1.36/api/tally',
+    'http://192.168.1.36:5000/api/tally',
+    'http://192.168.1.57:5000/api/tally',
+  ],
   agentSecretKey: 'vaniki_tally_sec_2026_x9k',
   tallyHost: '127.0.0.1',
   tallyPort: 9000,
@@ -44,6 +49,8 @@ if (fs.existsSync(configPath)) {
     console.error(`${COLORS.red}[Config Error] Could not read config.json, using defaults.${COLORS.reset}`);
   }
 }
+
+let activeApiUrl = config.serverApiUrl;
 
 /**
  * Helper to make HTTP / HTTPS Requests
@@ -167,28 +174,41 @@ function parseTallyResponse(tallyXmlResponse) {
  */
 let isSyncing = false;
 
+async function fetchQueueFromAnyEndpoint() {
+  const candidateUrls = Array.from(new Set([activeApiUrl, config.serverApiUrl, ...(config.fallbackApiUrls || [])]));
+
+  for (const baseUrl of candidateUrls) {
+    try {
+      const queueUrl = `${baseUrl.replace(/\/+$/, '')}/pending-sync`;
+      const res = await makeRequest(queueUrl, {
+        method: 'GET',
+        headers: {
+          'x-tally-secret': config.agentSecretKey,
+          'Accept': 'application/json',
+        },
+        timeout: 5000,
+      });
+
+      if (res.statusCode === 200) {
+        if (activeApiUrl !== baseUrl) {
+          activeApiUrl = baseUrl;
+          console.log(`\n${COLORS.green}[Connected] Successfully connected to API: ${activeApiUrl}${COLORS.reset}`);
+        }
+        return JSON.parse(res.data);
+      }
+    } catch {}
+  }
+
+  throw new Error(`Could not connect to Vaniki Server (${activeApiUrl}). Check internet/LAN connection.`);
+}
+
 async function syncPendingInvoices() {
   if (isSyncing) return;
   isSyncing = true;
 
   try {
-    // 1. Fetch pending queue from Vaniki Server
-    const queueUrl = `${config.serverApiUrl}/pending-sync`;
-    const res = await makeRequest(queueUrl, {
-      method: 'GET',
-      headers: {
-        'x-tally-secret': config.agentSecretKey,
-        'Accept': 'application/json',
-      },
-    });
-
-    if (res.statusCode !== 200) {
-      console.log(`${COLORS.yellow}[Server Notice] (${res.statusCode}) Could not fetch queue: ${res.data}${COLORS.reset}`);
-      isSyncing = false;
-      return;
-    }
-
-    const json = JSON.parse(res.data);
+    // 1. Fetch pending queue from Vaniki Server with automatic failover
+    const json = await fetchQueueFromAnyEndpoint();
     const queue = json.data || [];
 
     if (queue.length === 0) {
