@@ -24,6 +24,14 @@ export interface IB2BInvoice extends Document {
   tallySyncAt?: Date;
   tallySyncError?: string;
   tallyXmlPayload?: string;
+  buyerOrderNo?: string;
+  buyerOrderDate?: Date;
+  dispatchDocNo?: string;
+  dispatchDate?: Date;
+  despatchedThrough?: string;
+  destination?: string;
+  termsOfDelivery?: string;
+  paymentTerms?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +66,14 @@ const B2BInvoiceSchema: Schema = new Schema(
     tallySyncAt: { type: Date },
     tallySyncError: { type: String },
     tallyXmlPayload: { type: String },
+    buyerOrderNo: { type: String },
+    buyerOrderDate: { type: Date },
+    dispatchDocNo: { type: String },
+    dispatchDate: { type: Date },
+    despatchedThrough: { type: String },
+    destination: { type: String },
+    termsOfDelivery: { type: String },
+    paymentTerms: { type: String },
   },
   {
     timestamps: true,

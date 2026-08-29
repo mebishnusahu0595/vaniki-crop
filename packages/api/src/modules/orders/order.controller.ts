@@ -195,7 +195,20 @@ export async function updateOrderStatus(req: Request, res: Response, next: NextF
  */
 export async function createB2BInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { storeId, items, invoiceNumber, invoiceDate } = req.body;
+    const {
+      storeId,
+      items,
+      invoiceNumber,
+      invoiceDate,
+      buyerOrderNo,
+      buyerOrderDate,
+      dispatchDocNo,
+      dispatchDate,
+      despatchedThrough,
+      destination,
+      termsOfDelivery,
+      paymentTerms,
+    } = req.body;
     
     const store = await Store.findById(storeId);
     if (!store) throw new AppError('Store not found', 404);
@@ -207,14 +220,15 @@ export async function createB2BInvoice(req: Request, res: Response, next: NextFu
     let subtotal = 0;
     let totalTaxAmount = 0;
     const processedItems = items.map((item: any) => {
-      const taxAmount = (item.price * item.qty * item.taxRate) / 100;
+      const taxRate = Number(item.taxRate || 0);
+      const taxAmount = (item.price * item.qty * taxRate) / 100;
       const total = (item.price * item.qty) + taxAmount;
       subtotal += item.price * item.qty;
       totalTaxAmount += taxAmount;
       return { ...item, taxAmount, total };
     });
 
-    const finalInvoiceNumber = invoiceNumber || `B2B-${Date.now()}`;
+    const finalInvoiceNumber = invoiceNumber || `VANIKI-B2B-${Date.now().toString().slice(-4)}`;
     const finalInvoiceDate = invoiceDate ? new Date(invoiceDate) : new Date();
 
     const invoice = await B2BInvoice.create({
@@ -225,6 +239,15 @@ export async function createB2BInvoice(req: Request, res: Response, next: NextFu
       subtotal,
       totalTaxAmount,
       totalAmount: subtotal + totalTaxAmount,
+      buyerOrderNo: buyerOrderNo || finalInvoiceNumber,
+      buyerOrderDate: buyerOrderDate ? new Date(buyerOrderDate) : finalInvoiceDate,
+      dispatchDocNo: dispatchDocNo || '',
+      dispatchDate: dispatchDate ? new Date(dispatchDate) : finalInvoiceDate,
+      despatchedThrough: despatchedThrough || 'Vaniki Fleet / Transport',
+      destination: destination || store.address?.city || store.address?.state || 'Chhattisgarh',
+      termsOfDelivery: termsOfDelivery || 'Door Delivery',
+      paymentTerms: paymentTerms || 'Immediate / On Delivery',
+      tallySyncStatus: 'pending',
     });
 
     res.status(201).json({ success: true, data: invoice });

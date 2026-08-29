@@ -67,6 +67,23 @@ export default function InvoicesPage() {
                   <Calendar size={14} className="text-primary-500" />
                   <span>{format(new Date(invoice.invoiceDate), 'PPP')}</span>
                 </div>
+
+                <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 border border-slate-100">
+                  <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Tally Status</span>
+                  {invoice.tallySyncStatus === 'synced' ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg">
+                      ✓ Synced (Vch #{invoice.tallyVoucherNumber || '-'})
+                    </span>
+                  ) : invoice.tallySyncStatus === 'failed' ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-lg">
+                      ✕ Failed
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg">
+                      ⏳ Pending
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="mt-8 flex items-center justify-between">

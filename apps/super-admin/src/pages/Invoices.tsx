@@ -38,15 +38,30 @@ export default function InvoicesPage() {
   }, [storeIdParam]);
 
   const [items, setItems] = useState<B2BItem[]>([
-    { productName: '', hsnCode: '', qty: 1, price: 0, taxRate: 18 }
+    { productName: '', hsnCode: '38089190', qty: 1, price: 0, taxRate: 18 }
   ]);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [buyerOrderNo, setBuyerOrderNo] = useState('');
+  const [dispatchDocNo, setDispatchDocNo] = useState('');
+  const [despatchedThrough, setDespatchedThrough] = useState('Vaniki Fleet / Transport');
+  const [destination, setDestination] = useState('');
+  const [termsOfDelivery, setTermsOfDelivery] = useState('Door Delivery');
+  const [paymentTerms, setPaymentTerms] = useState('Immediate / On Delivery');
 
   const storesQuery = useQuery({
     queryKey: ['super-admin-stores-list'],
     queryFn: () => adminApi.stores({ limit: 200, isActive: true }),
   });
+
+  useEffect(() => {
+    if (selectedStoreId && storesQuery.data?.data) {
+      const s = storesQuery.data.data.find(st => st.id === selectedStoreId);
+      if (s && !destination) {
+        setDestination(s.address?.city || s.address?.state || '');
+      }
+    }
+  }, [selectedStoreId, storesQuery.data]);
 
   const invoicesQuery = useQuery({
     queryKey: ['super-admin-b2b-invoices', storeIdParam, page],
@@ -184,6 +199,23 @@ export default function InvoicesPage() {
                     <span>{format(new Date(invoice.invoiceDate), 'PP')}</span>
                   </div>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 border border-slate-100">
+                <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">Tally Status</span>
+                {invoice.tallySyncStatus === 'synced' ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-lg">
+                    ✓ Synced (Vch #{invoice.tallyVoucherNumber || '-'})
+                  </span>
+                ) : invoice.tallySyncStatus === 'failed' ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-lg">
+                    ✕ Failed
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-lg">
+                    ⏳ Pending
+                  </span>
+                )}
               </div>
             </div>
 
@@ -372,6 +404,69 @@ export default function InvoicesPage() {
                 </div>
               </div>
 
+              {/* Transport & Order References */}
+              <div className="rounded-2xl border border-primary-100 bg-primary-50/20 p-6 space-y-4">
+                <p className="text-xs font-black uppercase tracking-widest text-primary-600">
+                  🚚 Transport & Dispatch Details (Auto-Synced with Tally)
+                </p>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Buyer Order No.</label>
+                    <input
+                      value={buyerOrderNo}
+                      onChange={(e) => setBuyerOrderNo(e.target.value)}
+                      placeholder="Auto / PO Number"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Despatch Doc / LR No.</label>
+                    <input
+                      value={dispatchDocNo}
+                      onChange={(e) => setDispatchDocNo(e.target.value)}
+                      placeholder="e.g. LR-98234"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Despatched Through / Transport</label>
+                    <input
+                      value={despatchedThrough}
+                      onChange={(e) => setDespatchedThrough(e.target.value)}
+                      placeholder="e.g. Vaniki Fleet / VRL Logistics"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Destination</label>
+                    <input
+                      value={destination}
+                      onChange={(e) => setDestination(e.target.value)}
+                      placeholder="e.g. Durg / Raipur"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Terms of Delivery</label>
+                    <input
+                      value={termsOfDelivery}
+                      onChange={(e) => setTermsOfDelivery(e.target.value)}
+                      placeholder="e.g. Door Delivery / Ex-Godown"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">Mode / Terms of Payment</label>
+                    <input
+                      value={paymentTerms}
+                      onChange={(e) => setPaymentTerms(e.target.value)}
+                      placeholder="e.g. Immediate / Net 30"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="rounded-[2rem] bg-slate-900 p-8 text-white shadow-xl">
                 <div className="flex flex-wrap justify-between gap-8">
                   <div className="space-y-4 min-w-[200px]">
@@ -395,7 +490,13 @@ export default function InvoicesPage() {
                         storeId: selectedStoreId,
                         items,
                         invoiceNumber: invoiceNumber || undefined,
-                        invoiceDate: invoiceDate || undefined
+                        invoiceDate: invoiceDate || undefined,
+                        buyerOrderNo: buyerOrderNo || undefined,
+                        dispatchDocNo: dispatchDocNo || undefined,
+                        despatchedThrough: despatchedThrough || undefined,
+                        destination: destination || undefined,
+                        termsOfDelivery: termsOfDelivery || undefined,
+                        paymentTerms: paymentTerms || undefined,
                       })}
                       disabled={!selectedStoreId || createInvoiceMutation.isPending}
                       className="flex items-center justify-center gap-3 rounded-2xl bg-primary-500 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-primary-500/20 transition-all hover:bg-primary-600 disabled:opacity-40 disabled:cursor-not-allowed"

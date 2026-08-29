@@ -268,6 +268,7 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
       const infoTop = addressTop + (isA5 ? 80 : 85);
       const infoRows = order.isB2B ? [
         ['Invoice Number', invoiceNumber],
+        ['Tally Voucher', order.tallyVoucherNumber ? `#${order.tallyVoucherNumber} (Synced)` : (order.tallySyncStatus === 'synced' ? 'Synced' : 'Pending')],
         ['Invoice Date', order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : '-'],
         ['Place of Supply', store.address?.state || '-'],
       ] : [
@@ -448,6 +449,8 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
     totalAmount: invoice.totalAmount,
     totalTaxAmount: invoice.totalTaxAmount,
     subtotal: invoice.subtotal,
+    tallyVoucherNumber: invoice.tallyVoucherNumber,
+    tallySyncStatus: invoice.tallySyncStatus,
   };
   
   return generateInvoicePdf(orderData, { size: 'A5' });
