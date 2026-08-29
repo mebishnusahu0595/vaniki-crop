@@ -16,7 +16,40 @@ export default function ProductRequestsPage() {
   const [status, setStatus] = useState('');
   const [statusDraft, setStatusDraft] = useState<Record<string, ActionStatus>>({});
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
-  const [generatingInvoiceKey, setGeneratingInvoiceKey] = useState<string | null>(null);
+  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+  const [approvingGroup, setApprovingGroup] = useState<any | null>(null);
+  const [approvalForm, setApprovalForm] = useState<{
+    invoiceNumber: string;
+    invoiceDate: string;
+    buyerOrderNo: string;
+    buyerOrderDate: string;
+    dispatchDocNo: string;
+    dispatchDate: string;
+    despatchedThrough: string;
+    destination: string;
+    termsOfDelivery: string;
+    paymentTerms: string;
+    items: Array<{
+      requestId: string;
+      productName: string;
+      hsnCode: string;
+      qty: number;
+      price: number;
+      taxRate: number;
+    }>;
+  }>({
+    invoiceNumber: '',
+    invoiceDate: new Date().toISOString().split('T')[0],
+    buyerOrderNo: '',
+    buyerOrderDate: new Date().toISOString().split('T')[0],
+    dispatchDocNo: '',
+    dispatchDate: new Date().toISOString().split('T')[0],
+    despatchedThrough: 'Vaniki Fleet / Transport',
+    destination: '',
+    termsOfDelivery: 'Door Delivery',
+    paymentTerms: 'Immediate / On Delivery',
+    items: [],
+  });
 
   // Pagination State
   const [page, setPage] = useState(1);
@@ -75,55 +108,95 @@ export default function ProductRequestsPage() {
     return Array.from(map.values());
   }, [requestQuery.data?.data]);
 
-  const handleApproveBatchAndGenerateInvoice = async (group: any) => {
-    const storeId = group.storeIdStr;
+  const handleOpenApprovalModal = (group: any) => {
+    const today = new Date().toISOString().split('T')[0];
+    const generatedInvNo = `VANIKI-B2B-${Math.floor(1000 + Math.random() * 9000)}`;
+    const storeDest = group.store?.address?.city || group.store?.address?.state || 'Ambagarh Chauki';
+
+    const initialItems = group.items.map((item: any) => {
+      const pQty = Number(item.petiQuantity || 1);
+      const pSize = Number(item.petiSize || 12);
+      const totalUnits = Number(item.requestedQuantity || (pQty * pSize) || pQty || 1);
+      const unitPrice = Number(item.offerPrice || item.dealerPrice || item.price || 100);
+
+      return {
+        requestId: item.id,
+        productName: item.productName || 'Product',
+        hsnCode: item.hsnCode || '38089190',
+        qty: totalUnits,
+        price: unitPrice,
+        taxRate: 18,
+      };
+    });
+
+    setApprovalForm({
+      invoiceNumber: generatedInvNo,
+      invoiceDate: today,
+      buyerOrderNo: group.batchId || `REQ-${group.items[0]?.id?.slice(-6).toUpperCase() || 'ORD'}`,
+      buyerOrderDate: group.createdAt ? new Date(group.createdAt).toISOString().split('T')[0] : today,
+      dispatchDocNo: `LR-${Math.floor(1000 + Math.random() * 9000)}`,
+      dispatchDate: today,
+      despatchedThrough: 'Vaniki Fleet / Transport',
+      destination: storeDest,
+      termsOfDelivery: 'Door Delivery',
+      paymentTerms: 'Immediate / On Delivery',
+      items: initialItems,
+    });
+
+    setApprovingGroup(group);
+  };
+
+  const handleConfirmApprovalAndInvoice = async () => {
+    if (!approvingGroup) return;
+    const storeId = approvingGroup.storeIdStr;
     if (!storeId || storeId === 'unknown') {
       alert('Cannot determine store ID for this request group.');
       return;
     }
 
-    setGeneratingInvoiceKey(group.groupKey);
+    setIsSubmittingApproval(true);
     try {
-      // 1. Build items list for B2B Invoice
-      const invoiceItems = group.items.map((item: any) => {
-        const pQty = Number(item.petiQuantity || 1);
-        const pSize = Number(item.petiSize || 12);
-        const totalUnits = Number(item.requestedQuantity || (pQty * pSize) || pQty || 1);
-        const unitPrice = Number(item.offerPrice || item.dealerPrice || item.price || 100);
-
-        return {
-          productName: item.productName || 'Product',
-          hsnCode: item.hsnCode || '38089190',
-          qty: totalUnits,
-          price: unitPrice,
-          taxRate: 18,
-        };
-      });
-
-      // 2. Generate B2B Invoice
+      // 1. Create B2B Invoice with all transport & item details
       await adminApi.createB2BInvoice({
         storeId,
-        items: invoiceItems,
-      });
+        invoiceNumber: approvalForm.invoiceNumber,
+        invoiceDate: approvalForm.invoiceDate,
+        buyerOrderNo: approvalForm.buyerOrderNo,
+        buyerOrderDate: approvalForm.buyerOrderDate,
+        dispatchDocNo: approvalForm.dispatchDocNo,
+        dispatchDate: approvalForm.dispatchDate,
+        despatchedThrough: approvalForm.despatchedThrough,
+        destination: approvalForm.destination,
+        termsOfDelivery: approvalForm.termsOfDelivery,
+        paymentTerms: approvalForm.paymentTerms,
+        items: approvalForm.items.map((i) => ({
+          productName: i.productName,
+          hsnCode: i.hsnCode,
+          qty: Number(i.qty),
+          price: Number(i.price),
+          taxRate: Number(i.taxRate),
+        })),
+      } as any);
 
-      // 3. Mark all items in this group as approved
+      // 2. Mark all items in this group as approved
       await Promise.all(
-        group.items.map((item: any) =>
+        approvingGroup.items.map((item: any) =>
           adminApi.updateProductRequest(item.id, {
             status: 'approved',
-            superAdminNote: 'Approved and B2B Invoice Generated for Tally Auto-Sync',
+            superAdminNote: `Approved with Invoice ${approvalForm.invoiceNumber} and queued for Tally sync`,
           })
         )
       );
 
       queryClient.invalidateQueries({ queryKey: ['super-admin-product-requests'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-b2b-invoices'] });
-      alert(`✅ Success! B2B Invoice generated with ${invoiceItems.length} products and queued for instant Tally auto-sync!`);
+      setApprovingGroup(null);
+      alert(`✅ Success! Invoice ${approvalForm.invoiceNumber} created and synced to Tally!`);
     } catch (err: any) {
       console.error(err);
       alert('Failed to generate invoice: ' + (err?.message || 'Unknown error'));
     } finally {
-      setGeneratingInvoiceKey(null);
+      setIsSubmittingApproval(false);
     }
   };
 
@@ -378,16 +451,11 @@ export default function ProductRequestsPage() {
 
                 <button
                   type="button"
-                  onClick={() => handleApproveBatchAndGenerateInvoice(group)}
-                  disabled={generatingInvoiceKey === group.groupKey}
-                  className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-xs font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition disabled:opacity-50"
+                  onClick={() => handleOpenApprovalModal(group)}
+                  className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-xs font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition"
                 >
                   <FileText size={16} strokeWidth={2.5} />
-                  <span>
-                    {generatingInvoiceKey === group.groupKey
-                      ? 'Generating Invoice & Syncing...'
-                      : 'Approve & Generate B2B Invoice'}
-                  </span>
+                  <span>Approve & Generate B2B Invoice</span>
                 </button>
               </div>
             </div>
@@ -444,6 +512,269 @@ export default function ProductRequestsPage() {
             <span>Next</span>
             <ChevronRight size={16} />
           </button>
+        </div>
+      )}
+
+      {/* Approval & Dispatch Details Review Modal */}
+      {approvingGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] border border-primary-100 bg-white p-8 md:p-10 shadow-2xl animate-in fade-in zoom-in duration-200 my-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8 pb-5 border-b border-slate-100">
+              <div className="flex items-center gap-3.5">
+                <div className="rounded-2xl bg-emerald-600 p-3 text-white shadow-lg shadow-emerald-500/20">
+                  <FileText size={24} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600">Tally Auto-Sync Approval</p>
+                  <h2 className="text-2xl font-black text-slate-900 leading-tight">Review & Confirm B2B Invoice</h2>
+                </div>
+              </div>
+              <button
+                onClick={() => setApprovingGroup(null)}
+                disabled={isSubmittingApproval}
+                className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Store & Dealer Summary Banner */}
+              <div className="grid gap-4 md:grid-cols-3 rounded-2xl bg-slate-50 p-5 border border-slate-100">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Target Store</p>
+                  <p className="font-black text-slate-900 mt-0.5">{approvingGroup.store?.name || 'Store'}</p>
+                  <p className="text-xs text-slate-500">{approvingGroup.store?.phone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Dealer Admin</p>
+                  <p className="font-bold text-slate-800 mt-0.5">{approvingGroup.requestedBy?.name || 'Bishnu prasad sahu'}</p>
+                  <p className="text-xs text-slate-500">{approvingGroup.requestedBy?.mobile || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Garage / Batch</p>
+                  <p className="font-bold text-slate-800 mt-0.5">{approvingGroup.garageName}</p>
+                  <p className="text-xs font-mono text-emerald-700 font-bold">{approvalForm.buyerOrderNo}</p>
+                </div>
+              </div>
+
+              {/* Items Summary & Editable Prices */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+                    📦 Products in Invoice ({approvalForm.items.length})
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                      <tr>
+                        <th className="p-3">#</th>
+                        <th className="p-3">Product Name</th>
+                        <th className="p-3">HSN</th>
+                        <th className="p-3 text-right">Qty (Units)</th>
+                        <th className="p-3 text-right">Price / Unit</th>
+                        <th className="p-3 text-right">Tax Rate</th>
+                        <th className="p-3 text-right">Line Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {approvalForm.items.map((item, idx) => {
+                        const lineTotal = Number(item.qty || 0) * Number(item.price || 0);
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="p-3 font-bold text-slate-400">{idx + 1}</td>
+                            <td className="p-3 font-black text-slate-900">{item.productName}</td>
+                            <td className="p-3">
+                              <input
+                                value={item.hsnCode}
+                                onChange={(e) => {
+                                  const updated = [...approvalForm.items];
+                                  updated[idx].hsnCode = e.target.value;
+                                  setApprovalForm({ ...approvalForm, items: updated });
+                                }}
+                                className="w-24 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-mono text-slate-700 outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            </td>
+                            <td className="p-3 text-right">
+                              <input
+                                type="number"
+                                value={item.qty}
+                                onChange={(e) => {
+                                  const updated = [...approvalForm.items];
+                                  updated[idx].qty = Number(e.target.value);
+                                  setApprovalForm({ ...approvalForm, items: updated });
+                                }}
+                                className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-900 text-right outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            </td>
+                            <td className="p-3 text-right">
+                              <input
+                                type="number"
+                                value={item.price}
+                                onChange={(e) => {
+                                  const updated = [...approvalForm.items];
+                                  updated[idx].price = Number(e.target.value);
+                                  setApprovalForm({ ...approvalForm, items: updated });
+                                }}
+                                className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-900 text-right outline-none focus:ring-1 focus:ring-primary-500"
+                              />
+                            </td>
+                            <td className="p-3 text-right font-bold text-slate-600">18% GST</td>
+                            <td className="p-3 text-right font-black text-slate-900">
+                              {currencyFormatter.format(lineTotal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* 🚚 Transport & Dispatch Details Box */}
+              <div className="rounded-2xl border border-primary-100 bg-primary-50/20 p-6 space-y-4">
+                <p className="text-xs font-black uppercase tracking-widest text-primary-700 flex items-center gap-2">
+                  🚚 Transport & Dispatch Parameters (Printed on Tally Invoice)
+                </p>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Invoice Number</label>
+                    <input
+                      value={approvalForm.invoiceNumber}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, invoiceNumber: e.target.value })}
+                      placeholder="e.g. VANIKI-B2B-1001"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Invoice Date</label>
+                    <input
+                      type="date"
+                      value={approvalForm.invoiceDate}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, invoiceDate: e.target.value })}
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Buyer Order No.</label>
+                    <input
+                      value={approvalForm.buyerOrderNo}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, buyerOrderNo: e.target.value })}
+                      placeholder="Order / Batch ID"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Buyer Order Date</label>
+                    <input
+                      type="date"
+                      value={approvalForm.buyerOrderDate}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, buyerOrderDate: e.target.value })}
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Despatch Doc / LR No.</label>
+                    <input
+                      value={approvalForm.dispatchDocNo}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, dispatchDocNo: e.target.value })}
+                      placeholder="e.g. LR-9842"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Delivery Note Date</label>
+                    <input
+                      type="date"
+                      value={approvalForm.dispatchDate}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, dispatchDate: e.target.value })}
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Despatched Through / Transport</label>
+                    <input
+                      value={approvalForm.despatchedThrough}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, despatchedThrough: e.target.value })}
+                      placeholder="e.g. Vaniki Fleet / VRL"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Destination</label>
+                    <input
+                      value={approvalForm.destination}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, destination: e.target.value })}
+                      placeholder="e.g. Ambagarh Chauki"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Terms of Delivery</label>
+                    <input
+                      value={approvalForm.termsOfDelivery}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, termsOfDelivery: e.target.value })}
+                      placeholder="e.g. Door Delivery"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Mode / Terms of Payment</label>
+                    <input
+                      value={approvalForm.paymentTerms}
+                      onChange={(e) => setApprovalForm({ ...approvalForm, paymentTerms: e.target.value })}
+                      placeholder="e.g. Immediate / 30 Days"
+                      className="w-full rounded-xl border border-primary-100 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Total Calculation Display */}
+              {(() => {
+                const totalGross = approvalForm.items.reduce((acc, i) => acc + (Number(i.qty || 0) * Number(i.price || 0)), 0);
+                const taxable = totalGross / 1.18;
+                const cgst = (totalGross - taxable) / 2;
+                const sgst = (totalGross - taxable) / 2;
+
+                return (
+                  <div className="flex flex-wrap items-center justify-between rounded-2xl bg-slate-900 p-6 text-white shadow-xl">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Total Invoice Amount</p>
+                      <p className="text-3xl font-black mt-0.5">{currencyFormatter.format(totalGross)}</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Taxable: {currencyFormatter.format(taxable)} | CGST 9%: {currencyFormatter.format(cgst)} | SGST 9%: {currencyFormatter.format(sgst)}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setApprovingGroup(null)}
+                        disabled={isSubmittingApproval}
+                        className="rounded-2xl border border-white/20 px-6 py-3.5 text-xs font-black uppercase tracking-wider text-white hover:bg-white/10 transition"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConfirmApprovalAndInvoice}
+                        disabled={isSubmittingApproval}
+                        className="flex items-center gap-2 rounded-2xl bg-emerald-500 px-8 py-3.5 text-xs font-black uppercase tracking-[0.16em] text-slate-950 font-black shadow-lg shadow-emerald-500/30 hover:bg-emerald-400 active:scale-95 transition disabled:opacity-50"
+                      >
+                        <FileText size={16} strokeWidth={3} />
+                        <span>{isSubmittingApproval ? 'Creating & Syncing to Tally...' : 'Confirm & Sync to Tally'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
         </div>
       )}
     </div>
