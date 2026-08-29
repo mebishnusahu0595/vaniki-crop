@@ -1,0 +1,8 @@
+{
+  "serverApiUrl": "https://vanikicrop.com/api/tally",
+  "agentSecretKey": "vaniki_tally_sec_2026_x9k",
+  "tallyHost": "127.0.0.1",
+  "tallyPort": 9000,
+  "pollIntervalSeconds": 10,
+  "autoSync": true
+}

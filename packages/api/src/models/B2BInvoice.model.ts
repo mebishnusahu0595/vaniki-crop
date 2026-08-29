@@ -18,6 +18,12 @@ export interface IB2BInvoice extends Document {
   subtotal: number; // Sum of (Price * Qty)
   totalTaxAmount: number;
   totalAmount: number;
+  tallySyncStatus: 'pending' | 'synced' | 'failed' | 'manual';
+  tallyVoucherNumber?: string;
+  tallyVoucherGuid?: string;
+  tallySyncAt?: Date;
+  tallySyncError?: string;
+  tallyXmlPayload?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +47,17 @@ const B2BInvoiceSchema: Schema = new Schema(
     subtotal: { type: Number, required: true, min: 0 },
     totalTaxAmount: { type: Number, required: true, min: 0 },
     totalAmount: { type: Number, required: true, min: 0 },
+    tallySyncStatus: {
+      type: String,
+      enum: ['pending', 'synced', 'failed', 'manual'],
+      default: 'pending',
+      index: true,
+    },
+    tallyVoucherNumber: { type: String },
+    tallyVoucherGuid: { type: String },
+    tallySyncAt: { type: Date },
+    tallySyncError: { type: String },
+    tallyXmlPayload: { type: String },
   },
   {
     timestamps: true,
