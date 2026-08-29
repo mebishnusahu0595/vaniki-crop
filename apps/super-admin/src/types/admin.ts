@@ -441,6 +441,7 @@ export interface AdminAccount {
 
 export interface ProductRequest {
   id: string;
+  batchId?: string;
   status: 'pending' | 'approved' | 'rejected' | 'fulfilled' | 'contacted';
   productId?: {
     id: string;

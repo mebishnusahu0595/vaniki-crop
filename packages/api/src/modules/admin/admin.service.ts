@@ -237,6 +237,7 @@ export async function createDealerProductRequest(
   input: any,
 ) {
   const items = Array.isArray(input.items) ? input.items : [input];
+  const batchId = input.batchId || `REQ-${Date.now().toString(36).toUpperCase()}`;
   const results: any[] = [];
 
   for (const item of items) {
@@ -286,6 +287,7 @@ export async function createDealerProductRequest(
       storeId,
       adminId,
       productId,
+      batchId,
       productName,
       requestedQuantity,
       requestedPack,

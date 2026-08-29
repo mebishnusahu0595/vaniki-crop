@@ -6,6 +6,7 @@ export interface IProductRequest extends Document {
   storeId: mongoose.Types.ObjectId;
   adminId: mongoose.Types.ObjectId;
   productId?: mongoose.Types.ObjectId;
+  batchId?: string;
   productName: string;
   requestedQuantity: number;
   requestedPack?: string;
@@ -41,6 +42,10 @@ const productRequestSchema = new Schema<IProductRequest>(
       type: Schema.Types.ObjectId,
       ref: 'Product',
       default: undefined,
+    },
+    batchId: {
+      type: String,
+      index: true,
     },
     productName: {
       type: String,
