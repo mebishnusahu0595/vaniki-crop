@@ -100,17 +100,21 @@ function getProductDefaultValues(product?: Product): ProductFormInput {
     return productDefaultValues;
   }
 
+  const categoryId = product.category?.id || (product.category as any)?._id || (typeof product.category === 'string' ? product.category : '');
+  const rawTaxRate = product.taxRate !== undefined ? Number(product.taxRate) : 18;
+  const taxRate = Number.isFinite(rawTaxRate) ? rawTaxRate : 18;
+
   return {
-    name: product.name,
-    shortDescription: product.shortDescription,
-    description: product.description,
-    category: product.category?.id || '',
-    tags: product.tags.join(', '),
-    isFeatured: product.isFeatured,
-    isActive: product.isActive,
+    name: product.name || '',
+    shortDescription: product.shortDescription || '',
+    description: product.description || '',
+    category: categoryId,
+    tags: Array.isArray(product.tags) ? product.tags.join(', ') : '',
+    isFeatured: Boolean(product.isFeatured),
+    isActive: product.isActive !== undefined ? Boolean(product.isActive) : true,
     metaTitle: product.metaTitle || '',
     metaDescription: product.metaDescription || '',
-    variants: product.variants.map((variant) => ({
+    variants: (product.variants || []).map((variant) => ({
       ...(parseVariantLabel(variant.label) as { quantity: string; unit: (typeof units)[number] }),
       price: variant.price,
       adminPrice: variant.adminPrice || '',
@@ -121,7 +125,7 @@ function getProductDefaultValues(product?: Product): ProductFormInput {
     })),
     loyaltyPointEligible: product.loyaltyPointEligible ?? true,
     maxLoyaltyPoints: product.maxLoyaltyPoints ?? 0,
-    taxRate: product.taxRate !== undefined ? product.taxRate : 18,
+    taxRate,
     hsnCode: product.hsnCode || '',
     petiSize: product.petiSize || 12,
     petiUnit: product.petiUnit || 'Liter',
@@ -442,7 +446,7 @@ function ProductEditor({
         );
         payload.append('loyaltyPointEligible', String(values.loyaltyPointEligible));
         payload.append('maxLoyaltyPoints', String(values.maxLoyaltyPoints));
-        payload.append('taxRate', String(values.taxRate ?? 18));
+        payload.append('taxRate', String(typeof values.taxRate === 'number' ? values.taxRate : (values.taxRate !== undefined ? Number(values.taxRate) : 18)));
         if (values.hsnCode) payload.append('hsnCode', values.hsnCode);
         payload.append('petiSize', String(values.petiSize));
         payload.append('petiUnit', values.petiUnit);
@@ -511,11 +515,14 @@ function ProductEditor({
                 <span>GST / Tax Rate (%)</span>
                 <span className="text-[10px] text-emerald-600 lowercase bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Custom per product</span>
               </label>
-              <select {...register('taxRate')} className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value={0}>0% (Tax Exempt / Nil)</option>
-                <option value={5}>5% GST</option>
-                <option value={12}>12% GST</option>
+              <select
+                {...register('taxRate', { valueAsNumber: true })}
+                className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+              >
                 <option value={18}>18% GST (Standard Agrochemicals)</option>
+                <option value={12}>12% GST</option>
+                <option value={5}>5% GST</option>
+                <option value={0}>0% (Tax Exempt / Nil)</option>
                 <option value={28}>28% GST</option>
               </select>
               {errors.taxRate ? <p className="mt-2 text-sm text-rose-600">{errors.taxRate.message}</p> : null}
