@@ -167,11 +167,20 @@ export default function InvoicesScreen() {
                 </View>
               </View>
 
-              <View className="mt-3.5 px-1 flex-row items-center">
-                <Icon name="user" size={12} color="#71717A" />
-                <Text className="text-xs text-zinc-500 font-bold ml-1.5">
-                  Dealer: {invoice.dealerName || 'Store Admin'}
-                </Text>
+              <View className="mt-3.5 px-1 flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Icon name="user" size={12} color="#71717A" />
+                  <Text className="text-xs text-zinc-500 font-bold ml-1.5">
+                    Dealer: {invoice.dealerName || 'Store Admin'}
+                  </Text>
+                </View>
+                {invoice.tallySyncStatus === 'synced' ? (
+                  <View className="bg-emerald-100 px-2.5 py-1 rounded-lg flex-row items-center">
+                    <Text className="text-[10px] font-black text-emerald-800 uppercase tracking-wider">
+                      ✓ Tally #{invoice.tallyVoucherNumber || 'Synced'}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             </View>
           )}
