@@ -277,6 +277,23 @@ async function syncPendingInvoices() {
   }
 }
 
+// Prevent process from ever crashing on unexpected network or socket errors
+process.on('uncaughtException', (err) => {
+  const errMsg = `[${new Date().toISOString()}] Uncaught Exception: ${err.stack || err.message}\n`;
+  try {
+    fs.appendFileSync(path.join(__dirname, 'tally-agent.log'), errMsg);
+  } catch {}
+  console.error(`\n${COLORS.red}[Crash Prevention] Caught error: ${err.message}. Retrying in 10s...${COLORS.reset}`);
+});
+
+process.on('unhandledRejection', (reason) => {
+  const errMsg = `[${new Date().toISOString()}] Unhandled Rejection: ${reason}\n`;
+  try {
+    fs.appendFileSync(path.join(__dirname, 'tally-agent.log'), errMsg);
+  } catch {}
+  console.error(`\n${COLORS.red}[Crash Prevention] Unhandled promise rejection: ${reason}. Retrying in 10s...${COLORS.reset}`);
+});
+
 /**
  * Startup Banner & Polling Loop
  */
@@ -290,15 +307,16 @@ function start() {
   console.log(`• Local Tally Target: http://${config.tallyHost}:${config.tallyPort}`);
   console.log(`• Sync Interval     : Every ${config.pollIntervalSeconds} seconds${COLORS.reset}`);
   console.log(`-------------------------------------------------------------`);
-  console.log(`${COLORS.yellow}ℹ️  Keep this window OPEN on your Windows PC while Tally is running.`);
+  console.log(`${COLORS.yellow}ℹ️  Auto-Restart Enabled: Agent runs 24/7 continuously.`);
   console.log(`ℹ️  Ensure Tally ODBC / Server Port 9000 is enabled in Tally F12.${COLORS.reset}`);
   console.log(`-------------------------------------------------------------\n`);
 
   // Initial check
   syncPendingInvoices();
 
-  // Recurring loop
+  // Recurring loop (Runs forever)
   setInterval(syncPendingInvoices, config.pollIntervalSeconds * 1000);
 }
 
 start();
+

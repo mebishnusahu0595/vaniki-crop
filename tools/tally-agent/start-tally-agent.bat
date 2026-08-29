@@ -18,21 +18,38 @@ if %errorlevel% neq 0 (
     echo Please download and install Node.js from:
     echo https://nodejs.org/ (LTS Version)
     echo.
-    echo After installing, double-click this start-tally-agent.bat again.
+    echo After installing Node.js, run this file again.
     echo.
     pause
     exit /b
 )
 
-echo [OK] Node.js is detected!
+:: Auto-add shortcut to Windows Startup folder if not already present
+set "STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
+set "SHORTCUT_PATH=%STARTUP_DIR%\VanikiTallyAgent.bat"
+
+if not exist "%SHORTCUT_PATH%" (
+    echo [AUTO-START] Configuring Auto-Start on PC Reboot...
+    (
+        echo @echo off
+        echo cd /d "%~dp0"
+        echo start "" "%~dp0start-tally-agent.bat"
+    ) > "%SHORTCUT_PATH%"
+    echo [AUTO-START] Successfully registered! Will auto-start on every PC boot.
+    echo.
+)
+
+echo [OK] Node.js is active!
 echo [INFO] Connecting to Tally on Port 9000...
-echo [INFO] Starting Vaniki Tally Sync Agent...
+echo [INFO] Starting Vaniki Tally Sync Agent (Watchdog Loop Enabled)...
 echo.
 
+:: Watchdog loop: If it ever stops or gets killed, restart in 5 seconds
+:loop
 node "%~dp0vaniki-tally-sync.js"
 
-if %errorlevel% neq 0 (
-    echo.
-    echo [ERROR] Agent stopped with error.
-    pause
-)
+echo.
+echo [WARNING] Agent process stopped. Restarting in 5 seconds...
+timeout /t 5 /nobreak >nul
+cls
+goto loop
