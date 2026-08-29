@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { User, Warehouse, Box, ChevronLeft, ChevronRight, FileText, Clock } from 'lucide-react';
+import { User, Warehouse, Box, ChevronLeft, ChevronRight, FileText, Clock, Download } from 'lucide-react';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { PageHeader } from '../components/PageHeader';
 import { adminApi } from '../utils/api';
@@ -17,6 +17,7 @@ export default function ProductRequestsPage() {
   const [statusDraft, setStatusDraft] = useState<Record<string, ActionStatus>>({});
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({});
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+  const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
   const [approvingGroup, setApprovingGroup] = useState<any | null>(null);
   const [approvalForm, setApprovalForm] = useState<{
     invoiceNumber: string;
@@ -108,6 +109,25 @@ export default function ProductRequestsPage() {
     return Array.from(map.values());
   }, [requestQuery.data?.data]);
 
+  const handleDownloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
+    setDownloadingInvoiceId(invoiceId);
+    try {
+      const blob = await adminApi.downloadB2BInvoice(invoiceId);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${invoiceNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Failed to download invoice: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setDownloadingInvoiceId(null);
+    }
+  };
+
   const handleOpenApprovalModal = (group: any) => {
     const today = new Date().toISOString().split('T')[0];
     const generatedInvNo = `VANIKI-B2B-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -157,7 +177,7 @@ export default function ProductRequestsPage() {
     setIsSubmittingApproval(true);
     try {
       // 1. Create B2B Invoice with all transport & item details
-      await adminApi.createB2BInvoice({
+      const createdInvoice = await adminApi.createB2BInvoice({
         storeId,
         invoiceNumber: approvalForm.invoiceNumber,
         invoiceDate: approvalForm.invoiceDate,
@@ -178,11 +198,14 @@ export default function ProductRequestsPage() {
         })),
       } as any);
 
+      const invoiceId = createdInvoice?._id || createdInvoice?.id;
+
       // 2. Mark all items in this group as approved
       await Promise.all(
         approvingGroup.items.map((item: any) =>
           adminApi.updateProductRequest(item.id, {
             status: 'approved',
+            invoiceId: invoiceId || undefined,
             superAdminNote: `Approved with Invoice ${approvalForm.invoiceNumber} and queued for Tally sync`,
           })
         )
@@ -449,14 +472,37 @@ export default function ProductRequestsPage() {
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleOpenApprovalModal(group)}
-                  className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-xs font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition"
-                >
-                  <FileText size={16} strokeWidth={2.5} />
-                  <span>Approve & Generate B2B Invoice</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  {(() => {
+                    const linkedInvoice = group.items.find((i: any) => i.invoiceId)?.invoiceId || (group.items[0] as any)?.invoiceId;
+                    const invoiceIdStr = typeof linkedInvoice === 'object' ? (linkedInvoice?.id || linkedInvoice?._id) : linkedInvoice;
+                    const invoiceNumStr = typeof linkedInvoice === 'object' ? (linkedInvoice?.invoiceNumber || 'B2B') : 'B2B';
+
+                    return (
+                      <>
+                        {invoiceIdStr && (
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadInvoice(invoiceIdStr, invoiceNumStr)}
+                            disabled={downloadingInvoiceId === invoiceIdStr}
+                            className="flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3.5 text-xs font-black uppercase tracking-[0.16em] text-white shadow-md hover:bg-slate-800 active:scale-95 transition"
+                          >
+                            <Download size={15} strokeWidth={2.5} />
+                            <span>{downloadingInvoiceId === invoiceIdStr ? 'Downloading...' : 'Download Invoice PDF'}</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenApprovalModal(group)}
+                          className="flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-xs font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition"
+                        >
+                          <FileText size={16} strokeWidth={2.5} />
+                          <span>{invoiceIdStr ? 'Re-Generate / Edit Invoice' : 'Approve & Generate B2B Invoice'}</span>
+                        </button>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
           );

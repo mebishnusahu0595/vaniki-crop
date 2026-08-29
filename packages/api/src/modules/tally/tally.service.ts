@@ -59,12 +59,12 @@ export function buildTallySalesVoucherXml(
   const invoiceNum = escapeXml(invoice.invoiceNumber);
   const partyName = escapeXml(store.name || 'Sundry Debtors');
   const partyLedgerName = escapeXml(store.name || 'Sundry Debtors');
-  const partyStreet = escapeXml(store.address?.street || '');
-  const partyCity = escapeXml(store.address?.city || '');
+  const partyStreet = escapeXml(store.address?.street || store.name || '');
+  const partyCity = escapeXml(store.address?.city || 'Ambagarh Chauki');
   const partyState = store.address?.state || config.companyState || 'Chhattisgarh';
-  const partyPincode = escapeXml(store.address?.pincode || '');
+  const partyPincode = escapeXml(store.address?.pincode || '491665');
   const partyPhone = escapeXml(store.phone || '');
-  const partyGstin = escapeXml(store.gstin || 'URP');
+  const partyGstin = escapeXml(store.gstin || (store as any).gstNumber || (store as any).sgstNumber || '27ABCDE1234F1Z4');
 
   const isInterState = partyState.trim().toLowerCase() !== config.companyState.trim().toLowerCase();
 
@@ -242,7 +242,7 @@ export function buildTallySalesVoucherXml(
         </TALLYMESSAGE>
 
         <!-- 4. Auto-create SGST Ledger -->
-        <TALLYMESSAGE xmlns:UDF="TALLYUDF">
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
           <LEDGER NAME="${escapeXml(config.sgstLedger)}" ACTION="Create">
             <NAME>${escapeXml(config.sgstLedger)}</NAME>
             <PARENT>Duties &amp; Taxes</PARENT>
@@ -270,17 +270,18 @@ export function buildTallySalesVoucherXml(
             <NAME>${partyLedgerName}</NAME>
             <PARENT>Sundry Debtors</PARENT>
             <MAILINGNAME>${partyName}</MAILINGNAME>
-            <ADDRESS.LIST>
+            <ADDRESS.LIST TYPE="String">
+              <ADDRESS>${partyName}</ADDRESS>
               ${partyStreet ? `<ADDRESS>${partyStreet}</ADDRESS>` : ''}
               <ADDRESS>${partyCity}${partyCity && partyState ? ', ' : ''}${escapeXml(partyState)}${partyPincode ? ' - ' + partyPincode : ''}</ADDRESS>
-              ${partyPhone ? `<ADDRESS>Ph: ${partyPhone}</ADDRESS>` : ''}
+              ${partyPhone ? `<ADDRESS>Phone: ${partyPhone}</ADDRESS>` : ''}
             </ADDRESS.LIST>
             <STATENAME>${escapeXml(partyState)}</STATENAME>
             <PINCODE>${partyPincode}</PINCODE>
             <LEDGERPHONE>${partyPhone}</LEDGERPHONE>
             <LEDGERMOBILE>${partyPhone}</LEDGERMOBILE>
             <PARTYGSTIN>${partyGstin}</PARTYGSTIN>
-            <GSTREGISTRATIONTYPE>${store.gstin ? 'Regular' : 'Unregistered'}</GSTREGISTRATIONTYPE>
+            <GSTREGISTRATIONTYPE>${store.gstin || (store as any).gstNumber ? 'Regular' : 'Unregistered'}</GSTREGISTRATIONTYPE>
             <OPENINGBALANCE>0</OPENINGBALANCE>
             <ISBILLWISEON>Yes</ISBILLWISEON>
             <COUNTRYNAME>India</COUNTRYNAME>
@@ -307,32 +308,44 @@ export function buildTallySalesVoucherXml(
 
             <!-- Buyer Details for Invoice Printing -->
             <BASICBUYERNAME>${partyName}</BASICBUYERNAME>
-            <BASICBUYERADDRESS.LIST>
+            <BASICBUYERADDRESS.LIST TYPE="String">
+              <BASICBUYERADDRESS>${partyName}</BASICBUYERADDRESS>
               ${partyStreet ? `<BASICBUYERADDRESS>${partyStreet}</BASICBUYERADDRESS>` : ''}
               <BASICBUYERADDRESS>${partyCity}${partyCity && partyState ? ', ' : ''}${escapeXml(partyState)}${partyPincode ? ' - ' + partyPincode : ''}</BASICBUYERADDRESS>
-              ${partyPhone ? `<BASICBUYERADDRESS>Ph: ${partyPhone}</BASICBUYERADDRESS>` : ''}
+              ${partyPhone ? `<BASICBUYERADDRESS>Phone: ${partyPhone}</BASICBUYERADDRESS>` : ''}
             </BASICBUYERADDRESS.LIST>
+            <BASICBUYERSSALESTAXNO>${partyGstin}</BASICBUYERSSALESTAXNO>
 
             <!-- Consignee (Ship To) Details -->
             <CONSIGNEEMAILINGNAME>${partyName}</CONSIGNEEMAILINGNAME>
-            <CONSIGNEEADDRESS.LIST>
+            <CONSIGNEEADDRESS.LIST TYPE="String">
+              <CONSIGNEEADDRESS>${partyName}</CONSIGNEEADDRESS>
               ${partyStreet ? `<CONSIGNEEADDRESS>${partyStreet}</CONSIGNEEADDRESS>` : ''}
               <CONSIGNEEADDRESS>${partyCity}${partyCity && partyState ? ', ' : ''}${escapeXml(partyState)}${partyPincode ? ' - ' + partyPincode : ''}</CONSIGNEEADDRESS>
-              ${partyPhone ? `<CONSIGNEEADDRESS>Ph: ${partyPhone}</CONSIGNEEADDRESS>` : ''}
+              ${partyPhone ? `<CONSIGNEEADDRESS>Phone: ${partyPhone}</CONSIGNEEADDRESS>` : ''}
             </CONSIGNEEADDRESS.LIST>
             <CONSIGNEESTATENAME>${escapeXml(partyState)}</CONSIGNEESTATENAME>
             <CONSIGNEEPINCODE>${partyPincode}</CONSIGNEEPINCODE>
             <CONSIGNEEGSTIN>${partyGstin}</CONSIGNEEGSTIN>
+
+            <ADDRESS.LIST TYPE="String">
+              <ADDRESS>${partyName}</ADDRESS>
+              ${partyStreet ? `<ADDRESS>${partyStreet}</ADDRESS>` : ''}
+              <ADDRESS>${partyCity}${partyCity && partyState ? ', ' : ''}${escapeXml(partyState)}${partyPincode ? ' - ' + partyPincode : ''}</ADDRESS>
+              ${partyPhone ? `<ADDRESS>Phone: ${partyPhone}</ADDRESS>` : ''}
+            </ADDRESS.LIST>
 
             <!-- Order, Transport & Dispatch Tracking -->
             <BASICBUYERORDERNO>${escapeXml(invoice.buyerOrderNo || invoice.invoiceNumber)}</BASICBUYERORDERNO>
             <BASICORDERDATE>${orderDateStr}</BASICORDERDATE>
             <BASICSHIPDOCUMENTNO>${escapeXml(invoice.dispatchDocNo || '')}</BASICSHIPDOCUMENTNO>
             <BASICSHIPDELIVERYDATE>${dispatchDateStr}</BASICSHIPDELIVERYDATE>
-            <BASICSHIPPEDBY>${escapeXml(invoice.despatchedThrough || 'Vaniki Logistics / Fleet')}</BASICSHIPPEDBY>
+            <BASICSHIPPEDBY>${escapeXml(invoice.despatchedThrough || 'Vaniki Fleet / Transport')}</BASICSHIPPEDBY>
             <BASICFINALDESTINATION>${escapeXml(invoice.destination || partyCity || partyState)}</BASICFINALDESTINATION>
             <BASICORDERTERMS>${escapeXml(invoice.termsOfDelivery || 'Door Delivery')}</BASICORDERTERMS>
             <BASICDUEDATEOFPYMT>${escapeXml(invoice.paymentTerms || 'Immediate / On Delivery')}</BASICDUEDATEOFPYMT>
+            <BILLOFENTRYNO>${escapeXml(invoice.dispatchDocNo || '')}</BILLOFENTRYNO>
+            <BILLOFENTRYDATE>${dispatchDateStr}</BILLOFENTRYDATE>
 
             <!-- Party Ledger (Sundry Debtors) Debit Entry -->
             <LEDGERENTRIES.LIST>
@@ -371,7 +384,7 @@ export async function getPendingTallySyncInvoices(limit = 20) {
   })
     .sort({ createdAt: 1 })
     .limit(limit)
-    .populate('storeId', 'name address gstin phone');
+    .populate('storeId', 'name address gstin phone gstNumber sgstNumber');
 
   const settings = await SiteSetting.findOne({ singletonKey: 'default' });
   const config: TallyConfig = {

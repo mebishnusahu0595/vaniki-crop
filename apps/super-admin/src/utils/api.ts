@@ -542,7 +542,7 @@ export const adminApi = {
   },
   updateProductRequest: async (
     id: string,
-    payload: { status: 'approved' | 'rejected' | 'fulfilled'; superAdminNote?: string },
+    payload: { status: 'approved' | 'rejected' | 'fulfilled'; superAdminNote?: string; invoiceId?: string },
   ) => {
     const normalizedPayload = {
       ...payload,

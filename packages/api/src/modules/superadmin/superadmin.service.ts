@@ -1539,9 +1539,10 @@ export async function listProductRequests(query: Record<string, any>) {
 
   const [rows, total] = await Promise.all([
     ProductRequest.find(filter)
-      .populate('storeId', 'name phone')
+      .populate('storeId', 'name phone address')
       .populate('adminId', 'name mobile email')
       .populate('productId', 'name slug variants')
+      .populate('invoiceId', 'invoiceNumber invoiceDate totalAmount tallySyncStatus tallyVoucherNumber')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -1553,9 +1554,10 @@ export async function listProductRequests(query: Record<string, any>) {
 
 export async function updateProductRequestStatus(productRequestId: string, input: Record<string, any>) {
   const request = await ProductRequest.findById(productRequestId)
-    .populate('storeId', 'name phone')
+    .populate('storeId', 'name phone address')
     .populate('adminId', 'name mobile email')
-    .populate('productId', 'name slug variants');
+    .populate('productId', 'name slug variants')
+    .populate('invoiceId', 'invoiceNumber invoiceDate totalAmount tallySyncStatus tallyVoucherNumber');
 
   if (!request) {
     throw new AppError('Product request not found', 404);
@@ -1563,6 +1565,10 @@ export async function updateProductRequestStatus(productRequestId: string, input
 
   if (input.status && ['pending', 'contacted', 'fulfilled', 'rejected'].includes(String(input.status))) {
     request.status = String(input.status) as 'pending' | 'contacted' | 'fulfilled' | 'rejected';
+  }
+
+  if (input.invoiceId && mongoose.Types.ObjectId.isValid(String(input.invoiceId))) {
+    request.invoiceId = input.invoiceId;
   }
 
   if (typeof input.superAdminNote === 'string') {
