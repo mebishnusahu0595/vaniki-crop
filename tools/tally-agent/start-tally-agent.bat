@@ -1,27 +1,43 @@
 @echo off
+setlocal enabledelayedexpansion
 title Vaniki Crop Science - Tally Auto-Sync Agent
 color 0A
-chcp 65001 >nul
 cls
 
 echo =============================================================
-echo      🌾 VANIKI CROP SCIENCE - TALLY AUTO-SYNC AGENT
+echo       VANIKI CROP SCIENCE - TALLY AUTO-SYNC AGENT
 echo =============================================================
 echo.
 
-:: Check if Node.js is installed
+set "NODE_EXEC=node"
+
+:: Check if system Node.js is installed
 where node >nul 2>nul
-if %errorlevel% neq 0 (
-    color 0C
-    echo [ERROR] Node.js is not installed on this Windows PC!
-    echo.
-    echo Please download and install Node.js from:
-    echo https://nodejs.org/ (LTS Version)
-    echo.
-    echo After installing Node.js, run this file again.
-    echo.
-    pause
-    exit /b
+if %errorlevel% equ 0 (
+    set "NODE_EXEC=node"
+    echo [OK] System Node.js detected.
+) else (
+    :: Check if local portable node.exe exists
+    if exist "%~dp0node.exe" (
+        set "NODE_EXEC=%~dp0node.exe"
+        echo [OK] Portable Node.js runtime detected.
+    ) else (
+        echo [INFO] Node.js is not installed on this PC.
+        echo [INFO] Auto-downloading portable Node.js runtime (one-time setup)...
+        echo.
+        powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile('https://nodejs.org/dist/v20.18.0/win-x64/node.exe', '%~dp0node.exe')"
+        if exist "%~dp0node.exe" (
+            set "NODE_EXEC=%~dp0node.exe"
+            echo.
+            echo [OK] Portable Node.js downloaded successfully!
+        ) else (
+            color 0C
+            echo.
+            echo [ERROR] Auto-download failed. Please install Node.js from https://nodejs.org/
+            pause
+            exit /b
+        )
+    )
 )
 
 :: Auto-add shortcut to Windows Startup folder if not already present
@@ -39,14 +55,14 @@ if not exist "%SHORTCUT_PATH%" (
     echo.
 )
 
-echo [OK] Node.js is active!
+echo.
 echo [INFO] Connecting to Tally on Port 9000...
-echo [INFO] Starting Vaniki Tally Sync Agent (Watchdog Loop Enabled)...
+echo [INFO] Starting Vaniki Tally Sync Agent...
 echo.
 
-:: Watchdog loop: If it ever stops or gets killed, restart in 5 seconds
+:: Watchdog loop: If it ever stops, restart in 5 seconds
 :loop
-node "%~dp0vaniki-tally-sync.js"
+"%NODE_EXEC%" "%~dp0vaniki-tally-sync.js"
 
 echo.
 echo [WARNING] Agent process stopped. Restarting in 5 seconds...

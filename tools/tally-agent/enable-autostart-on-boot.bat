@@ -1,11 +1,10 @@
 @echo off
 title Enable Auto-Start on Windows 10 Reboot
 color 0B
-chcp 65001 >nul
 cls
 
 echo =============================================================
-echo   🌾 VANIKI TALLY AGENT - ENABLE AUTO-START ON REBOOT
+echo     VANIKI TALLY AGENT - ENABLE AUTO-START ON REBOOT
 echo =============================================================
 echo.
 
@@ -21,18 +20,18 @@ echo [1/2] Creating Windows Startup Entry...
 ) > "%STARTUP_BAT%"
 
 if exist "%STARTUP_BAT%" (
-    echo  -> [OK] Startup folder configured: %STARTUP_BAT%
+    echo  -^> [OK] Startup folder configured: %STARTUP_BAT%
 ) else (
-    echo  -> [WARNING] Could not write to Startup folder.
+    echo  -^> [WARNING] Could not write to Startup folder.
 )
 
 echo.
 echo [2/2] Registering Windows Scheduled Task on Login...
 schtasks /create /tn "VanikiTallyAutoSync" /tr "\"%AGENT_DIR%start-tally-agent.bat\"" /sc onlogon /f >nul 2>nul
 if %errorlevel% equ 0 (
-    echo  -> [OK] Windows Scheduled Task registered successfully!
+    echo  -^> [OK] Windows Scheduled Task registered successfully!
 ) else (
-    echo  -> [INFO] Task Scheduler registration skipped (Startup folder is active).
+    echo  -^> [INFO] Task Scheduler registration skipped (Startup folder is active).
 )
 
 echo.
