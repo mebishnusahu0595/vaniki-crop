@@ -763,15 +763,24 @@ export async function getPendingTallySyncInvoices(limit = 30) {
 
   const [b2bInvoices, retailOrders] = await Promise.all([
     B2BInvoice.find({
-      tallySyncStatus: { $in: ['pending', 'failed'] },
+      $or: [
+        { tallySyncStatus: 'pending' },
+        { tallySyncStatus: 'failed' },
+        { tallySyncStatus: { $exists: false } },
+        { tallySyncStatus: null },
+      ],
     })
       .sort({ createdAt: 1 })
       .limit(limit)
       .populate('storeId', 'name address gstin phone gstNumber sgstNumber'),
     Order.find({
-      tallySyncStatus: { $in: ['pending', 'failed'] },
       status: { $nin: ['cancelled'] },
-      $or: [{ paymentMethod: 'cod' }, { paymentStatus: 'paid' }],
+      $or: [
+        { tallySyncStatus: 'pending' },
+        { tallySyncStatus: 'failed' },
+        { tallySyncStatus: { $exists: false } },
+        { tallySyncStatus: null },
+      ],
     })
       .sort({ createdAt: 1 })
       .limit(limit)

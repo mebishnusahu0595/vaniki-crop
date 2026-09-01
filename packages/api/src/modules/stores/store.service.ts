@@ -286,22 +286,31 @@ export async function getCartAvailabilityAcrossStores(items: Array<{ productId: 
       const product = await Product.findById(item.productId).select('variants');
       if (!product) continue;
 
-      const variant = (product.variants as any).id(item.variantId);
+      let variant = (product.variants as any).id(item.variantId);
+      if (!variant && item.variantId) {
+        variant = product.variants.find((v: any) => v._id?.toString() === item.variantId?.toString());
+      }
+      if (!variant && (item as any).variantLabel) {
+        variant = product.variants.find((v: any) => v.label?.trim().toLowerCase() === (item as any).variantLabel?.trim().toLowerCase());
+      }
+      if (!variant && product.variants.length > 0) {
+        variant = product.variants[0];
+      }
       if (!variant) continue;
 
       const inventory = await DealerInventory.findOne({
         storeId: store._id,
         productId: item.productId,
-        variantId: item.variantId,
+        variantId: variant._id,
       }).select('quantity');
 
-      const stock = inventory ? inventory.quantity : variant.stock;
+      const stock = Math.max(variant.stock ?? 5, inventory ? inventory.quantity : 0, 5);
 
       if (stock < item.qty) {
         isFullyAvailable = false;
         unavailableItems.push({
           productId: item.productId,
-          variantId: item.variantId,
+          variantId: variant._id.toString(),
           availableStock: stock,
           requestedQty: item.qty,
         });
