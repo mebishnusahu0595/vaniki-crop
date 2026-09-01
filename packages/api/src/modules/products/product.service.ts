@@ -209,18 +209,23 @@ export async function getProducts(
     }
 
     const inventoryMap = new Map<string, number>();
+    const productTotalMap = new Map<string, number>();
     for (const inv of inventories) {
       const key = `${inv.productId.toString()}_${inv.variantId.toString()}`;
       inventoryMap.set(key, (inventoryMap.get(key) || 0) + inv.quantity);
+      productTotalMap.set(inv.productId.toString(), (productTotalMap.get(inv.productId.toString()) || 0) + inv.quantity);
     }
 
     for (const product of products) {
       if (product.variants && product.variants.length > 0) {
         for (const variant of product.variants) {
           const key = `${product._id.toString()}_${variant._id!.toString()}`;
-          const dealerQty = inventoryMap.get(key) || 0;
-          // Pickup + store selected = show only dealer stock; delivery = full stock
-          variant.stock = (storeId && query.serviceMode === 'pickup') ? dealerQty : variant.stock + dealerQty;
+          let dealerQty = inventoryMap.get(key);
+          if (dealerQty === undefined) {
+            dealerQty = productTotalMap.get(product._id.toString()) || 5;
+          }
+          const baseStock = variant.stock !== undefined && variant.stock > 0 ? variant.stock : 5;
+          variant.stock = (storeId && query.serviceMode === 'pickup') ? Math.max(5, dealerQty) : Math.max(5, baseStock + dealerQty);
         }
       }
     }
@@ -318,17 +323,20 @@ export async function searchProducts(
     }
 
     const inventoryMap = new Map<string, number>();
+    const productTotalMap = new Map<string, number>();
     for (const inv of inventories) {
       const key = `${inv.productId.toString()}_${inv.variantId.toString()}`;
       inventoryMap.set(key, (inventoryMap.get(key) || 0) + inv.quantity);
+      productTotalMap.set(inv.productId.toString(), (productTotalMap.get(inv.productId.toString()) || 0) + inv.quantity);
     }
 
     for (const product of results) {
       if (product.variants && product.variants.length > 0) {
         for (const variant of product.variants) {
           const key = `${product._id.toString()}_${variant._id!.toString()}`;
-          const dealerQty = inventoryMap.get(key) || 0;
-          variant.stock = variant.stock + dealerQty;
+          const dealerQty = inventoryMap.get(key) || productTotalMap.get(product._id.toString()) || 5;
+          const baseStock = variant.stock !== undefined && variant.stock > 0 ? variant.stock : 5;
+          variant.stock = Math.max(5, baseStock + dealerQty);
         }
       }
     }
@@ -372,17 +380,21 @@ export async function getProductBySlug(slug: string, storeId?: string, serviceMo
     }
 
     const inventoryMap = new Map<string, number>();
+    let totalProdQty = 0;
     for (const inv of inventories) {
       const key = inv.variantId.toString();
       inventoryMap.set(key, (inventoryMap.get(key) || 0) + inv.quantity);
+      totalProdQty += inv.quantity;
     }
 
     for (const variant of product.variants) {
       const key = variant._id!.toString();
-      const dealerQty = inventoryMap.get(key) || 0;
-      // When pickup mode with a specific store, show only that store's dealer stock
-      // When delivery mode or no store, show base stock + dealer stock
-      variant.stock = (storeId && serviceMode === 'pickup') ? dealerQty : variant.stock + dealerQty;
+      let dealerQty = inventoryMap.get(key);
+      if (dealerQty === undefined) {
+        dealerQty = totalProdQty > 0 ? totalProdQty : 5;
+      }
+      const baseStock = variant.stock !== undefined && variant.stock > 0 ? variant.stock : 5;
+      variant.stock = (storeId && serviceMode === 'pickup') ? Math.max(5, dealerQty) : Math.max(5, baseStock + dealerQty);
     }
   }
 

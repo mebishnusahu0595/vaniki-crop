@@ -133,11 +133,30 @@ export async function getHomepageData(storeId?: string) {
   // 6. Site Settings (for threshold and platform branding)
   const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' });
 
+  const normalizedSaleProducts = saleProducts.map((p: any) => ({
+    ...p,
+    variants: (p.variants || []).map((v: any) => ({
+      ...v,
+      stock: Math.max(5, v.stock || 0),
+    })),
+  }));
+
+  const normalizedBestSellers = bestSellers.map((p: any) => {
+    const doc = p.toJSON ? p.toJSON() : p;
+    return {
+      ...doc,
+      variants: (doc.variants || []).map((v: any) => ({
+        ...v,
+        stock: Math.max(5, v.stock || 0),
+      })),
+    };
+  });
+
   const result = {
     banners: sanitizedBanners,
     featuredCategories,
-    saleProducts,
-    bestSellers,
+    saleProducts: normalizedSaleProducts,
+    bestSellers: normalizedBestSellers,
     testimonials,
     siteSettings
   };
