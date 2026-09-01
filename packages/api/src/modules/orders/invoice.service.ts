@@ -114,7 +114,7 @@ const A4_LAYOUT: InvoiceLayout = {
   infoBoxHeight: 50,
   summaryWidth: 260,
   // idx, product, hsn, pack, qty, taxable, cgst%, cgstAmt, sgst%, sgstAmt, total
-  weights: [4, 26, 9, 12, 6, 9, 6, 9, 6, 9, 4] // Corrected sum: 4+26+9+12+6+9+6+9+6+9+4 = 100
+  weights: [4, 24, 10, 8, 5, 10, 6, 8, 6, 8, 11] // Sum: 100
 };
 
 const A5_LAYOUT: InvoiceLayout = {
