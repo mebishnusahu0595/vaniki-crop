@@ -133,54 +133,100 @@ export async function deactivateCoupon(id: string) {
   }
   return coupon;
 }
+
 /**
  * Admin: Get coupon usage statistics.
  */
-export async function getCouponUsageDetails(couponId: string) {
+export async function getCouponUsageStats(couponId: string) {
   const coupon = await Coupon.findById(couponId);
   if (!coupon) {
     throw new AppError('Coupon not found', 404);
   }
 
-  const usageStats = await Order.aggregate([
-    { $match: { couponCode: coupon.code, status: { $ne: 'cancelled' } } },
-    {
-      $group: {
-        _id: '$userId',
-        usageCount: { $sum: 1 },
-        totalSavings: { $sum: '$couponDiscount' },
-        lastUsed: { $max: '$createdAt' },
-      },
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: '_id',
-        as: 'userDetails',
-      },
-    },
-    { $unwind: '$userDetails' },
-    {
-      $project: {
-        userId: '$_id',
-        userName: '$userDetails.name',
-        userMobile: '$userDetails.mobile',
-        usageCount: 1,
-        totalSavings: 1,
-        lastUsed: 1,
-      },
-    },
-    { $sort: { lastUsed: -1 } },
-  ]);
+  const redemptions = await Order.find({
+    couponCode: coupon.code,
+    status: { $ne: 'cancelled' },
+  })
+    .select('orderNumber totalAmount couponDiscount createdAt userId shippingAddress paymentStatus')
+    .populate('userId', 'name mobile email')
+    .sort({ createdAt: -1 })
+    .lean();
 
-  const uniqueUsersCount = usageStats.length;
-  const totalUsageCount = usageStats.reduce((sum, stat) => sum + stat.usageCount, 0);
+  const totalDiscountGiven = redemptions.reduce(
+    (sum, order) => sum + (order.couponDiscount || 0),
+    0
+  );
 
   return {
     coupon,
-    totalUsageCount,
-    uniqueUsersCount,
-    userWiseUsage: usageStats,
+    totalRedemptions: redemptions.length,
+    totalDiscountGiven,
+    redemptions,
   };
+}
+
+/**
+ * Gets all active and available coupons for storefront customers.
+ */
+export async function getAvailableCoupons(storeId?: string, cartTotal?: number, userId?: string) {
+  const now = new Date();
+  const query: any = {
+    isActive: true,
+    expiryDate: { $gt: now },
+  };
+
+  const coupons = await Coupon.find(query).sort({ value: -1 }).lean();
+
+  const results = [];
+  for (const coupon of coupons) {
+    if (coupon.usedCount >= coupon.usageLimit) continue;
+
+    // Check store scope if applicable
+    if (storeId && coupon.applicableStores && coupon.applicableStores.length > 0) {
+      const isForStore = coupon.applicableStores.some((id: any) => id.toString() === storeId.toString());
+      if (!isForStore) continue;
+    }
+
+    // Check per-user limit if userId is given
+    let isUserEligible = true;
+    if (userId && coupon.perUserLimit) {
+      const userUsageCount = await Order.countDocuments({
+        userId,
+        couponCode: coupon.code.toUpperCase(),
+        status: { $ne: 'cancelled' },
+      });
+      if (userUsageCount >= coupon.perUserLimit) {
+        isUserEligible = false;
+      }
+    }
+
+    if (!isUserEligible) continue;
+
+    // Calculate potential discount if cartTotal is provided
+    let calculatedDiscount = 0;
+    if (cartTotal && cartTotal >= (coupon.minOrderAmount || 0)) {
+      if (coupon.type === 'percent') {
+        calculatedDiscount = (cartTotal * coupon.value) / 100;
+        if (coupon.maxDiscount && calculatedDiscount > coupon.maxDiscount) {
+          calculatedDiscount = coupon.maxDiscount;
+        }
+      } else {
+        calculatedDiscount = Math.min(coupon.value, cartTotal);
+      }
+    }
+
+    results.push({
+      id: coupon._id.toString(),
+      code: coupon.code,
+      type: coupon.type,
+      value: coupon.value,
+      minOrderAmount: coupon.minOrderAmount || 0,
+      maxDiscount: coupon.maxDiscount,
+      expiryDate: coupon.expiryDate,
+      calculatedDiscount: Math.round(calculatedDiscount),
+      isApplicableToCart: !cartTotal || cartTotal >= (coupon.minOrderAmount || 0),
+    });
+  }
+
+  return results;
 }

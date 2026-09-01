@@ -280,6 +280,20 @@ export const storefrontApi = {
     }>>>('/stores/cart-availability', { items });
     return response.data.data;
   },
+  getAvailableCoupons: async (params?: { storeId?: string; cartTotal?: number }) => {
+    const response = await api.get<ApiResponse<Array<{
+      id: string;
+      code: string;
+      type: 'percent' | 'flat';
+      value: number;
+      minOrderAmount: number;
+      maxDiscount?: number;
+      expiryDate: string;
+      calculatedDiscount: number;
+      isApplicableToCart: boolean;
+    }>>>('/coupons/available', { params });
+    return response.data.data;
+  },
   validateCoupon: async (payload: { code: string; storeId: string; cartTotal: number }) => {
     const response = await api.post<ApiResponse<CouponValidation>>('/coupons/validate', payload);
     return response.data.data;

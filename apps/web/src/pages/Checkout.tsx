@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Store } from '../types/storefront';
 import toast from 'react-hot-toast';
@@ -17,6 +17,7 @@ import {
   Truck,
   Sparkles,
   Tag,
+  Search,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCartStore } from '../store/useCartStore';
@@ -52,6 +53,7 @@ const Checkout: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [activeStoreId, setActiveStoreId] = useState(selectedStore?.id || '');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [storeSearchQuery, setStoreSearchQuery] = useState('');
   const [couponInput, setCouponInput] = useState('');
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [loyaltyPointsInput, setLoyaltyPointsInput] = useState(0);
@@ -78,6 +80,25 @@ const Checkout: React.FC = () => {
     queryFn: () => storefrontApi.cartAvailability(items.map(i => ({ productId: i.productId, variantId: i.variantId, qty: i.qty }))),
     enabled: !!token && items.length > 0,
   });
+
+  // Fetch all available coupons for the customer
+  const { data: availableCoupons = [], isLoading: isLoadingCoupons } = useQuery({
+    queryKey: ['available-coupons', subtotal, selectedStore?.id],
+    queryFn: () => storefrontApi.getAvailableCoupons({ storeId: selectedStore?.id, cartTotal: subtotal }),
+    enabled: !!token,
+  });
+
+  // Filtered stores list based on search query
+  const filteredStores = useMemo(() => {
+    if (!storeSearchQuery.trim()) return storeAvailability;
+    const q = storeSearchQuery.toLowerCase();
+    return storeAvailability.filter(
+      (s: any) =>
+        s.name?.toLowerCase().includes(q) ||
+        s.address?.city?.toLowerCase().includes(q) ||
+        s.address?.state?.toLowerCase().includes(q)
+    );
+  }, [storeAvailability, storeSearchQuery]);
 
   // Auto-assign default store if none selected
   useEffect(() => {
@@ -149,22 +170,22 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const handleApplyCoupon = async () => {
-    if (!couponInput.trim()) {
-      toast.error('Please enter a coupon code');
-      return;
-    }
+  const applySingleCoupon = async (codeToApply: string) => {
+    const cleanCode = codeToApply.trim().toUpperCase();
+    if (!cleanCode) return;
+
     const storeIdToUse = selectedStore?.id || storeAvailability[0]?.id;
     setIsApplyingCoupon(true);
     try {
       const result = await storefrontApi.validateCoupon({
-        code: couponInput.trim(),
+        code: cleanCode,
         storeId: storeIdToUse,
         cartTotal: subtotal,
       });
       if (result.valid) {
-        setCouponCode(couponInput.trim(), result.discount || 0);
-        toast.success(t('checkoutPage.couponApplied'));
+        setCouponCode(cleanCode, result.discount || 0);
+        setCouponInput(cleanCode);
+        toast.success(`Coupon ${cleanCode} applied! Saved ${currencyFormatter.format(result.discount || 0)}`);
       } else {
         toast.error(result.message || 'Invalid coupon code');
       }
@@ -173,6 +194,14 @@ const Checkout: React.FC = () => {
     } finally {
       setIsApplyingCoupon(false);
     }
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) {
+      toast.error('Please enter a coupon code');
+      return;
+    }
+    await applySingleCoupon(couponInput);
   };
 
   const handlePayment = async () => {
@@ -284,7 +313,7 @@ const Checkout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/60 pb-20 pt-8 sm:pb-32 font-sans">
+    <div className="min-h-screen bg-slate-50/60 pb-20 pt-8 sm:pb-32 font-sans text-slate-800">
       <div className="container mx-auto grid max-w-6xl gap-8 px-4 lg:grid-cols-[1fr_380px]">
         {/* LEFT COLUMN */}
         <div className="space-y-6">
@@ -331,7 +360,7 @@ const Checkout: React.FC = () => {
                     <p className="mt-1 text-xs text-slate-500 leading-relaxed">
                       {address?.street || user?.savedAddress?.street
                         ? `${address?.street || user?.savedAddress?.street}, ${address?.city || user?.savedAddress?.city || ''}`
-                        : 'Deliver to your home/farm address'}
+                        : 'Deliver directly to your address'}
                     </p>
                   </div>
                 </div>
@@ -370,7 +399,7 @@ const Checkout: React.FC = () => {
 
           {/* STORE SELECTION (ONLY SHOWN FOR STORE PICKUP) */}
           {mode === 'pickup' && (
-            <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm animate-fade-in">
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Choose Pickup Store</p>
               <div className="relative">
                 <button
@@ -388,12 +417,31 @@ const Checkout: React.FC = () => {
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="mt-2 rounded-2xl border border-slate-200 bg-white shadow-xl p-2 z-20">
-                    <div className="max-h-[260px] overflow-y-auto space-y-1 p-1">
+                  <div className="mt-2 rounded-2xl border border-slate-200 bg-white shadow-xl p-3 z-20">
+                    {/* Search store filter */}
+                    <div className="mb-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <Search size={15} className="text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        value={storeSearchQuery}
+                        onChange={(e) => setStoreSearchQuery(e.target.value)}
+                        placeholder="Search store by name, city, or district..."
+                        className="w-full bg-transparent text-xs font-medium text-slate-800 outline-none placeholder:text-slate-400"
+                        autoFocus
+                      />
+                      {storeSearchQuery && (
+                        <button onClick={() => setStoreSearchQuery('')} className="text-xs text-slate-400 hover:text-slate-600">
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Smooth scrollable store list */}
+                    <div className="max-h-64 overflow-y-auto space-y-1 p-1 touch-pan-y overscroll-contain">
                       {isLoadingAvailability ? (
                         <div className="py-8 text-center text-xs text-slate-400 font-medium">Loading stores...</div>
-                      ) : storeAvailability.length > 0 ? (
-                        storeAvailability.map((store) => (
+                      ) : filteredStores.length > 0 ? (
+                        filteredStores.map((store: any) => (
                           <button
                             key={store.id}
                             type="button"
@@ -403,7 +451,7 @@ const Checkout: React.FC = () => {
                             }}
                             className={`w-full rounded-xl p-3 text-left transition flex items-center justify-between ${
                               activeStoreId === store.id
-                                ? 'bg-emerald-600 text-white'
+                                ? 'bg-emerald-600 text-white shadow-sm'
                                 : 'hover:bg-slate-50 text-slate-800'
                             }`}
                           >
@@ -417,7 +465,9 @@ const Checkout: React.FC = () => {
                           </button>
                         ))
                       ) : (
-                        <div className="py-6 text-center text-xs text-slate-400">No stores available</div>
+                        <div className="py-6 text-center text-xs text-slate-400 font-medium">
+                          No matching stores found for "{storeSearchQuery}"
+                        </div>
                       )}
                     </div>
                   </div>
@@ -521,13 +571,13 @@ const Checkout: React.FC = () => {
             </section>
           )}
 
-          {/* OFFERS & REWARDS */}
+          {/* OFFERS & REWARDS (WITH AVAILABLE COUPONS LIST) */}
           <section className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Offers & Rewards</p>
-            <div className="space-y-3.5">
-              {/* Coupon Section */}
+            <div className="space-y-4">
+              {/* Coupon Input Box */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2.5">
                   <Tag size={15} className="text-emerald-700" />
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Apply Promo Coupon</span>
                 </div>
@@ -536,7 +586,7 @@ const Checkout: React.FC = () => {
                     type="text"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                    placeholder="Enter coupon code (e.g. MONSOON20)"
+                    placeholder="Enter coupon code"
                     className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold uppercase text-slate-900 outline-none focus:border-emerald-600"
                   />
                   <button
@@ -547,14 +597,92 @@ const Checkout: React.FC = () => {
                     {isApplyingCoupon ? 'Checking...' : 'Apply'}
                   </button>
                 </div>
+
                 {couponCode && (
                   <div className="mt-2.5 flex items-center justify-between rounded-lg bg-emerald-100/70 px-3 py-1.5 text-emerald-800">
                     <span className="text-xs font-semibold">✓ Applied: {couponCode} (-{currencyFormatter.format(couponDiscount)})</span>
-                    <button onClick={() => setCouponCode('', 0)} className="text-[11px] font-bold text-rose-700 hover:underline">
+                    <button onClick={() => { setCouponCode('', 0); setCouponInput(''); }} className="text-[11px] font-bold text-rose-700 hover:underline">
                       Remove
                     </button>
                   </div>
                 )}
+
+                {/* AVAILABLE COUPONS LIST */}
+                <div className="mt-4 pt-3 border-t border-slate-200/80">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Available Coupons</span>
+                    <span className="text-[10px] text-slate-400 font-medium">{availableCoupons.length} offers found</span>
+                  </div>
+
+                  {isLoadingCoupons ? (
+                    <div className="py-3 text-center text-xs text-slate-400">Loading coupons...</div>
+                  ) : availableCoupons.length > 0 ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {availableCoupons.map((c: any) => {
+                        const isCurrentlyApplied = couponCode === c.code;
+                        const isApplicable = c.isApplicableToCart;
+
+                        return (
+                          <div
+                            key={c.id}
+                            className={`flex flex-col justify-between rounded-xl border p-3 transition ${
+                              isCurrentlyApplied
+                                ? 'border-emerald-500 bg-emerald-50/60'
+                                : isApplicable
+                                ? 'border-dashed border-emerald-200 bg-white hover:border-emerald-400'
+                                : 'border-slate-200 bg-slate-50/50 opacity-75'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-1.5">
+                                <span className="font-mono text-xs font-black tracking-wider text-emerald-900 bg-emerald-100/60 px-2 py-0.5 rounded-md">
+                                  {c.code}
+                                </span>
+                                <span className="text-xs font-black text-emerald-700">
+                                  {c.type === 'percent' ? `${c.value}% OFF` : `₹${c.value} OFF`}
+                                </span>
+                              </div>
+
+                              <p className="mt-1.5 text-[11px] font-medium text-slate-500">
+                                {c.minOrderAmount > 0 ? `Min. order ₹${c.minOrderAmount}` : 'No minimum order required'}
+                                {c.maxDiscount ? ` (Up to ₹${c.maxDiscount})` : ''}
+                              </p>
+                            </div>
+
+                            <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
+                              {isApplicable ? (
+                                <span className="text-[11px] font-bold text-emerald-700">
+                                  Save {currencyFormatter.format(c.calculatedDiscount || 0)}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-amber-700 font-medium">
+                                  Add ₹{c.minOrderAmount - subtotal} more
+                                </span>
+                              )}
+
+                              {isCurrentlyApplied ? (
+                                <span className="flex items-center gap-1 text-xs font-bold text-emerald-700">
+                                  <Check size={14} /> Applied
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={!isApplicable || isApplyingCoupon}
+                                  onClick={() => applySingleCoupon(c.code)}
+                                  className="rounded-lg bg-emerald-700 px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                >
+                                  Apply
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="py-2 text-center text-xs text-slate-400">No promo coupons available right now</div>
+                  )}
+                </div>
               </div>
 
               {/* Loyalty Points Section */}

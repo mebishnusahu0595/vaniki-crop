@@ -2,6 +2,21 @@ import type { Request, Response, NextFunction } from 'express';
 import * as couponService from './coupon.service.js';
 
 /**
+ * GET /api/coupons/available
+ * Public storefront endpoint to get all active and applicable coupons.
+ */
+export async function getAvailableCoupons(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const storeId = req.query.storeId as string | undefined;
+    const cartTotal = req.query.cartTotal ? parseFloat(req.query.cartTotal as string) : undefined;
+    const list = await couponService.getAvailableCoupons(storeId, cartTotal, req.userId);
+    res.status(200).json({ success: true, data: list });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * POST /api/coupons/validate
  * Public endpoint to check coupon validity and discount amount.
  */
@@ -75,7 +90,7 @@ export async function deactivateCoupon(req: Request, res: Response, next: NextFu
  */
 export async function getCouponUsage(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const stats = await couponService.getCouponUsageDetails(req.params.id as string);
+    const stats = await couponService.getCouponUsageStats(req.params.id as string);
     res.status(200).json({ success: true, data: stats });
   } catch (error) {
     next(error);

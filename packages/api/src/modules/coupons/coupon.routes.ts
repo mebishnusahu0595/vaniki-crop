@@ -20,6 +20,9 @@ const validationLimiter = rateLimit({
 
 // ─── Public Routes ─────────────────────────────────────────────────────
 
+/** GET /api/coupons/available — Get list of available coupons for storefront */
+router.get('/available', couponController.getAvailableCoupons);
+
 /** POST /api/coupons/validate — Check validity and discount */
 router.post('/validate', validationLimiter, validate(validateCouponSchema), couponController.validateCoupon);
 
