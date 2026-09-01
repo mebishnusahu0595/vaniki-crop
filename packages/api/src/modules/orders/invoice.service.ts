@@ -273,11 +273,11 @@ export async function generateInvoicePdf(order: any, options: { size?: string } 
         ['Place of Supply', store.address?.state || '-'],
       ] : [
         ['Order Number', order.orderNumber || '-'],
-        ['Order Date', order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : '-'],
         ['Invoice Number', invoiceNumber],
-        ['Invoice Date', new Date().toLocaleDateString('en-IN')],
+        ['Tally Voucher', order.tallyVoucherNumber ? `#${order.tallyVoucherNumber}` : (order.tallySyncStatus === 'synced' ? 'Synced' : 'Pending Sync')],
+        ['Order Date', order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')],
         ['Fulfillment', serviceMode],
-        ['Payment', `${String(order.paymentMethod || '-').toUpperCase()} / ${order.paymentStatus || '-'}`],
+        ['Payment', `${String(order.paymentMethod || '-').toUpperCase()} (${order.paymentStatus || '-'})`],
       ];
 
       doc.roundedRect(layout.margin, infoTop - 8, contentWidth, layout.infoBoxHeight, 4).lineWidth(0.5).strokeColor('#E5E7EB').stroke();

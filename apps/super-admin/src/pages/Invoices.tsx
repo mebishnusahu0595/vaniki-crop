@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileText, Download, Calendar, Loader2, Plus, Store, Trash2, IndianRupee, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Download, Calendar, Loader2, Plus, Store, Trash2, IndianRupee, ChevronLeft, ChevronRight, RefreshCw, Settings, CheckCircle2, XCircle, FileCode } from 'lucide-react';
 import { format } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import { adminApi } from '../utils/api';
@@ -113,6 +113,100 @@ export default function InvoicesPage() {
     setItems(newItems);
   };
 
+  const [isTallyModalOpen, setIsTallyModalOpen] = useState(false);
+  const [tallyConfigForm, setTallyConfigForm] = useState({
+    tallyHost: '127.0.0.1',
+    tallyPort: 9000,
+    companyName: 'Vaniki Crop Science Pvt Ltd',
+    salesLedger: 'Sales - Agro Chemicals',
+    cgstLedger: 'CGST Output',
+    sgstLedger: 'SGST Output',
+    igstLedger: 'IGST Output',
+  });
+  const [testResult, setTestResult] = useState<any>(null);
+  const [isTesting, setIsTesting] = useState(false);
+
+  const tallySettingsQuery = useQuery({
+    queryKey: ['tally-settings'],
+    queryFn: () => adminApi.getTallySettings(),
+  });
+
+  useEffect(() => {
+    if (tallySettingsQuery.data) {
+      setTallyConfigForm({
+        tallyHost: tallySettingsQuery.data.tallyHost || '127.0.0.1',
+        tallyPort: tallySettingsQuery.data.tallyPort || 9000,
+        companyName: tallySettingsQuery.data.companyName || 'Vaniki Crop Science Pvt Ltd',
+        salesLedger: tallySettingsQuery.data.salesLedger || 'Sales - Agro Chemicals',
+        cgstLedger: tallySettingsQuery.data.cgstLedger || 'CGST Output',
+        sgstLedger: tallySettingsQuery.data.sgstLedger || 'SGST Output',
+        igstLedger: tallySettingsQuery.data.igstLedger || 'IGST Output',
+      });
+    }
+  }, [tallySettingsQuery.data]);
+
+  const updateTallySettingsMutation = useMutation({
+    mutationFn: (payload: any) => adminApi.updateTallySettings(payload),
+    onSuccess: () => {
+      alert('Tally settings saved successfully!');
+      queryClient.invalidateQueries({ queryKey: ['tally-settings'] });
+      setIsTallyModalOpen(false);
+    },
+    onError: (err) => {
+      alert(err instanceof Error ? err.message : 'Failed to save Tally settings');
+    }
+  });
+
+  const syncAllTallyMutation = useMutation({
+    mutationFn: () => adminApi.syncTallyNow(),
+    onSuccess: (data) => {
+      alert(`Tally Direct Sync Complete!\nProcessed: ${data.totalProcessed}\nSuccess: ${data.successCount}\nFailed: ${data.failedCount}`);
+      queryClient.invalidateQueries({ queryKey: ['super-admin-b2b-invoices'] });
+    },
+    onError: (err) => {
+      alert(err instanceof Error ? err.message : 'Tally Sync Failed');
+    }
+  });
+
+  const syncSingleInvoiceMutation = useMutation({
+    mutationFn: (invoiceId: string) => adminApi.syncInvoiceToTally(invoiceId),
+    onSuccess: () => {
+      alert('Invoice successfully pushed to Tally!');
+      queryClient.invalidateQueries({ queryKey: ['super-admin-b2b-invoices'] });
+    },
+    onError: (err) => {
+      alert(err instanceof Error ? err.message : 'Invoice Tally Push Failed');
+    }
+  });
+
+  const handleDownloadTallyXml = async (id: string, invoiceNum: string) => {
+    try {
+      const blob = await adminApi.downloadTallyXml(id);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Tally_Invoice_${invoiceNum}.xml`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch {
+      alert('Failed to download Tally XML');
+    }
+  };
+
+  const handleTestTally = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    try {
+      const res = await adminApi.getTallyStatus({ host: tallyConfigForm.tallyHost, port: Number(tallyConfigForm.tallyPort) });
+      setTestResult(res);
+    } catch (err: any) {
+      setTestResult({ connected: false, error: err.message });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const handleDownload = async (id: string, invoiceNum: string) => {
     try {
       const blob = await adminApi.downloadB2BInvoice(id);
@@ -143,18 +237,37 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-8 pb-20">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <PageHeader
           title="B2B Tax Invoices"
-          subtitle="Generate and manage A5-sized tax invoices for store transactions."
+          subtitle="Generate, manage, and sync tax invoices with TallyPrime / Tally.ERP 9."
         />
-        <button
-          onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 rounded-2xl bg-primary-600 px-6 py-3.5 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-primary-500/20 transition-all hover:bg-primary-700 active:scale-95"
-        >
-          <Plus size={18} strokeWidth={3} />
-          Create Invoice
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => syncAllTallyMutation.mutate()}
+            disabled={syncAllTallyMutation.isPending}
+            className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-xs font-black uppercase tracking-wider text-emerald-800 shadow-sm transition hover:bg-emerald-100 disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={syncAllTallyMutation.isPending ? 'animate-spin text-emerald-600' : 'text-emerald-600'} />
+            <span>{syncAllTallyMutation.isPending ? 'Syncing to Tally...' : 'Sync All with Tally'}</span>
+          </button>
+
+          <button
+            onClick={() => setIsTallyModalOpen(true)}
+            className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-xs font-black uppercase tracking-wider text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <Settings size={16} className="text-slate-500" />
+            <span>Tally Config</span>
+          </button>
+
+          <button
+            onClick={() => setIsCreating(true)}
+            className="flex items-center gap-2 rounded-2xl bg-primary-600 px-6 py-3.5 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-primary-500/20 transition-all hover:bg-primary-700 active:scale-95"
+          >
+            <Plus size={18} strokeWidth={3} />
+            Create Invoice
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -219,13 +332,35 @@ export default function InvoicesPage() {
               </div>
             </div>
 
-            <button
-              onClick={() => handleDownload(invoice._id, invoice.invoiceNumber)}
-              className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg transition-all hover:bg-primary-600 hover:shadow-primary-500/25 active:scale-95"
-            >
-              <Download size={16} strokeWidth={3} />
-              Download A5 PDF
-            </button>
+            <div className="mt-8 space-y-2">
+              <button
+                onClick={() => handleDownload(invoice._id, invoice.invoiceNumber)}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-3.5 text-xs font-black uppercase tracking-[0.16em] text-white shadow-md transition-all hover:bg-primary-600 active:scale-95"
+              >
+                <Download size={15} strokeWidth={2.5} />
+                Download A5 PDF
+              </button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => handleDownloadTallyXml(invoice._id, invoice.invoiceNumber)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50"
+                  title="Download Tally XML file"
+                >
+                  <FileCode size={14} />
+                  Tally XML
+                </button>
+                <button
+                  onClick={() => syncSingleInvoiceMutation.mutate(invoice._id)}
+                  disabled={syncSingleInvoiceMutation.isPending}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 text-xs font-black uppercase tracking-wider text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                  title="Push directly to Tally Server"
+                >
+                  <RefreshCw size={14} className={syncSingleInvoiceMutation.isPending ? 'animate-spin' : ''} />
+                  Push Tally
+                </button>
+              </div>
+            </div>
           </div>
         ))}
 
@@ -517,6 +652,158 @@ export default function InvoicesPage() {
           </div>
         </div>
       )}
+
+      {/* Tally Server Configuration Modal */}
+      {isTallyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2.5rem] bg-white p-8 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-5">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
+                  <Settings size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900">Tally Integration Settings</h3>
+                  <p className="text-xs font-medium text-slate-500">Configure TallyPrime / Tally.ERP 9 Server connection & ledgers</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsTallyModalOpen(false)}
+                className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-6">
+              {/* Server Connection Section */}
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5">
+                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-800 mb-3">Tally HTTP Server Endpoint</h4>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Tally Host / IP</label>
+                    <input
+                      value={tallyConfigForm.tallyHost}
+                      onChange={(e) => setTallyConfigForm({ ...tallyConfigForm, tallyHost: e.target.value })}
+                      placeholder="127.0.0.1 or server IP"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Tally XML Port</label>
+                    <input
+                      type="number"
+                      value={tallyConfigForm.tallyPort}
+                      onChange={(e) => setTallyConfigForm({ ...tallyConfigForm, tallyPort: Number(e.target.value) })}
+                      placeholder="9000"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={handleTestTally}
+                    disabled={isTesting}
+                    className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {isTesting ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                    <span>Test Connection</span>
+                  </button>
+
+                  {testResult && (
+                    <div className="flex items-center gap-1.5 text-xs font-bold">
+                      {testResult.connected ? (
+                        <span className="flex items-center gap-1 text-emerald-700 bg-emerald-100 px-3 py-1 rounded-lg">
+                          <CheckCircle2 size={14} />
+                          Tally Connected (Port {testResult.port})
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-rose-700 bg-rose-100 px-3 py-1 rounded-lg">
+                          <XCircle size={14} />
+                          Connection Failed ({testResult.error || 'Check Tally F12 ODBC'})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Company & Ledger Mapping */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700">Company &amp; Accounting Ledgers</h4>
+                <div>
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Company Name in Tally</label>
+                  <input
+                    value={tallyConfigForm.companyName}
+                    onChange={(e) => setTallyConfigForm({ ...tallyConfigForm, companyName: e.target.value })}
+                    placeholder="Vaniki Crop Science Pvt Ltd"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Sales Ledger Name</label>
+                  <input
+                    value={tallyConfigForm.salesLedger}
+                    onChange={(e) => setTallyConfigForm({ ...tallyConfigForm, salesLedger: e.target.value })}
+                    placeholder="Sales - Agro Chemicals"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">CGST Ledger</label>
+                    <input
+                      value={tallyConfigForm.cgstLedger}
+                      onChange={(e) => setTallyConfigForm({ ...tallyConfigForm, cgstLedger: e.target.value })}
+                      placeholder="CGST Output"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">SGST Ledger</label>
+                    <input
+                      value={tallyConfigForm.sgstLedger}
+                      onChange={(e) => setTallyConfigForm({ ...tallyConfigForm, sgstLedger: e.target.value })}
+                      placeholder="SGST Output"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">IGST Ledger</label>
+                    <input
+                      value={tallyConfigForm.igstLedger}
+                      onChange={(e) => setTallyConfigForm({ ...tallyConfigForm, igstLedger: e.target.value })}
+                      placeholder="IGST Output"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+                <button
+                  type="button"
+                  onClick={() => setIsTallyModalOpen(false)}
+                  className="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateTallySettingsMutation.mutate(tallyConfigForm)}
+                  disabled={updateTallySettingsMutation.isPending}
+                  className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-primary-600 disabled:opacity-50"
+                >
+                  {updateTallySettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

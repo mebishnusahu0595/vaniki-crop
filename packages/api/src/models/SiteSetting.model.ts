@@ -24,6 +24,20 @@ export interface ISiteSetting extends Document {
   panNumber?: string;
   gstNumber?: string;
   minLoyaltyPointsToRedeem: number;
+  tallyConfig?: {
+    tallyHost?: string;
+    tallyPort?: number;
+    companyName?: string;
+    salesLedger?: string;
+    cgstLedger?: string;
+    sgstLedger?: string;
+    igstLedger?: string;
+    roundOffLedger?: string;
+    companyState?: string;
+    companyGstin?: string;
+    agentSecretKey?: string;
+    autoSyncEnabled?: boolean;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -111,6 +125,20 @@ const siteSettingSchema = new Schema<ISiteSetting>(
     },
     panNumber: { type: String, trim: true, uppercase: true },
     gstNumber: { type: String, trim: true, uppercase: true },
+    tallyConfig: {
+      tallyHost: { type: String, default: '127.0.0.1' },
+      tallyPort: { type: Number, default: 9000 },
+      companyName: { type: String, default: 'Vaniki Crop Science Pvt Ltd' },
+      salesLedger: { type: String, default: 'Sales - Agro Chemicals' },
+      cgstLedger: { type: String, default: 'CGST Output' },
+      sgstLedger: { type: String, default: 'SGST Output' },
+      igstLedger: { type: String, default: 'IGST Output' },
+      roundOffLedger: { type: String, default: 'Round Off' },
+      companyState: { type: String, default: 'Chhattisgarh' },
+      companyGstin: { type: String, default: '22AAAAA0000A1Z5' },
+      agentSecretKey: { type: String, default: 'vaniki_tally_sec_2026_x9k' },
+      autoSyncEnabled: { type: Boolean, default: true },
+    },
   },
   {
     timestamps: true,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Download, RefreshCw, FileCode } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -156,6 +156,33 @@ export default function OrdersPage() {
     },
   });
 
+  const syncToTallyMutation = useMutation({
+    mutationFn: (orderId: string) => adminApi.syncOrderToTally(orderId),
+    onSuccess: (data) => {
+      alert(data.message || 'Order pushed to Tally successfully!');
+      queryClient.invalidateQueries({ queryKey: ['super-admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['super-admin-order-detail', selectedOrderId] });
+    },
+    onError: (error: any) => {
+      alert(error?.response?.data?.message || error?.message || 'Failed to sync with Tally');
+    },
+  });
+
+  const handleDownloadTallyXml = async (id: string, orderNum: string) => {
+    try {
+      const blob = await adminApi.downloadTallyXml(id);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Tally_Order_${orderNum}.xml`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch {
+      alert('Failed to download Tally XML');
+    }
+  };
+
   const detail = orderDetailQuery.data;
   const isOrderModalOpen = Boolean(selectedOrderId);
 
@@ -283,6 +310,7 @@ export default function OrdersPage() {
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Fulfillment</th>
               <th className="px-4 py-3">Payment</th>
+              <th className="px-4 py-3">Tally Sync</th>
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Date</th>
             </tr>
@@ -303,6 +331,21 @@ export default function OrdersPage() {
                 <td className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-primary-700">{order.status}</td>
                 <td className="px-4 py-3 text-sm font-semibold text-slate-600">{order.serviceMode === 'pickup' ? 'Pickup' : 'Delivery'}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{order.paymentStatus}</td>
+                <td className="px-4 py-3 text-sm">
+                  {order.tallySyncStatus === 'synced' ? (
+                    <span className="inline-flex items-center rounded-lg bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+                      ✓ Synced
+                    </span>
+                  ) : order.tallySyncStatus === 'failed' ? (
+                    <span className="inline-flex items-center rounded-lg bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 border border-rose-200">
+                      ✕ Failed
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center rounded-lg bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700 border border-amber-200">
+                      ⏳ Pending
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-sm font-black text-slate-900">{currencyFormatter.format(order.totalAmount)}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">{formatDateTime(order.createdAt)}</td>
               </tr>
@@ -442,6 +485,54 @@ export default function OrdersPage() {
                     <div className="flex justify-between"><span className="text-slate-500">Coupon</span><span className="font-semibold text-slate-900">- {currencyFormatter.format(detail.couponDiscount)}</span></div>
                     <div className="flex justify-between"><span className="text-slate-500">Delivery</span><span className="font-semibold text-slate-900">{currencyFormatter.format(detail.deliveryCharge)}</span></div>
                     <div className="flex justify-between border-t border-primary-100 pt-3"><span className="font-black text-slate-900">Total</span><span className="font-black text-slate-900">{currencyFormatter.format(detail.totalAmount)}</span></div>
+                  </div>
+                </div>
+
+                {/* Tally Integration & Invoicing */}
+                <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
+                  <h3 className="text-lg font-black text-slate-900">Tally Integration &amp; Invoicing</h3>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Tally Status</p>
+                        <p className="text-sm font-bold text-slate-900 mt-0.5">
+                          {detail.tallySyncStatus === 'synced'
+                            ? `✓ Synced (#${detail.tallyVoucherNumber || detail.orderNumber})`
+                            : detail.tallySyncStatus === 'failed'
+                            ? `✕ Failed (${detail.tallySyncError || 'Push error'})`
+                            : '⏳ Pending Sync'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => syncToTallyMutation.mutate(detail.id)}
+                        disabled={syncToTallyMutation.isPending}
+                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        <RefreshCw size={13} className={syncToTallyMutation.isPending ? 'animate-spin' : ''} />
+                        <span>{syncToTallyMutation.isPending ? 'Pushing...' : 'Sync Tally'}</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleDownloadTallyXml(detail.id, detail.orderNumber)}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50"
+                        title="Download XML for Tally import"
+                      >
+                        <FileCode size={14} />
+                        <span>Tally XML</span>
+                      </button>
+                      <a
+                        href={`https://vanikicrop.com/api/orders/${detail.id}/invoice`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-primary-200 bg-primary-50/60 py-2.5 text-xs font-black uppercase tracking-wider text-primary-800 hover:bg-primary-100"
+                        title="Download official PDF invoice"
+                      >
+                        <Download size={14} />
+                        <span>Invoice PDF</span>
+                      </a>
+                    </div>
                   </div>
                 </div>
 

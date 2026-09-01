@@ -138,6 +138,11 @@ export interface Order {
   deliveryCancelReason?: string;
   deliveryCancelNote?: string;
   deliveryCancelledAt?: string;
+  tallySyncStatus?: 'pending' | 'synced' | 'failed' | 'manual';
+  tallyVoucherNumber?: string;
+  tallyVoucherGuid?: string;
+  tallySyncAt?: string;
+  tallySyncError?: string;
   statusHistory: OrderStatusHistoryEntry[];
 }
 

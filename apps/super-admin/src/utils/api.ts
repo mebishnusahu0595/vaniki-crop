@@ -730,4 +730,34 @@ export const adminApi = {
     const response = await api.delete<{ success: boolean; message: string }>(`/superadmin/crops/${id}`);
     return response.data;
   },
+
+  // Tally Integration API
+  getTallySettings: async () => {
+    const response = await api.get<ApiResponse<any>>('/tally/settings');
+    return response.data.data;
+  },
+  updateTallySettings: async (payload: any) => {
+    const response = await api.put<ApiResponse<any>>('/tally/settings', payload);
+    return response.data.data;
+  },
+  syncTallyNow: async () => {
+    const response = await api.post<ApiResponse<any>>('/tally/sync-now');
+    return response.data.data;
+  },
+  syncOrderToTally: async (orderId: string) => {
+    const response = await api.post<ApiResponse<any>>(`/tally/sync-order/${orderId}`);
+    return response.data;
+  },
+  syncInvoiceToTally: async (invoiceId: string) => {
+    const response = await api.post<ApiResponse<any>>(`/tally/sync-invoice/${invoiceId}`);
+    return response.data;
+  },
+  downloadTallyXml: async (id: string) => {
+    const response = await api.get(`/tally/download-xml/${id}`, { responseType: 'blob' });
+    return response.data;
+  },
+  getTallyStatus: async (params?: { host?: string; port?: number }) => {
+    const response = await api.get<ApiResponse<any>>('/tally/status', { params });
+    return response.data.data;
+  },
 };

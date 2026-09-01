@@ -103,6 +103,12 @@ export interface IOrder extends Document {
   adminNote?: string;
   isSettlementRequested?: boolean;
   settlementBatchId?: string;
+  tallySyncStatus?: 'pending' | 'synced' | 'failed' | 'manual';
+  tallyVoucherNumber?: string;
+  tallyVoucherGuid?: string;
+  tallySyncAt?: Date;
+  tallySyncError?: string;
+  tallyXmlPayload?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -257,6 +263,16 @@ const orderSchema = new Schema<IOrder, IOrderModel>(
     adminNote: { type: String, trim: true },
     isSettlementRequested: { type: Boolean, default: false },
     settlementBatchId: { type: String },
+    tallySyncStatus: {
+      type: String,
+      enum: ['pending', 'synced', 'failed', 'manual'],
+      default: 'pending',
+    },
+    tallyVoucherNumber: { type: String, trim: true },
+    tallyVoucherGuid: { type: String, trim: true },
+    tallySyncAt: { type: Date },
+    tallySyncError: { type: String },
+    tallyXmlPayload: { type: String },
   },
   {
     timestamps: true,
@@ -276,6 +292,7 @@ orderSchema.index({ userId: 1 });
 orderSchema.index({ storeId: 1 });
 orderSchema.index({ orderNumber: 1 }, { unique: true });
 orderSchema.index({ status: 1 });
+orderSchema.index({ tallySyncStatus: 1 });
 orderSchema.index({ assignedStaff: 1, status: 1, createdAt: -1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ userId: 1, createdAt: -1 });

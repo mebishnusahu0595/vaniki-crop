@@ -219,11 +219,13 @@ async function syncPendingInvoices() {
     }
 
     console.log(`\n${COLORS.bright}${COLORS.yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${COLORS.reset}`);
-    console.log(`${COLORS.green}⚡ [Incoming] Found ${queue.length} approved invoice(s) to sync into Tally!${COLORS.reset}`);
+    console.log(`${COLORS.green}⚡ [Incoming] Found ${queue.length} invoice(s)/order(s) to sync into Tally!${COLORS.reset}`);
 
-    // 2. Process each invoice
+    // 2. Process each invoice/order
     for (const item of queue) {
-      console.log(`\n⏳ Processing Invoice ${COLORS.bright}${item.invoiceNumber}${COLORS.reset} for ${COLORS.cyan}${item.storeName}${COLORS.reset} (₹${item.totalAmount})...`);
+      const typeLabel = item.type === 'retail_order' ? '🛒 [User App/Web Order]' : '🏢 [Dealer B2B Bill]';
+      const entityId = item.entityId || item.invoiceId;
+      console.log(`\n⏳ Processing ${typeLabel} ${COLORS.bright}${item.invoiceNumber}${COLORS.reset} for ${COLORS.cyan}${item.customerName || item.storeName}${COLORS.reset} (₹${item.totalAmount})...`);
 
       try {
         // Send XML to Tally on Port 9000
@@ -244,7 +246,9 @@ async function syncPendingInvoices() {
               },
             },
             JSON.stringify({
-              invoiceId: item.invoiceId,
+              entityId,
+              invoiceId: entityId,
+              type: item.type || 'b2b',
               status: 'synced',
               tallyVoucherNumber: parsed.voucherNumber || item.invoiceNumber,
               tallyVoucherGuid: parsed.voucherGuid,
@@ -264,7 +268,9 @@ async function syncPendingInvoices() {
               },
             },
             JSON.stringify({
-              invoiceId: item.invoiceId,
+              entityId,
+              invoiceId: entityId,
+              type: item.type || 'b2b',
               status: 'failed',
               error: parsed.error,
             })
@@ -283,7 +289,9 @@ async function syncPendingInvoices() {
             },
           },
           JSON.stringify({
-            invoiceId: item.invoiceId,
+            entityId,
+            invoiceId: entityId,
+            type: item.type || 'b2b',
             status: 'failed',
             error: `Tally connection failed: ${tallyErr.message}. Ensure Tally is open with Port ${config.tallyPort} enabled.`,
           })
