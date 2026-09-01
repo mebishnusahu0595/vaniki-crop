@@ -35,12 +35,17 @@ declare global {
  */
 export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
   try {
+    let token: string | undefined;
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new AppError('Access denied. No token provided.', 401);
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (typeof req.query.token === 'string') {
+      token = req.query.token;
     }
 
-    const token = authHeader.split(' ')[1];
+    if (!token) {
+      throw new AppError('Access denied. No token provided.', 401);
+    }
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       throw new AppError('JWT_SECRET is not configured', 500);

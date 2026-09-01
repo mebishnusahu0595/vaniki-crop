@@ -756,6 +756,10 @@ export const adminApi = {
     const response = await api.get(`/tally/download-xml/${id}`, { responseType: 'blob' });
     return response.data;
   },
+  downloadOrderInvoice: async (orderId: string) => {
+    const response = await api.get(`/orders/${orderId}/invoice`, { responseType: 'blob' });
+    return response.data;
+  },
   getTallyStatus: async (params?: { host?: string; port?: number }) => {
     const response = await api.get<ApiResponse<any>>('/tally/status', { params });
     return response.data.data;

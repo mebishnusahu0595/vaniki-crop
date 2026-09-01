@@ -156,6 +156,8 @@ export default function OrdersPage() {
     },
   });
 
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
   const syncToTallyMutation = useMutation({
     mutationFn: (orderId: string) => adminApi.syncOrderToTally(orderId),
     onSuccess: (data) => {
@@ -164,7 +166,9 @@ export default function OrdersPage() {
       queryClient.invalidateQueries({ queryKey: ['super-admin-order-detail', selectedOrderId] });
     },
     onError: (error: any) => {
-      alert(error?.response?.data?.message || error?.message || 'Failed to sync with Tally');
+      const msg = error?.response?.data?.message || error?.message || 'Tally server is offline or unreachable on port 9000.';
+      alert(`Tally Direct Sync:\n${msg}\n\n💡 Tip: If Tally is running locally on your office PC, use the Tally background Agent (vaniki-tally-sync.js) or click "Tally XML" to import directly into Tally!`);
+      queryClient.invalidateQueries({ queryKey: ['super-admin-order-detail', selectedOrderId] });
     },
   });
 
@@ -180,6 +184,24 @@ export default function OrdersPage() {
       link.parentNode?.removeChild(link);
     } catch {
       alert('Failed to download Tally XML');
+    }
+  };
+
+  const handleDownloadInvoicePdf = async (orderId: string, orderNumber: string) => {
+    setIsDownloadingPdf(true);
+    try {
+      const blob = await adminApi.downloadOrderInvoice(orderId);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Invoice_${orderNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Failed to download invoice PDF');
+    } finally {
+      setIsDownloadingPdf(false);
     }
   };
 
@@ -522,16 +544,20 @@ export default function OrdersPage() {
                         <FileCode size={14} />
                         <span>Tally XML</span>
                       </button>
-                      <a
-                        href={`https://vanikicrop.com/api/orders/${detail.id}/invoice`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-primary-200 bg-primary-50/60 py-2.5 text-xs font-black uppercase tracking-wider text-primary-800 hover:bg-primary-100"
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadInvoicePdf(detail.id, detail.orderNumber)}
+                        disabled={isDownloadingPdf}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-primary-200 bg-primary-50/60 py-2.5 text-xs font-black uppercase tracking-wider text-primary-800 hover:bg-primary-100 disabled:opacity-50"
                         title="Download official PDF invoice"
                       >
-                        <Download size={14} />
-                        <span>Invoice PDF</span>
-                      </a>
+                        {isDownloadingPdf ? (
+                          <RefreshCw size={14} className="animate-spin" />
+                        ) : (
+                          <Download size={14} />
+                        )}
+                        <span>{isDownloadingPdf ? 'Downloading...' : 'Invoice PDF'}</span>
+                      </button>
                     </div>
                   </div>
                 </div>
