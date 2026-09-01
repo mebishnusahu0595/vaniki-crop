@@ -18,23 +18,28 @@ function parseCouponExpiryDate(value: string): Date | null {
 const couponExpiryDateSchema = z
   .string()
   .trim()
-  .min(1)
-  .refine((value) => parseCouponExpiryDate(value) !== null, {
+  .optional()
+  .refine((value) => !value || parseCouponExpiryDate(value) !== null, {
     message: 'Invalid expiry date',
   })
-  .transform((value) => parseCouponExpiryDate(value)!.toISOString())
-  .refine((value) => new Date(value).getTime() > Date.now(), {
-    message: 'Expiry date must be in the future',
+  .transform((value) => {
+    if (!value) {
+      // Default to 1 year from now if not provided
+      const nextYear = new Date();
+      nextYear.setFullYear(nextYear.getFullYear() + 1);
+      return nextYear.toISOString();
+    }
+    return parseCouponExpiryDate(value)!.toISOString();
   });
 
 const createCouponSchema = z.object({
   body: z.object({
-    code: z.string().trim().min(3).max(30).toUpperCase(),
-    type: z.enum(['percent', 'flat']),
-    value: z.number().positive(),
+    code: z.string().trim().min(3, 'Code must be at least 3 characters').max(30).toUpperCase(),
+    type: z.enum(['percent', 'flat']).default('percent'),
+    value: z.number().positive('Discount value must be greater than 0'),
     minOrderAmount: z.number().min(0).default(0),
     maxDiscount: z.number().min(0).optional(),
-    usageLimit: z.number().int().min(1),
+    usageLimit: z.number().int().min(1).default(10000),
     perUserLimit: z.number().int().min(1).default(1),
     expiryDate: couponExpiryDateSchema,
     applicableStores: z.array(objectIdSchema).optional().default([]),
