@@ -874,6 +874,10 @@ export async function recordTallySyncResult(
       order.tallySyncError = result.error || 'Failed to push into Tally';
     }
 
+    if (order.shippingAddress && !order.shippingAddress.district) {
+      order.shippingAddress.district = order.shippingAddress.city || 'Chhattisgarh';
+    }
+
     await order.save();
     return { type: 'retail_order', data: order };
   }

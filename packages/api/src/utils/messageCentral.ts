@@ -34,7 +34,14 @@ export async function validateOtpViaMessageCentral(verificationId: string, otp: 
   const authToken = process.env.MESSAGECENTRAL_AUTH_TOKEN || 'eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJDLTRERkVCRDU4NzVEMTQyOCIsImlhdCI6MTc3OTI3MzI2NCwiZXhwIjoxOTM2OTUzMjY0fQ.qHz7wdMyrMGsOEuSNM0Ob1sEDEuQSr8b9U1wM6keTHmalnSFJtWpQoITfii3Fvh6A-6afqqS889ouqFLsD7pRA';
   const baseUrl = process.env.MESSAGECENTRAL_BASE_URL || 'https://cpaas.messagecentral.com';
 
-  const url = `${baseUrl}/verification/v3/validateOtp?verificationId=${verificationId}&code=${otp}`;
+  const cleanVid = String(verificationId).trim();
+  const cleanOtp = String(otp).trim();
+
+  if (!cleanVid || !cleanOtp) {
+    return false;
+  }
+
+  const url = `${baseUrl}/verification/v3/validateOtp?verificationId=${encodeURIComponent(cleanVid)}&code=${encodeURIComponent(cleanOtp)}`;
 
   try {
     const response = await fetch(url, {
@@ -59,12 +66,17 @@ export async function validateOtpViaMessageCentral(verificationId: string, otp: 
       return false;
     }
 
+    console.log(`[MessageCentral] validateOtp response for vid=${cleanVid}:`, JSON.stringify(data));
+
     if (data.responseCode !== 200) {
       console.error('MessageCentral validate OTP error:', data);
       return false;
     }
 
-    return data.data?.verificationStatus === 'VERIFICATION_COMPLETED';
+    return (
+      data.data?.verificationStatus === 'VERIFICATION_COMPLETED' ||
+      data.verificationStatus === 'VERIFICATION_COMPLETED'
+    );
   } catch (error) {
     console.error('MessageCentral validate request failed:', error);
     return false;

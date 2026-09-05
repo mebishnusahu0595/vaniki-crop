@@ -69,6 +69,7 @@ export interface IUser extends Document {
   isActive: boolean;
   otp?: string;
   otpExpiry?: Date;
+  otpVerificationId?: string;
   refreshToken?: string;
   expoPushToken?: string;
   fcmToken?: string;
@@ -118,7 +119,7 @@ const dealerProfileSchema = new Schema<IDealerProfile>(
 const userProfileImageSchema = new Schema<IUserProfileImage>(
   {
     url: { type: String, required: true, trim: true },
-    publicId: { type: String, required: true, trim: true },
+    publicId: { type: String, required: false, default: '', trim: true },
   },
   { _id: false },
 );
@@ -218,6 +219,7 @@ const userSchema = new Schema<IUser>(
     isActive: { type: Boolean, default: true },
     otp: { type: String, select: false },
     otpExpiry: { type: Date, select: false },
+    otpVerificationId: { type: String, select: false },
     refreshToken: { type: String, select: false },
     expoPushToken: { type: String, trim: true },
     fcmToken: { type: String, trim: true },
@@ -237,6 +239,7 @@ const userSchema = new Schema<IUser>(
         delete ret.password;
         delete ret.otp;
         delete ret.otpExpiry;
+        delete ret.otpVerificationId;
         delete ret.refreshToken;
         return ret;
       },

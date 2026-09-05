@@ -55,7 +55,7 @@ const createCouponSchema = z.object({
 const validateCouponSchema = z.object({
   body: z.object({
     code: z.string().trim().min(1).toUpperCase(),
-    storeId: objectIdSchema,
+    storeId: objectIdSchema.optional(),
     cartTotal: z.number().positive(),
   }),
 });

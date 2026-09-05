@@ -11,6 +11,7 @@ import { Staff } from '../../models/Staff.model.js';
 import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
 import { ProductRequest } from '../../models/ProductRequest.model.js';
+import { B2BInvoice } from '../../models/B2BInvoice.model.js';
 import { NotificationCampaign } from '../../models/NotificationCampaign.model.js';
 import { Testimonial } from '../../models/Testimonial.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
@@ -548,10 +549,22 @@ export async function deleteStore(storeId: string): Promise<void> {
 }
 
 function toAdminAccountResponse(admin: any, assignedStore: any) {
-  const dealerProfile = admin.dealerProfile || {};
+  const adminObj = typeof admin.toJSON === 'function' ? admin.toJSON() : admin;
+  const dealerProfile = adminObj.dealerProfile || {};
+
+  const resolvedProfileImage = adminObj.profileImage?.url
+    ? adminObj.profileImage
+    : adminObj.avatar?.url
+    ? adminObj.avatar
+    : typeof adminObj.avatar === 'string' && adminObj.avatar
+    ? { url: adminObj.avatar, publicId: '' }
+    : dealerProfile.dealerPhoto?.url
+    ? dealerProfile.dealerPhoto
+    : undefined;
 
   return {
-    ...admin.toJSON(),
+    ...adminObj,
+    id: adminObj._id?.toString() || adminObj.id,
     assignedStore: assignedStore
       ? {
           id: assignedStore._id?.toString() || assignedStore.id,
@@ -559,17 +572,18 @@ function toAdminAccountResponse(admin: any, assignedStore: any) {
           isActive: assignedStore.isActive,
         }
       : null,
-    status: admin.isActive ? 'active' : 'inactive',
-    approvalStatus: admin.approvalStatus || 'approved',
+    status: adminObj.isActive ? 'active' : 'inactive',
+    approvalStatus: adminObj.approvalStatus || 'approved',
+    profileImage: resolvedProfileImage,
     storeName: dealerProfile.storeName || '',
     storeLocation: dealerProfile.storeLocation || '',
     longitude: typeof dealerProfile.longitude === 'number' ? dealerProfile.longitude : undefined,
     latitude: typeof dealerProfile.latitude === 'number' ? dealerProfile.latitude : undefined,
     gstNumber: dealerProfile.gstNumber || '',
     sgstNumber: dealerProfile.sgstNumber || '',
-    referralCount: admin.referralCount || 0,
-    loyaltyPoints: admin.loyaltyPoints || 0,
-    referralCode: admin.referralCode,
+    referralCount: adminObj.referralCount || 0,
+    loyaltyPoints: adminObj.loyaltyPoints || 0,
+    referralCode: adminObj.referralCode,
   };
 }
 
@@ -602,7 +616,31 @@ export async function listAdmins(query: Record<string, any>) {
   }
 
   const [admins, total] = await Promise.all([
-    User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    User.aggregate([
+      { $match: filter },
+      {
+        $addFields: {
+          sortPriority: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$approvalStatus', 'pending'] }, then: 0 },
+                { case: { $eq: ['$approvalStatus', 'approved'] }, then: 1 },
+              ],
+              default: 2,
+            },
+          },
+        },
+      },
+      {
+        $sort: {
+          sortPriority: 1,
+          updatedAt: -1,
+          createdAt: -1,
+        },
+      },
+      { $skip: skip },
+      { $limit: limit },
+    ]),
     User.countDocuments(filter),
   ]);
 
@@ -1555,7 +1593,7 @@ export async function listProductRequests(query: Record<string, any>) {
 export async function updateProductRequestStatus(productRequestId: string, input: Record<string, any>) {
   const request = await ProductRequest.findById(productRequestId)
     .populate('storeId', 'name phone address')
-    .populate('adminId', 'name mobile email')
+    .populate('adminId', 'name mobile email expoPushToken')
     .populate('productId', 'name slug shortDescription variants taxRate hsnCode')
     .populate('invoiceId', 'invoiceNumber invoiceDate totalAmount tallySyncStatus tallyVoucherNumber');
 
@@ -1563,8 +1601,13 @@ export async function updateProductRequestStatus(productRequestId: string, input
     throw new AppError('Product request not found', 404);
   }
 
-  if (input.status && ['pending', 'contacted', 'fulfilled', 'rejected'].includes(String(input.status))) {
-    request.status = String(input.status) as 'pending' | 'contacted' | 'fulfilled' | 'rejected';
+  const allowedStatuses = ['pending', 'approved', 'contacted', 'fulfilled', 'rejected'];
+  const newStatus = input.status && allowedStatuses.includes(String(input.status))
+    ? (String(input.status) as 'pending' | 'approved' | 'contacted' | 'fulfilled' | 'rejected')
+    : undefined;
+
+  if (newStatus) {
+    request.status = newStatus;
   }
 
   if (input.invoiceId && mongoose.Types.ObjectId.isValid(String(input.invoiceId))) {
@@ -1575,7 +1618,83 @@ export async function updateProductRequestStatus(productRequestId: string, input
     request.superAdminNote = input.superAdminNote.trim() || undefined;
   }
 
+  // If status is becoming 'approved' and there is no invoiceId yet, auto-generate a B2B Tally Invoice
+  if (newStatus === 'approved' && !request.invoiceId) {
+    try {
+      const store: any = request.storeId;
+      const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const count = await B2BInvoice.countDocuments();
+      const invoiceNumber = `VNK-${todayStr}-${String(count + 1).padStart(4, '0')}`;
+
+      const pQty = Number(request.petiQuantity || 1);
+      const pSize = Number(request.petiSize || 12);
+      const totalUnits = Number(request.requestedQuantity || (pQty * pSize) || pQty || 1);
+      const unitPrice = Number(request.offerPrice || request.dealerPrice || 0);
+      const taxRate = Number(request.taxRate !== undefined ? request.taxRate : 18);
+      const lineTaxable = totalUnits * unitPrice;
+      const lineTaxAmount = (lineTaxable * taxRate) / 100;
+      const lineTotal = lineTaxable + lineTaxAmount;
+
+      const createdInvoice = await B2BInvoice.create({
+        storeId: request.storeId,
+        invoiceNumber,
+        invoiceDate: new Date(),
+        buyerOrderNo: request.batchId || invoiceNumber,
+        buyerOrderDate: request.createdAt || new Date(),
+        items: [
+          {
+            productName: request.productName,
+            hsnCode: request.hsnCode || '38089190',
+            qty: totalUnits,
+            price: unitPrice,
+            taxRate,
+            taxAmount: lineTaxAmount,
+            total: lineTotal,
+          },
+        ],
+        subtotal: lineTaxable,
+        totalTaxAmount: lineTaxAmount,
+        totalAmount: lineTotal,
+        despatchedThrough: 'Vaniki Fleet / Transport',
+        destination: store?.address?.city || store?.address?.state || 'Chhattisgarh',
+        termsOfDelivery: 'Door Delivery',
+        paymentTerms: 'Immediate / On Delivery',
+        tallySyncStatus: 'pending',
+        paymentStatus: 'unpaid',
+      });
+
+      request.invoiceId = createdInvoice._id as any;
+      if (!request.superAdminNote) {
+        request.superAdminNote = `Approved with Auto-Generated Invoice ${invoiceNumber}`;
+      }
+    } catch (invErr) {
+      console.error('Failed to auto-create invoice on request approval', invErr);
+    }
+  }
+
   await request.save();
+
+  // Send push notification to dealer if approved
+  if (newStatus === 'approved') {
+    try {
+      const dealerUser: any = request.adminId;
+      if (dealerUser && dealerUser.expoPushToken) {
+        await sendExpoPushNotification({
+          to: dealerUser.expoPushToken,
+          title: '🎉 Stock Request Approved!',
+          body: `Your stock request for ${request.productName} has been approved by SuperAdmin. Tally Tax Invoice is generated and ready for payment.`,
+          data: {
+            type: 'invoice',
+            requestId: request._id.toString(),
+            screen: '/(tabs)/invoices',
+          },
+        });
+      }
+    } catch (pushErr) {
+      console.error('Failed to send push notification', pushErr);
+    }
+  }
+
   return request;
 }
 
@@ -1742,6 +1861,22 @@ export async function getSiteSettings() {
 }
 
 export async function updateSiteSettings(input: Record<string, any>) {
+  // If bankDetails.qrCodeUrl is a base64 Data URL, upload it to storage
+  if (
+    input.bankDetails?.qrCodeUrl &&
+    typeof input.bankDetails.qrCodeUrl === 'string' &&
+    input.bankDetails.qrCodeUrl.startsWith('data:image/')
+  ) {
+    try {
+      const base64Data = input.bankDetails.qrCodeUrl.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      const uploadRes = await uploadToCloudinary(buffer, 'vaniki/company/qr');
+      input.bankDetails.qrCodeUrl = uploadRes.url;
+    } catch (err) {
+      console.error('Failed to upload company QR to storage', err);
+    }
+  }
+
   const settings = await SiteSetting.findOneAndUpdate(
     { singletonKey: 'default' },
     { $set: input },

@@ -6,7 +6,7 @@ import { upload } from '../../middleware/upload.js';
 const router: Router = Router();
 
 // ─── Dealer Routes ───────────────────────────────────────────────────────
-router.get('/dealers', requireAuth, requireStoreAdmin, promotionsController.listDealersPromotions);
+router.get('/dealers', promotionsController.listDealersPromotions);
 
 // ─── SuperAdmin Management Routes ────────────────────────────────────────
 router.get('/admin', requireAuth, requireSuperAdmin, promotionsController.listAdminPromotions);

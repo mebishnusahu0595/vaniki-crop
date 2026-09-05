@@ -45,7 +45,7 @@ module.exports = {
       ...appJson.expo.extra,
       appVariant: 'dealer',
       eas: {
-        projectId: '',
+        projectId: '2db8ff2d-1cfa-452f-9bf6-157bc791d7d1',
       },
     },
   },

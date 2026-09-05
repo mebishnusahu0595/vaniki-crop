@@ -843,6 +843,29 @@ export async function updateProductMoq(
   return product;
 }
 
+export async function bulkUpdateMoq(
+  moq: number,
+  productIds?: string[],
+  userRole?: string,
+): Promise<number> {
+  if (userRole !== 'superAdmin') {
+    throw new AppError('Only super admin can set MOQ', 403);
+  }
+
+  const moqNum = Number(moq);
+  if (!Number.isInteger(moqNum) || moqNum < 1) {
+    throw new AppError('MOQ must be a positive integer (minimum 1)', 400);
+  }
+
+  const filter: any = {};
+  if (productIds && productIds.length > 0) {
+    filter._id = { $in: productIds };
+  }
+
+  const result = await Product.updateMany(filter, { $set: { moq: moqNum } });
+  return result.modifiedCount;
+}
+
 /**
  * GET /api/products/bulk-catalogue
  * Public — returns all active products with MOQ for the Dealer Play app.
@@ -860,8 +883,14 @@ export async function getBulkCatalogue(
     if (cat) filter.category = cat._id;
   }
 
-  if (query.search) {
-    filter.$text = { $search: query.search };
+  if (query.search && typeof query.search === 'string' && query.search.trim()) {
+    const searchRegex = new RegExp(query.search.trim(), 'i');
+    filter.$or = [
+      { name: searchRegex },
+      { slug: searchRegex },
+      { shortDescription: searchRegex },
+      { description: searchRegex },
+    ];
   }
 
   const [products, total] = await Promise.all([

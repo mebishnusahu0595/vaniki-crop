@@ -13,7 +13,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2D6A4F"
+      "backgroundColor": "#FFFFFF"
     },
     "plugins": [
       "expo-router",
@@ -35,9 +35,9 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 35,
-            "targetSdkVersion": 35,
-            "buildToolsVersion": "35.0.0",
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0",
             "ndkVersion": "28.2.13676358",
             "useLegacyPackaging": false,
             "extraGradleProperties": [
@@ -61,8 +61,17 @@
       "googleServicesFile": "./google-services.json",
       "package": "com.vanikicrop.dealers",
       "versionCode": 1,
-      "targetSdkVersion": 35,
-      "softwareKeyboardLayoutMode": "pan",
+      "targetSdkVersion": 36,
+      "softwareKeyboardLayoutMode": "resize",
+      "androidStatusBar": {
+        "barStyle": "dark-content",
+        "backgroundColor": "#F8FAF9",
+        "translucent": false
+      },
+      "androidNavigationBar": {
+        "barStyle": "dark-content",
+        "backgroundColor": "#FFFFFF"
+      },
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
@@ -70,7 +79,7 @@
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2D6A4F"
+        "backgroundColor": "#FFFFFF"
       }
     },
     "experiments": {
@@ -84,7 +93,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": ""
+        "projectId": "2db8ff2d-1cfa-452f-9bf6-157bc791d7d1"
       }
     }
   }

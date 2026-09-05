@@ -230,3 +230,25 @@ export async function updateProductMoq(req: Request, res: Response, next: NextFu
     next(error);
   }
 }
+
+/**
+  * PATCH /api/admin/products/bulk-moq
+  * SuperAdmin only: bulk update MOQ for all or selected products
+  */
+export async function bulkUpdateMoq(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { moq, productIds } = req.body;
+    const count = await productService.bulkUpdateMoq(
+      Number(moq) || 10,
+      productIds,
+      req.userRole!,
+    );
+    res.status(200).json({
+      success: true,
+      message: `Updated MOQ to ${moq} for ${count} products`,
+      data: { count, moq: Number(moq) || 10 },
+    });
+  } catch (error) {
+    next(error);
+  }
+}

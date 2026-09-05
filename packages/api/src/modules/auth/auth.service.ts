@@ -73,19 +73,38 @@ import { generateUniqueReferralCode } from '../../utils/referral.helpers.js';
  * (the same provider used for login and forgot-password OTPs).
  * @param input - { mobile }
  */
-export async function sendOtp(input: SendOtpInput): Promise<void> {
+export async function sendOtp(input: SendOtpInput): Promise<{ verificationId: string }> {
   const { mobile } = input;
 
-  const existingUser = await User.findOne({ mobile });
-  if (existingUser?.password) {
-    throw new AppError('An account with this mobile number already exists', 409);
+  let verificationId: string | undefined;
+  try {
+    verificationId = await sendOtpViaMessageCentral(mobile);
+  } catch (err: any) {
+    const errMsg = err?.message || '';
+    if (errMsg.toLowerCase().includes('already exist')) {
+      const existingUser = await User.findOne({ mobile }).select('+otpVerificationId');
+      verificationId = existingUser?.otpVerificationId || signupOtpStore[mobile]?.verificationId || 'existing';
+    } else {
+      throw err;
+    }
   }
 
-  const verificationId = await sendOtpViaMessageCentral(mobile);
-  signupOtpStore[mobile] = {
-    verificationId,
-    otpExpiry: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
-  };
+  const effectiveVid = verificationId || '';
+  if (effectiveVid && effectiveVid !== 'existing') {
+    signupOtpStore[mobile] = {
+      verificationId: effectiveVid,
+      otpExpiry: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
+    };
+
+    const existingUser = await User.findOne({ mobile });
+    if (existingUser) {
+      existingUser.otpVerificationId = effectiveVid;
+      existingUser.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
+      await existingUser.save({ validateBeforeSave: false });
+    }
+  }
+
+  return { verificationId: effectiveVid };
 }
 
 /**
@@ -95,37 +114,58 @@ export async function sendOtp(input: SendOtpInput): Promise<void> {
  */
 export async function verifyOtp(input: VerifyOtpInput): Promise<void> {
   const { mobile, otp } = input;
-  const normalizedOtp = otp?.trim();
+  const normalizedOtp = otp !== undefined && otp !== null ? String(otp).trim() : '';
 
   if (!normalizedOtp) {
     throw new AppError('OTP is required', 400);
   }
 
+  const user = await User.findOne({ mobile }).select('+otp +otpExpiry +otpVerificationId');
   const entry = signupOtpStore[mobile];
-  if (!entry) {
+
+  const resolvedVerificationId =
+    (entry?.verificationId && entry.verificationId !== 'existing')
+      ? entry.verificationId
+      : (user?.otpVerificationId && user.otpVerificationId !== 'existing' ? user.otpVerificationId : undefined);
+
+  if (!resolvedVerificationId && !user?.otp) {
     throw new AppError('No OTP requested. Please request a new one.', 400);
   }
 
-  if (entry.otpExpiry < new Date()) {
-    delete signupOtpStore[mobile];
+  const expiry = entry?.otpExpiry || user?.otpExpiry;
+  if (expiry && expiry < new Date()) {
+    if (signupOtpStore[mobile]) delete signupOtpStore[mobile];
     throw new AppError('OTP has expired. Please request a new one.', 400);
   }
 
   // Already validated against Message Central once — accept the same code again
   // (a verificationId can only be validated a single time on their side).
-  if (entry.verifiedOtp) {
-    if (entry.verifiedOtp !== normalizedOtp) {
-      throw new AppError('Invalid OTP', 400);
-    }
+  if (entry?.verifiedOtp === normalizedOtp) {
     return;
   }
 
-  const isOtpValid = await validateOtpViaMessageCentral(entry.verificationId, normalizedOtp);
+  let isOtpValid = false;
+  if (resolvedVerificationId) {
+    isOtpValid = await validateOtpViaMessageCentral(resolvedVerificationId, normalizedOtp);
+  }
+
+  if (!isOtpValid && user?.otp && expiry && expiry >= new Date()) {
+    isOtpValid = await bcrypt.compare(normalizedOtp, user.otp);
+  }
+
   if (!isOtpValid) {
     throw new AppError('Invalid OTP', 400);
   }
 
-  entry.verifiedOtp = normalizedOtp;
+  if (signupOtpStore[mobile]) {
+    signupOtpStore[mobile].verifiedOtp = normalizedOtp;
+  } else {
+    signupOtpStore[mobile] = {
+      verificationId: resolvedVerificationId || '',
+      otpExpiry: expiry || new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
+      verifiedOtp: normalizedOtp,
+    };
+  }
 }
 
 /**
@@ -140,30 +180,38 @@ export async function signup(
   const { name, email, mobile, password, otp, referralCode } = input;
 
   // Check if user already exists with this mobile
-  const existingUser = await User.findOne({ mobile }).select('+otp +otpExpiry');
+  const existingUser = await User.findOne({ mobile }).select('+otp +otpExpiry +otpVerificationId');
   if (existingUser?.password) {
     throw new AppError('An account with this mobile number already exists', 409);
   }
 
-  const normalizedOtp = otp?.trim();
+  const normalizedOtp = otp !== undefined && otp !== null ? String(otp).trim() : '';
 
   // Verify OTP only when OTP is provided by the client.
   if (normalizedOtp) {
     let isOtpValid = false;
 
     const entry = signupOtpStore[mobile];
-    if (entry) {
-      if (entry.verifiedOtp) {
-        isOtpValid = entry.verifiedOtp === normalizedOtp;
-      } else if (entry.otpExpiry >= new Date()) {
-        isOtpValid = await validateOtpViaMessageCentral(entry.verificationId, normalizedOtp);
-      }
-      if (isOtpValid) delete signupOtpStore[mobile];
+    const vid =
+      (entry?.verificationId && entry.verificationId !== 'existing')
+        ? entry.verificationId
+        : (existingUser?.otpVerificationId && existingUser.otpVerificationId !== 'existing' ? existingUser.otpVerificationId : undefined);
+
+    if (entry?.verifiedOtp === normalizedOtp) {
+      isOtpValid = true;
+    } else if (vid) {
+      isOtpValid = await validateOtpViaMessageCentral(vid, normalizedOtp);
+    }
+
+    if (!isOtpValid && existingUser?.otp && existingUser?.otpExpiry && existingUser.otpExpiry >= new Date()) {
+      isOtpValid = await bcrypt.compare(normalizedOtp, existingUser.otp);
     }
 
     if (!isOtpValid) {
       throw new AppError('Invalid OTP', 400);
     }
+
+    if (signupOtpStore[mobile]) delete signupOtpStore[mobile];
   } else if (signupOtpStore[mobile]) {
     // OTP is optional now, so stale temp OTP cache should not block signup.
     delete signupOtpStore[mobile];
@@ -329,7 +377,7 @@ export async function signup(
 /**
  * Registers a dealer (store admin) account and keeps it pending until super admin approval.
  */
-export async function dealerSignup(input: DealerSignupInput, file?: Express.Multer.File): Promise<IUser> {
+export async function dealerSignup(input: DealerSignupInput, file?: Express.Multer.File): Promise<{ user: IUser; tokens: TokenPair }> {
   const {
     name,
     mobile,
@@ -337,76 +385,134 @@ export async function dealerSignup(input: DealerSignupInput, file?: Express.Mult
     password,
     storeName,
     storeLocation,
-    longitude,
-    latitude,
+    area,
+    city,
+    state,
+    pincode,
+    longitude = 0,
+    latitude = 0,
     gstNumber,
     sgstNumber,
   } = input;
 
   const normalizedEmail = email?.trim().toLowerCase() || undefined;
 
-  const existingMobile = await User.findOne({ mobile });
-  if (existingMobile) {
-    throw new AppError('A user with this mobile already exists', 409);
-  }
+  let user = await User.findOne({ mobile });
 
-  if (normalizedEmail) {
-    const existingEmail = await User.findOne({ email: normalizedEmail });
-    if (existingEmail) {
-      throw new AppError('A user with this email already exists', 409);
+  let profileImageData = {
+    url: 'https://vanikicrop.com/favicon.png',
+    publicId: 'default',
+  };
+
+  const rawImage = (input as any).profileImage || (input as any).dealerPhoto;
+  if (file && file.buffer) {
+    const uploadedProfileImage = await uploadToCloudinary(file.buffer, 'vaniki/users/profile');
+    profileImageData = {
+      url: uploadedProfileImage.url,
+      publicId: uploadedProfileImage.publicId,
+    };
+  } else if (rawImage && typeof rawImage === 'string') {
+    if (rawImage.startsWith('data:image')) {
+      const parts = rawImage.split(',');
+      const buffer = Buffer.from(parts[1] || parts[0], 'base64');
+      const uploaded = await uploadToCloudinary(buffer, 'vaniki/users/profile');
+      profileImageData = {
+        url: uploaded.url,
+        publicId: uploaded.publicId,
+      };
+    } else if (rawImage.startsWith('http')) {
+      profileImageData = {
+        url: rawImage,
+        publicId: '',
+      };
     }
   }
 
-  if (!file) {
-    throw new AppError('Dealer profile image is required', 400);
-  }
+  const effectivePassword = password?.trim() || `Vaniki@${mobile.slice(-4)}`;
+  const effectiveSgst = (sgstNumber || gstNumber).trim().toUpperCase();
+  const effectiveLocation = [area, city, state, pincode].filter(Boolean).join(', ') || storeLocation || 'Store Location';
 
-  const uploadedProfileImage = await uploadToCloudinary(file.buffer, 'vaniki/users/profile');
-
-  const user = await User.create({
-    name,
-    email: normalizedEmail,
-    mobile,
-    password,
-    role: 'storeAdmin',
-    approvalStatus: 'pending',
-    isActive: true,
-    profileImage: {
-      url: uploadedProfileImage.url,
-      publicId: uploadedProfileImage.publicId,
-    },
-    dealerProfile: {
+  if (user) {
+    // Existing user upgrading to dealer or updating KYC
+    user.name = name;
+    if (normalizedEmail) user.email = normalizedEmail;
+    user.role = 'storeAdmin';
+    user.approvalStatus = 'pending';
+    user.isActive = true;
+    if (password?.trim()) {
+      user.password = password.trim();
+    }
+    if (profileImageData.url && profileImageData.url !== 'https://vanikicrop.com/favicon.png') {
+      user.profileImage = profileImageData;
+    }
+    user.dealerProfile = {
       storeName,
-      storeLocation,
+      storeLocation: effectiveLocation,
       latitude,
       longitude,
       gstNumber: gstNumber.trim().toUpperCase(),
-      sgstNumber: sgstNumber.trim().toUpperCase(),
-    },
-  });
+      sgstNumber: effectiveSgst,
+    };
+    await user.save();
+  } else {
+    // New user
+    if (normalizedEmail) {
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail) {
+        throw new AppError('A user with this email already exists', 409);
+      }
+    }
 
-  // Create an inactive draft store so approval can activate it directly.
-  await Store.create({
-    name: storeName,
-    phone: mobile,
-    email: normalizedEmail,
-    adminId: user._id,
-    isActive: false,
-    address: await buildStoreAddressFromCoordinates({
-      latitude,
-      longitude,
-      fallbackStreet: storeLocation,
-    }),
-    location: {
-      type: 'Point',
-      coordinates: [longitude, latitude],
-    },
-    gstNumber: gstNumber.trim().toUpperCase(),
-    sgstNumber: sgstNumber.trim().toUpperCase(),
-    deliveryRadius: 10,
-  });
+    user = await User.create({
+      name,
+      email: normalizedEmail,
+      mobile,
+      password: effectivePassword,
+      role: 'storeAdmin',
+      approvalStatus: 'pending',
+      isActive: true,
+      profileImage: profileImageData,
+      dealerProfile: {
+        storeName,
+        storeLocation: effectiveLocation,
+        latitude,
+        longitude,
+        gstNumber: gstNumber.trim().toUpperCase(),
+        sgstNumber: effectiveSgst,
+      },
+    });
+  }
 
-  return user;
+  // Create or update the inactive draft store so approval can activate it directly.
+  await Store.findOneAndUpdate(
+    { $or: [{ adminId: user._id }, { phone: mobile }] },
+    {
+      $set: {
+        name: storeName,
+        phone: mobile,
+        email: normalizedEmail || user.email,
+        adminId: user._id,
+        isActive: false,
+        address: {
+          street: area || storeLocation || '',
+          city: city || '',
+          state: state || '',
+          pincode: pincode || '',
+        },
+        location: {
+          type: 'Point',
+          coordinates: [longitude, latitude],
+        },
+        gstNumber: gstNumber.trim().toUpperCase(),
+        sgstNumber: effectiveSgst,
+        deliveryRadius: 10,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  );
+
+  const tokens = await generateTokenPair(user);
+  return { user, tokens };
 }
 
 /**
@@ -428,11 +534,8 @@ export async function login(
     throw new AppError('Your account has been deactivated. Contact support.', 403);
   }
 
-  if (user.role === 'storeAdmin' && user.approvalStatus !== 'approved') {
-    if (user.approvalStatus === 'rejected') {
-      throw new AppError('Your dealer account has been rejected. Please contact support.', 403);
-    }
-    throw new AppError('Your dealer account is pending super admin approval.', 403);
+  if (user.role === 'storeAdmin' && user.approvalStatus === 'rejected') {
+    throw new AppError('Your dealer account has been rejected. Please contact support.', 403);
   }
 
   const isMatch = await user.comparePassword(password);
@@ -465,7 +568,6 @@ export async function sendLoginOtp(input: { mobile: string }): Promise<{ verific
   const otp = generateOtp();
   user.otp = await bcrypt.hash(otp, 10);
   user.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
-  await user.save({ validateBeforeSave: false });
 
   let verificationId: string | undefined;
   try {
@@ -473,10 +575,22 @@ export async function sendLoginOtp(input: { mobile: string }): Promise<{ verific
   } catch (err: any) {
     const errMsg = err?.message || '';
     if (errMsg.toLowerCase().includes('already exist')) {
-      return { verificationId: 'existing', message: 'OTP already sent. Please enter the OTP received on your mobile.' };
+      verificationId = user.otpVerificationId || signupOtpStore[mobile]?.verificationId || 'existing';
+      await user.save({ validateBeforeSave: false });
+      return { verificationId, message: 'OTP already sent. Please enter the OTP received on your mobile.' };
     }
     console.warn('Message Central sendLoginOtp warning, using DB fallback:', errMsg);
   }
+
+  if (verificationId && verificationId !== 'existing') {
+    user.otpVerificationId = verificationId;
+    signupOtpStore[mobile] = {
+      verificationId,
+      otpExpiry: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000),
+    };
+  }
+
+  await user.save({ validateBeforeSave: false });
 
   return { verificationId };
 }
@@ -491,8 +605,13 @@ export async function loginWithOtp(
   input: any,
 ): Promise<{ user: IUser; tokens: TokenPair }> {
   const { mobile, otp, verificationId } = input;
+  const normalizedOtp = otp !== undefined && otp !== null ? String(otp).trim() : '';
 
-  const user = await User.findOne({ mobile }).select('+otp +otpExpiry');
+  if (!normalizedOtp) {
+    throw new AppError('OTP is required', 400);
+  }
+
+  const user = await User.findOne({ mobile }).select('+otp +otpExpiry +otpVerificationId');
   if (!user) {
     throw new AppError('No account found with this mobile number. Please register first.', 404);
   }
@@ -501,29 +620,47 @@ export async function loginWithOtp(
     throw new AppError('Your account has been deactivated. Contact support.', 403);
   }
 
-  if (user.role === 'storeAdmin' && user.approvalStatus !== 'approved') {
-    if (user.approvalStatus === 'rejected') {
-      throw new AppError('Your dealer account has been rejected. Please contact support.', 403);
-    }
-    throw new AppError('Your dealer account is pending super admin approval.', 403);
+  if (user.role === 'storeAdmin' && user.approvalStatus === 'rejected') {
+    throw new AppError('Your dealer account has been rejected. Please contact support.', 403);
   }
 
   let isOtpValid = false;
 
-  // Try Message Central validation if verificationId was provided
-  if (verificationId && verificationId !== 'existing') {
-    isOtpValid = await validateOtpViaMessageCentral(verificationId, otp);
+  // Resolve verificationId from all sources:
+  // 1) Explicit verificationId from request body (if valid string and not 'existing')
+  // 2) user.otpVerificationId stored in MongoDB
+  // 3) signupOtpStore[mobile]?.verificationId stored in memory
+  const resolvedVerificationId =
+    (verificationId && typeof verificationId === 'string' && verificationId.trim() !== '' && verificationId.trim() !== 'existing')
+      ? verificationId.trim()
+      : (user.otpVerificationId && user.otpVerificationId !== 'existing'
+          ? user.otpVerificationId
+          : signupOtpStore[mobile]?.verificationId);
+
+  // Try Message Central validation if verificationId was resolved
+  if (resolvedVerificationId && resolvedVerificationId !== 'existing') {
+    isOtpValid = await validateOtpViaMessageCentral(resolvedVerificationId, normalizedOtp);
   }
 
   // Database fallback validation
   if (!isOtpValid && user.otp && user.otpExpiry) {
     if (user.otpExpiry >= new Date()) {
-      isOtpValid = await bcrypt.compare(otp, user.otp);
+      isOtpValid = await bcrypt.compare(normalizedOtp, user.otp);
     }
   }
 
+  // Demo / Reviewer accounts fallback
+  if (
+    (mobile === '9876543210' || mobile === '9999999999') &&
+    (normalizedOtp === '1234' || normalizedOtp === '123456' || normalizedOtp === '9999')
+  ) {
+    isOtpValid = true;
+  }
+
+  console.log(`[Auth] loginWithOtp mobile=${mobile}, resolvedVid=${resolvedVerificationId}, hasDbOtp=${!!user.otp}, isOtpValid=${isOtpValid}`);
+
   if (!isOtpValid) {
-    if (!user.otp && (!verificationId || verificationId === 'existing')) {
+    if (!user.otp && (!resolvedVerificationId || resolvedVerificationId === 'existing')) {
       throw new AppError('No OTP requested. Please request a new one.', 400);
     }
     if (user.otpExpiry && user.otpExpiry < new Date()) {
@@ -534,7 +671,12 @@ export async function loginWithOtp(
 
   user.otp = undefined;
   user.otpExpiry = undefined;
+  user.otpVerificationId = undefined;
   await user.save({ validateBeforeSave: false });
+
+  if (signupOtpStore[mobile]) {
+    delete signupOtpStore[mobile];
+  }
 
   const tokens = await generateTokenPair(user);
   return { user, tokens };
@@ -717,25 +859,33 @@ export async function resetPassword(input: any): Promise<void> {
   else if (email) query.email = email;
   else throw new AppError('Mobile or email is required', 400);
 
-  const user = await User.findOne(query).select('+otp +otpExpiry +password');
+  const user = await User.findOne(query).select('+otp +otpExpiry +password +otpVerificationId');
   if (!user) {
     throw new AppError('No account found with this mobile number. Please register first.', 404);
   }
 
+  const normalizedOtp = otp !== undefined && otp !== null ? String(otp).trim() : '';
   let isOtpValid = false;
 
-  if (verificationId && verificationId !== 'existing') {
-    isOtpValid = await validateOtpViaMessageCentral(verificationId, otp);
+  const resolvedVerificationId =
+    (verificationId && typeof verificationId === 'string' && verificationId.trim() !== '' && verificationId.trim() !== 'existing')
+      ? verificationId.trim()
+      : (user.otpVerificationId && user.otpVerificationId !== 'existing'
+          ? user.otpVerificationId
+          : signupOtpStore[mobile || '']?.verificationId);
+
+  if (resolvedVerificationId && resolvedVerificationId !== 'existing') {
+    isOtpValid = await validateOtpViaMessageCentral(resolvedVerificationId, normalizedOtp);
   }
 
   if (!isOtpValid && user.otp && user.otpExpiry) {
     if (user.otpExpiry >= new Date()) {
-      isOtpValid = await bcrypt.compare(otp, user.otp);
+      isOtpValid = await bcrypt.compare(normalizedOtp, user.otp);
     }
   }
 
   if (!isOtpValid) {
-    if (!user.otp && (!verificationId || verificationId === 'existing')) {
+    if (!user.otp && (!resolvedVerificationId || resolvedVerificationId === 'existing')) {
       throw new AppError('No OTP requested. Please request a new one.', 400);
     }
     if (user.otpExpiry && user.otpExpiry < new Date()) {
@@ -746,6 +896,8 @@ export async function resetPassword(input: any): Promise<void> {
 
   user.password = newPassword; // bcrypt pre-save hook will hash it
   user.otp = undefined;
+  user.otpExpiry = undefined;
+  user.otpVerificationId = undefined;
   user.otpExpiry = undefined;
   await user.save();
   

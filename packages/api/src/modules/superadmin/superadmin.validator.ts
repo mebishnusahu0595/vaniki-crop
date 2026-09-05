@@ -270,7 +270,8 @@ export const productRequestQuerySchema = z.object({
 export const updateProductRequestStatusSchema = z.object({
   params: z.object({ id: objectIdSchema }),
   body: z.object({
-    status: z.enum(['pending', 'contacted', 'fulfilled', 'rejected']).optional(),
+    status: z.enum(['pending', 'approved', 'contacted', 'fulfilled', 'rejected']).optional(),
+    invoiceId: z.string().optional(),
     superAdminNote: z.string().trim().max(400).optional(),
   }),
 });
@@ -328,6 +329,17 @@ export const updateSiteSettingsSchema = z.object({
       loyaltyPointRupeeValue: numberFromInput(z.number().min(0)).optional(),
       minLoyaltyPointsToRedeem: numberFromInput(z.number().min(0)).optional(),
       garageNames: z.array(z.string()).optional(),
+      bankDetails: z
+        .object({
+          accountName: z.string().trim().optional(),
+          accountNumber: z.string().trim().optional(),
+          ifscCode: z.string().trim().optional(),
+          bankName: z.string().trim().optional(),
+          branchName: z.string().trim().optional(),
+          upiId: z.string().trim().optional(),
+          qrCodeUrl: z.string().trim().optional(),
+        })
+        .optional(),
     })
     .refine((value) => Object.keys(value).length > 0, {
       message: 'At least one setting is required',

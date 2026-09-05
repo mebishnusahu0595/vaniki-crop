@@ -5,8 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const TAB_CONFIG: Record<string, { icon: keyof typeof Feather.glyphMap; label: string }> = {
   index:    { icon: 'home',       label: 'Home' },
   products: { icon: 'package',    label: 'Products' },
-  orders:   { icon: 'shopping-bag', label: 'Orders' },
-  invoices: { icon: 'file-text',  label: 'Invoices' },
+  orders:   { icon: 'clipboard',  label: 'Requests' },
   account:  { icon: 'user',       label: 'Account' },
 };
 
@@ -14,13 +13,14 @@ export function DealerTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
 
   const visibleRoutes = (state.routes || []).filter((r: any) => {
+    if (r.name === 'invoices') return false;
     const opts = descriptors[r.key]?.options;
     return opts?.href !== null;
   });
 
   return (
     <View
-      style={{ paddingBottom: Math.max(insets.bottom, 6) + 8 }}
+      style={{ paddingBottom: Math.max(insets.bottom, 12) + 8 }}
       className="bg-white px-3 pt-2 shadow-soft border-t border-primary-100"
     >
       <View className="flex-row rounded-[28px] border border-primary-100 bg-white px-1.5 py-1.5">

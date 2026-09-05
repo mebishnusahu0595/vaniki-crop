@@ -1,6 +1,6 @@
 import mongoose, { Schema, type Document } from 'mongoose';
 
-export type ProductRequestStatus = 'pending' | 'contacted' | 'fulfilled' | 'rejected';
+export type ProductRequestStatus = 'pending' | 'approved' | 'contacted' | 'fulfilled' | 'rejected';
 
 export interface IProductRequest extends Document {
   storeId: mongoose.Types.ObjectId;
@@ -98,7 +98,7 @@ const productRequestSchema = new Schema<IProductRequest>(
     },
     status: {
       type: String,
-      enum: ['pending', 'contacted', 'fulfilled', 'rejected'],
+      enum: ['pending', 'approved', 'contacted', 'fulfilled', 'rejected'],
       default: 'pending',
       index: true,
     },

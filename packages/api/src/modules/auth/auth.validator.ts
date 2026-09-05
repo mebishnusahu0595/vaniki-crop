@@ -5,8 +5,8 @@ import { AppError } from '../../utils/AppError.js';
 // ─── Common ──────────────────────────────────────────────────────────────
 
 const mobileSchema = z.preprocess((val) => {
-  if (typeof val !== 'string') return val;
-  let cleaned = val.trim().replace(/\s+/g, '');
+  if (val === undefined || val === null) return val;
+  let cleaned = String(val).trim().replace(/\s+/g, '');
   if (cleaned.startsWith('+91')) cleaned = cleaned.slice(3);
   else if (cleaned.startsWith('91') && cleaned.length === 12) cleaned = cleaned.slice(2);
   return cleaned;
@@ -17,11 +17,14 @@ const passwordSchema = z
   .min(6, 'Password must be at least 6 characters')
   .max(128, 'Password cannot exceed 128 characters');
 
-const otpSchema = z
-  .string()
-  .min(4, 'OTP must be at least 4 digits')
-  .max(6, 'OTP must be at most 6 digits')
-  .regex(/^\d{4,6}$/, 'OTP must contain only digits');
+const otpSchema = z.preprocess(
+  (val) => (val !== undefined && val !== null ? String(val).trim() : val),
+  z
+    .string()
+    .min(4, 'OTP must be at least 4 digits')
+    .max(6, 'OTP must be at most 6 digits')
+    .regex(/^\d{4,6}$/, 'OTP must contain only digits'),
+);
 
 const referralCodeSchema = z
   .string()
@@ -99,12 +102,20 @@ export const dealerSignupSchema = z.object({
     mobile: mobileSchema,
     email: z.string().trim().email('Please provide a valid email address').optional().or(z.literal('')),
     storeName: z.string().trim().min(2, 'Store name must be at least 2 characters').max(150),
-    storeLocation: z.string().trim().min(3, 'Store location is required').max(250),
-    longitude: z.coerce.number().min(-180, 'Longitude must be between -180 and 180').max(180, 'Longitude must be between -180 and 180'),
-    latitude: z.coerce.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90'),
-    gstNumber: z.string().trim().min(5, 'GST number is required').max(30),
-    sgstNumber: z.string().trim().min(5, 'SGST number is required').max(30),
-    password: passwordSchema,
+    storeLocation: z.string().trim().max(250).optional().or(z.literal('')),
+    area: z.string().trim().optional().or(z.literal('')),
+    city: z.string().trim().optional().or(z.literal('')),
+    state: z.string().trim().optional().or(z.literal('')),
+    pincode: z.string().trim().regex(/^\d{6}$/, 'Pincode must be 6 digits').optional().or(z.literal('')),
+    longitude: z.coerce.number().min(-180).max(180).default(0),
+    latitude: z.coerce.number().min(-90).max(90).default(0),
+    gstNumber: z.string().trim().toUpperCase().min(15, 'GSTIN must be 15 characters').max(15, 'GSTIN must be 15 characters'),
+    sgstNumber: z.string().trim().toUpperCase().optional().or(z.literal('')),
+    password: passwordSchema.optional().or(z.literal('')),
+    profileImage: z.string().optional().or(z.literal('')),
+    dealerPhoto: z.string().optional().or(z.literal('')),
+    otp: otpSchema.optional(),
+    verificationId: z.string().optional(),
   }),
 });
 
@@ -125,7 +136,7 @@ export const loginOtpSchema = z.object({
   body: z.object({
     mobile: mobileSchema,
     otp: otpSchema,
-    verificationId: z.string().optional(),
+    verificationId: z.string().optional().or(z.literal('')).or(z.null()),
   }),
 });
 

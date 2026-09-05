@@ -6,7 +6,7 @@ import { AppError } from '../../utils/AppError.js';
 /**
  * Validates a coupon code against business rules.
  */
-export async function validateCoupon(code: string, storeId: string, cartTotal: number, userId?: string) {
+export async function validateCoupon(code: string, storeId: string | undefined, cartTotal: number, userId?: string) {
   const coupon = await Coupon.findOne({ code, isActive: true });
 
   if (!coupon) {
@@ -41,8 +41,8 @@ export async function validateCoupon(code: string, storeId: string, cartTotal: n
     }
   }
 
-  // 3. Store applicability check
-  if (coupon.applicableStores.length > 0) {
+  // 4. Store applicability check (only if storeId provided and coupon is restricted)
+  if (storeId && coupon.applicableStores.length > 0) {
     const isApplicable = coupon.applicableStores.some(
       (id) => id.toString() === storeId
     );

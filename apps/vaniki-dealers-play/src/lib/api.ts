@@ -44,7 +44,7 @@ async function request<T>(
     }
 
     if (!res.ok) {
-      throw new Error(data?.message || `HTTP ${res.status}`);
+      throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
     }
 
     return data as T;
@@ -57,17 +57,72 @@ async function request<T>(
 
 export const dealerApi = {
   // Auth
-  sendOtp: (phone: string) =>
-    request<{ verificationId: string; message: string }>('/auth/send-otp', {
-      method: 'POST',
-      body: JSON.stringify({ mobile: phone }),
-    }),
+  sendOtp: async (phone: string) => {
+    try {
+      return await request<{ verificationId?: string; message?: string; data?: { verificationId?: string } }>(
+        '/auth/send-login-otp',
+        {
+          method: 'POST',
+          body: JSON.stringify({ mobile: phone }),
+        },
+      );
+    } catch (e: any) {
+      return await request<{ verificationId?: string; message?: string; data?: { verificationId?: string } }>(
+        '/auth/send-otp',
+        {
+          method: 'POST',
+          body: JSON.stringify({ mobile: phone }),
+        },
+      );
+    }
+  },
 
-  verifyOtp: (phone: string, otp: string, verificationId?: string) =>
-    request<{ user: any; token: string }>('/auth/login-otp', {
+  verifyOtp: async (phone: string, otp: string, verificationId?: string) => {
+    const res = await request<any>('/auth/login-otp', {
       method: 'POST',
-      body: JSON.stringify({ mobile: phone, otp, verificationId }),
-    }),
+      body: JSON.stringify({
+        mobile: phone,
+        otp: String(otp).trim(),
+        verificationId: verificationId || undefined,
+      }),
+    });
+    const user = res?.user || res?.data?.user;
+    const token = res?.token || res?.accessToken || res?.data?.accessToken || res?.data?.token;
+    return { user, token, data: { user, accessToken: token } };
+  },
+
+  sendRegistrationOtp: async (phone: string) => {
+    return await request<{ success: boolean; message: string; verificationId?: string; data?: { verificationId?: string } }>(
+      '/auth/send-otp',
+      {
+        method: 'POST',
+        body: JSON.stringify({ mobile: phone }),
+      },
+    );
+  },
+
+  verifyRegistrationOtp: async (phone: string, otp: string) => {
+    return await request<{ success: boolean; message: string; data?: any }>(
+      '/auth/verify-otp',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          mobile: phone,
+          otp: String(otp).trim(),
+        }),
+      },
+    );
+  },
+
+  dealerSignup: async (payload: any) => {
+    const res = await request<any>('/auth/dealer-signup', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const user = res?.user || res?.data?.user;
+    const accessToken = res?.accessToken || res?.token || res?.data?.accessToken || res?.data?.token;
+    return { user, accessToken, data: { user, accessToken } };
+  },
 
   // Products (bulk catalogue with MOQ)
   getBulkCatalogue: (params?: {
@@ -79,6 +134,10 @@ export const dealerApi = {
     request<{ success: boolean; data: any[]; pagination: any }>('/products/bulk-catalogue', {
       params: params as any,
     }),
+
+  // Dealer Promotions (from SuperAdmin -> Dealers Promotions)
+  getPromotions: () =>
+    request<{ success: boolean; data: any[] }>('/promotions/dealers'),
 
   getProductBySlug: (slug: string) =>
     request<{ success: boolean; data: any }>(`/products/${slug}`),
@@ -93,10 +152,56 @@ export const dealerApi = {
     request<{ success: boolean; data: any }>(`/admin/orders/${id}`),
 
   // B2B invoices
-  getInvoices: (params?: { page?: number; limit?: number }) =>
-    request<{ success: boolean; data: any[]; pagination: any }>('/admin/b2b-invoices', {
+  getInvoices: (params?: { page?: number; limit?: number; search?: string }) =>
+    request<{ success: boolean; data: any[]; pagination: any }>('/b2b-invoices/admin/list', {
       params: params as any,
     }),
+
+  getPaymentDetails: () =>
+    request<{ success: boolean; data: any }>('/b2b-invoices/payment-details'),
+
+  submitInvoicePayment: (id: string, formData: FormData) => {
+    const token = useAuthStore.getState().token;
+    return fetch(`${API_BASE_URL}/b2b-invoices/${id}/submit-payment`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    }).then(async (res) => {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'Failed to submit payment proof');
+      return data;
+    });
+  },
+
+  // Garages for product stock requests
+  getGarages: () =>
+    request<{ success: boolean; data: string[] }>('/admin/garages'),
+
+  // Submit product requests batch to Superadmin
+  createProductRequest: (payload: any) =>
+    request<{ success: boolean; data: any }>('/admin/product-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  // Get dealer's stock procurement requests
+  getProductRequests: (params?: { status?: string; page?: number; limit?: number }) =>
+    request<{ success: boolean; data: any[]; pagination?: any }>('/admin/product-requests', {
+      params,
+    }),
+
+  // Password Login
+  loginPassword: async (mobile: string, password: string) => {
+    const res = await request<any>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ mobile, password }),
+    });
+    const user = res?.user || res?.data?.user;
+    const token = res?.token || res?.accessToken || res?.data?.accessToken || res?.data?.token;
+    return { user, token, data: { user, accessToken: token } };
+  },
 
   // Settlements
   getSettlements: () =>

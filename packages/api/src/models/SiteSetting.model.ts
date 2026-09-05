@@ -38,6 +38,15 @@ export interface ISiteSetting extends Document {
     agentSecretKey?: string;
     autoSyncEnabled?: boolean;
   };
+  bankDetails?: {
+    accountName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    bankName?: string;
+    branchName?: string;
+    upiId?: string;
+    qrCodeUrl?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -138,6 +147,15 @@ const siteSettingSchema = new Schema<ISiteSetting>(
       companyGstin: { type: String, default: '22AAAAA0000A1Z5' },
       agentSecretKey: { type: String, default: 'vaniki_tally_sec_2026_x9k' },
       autoSyncEnabled: { type: Boolean, default: true },
+    },
+    bankDetails: {
+      accountName: { type: String, default: 'Vaniki Crop Science Pvt Ltd' },
+      accountNumber: { type: String, default: '50200088991122' },
+      ifscCode: { type: String, default: 'HDFC0001234' },
+      bankName: { type: String, default: 'HDFC Bank' },
+      branchName: { type: String, default: 'Ambagarh Chauki' },
+      upiId: { type: String, default: 'vanikicrop@hdfcbank' },
+      qrCodeUrl: { type: String, default: '' },
     },
   },
   {

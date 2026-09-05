@@ -5,8 +5,10 @@ import { Order } from '../../models/Order.model.js';
 import { Store } from '../../models/Store.model.js';
 import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { B2BInvoice } from '../../models/B2BInvoice.model.js';
+import { ProductRequest } from '../../models/ProductRequest.model.js';
 import { AppError } from '../../utils/AppError.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
+import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 
 // ─── Customer Controllers ────────────────────────────────────────────────
 
@@ -383,6 +385,138 @@ export async function downloadB2BInvoice(req: Request, res: Response, next: Next
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.invoiceNumber}.pdf`);
     res.send(pdfBuffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/b2b-invoices/payment-details
+ * Returns platform Bank Details & QR code for NEFT / UPI payments
+ */
+export async function getB2BPaymentDetails(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const settings = await SiteSetting.findOne({ singletonKey: 'default' });
+    res.status(200).json({
+      success: true,
+      data: settings?.bankDetails || {
+        accountName: 'Vaniki Crop Science Pvt Ltd',
+        accountNumber: '50200088991122',
+        ifscCode: 'HDFC0001234',
+        bankName: 'HDFC Bank',
+        branchName: 'Ambagarh Chauki',
+        upiId: 'vanikicrop@hdfcbank',
+        qrCodeUrl: '',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/b2b-invoices/:id/submit-payment
+ * Dealer submits UTR number and 1-4 payment screenshot proofs.
+ */
+export async function submitB2BInvoicePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const storeId = req.userStoreId;
+    const { utr } = req.body;
+
+    if (!utr || !String(utr).trim()) {
+      throw new AppError('UTR / Transaction reference number is required', 400);
+    }
+
+    const invoice = await B2BInvoice.findById(id);
+    if (!invoice) throw new AppError('B2B Invoice not found', 404);
+
+    if (req.userRole !== 'superAdmin' && invoice.storeId.toString() !== storeId) {
+      throw new AppError('Access denied for this invoice', 403);
+    }
+
+    if (invoice.paymentStatus === 'verification_pending') {
+      throw new AppError('Payment proof has already been submitted and is currently under verification.', 400);
+    }
+    if (invoice.paymentStatus === 'paid') {
+      throw new AppError('This invoice is already marked as paid.', 400);
+    }
+
+    let screenshotUrls: string[] = [];
+    const files = (req.files as Express.Multer.File[]) || [];
+    if (files.length > 0) {
+      for (const file of files) {
+        const uploadRes = await uploadToCloudinary(file.buffer, 'vaniki/payment-proofs');
+        screenshotUrls.push(uploadRes.url);
+      }
+    } else if (req.body.screenshots) {
+      const rawScreenshots = Array.isArray(req.body.screenshots) ? req.body.screenshots : [req.body.screenshots];
+      screenshotUrls = rawScreenshots.filter((s: any) => typeof s === 'string' && s.trim());
+    }
+
+    if (screenshotUrls.length === 0) {
+      throw new AppError('At least 1 payment screenshot is compulsory (up to 4 allowed)', 400);
+    }
+    if (screenshotUrls.length > 4) {
+      throw new AppError('Maximum 4 screenshots allowed', 400);
+    }
+
+    invoice.paymentStatus = 'verification_pending';
+    invoice.paymentUtr = String(utr).trim();
+    invoice.paymentScreenshots = screenshotUrls;
+    invoice.paymentSubmittedAt = new Date();
+    await invoice.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment proof submitted successfully! Superadmin will verify shortly.',
+      data: invoice,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * PATCH /api/b2b-invoices/super-admin/:id/verify-payment
+ * Superadmin marks invoice payment as paid or unpaid
+ */
+export async function verifyB2BInvoicePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { paymentStatus, notes } = req.body;
+
+    if (!['paid', 'unpaid'].includes(paymentStatus)) {
+      throw new AppError('Invalid payment status. Must be "paid" or "unpaid"', 400);
+    }
+
+    const invoice = await B2BInvoice.findById(id);
+    if (!invoice) throw new AppError('B2B Invoice not found', 404);
+
+    invoice.paymentStatus = paymentStatus;
+    if (notes) invoice.paymentNotes = String(notes).trim();
+
+    if (paymentStatus === 'paid') {
+      invoice.paymentVerifiedAt = new Date();
+      invoice.paymentVerifiedBy = req.userId as any;
+
+      // Sync linked ProductRequests
+      await ProductRequest.updateMany(
+        { invoiceId: invoice._id },
+        { $set: { status: 'fulfilled', superAdminNote: `Payment verified for invoice ${invoice.invoiceNumber}` } },
+      );
+    } else {
+      invoice.paymentVerifiedAt = undefined;
+      invoice.paymentVerifiedBy = undefined;
+    }
+
+    await invoice.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Payment status updated to ${paymentStatus}`,
+      data: invoice,
+    });
   } catch (error) {
     next(error);
   }

@@ -70,14 +70,10 @@ const allowedOriginMatchers: Array<string | RegExp> = [
   'https://www.vanikicrop.com',
   'https://admin.vanikicrop.com',
   'https://superadmin.vanikicrop.com',
-  ...(process.env.NODE_ENV !== 'production'
-    ? [
-        /^http:\/\/localhost:\d+$/,
-        /^http:\/\/127\.0\.0\.1:\d+$/,
-        /^http:\/\/\d+\.\d+\.\d+\.\d+(:\d+)?$/,
-        /^exp:\/\//,
-      ]
-    : []),
+  /^http:\/\/localhost:\d+$/,
+  /^http:\/\/127\.0\.0\.1:\d+$/,
+  /^http:\/\/\d+\.\d+\.\d+\.\d+(:\d+)?$/,
+  /^exp:\/\//,
 ];
 
 app.use(

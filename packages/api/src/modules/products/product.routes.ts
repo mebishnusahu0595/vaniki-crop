@@ -57,6 +57,12 @@ adminRouter.put(
   productController.updateProduct,
 );
 
+/** PATCH /api/admin/products/bulk-moq — SuperAdmin: Set minimum order quantity for all or multiple products */
+adminRouter.patch(
+  '/bulk-moq',
+  productController.bulkUpdateMoq,
+);
+
 /** PATCH /api/admin/products/:id/moq — SuperAdmin: Set minimum order quantity */
 adminRouter.patch(
   '/:id/moq',

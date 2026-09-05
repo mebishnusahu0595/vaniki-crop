@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireStoreAdmin, requireSuperAdmin } from '../auth/auth.middleware.js';
+import { upload } from '../../middleware/upload.js';
 import * as orderController from './order.controller.js';
 import { validate, generateB2BInvoiceSchema } from './order.validator.js';
 
@@ -24,7 +25,22 @@ router.get(
   orderController.getSuperAdminB2BInvoices
 );
 
+/** PATCH /api/b2b-invoices/super-admin/:id/verify-payment — Superadmin marks invoice paid/unpaid */
+router.patch(
+  '/super-admin/:id/verify-payment',
+  requireAuth,
+  requireSuperAdmin,
+  orderController.verifyB2BInvoicePayment
+);
+
 // ─── Shared & Admin Routes ────────────────────────────────────────────────
+
+/** GET /api/b2b-invoices/payment-details — Get platform Bank Details & QR code */
+router.get(
+  '/payment-details',
+  requireAuth,
+  orderController.getB2BPaymentDetails
+);
 
 /** GET /api/b2b-invoices/admin/list — List B2B invoices for the logged-in store */
 router.get(
@@ -32,6 +48,15 @@ router.get(
   requireAuth,
   requireStoreAdmin,
   orderController.getAdminB2BInvoices
+);
+
+/** POST /api/b2b-invoices/:id/submit-payment — Dealer submits UTR & 1-4 screenshot payment proofs */
+router.post(
+  '/:id/submit-payment',
+  requireAuth,
+  requireStoreAdmin,
+  upload.array('screenshots', 4),
+  orderController.submitB2BInvoicePayment
 );
 
 /** GET /api/b2b-invoices/download/:id — Download a specific B2B invoice */

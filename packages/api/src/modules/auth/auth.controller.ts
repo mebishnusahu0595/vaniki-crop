@@ -23,11 +23,15 @@ const cookieOptions = {
  */
 export async function sendOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    await authService.sendOtp(req.body);
+    const result = await authService.sendOtp(req.body);
 
     res.status(200).json({
       success: true,
       message: 'OTP sent successfully. Valid for 10 minutes.',
+      data: {
+        verificationId: result.verificationId,
+      },
+      verificationId: result.verificationId,
     });
   } catch (error) {
     next(error);
@@ -82,13 +86,16 @@ export async function signup(req: Request, res: Response, next: NextFunction): P
  */
 export async function dealerSignup(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const user = await authService.dealerSignup(req.body, req.file);
+    const { user, tokens } = await authService.dealerSignup(req.body, req.file);
+
+    res.cookie(REFRESH_TOKEN_COOKIE, tokens.refreshToken, cookieOptions);
 
     res.status(201).json({
       success: true,
-      message: 'Registration submitted. Please wait for super admin approval before login.',
+      message: 'KYC submitted successfully. Your account is pending SuperAdmin verification.',
       data: {
         user: user.toJSON(),
+        accessToken: tokens.accessToken,
       },
     });
   } catch (error) {
@@ -152,10 +159,11 @@ export async function sendLoginOtp(req: Request, res: Response, next: NextFuncti
 
     res.status(200).json({
       success: true,
-      message: 'OTP has been sent to your registered mobile number.',
+      message: result?.message || 'OTP has been sent to your registered mobile number.',
       data: {
         verificationId: result.verificationId,
       },
+      verificationId: result.verificationId,
     });
   } catch (error) {
     next(error);
