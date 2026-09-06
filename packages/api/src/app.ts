@@ -76,6 +76,14 @@ const allowedOriginMatchers: Array<string | RegExp> = [
   /^exp:\/\//,
 ];
 
+// ─── Private Network Access (PNA) & CORS Preflight Support ───────────────
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.headers['access-control-request-private-network']) {
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  }
+  next();
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -92,7 +100,16 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Access-Control-Request-Private-Network',
+      'Access-Control-Request-Headers',
+      'Access-Control-Request-Method',
+    ],
   }),
 );
 app.use(compression());
