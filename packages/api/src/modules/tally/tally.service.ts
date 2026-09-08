@@ -53,6 +53,22 @@ function escapeXml(str: string = ''): string {
     .replace(/'/g, '&apos;');
 }
 
+export function normalizeTallyState(rawState?: string): string {
+  if (!rawState) return 'Chhattisgarh';
+  const cleaned = rawState.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (cleaned.includes('chhat') || cleaned.includes('chatt') || cleaned === 'cg') return 'Chhattisgarh';
+  if (cleaned.includes('madhya') || cleaned === 'mp') return 'Madhya Pradesh';
+  if (cleaned.includes('maharashtra') || cleaned === 'mh') return 'Maharashtra';
+  if (cleaned.includes('odisha') || cleaned.includes('orissa')) return 'Odisha';
+  if (cleaned.includes('uttar') || cleaned === 'up') return 'Uttar Pradesh';
+  if (cleaned.includes('gujarat') || cleaned === 'gj') return 'Gujarat';
+  if (cleaned.includes('rajasthan') || cleaned === 'rj') return 'Rajasthan';
+  if (cleaned.includes('bihar') || cleaned === 'br') return 'Bihar';
+  if (cleaned.includes('jharkhand') || cleaned === 'jh') return 'Jharkhand';
+  if (cleaned.includes('westbengal') || cleaned.includes('bengal') || cleaned === 'wb') return 'West Bengal';
+  return rawState.trim();
+}
+
 /**
  * Generates official TallyPrime / Tally.ERP 9 XML Sales Voucher Envelope for B2B Invoices (Dealers)
  */
@@ -69,12 +85,14 @@ export function buildTallySalesVoucherXml(
   const partyLedgerName = escapeXml(store.name || 'Sundry Debtors');
   const partyStreet = escapeXml(store.address?.street || store.name || '');
   const partyCity = escapeXml(store.address?.city || 'Ambagarh Chauki');
-  const partyState = store.address?.state || config.companyState || 'Chhattisgarh';
+  const rawPartyState = store.address?.state || config.companyState || 'Chhattisgarh';
+  const partyState = normalizeTallyState(rawPartyState);
+  const companyState = normalizeTallyState(config.companyState);
   const partyPincode = escapeXml(store.address?.pincode || '491665');
   const partyPhone = escapeXml(store.phone || '');
   const partyGstin = escapeXml(store.gstin || (store as any).gstNumber || (store as any).sgstNumber || '27ABCDE1234F1Z4');
 
-  const isInterState = partyState.trim().toLowerCase() !== config.companyState.trim().toLowerCase();
+  const isInterState = partyState.toLowerCase() !== companyState.toLowerCase();
 
   let cgstTotal = 0;
   let sgstTotal = 0;
@@ -399,13 +417,15 @@ export function buildTallyRetailOrderVoucherXml(
   const partyStreet = escapeXml(order.shippingAddress?.street || user?.savedAddress?.street || '');
   const partyCity = escapeXml(order.shippingAddress?.city || user?.savedAddress?.city || 'Ambagarh Chauki');
   const partyDistrict = escapeXml(order.shippingAddress?.district || '');
-  const partyState = order.shippingAddress?.state || user?.savedAddress?.state || config.companyState || 'Chhattisgarh';
+  const rawPartyState = order.shippingAddress?.state || user?.savedAddress?.state || config.companyState || 'Chhattisgarh';
+  const partyState = normalizeTallyState(rawPartyState);
+  const companyState = normalizeTallyState(config.companyState);
   const partyPincode = escapeXml(order.shippingAddress?.pincode || user?.savedAddress?.pincode || '491665');
   const partyPhone = escapeXml(order.shippingAddress?.mobile || user?.mobile || '');
   const partyEmail = escapeXml(user?.email || '');
   const partyGstin = escapeXml(user?.gstNumber || 'Unregistered');
 
-  const isInterState = partyState.trim().toLowerCase() !== config.companyState.trim().toLowerCase();
+  const isInterState = partyState.toLowerCase() !== companyState.toLowerCase();
 
   let cgstTotal = 0;
   let sgstTotal = 0;
