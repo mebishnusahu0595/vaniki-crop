@@ -549,6 +549,15 @@ export interface SiteSettings {
   address?: Address;
   panNumber?: string;
   gstNumber?: string;
+  bankDetails?: {
+    accountName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    bankName?: string;
+    branchName?: string;
+    upiId?: string;
+    qrCodeUrl?: string;
+  };
 }
 
 export interface StoreSecretsResponse {

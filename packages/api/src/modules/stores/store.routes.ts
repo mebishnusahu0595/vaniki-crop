@@ -10,11 +10,11 @@ const router: Router = Router();
 /** GET /api/stores — List all active stores */
 router.get('/', storeController.listStores);
 
-/** GET /api/stores/:id — Detailed store info */
-router.get('/:id', storeController.getStoreDetail);
-
 /** GET /api/stores/availability — Check product availability across stores */
 router.get('/availability', storeController.getProductAvailability);
+
+/** GET /api/stores/:id — Detailed store info */
+router.get('/:id', storeController.getStoreDetail);
 
 /** POST /api/stores/cart-availability — Check full cart availability across stores */
 router.post('/cart-availability', storeController.getCartAvailability);

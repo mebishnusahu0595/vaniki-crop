@@ -314,6 +314,10 @@ export const storefrontApi = {
     const response = await request<Order>(`/orders/${id}`);
     return normalizeOrder(response.data);
   },
+  cancelOrder: async (id: string) => {
+    const response = await request<Order>(`/orders/${id}/cancel`, { method: 'PATCH' });
+    return normalizeOrder(response.data);
+  },
   getInvoiceUrl: (id: string) => `${API_BASE_URL}/orders/${id}/invoice`,
   submitReview: async (payload: { productId: string; rating: number; comment?: string }) => {
     return request<unknown>('/reviews', {
@@ -506,6 +510,21 @@ export const storefrontApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+  agriAdvisor: async (payload: {
+    prompt: string;
+    history: Array<{ sender: 'user' | 'ai'; text: string }>;
+    imageBase64?: string;
+    language?: string;
+  }) => {
+    const response = await request<{ text: string; recommendedProducts: ProductLike[] }>('/ai/agri-advisor', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return {
+      text: response.data.text,
+      recommendedProducts: normalizeProducts(response.data.recommendedProducts),
+    };
   },
   crops: async (): Promise<Crop[]> => {
     const response = await request<Crop[]>('/crops');

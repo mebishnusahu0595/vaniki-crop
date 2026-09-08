@@ -92,6 +92,19 @@ export default function InvoicesPage() {
     }
   });
 
+  const verifyPaymentMutation = useMutation({
+    mutationFn: ({ id, paymentStatus }: { id: string; paymentStatus: 'paid' | 'unpaid' }) =>
+      adminApi.verifyB2BInvoicePayment(id, { paymentStatus }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin-b2b-invoices'] });
+    },
+    onError: (err: any) => {
+      alert(err?.message || 'Failed to update payment status');
+    },
+  });
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   const resetForm = () => {
     setSelectedStoreId('');
     setItems([{ productName: '', hsnCode: '', qty: 1, price: 0, taxRate: 18 }]);
@@ -328,6 +341,94 @@ export default function InvoicesPage() {
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-lg">
                     ⏳ Pending
                   </span>
+                )}
+              </div>
+
+              {/* Payment Status & Verification Section */}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Payment Status</span>
+                  {invoice.paymentStatus === 'paid' ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg">
+                      ✓ Paid (Done)
+                    </span>
+                  ) : invoice.paymentStatus === 'verification_pending' ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-2.5 py-1 rounded-lg animate-pulse">
+                      ⏳ Verification Pending
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-slate-600 bg-slate-200 px-2.5 py-1 rounded-lg">
+                      ✕ Unpaid
+                    </span>
+                  )}
+                </div>
+
+                {invoice.paymentUtr ? (
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
+                    <span className="font-bold text-slate-400 text-[10px] uppercase">UTR / Ref:</span>
+                    <span className="font-mono font-bold text-slate-800 select-all">{invoice.paymentUtr}</span>
+                  </div>
+                ) : null}
+
+                {/* Proof Screenshot Thumbnails */}
+                {invoice.paymentScreenshots && invoice.paymentScreenshots.length > 0 ? (
+                  <div className="pt-2 border-t border-slate-200/60">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
+                      Payment Proofs ({invoice.paymentScreenshots.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {invoice.paymentScreenshots.map((url: string, imgIdx: number) => (
+                        <button
+                          key={imgIdx}
+                          type="button"
+                          onClick={() => setPreviewImage(url)}
+                          className="group/img relative h-14 w-14 overflow-hidden rounded-xl border border-slate-200 bg-white hover:ring-2 hover:ring-primary-500 transition-all shadow-2xs"
+                        >
+                          <img src={url} alt={`Proof ${imgIdx + 1}`} className="h-full w-full object-cover group-hover/img:scale-110 transition-transform" />
+                          <span className="absolute bottom-0 right-0 bg-black/60 px-1 py-0.5 text-[8px] font-bold text-white rounded-tl">
+                            #{imgIdx + 1}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Superadmin Verification Action Buttons */}
+                {invoice.paymentStatus === 'verification_pending' && (
+                  <div className="pt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => verifyPaymentMutation.mutate({ id: invoice._id, paymentStatus: 'paid' })}
+                      disabled={verifyPaymentMutation.isPending}
+                      className="flex-1 rounded-xl bg-emerald-600 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-700 shadow-sm transition active:scale-95 disabled:opacity-50"
+                    >
+                      {verifyPaymentMutation.isPending ? 'Verifying...' : '✓ Mark Paid'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => verifyPaymentMutation.mutate({ id: invoice._id, paymentStatus: 'unpaid' })}
+                      disabled={verifyPaymentMutation.isPending}
+                      className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100 transition active:scale-95 disabled:opacity-50"
+                    >
+                      ✕ Reject
+                    </button>
+                  </div>
+                )}
+
+                {invoice.paymentStatus === 'paid' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to revert payment status to Unpaid?')) {
+                        verifyPaymentMutation.mutate({ id: invoice._id, paymentStatus: 'unpaid' });
+                      }
+                    }}
+                    disabled={verifyPaymentMutation.isPending}
+                    className="w-full text-center text-[10px] font-bold text-slate-400 hover:text-rose-600 py-1 transition"
+                  >
+                    Revert to Unpaid
+                  </button>
                 )}
               </div>
             </div>
@@ -800,6 +901,24 @@ export default function InvoicesPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Lightbox Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-h-[90vh] max-w-4xl overflow-hidden rounded-3xl bg-slate-900 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 transition"
+            >
+              ✕
+            </button>
+            <img src={previewImage} alt="Payment Proof" className="max-h-[85vh] w-auto object-contain rounded-3xl" />
           </div>
         </div>
       )}

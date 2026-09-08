@@ -35,6 +35,17 @@ export default function CompareScreen() {
 
   return (
     <Screen>
+      <View className="mb-4 flex-row items-center gap-3">
+        <Pressable
+          onPress={() => (router.canGoBack() ? router.back() : router.push('/products'))}
+          className="h-10 w-10 items-center justify-center rounded-full border border-primary-50 bg-white shadow-sm active:scale-90"
+          accessibilityLabel="Go back"
+        >
+          <Feather name="arrow-left" size={18} color="#082018" />
+        </Pressable>
+        <Text className="text-2xl font-black text-primary-900">Compare</Text>
+      </View>
+
       <View className="rounded-[28px] bg-primary-900 p-5">
         <Text className="text-[10px] font-black uppercase tracking-[2px] text-primary-200">Compare</Text>
         <Text className="mt-2 text-2xl font-black text-white">Side by side overview</Text>

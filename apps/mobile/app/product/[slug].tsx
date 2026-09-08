@@ -163,6 +163,14 @@ export default function ProductDetailScreen() {
           <Text className="mt-3 text-sm leading-6 text-primary-900/70 text-center">
             {isHindi ? 'यह उत्पाद अब उपलब्ध नहीं है या हटा दिया गया है।' : 'The item you are looking for is no longer available.'}
           </Text>
+          <Pressable
+            onPress={() => (router.canGoBack() ? router.back() : router.push('/products'))}
+            className="mt-6 rounded-full bg-primary-500 px-6 py-3.5 active:scale-95"
+          >
+            <Text className="text-center text-xs font-black uppercase tracking-[1.5px] text-white">
+              {isHindi ? 'सभी उत्पाद देखें' : 'Browse Products'}
+            </Text>
+          </Pressable>
         </View>
       </Screen>
     );

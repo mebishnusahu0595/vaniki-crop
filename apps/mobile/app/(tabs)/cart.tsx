@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
 import { useCartStore } from '../../src/store/useCartStore';
 import { useStoreStore } from '../../src/store/useStoreStore';
+import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { storefrontApi } from '../../src/lib/api';
 import { currencyFormatter } from '../../src/utils/format';
 import { resolveMediaUrl } from '../../src/utils/media';
@@ -16,12 +18,18 @@ export default function CartScreen() {
   const { t } = useTranslation();
   const { settings } = useSettingsStore();
   const selectedStore = useStoreStore((state) => state.selectedStore);
-  const { items, couponCode, couponDiscount, increaseQty, decreaseQty, setCouponCode, clearCoupon } = useCartStore();
+  const mode = useServiceModeStore((state) => state.mode);
+  const { items, couponCode, couponDiscount, increaseQty, decreaseQty, removeItem, setCouponCode, clearCoupon } = useCartStore();
   const [couponInput, setCouponInput] = useState(couponCode);
   const [couponMessage, setCouponMessage] = useState('');
 
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.price * item.qty, 0), [items]);
-  const deliveryCharge = subtotal >= (settings?.freeDeliveryThreshold || 2000) ? 0 : (settings?.standardDeliveryCharge || 50);
+  const deliveryCharge =
+    mode !== 'delivery'
+      ? 0
+      : subtotal >= (settings?.freeDeliveryThreshold || 2000)
+      ? 0
+      : (settings?.standardDeliveryCharge || 50);
   const total = subtotal - couponDiscount + deliveryCharge;
 
   if (!items.length) {
@@ -76,6 +84,14 @@ export default function CartScreen() {
                   <Pressable onPress={() => increaseQty(item.variantId)} className="rounded-full bg-primary-50 px-3 py-2 active:scale-90">
                     <Text className="text-sm font-black text-primary-900">+</Text>
                   </Pressable>
+                  <Pressable
+                    onPress={() => removeItem(item.variantId)}
+                    hitSlop={8}
+                    accessibilityLabel={`Remove ${item.productName}`}
+                    className="ml-auto h-9 w-9 items-center justify-center rounded-full bg-rose-50 border border-rose-100 active:scale-90"
+                  >
+                    <Feather name="trash-2" size={15} color="#E11D48" />
+                  </Pressable>
                 </View>
               </View>
             </View>
@@ -98,19 +114,20 @@ export default function CartScreen() {
           />
           <Pressable
             onPress={async () => {
-              if (!selectedStore) {
-                setCouponMessage(t('mobile.cartPage.storeWarning'));
+              const cleanCode = couponInput.trim().toUpperCase();
+              if (!cleanCode) {
+                setCouponMessage(t('mobile.cartPage.couponPlaceholder'));
                 return;
               }
 
               try {
                 const response = await storefrontApi.validateCoupon({
-                  code: couponInput,
-                  storeId: selectedStore.id,
+                  code: cleanCode,
+                  storeId: selectedStore?.id as string,
                   cartTotal: subtotal,
                 });
                 if (response.valid) {
-                  setCouponCode(couponInput, response.discount || 0);
+                  setCouponCode(cleanCode, response.discount || 0);
                   setCouponMessage(t('mobile.cartPage.couponApplied'));
                 } else {
                   clearCoupon();

@@ -26,13 +26,13 @@ export const AppHeader = memo(function AppHeader() {
   const selectedStore = useStoreStore((state) => state.selectedStore);
   const openDrawer = useDrawerStore((state) => state.openDrawer);
   const debouncedQuery = useDebouncedValue(query.trim(), 160);
-  const isHomepageSearch = pathname === '/(tabs)' || pathname === '/(tabs)/index' || pathname === '/';
-  const shouldRunSearch = isHomepageSearch && debouncedQuery.length >= 2;
+  const isSearchActive = isSearchOpen || query.trim().length > 0;
+  const shouldRunSearch = isSearchActive && debouncedQuery.length >= 2;
 
   const categoriesQuery = useQuery({
     queryKey: ['mobile-header-categories'],
     queryFn: storefrontApi.categories,
-    enabled: isHomepageSearch,
+    enabled: isSearchActive,
     staleTime: 5 * 60 * 1000,
   });
   const searchProductsQuery = useQuery({
@@ -57,7 +57,7 @@ export const AppHeader = memo(function AppHeader() {
   }, [categoriesQuery.data, debouncedQuery, shouldRunSearch]);
 
   const matchedProducts = searchProductsQuery.data?.data || [];
-  const shouldShowInlinePanel = isHomepageSearch && (isSearchOpen || query.trim().length > 0);
+  const shouldShowInlinePanel = isSearchActive;
   const isInlineLoading = shouldRunSearch && searchProductsQuery.isFetching;
   const showNoResult =
     shouldRunSearch &&

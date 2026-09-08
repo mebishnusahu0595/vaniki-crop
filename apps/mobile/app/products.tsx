@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../src/components/Screen';
@@ -10,7 +10,11 @@ import { ProductCard } from '../src/components/ProductCard';
 import { useDebouncedValue } from '../src/hooks/useDebouncedValue';
 import { storefrontApi } from '../src/lib/api';
 import { useStoreStore } from '../src/store/useStoreStore';
+import { useCompareStore } from '../src/store/useCompareStore';
 import { Skeleton } from '../src/components/Skeleton';
+
+type SortKey = 'popular' | 'price_asc' | 'price_desc' | 'newest' | 'rating';
+const SORT_KEYS: SortKey[] = ['popular', 'price_asc', 'price_desc', 'newest', 'rating'];
 
 interface MobileCategoryOption {
   id: string;
@@ -21,21 +25,23 @@ interface MobileCategoryOption {
 export default function ProductsScreen() {
   const { t, i18n } = useTranslation();
   const isHindi = i18n.language === 'hi';
-  const params = useLocalSearchParams<{ category?: string; search?: string }>();
+  const params = useLocalSearchParams<{ category?: string; search?: string; sort?: SortKey; isFeatured?: string }>();
   const selectedStore = useStoreStore((state) => state.selectedStore);
+  const compareCount = useCompareStore((state) => state.products.length);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState(params.search || '');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(params.category || '');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [sort, setSort] = useState<'popular' | 'price_asc' | 'price_desc' | 'newest' | 'rating'>('popular');
+  const [sort, setSort] = useState<SortKey>(SORT_KEYS.includes(params.sort as SortKey) ? (params.sort as SortKey) : 'popular');
+  const [featuredOnly, setFeaturedOnly] = useState(params.isFeatured === 'true');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
   // Temporary filter state inside modal
   const [tempMinPrice, setTempMinPrice] = useState('');
   const [tempMaxPrice, setTempMaxPrice] = useState('');
-  const [tempSort, setTempSort] = useState<'popular' | 'price_asc' | 'price_desc' | 'newest' | 'rating'>('popular');
+  const [tempSort, setTempSort] = useState<SortKey>('popular');
   const [tempCategory, setTempCategory] = useState('');
 
   const debouncedSearch = useDebouncedValue(search, 300);
@@ -62,13 +68,25 @@ export default function ProductsScreen() {
     }
   }, [params.category]);
 
+  useEffect(() => {
+    if (params.sort && SORT_KEYS.includes(params.sort as SortKey)) {
+      setSort(params.sort as SortKey);
+      setPage(1);
+    }
+  }, [params.sort]);
+
+  useEffect(() => {
+    setFeaturedOnly(params.isFeatured === 'true');
+    setPage(1);
+  }, [params.isFeatured]);
+
   const categoriesQuery = useQuery({
     queryKey: ['mobile-product-categories'],
     queryFn: storefrontApi.categories,
   });
 
   const productsQuery = useQuery({
-    queryKey: ['mobile-products', page, selectedCategory, debouncedSearch, selectedStore?.id, sort, minPrice, maxPrice],
+    queryKey: ['mobile-products', page, selectedCategory, debouncedSearch, selectedStore?.id, sort, minPrice, maxPrice, featuredOnly],
     queryFn: () =>
       storefrontApi.products({
         page,
@@ -79,6 +97,7 @@ export default function ProductsScreen() {
         sort,
         minPrice: minPrice || undefined,
         maxPrice: maxPrice || undefined,
+        isFeatured: featuredOnly ? 'true' : undefined,
       }),
   });
 
@@ -106,8 +125,9 @@ export default function ProductsScreen() {
     if (selectedCategory) count++;
     if (minPrice || maxPrice) count++;
     if (sort !== 'popular') count++;
+    if (featuredOnly) count++;
     return count;
-  }, [selectedCategory, minPrice, maxPrice, sort]);
+  }, [selectedCategory, minPrice, maxPrice, sort, featuredOnly]);
 
   const openFilterModal = () => {
     setTempMinPrice(minPrice);
@@ -160,6 +180,17 @@ export default function ProductsScreen() {
             </Text>
 
             <View className="flex-row items-center gap-2">
+              {compareCount > 0 ? (
+                <Pressable
+                  onPress={() => router.push('/(tabs)/compare')}
+                  accessibilityLabel={`Compare ${compareCount} products`}
+                  className="h-10 flex-row items-center gap-1.5 rounded-2xl bg-primary-900 px-3 active:scale-95"
+                >
+                  <Feather name="sliders" size={15} color="#FFFFFF" />
+                  <Text className="text-xs font-black text-white">{compareCount}</Text>
+                </Pressable>
+              ) : null}
+
               <Pressable
                 onPress={() => setIsSearchVisible(!isSearchVisible)}
                 className={`h-10 w-10 items-center justify-center rounded-2xl border ${
@@ -259,6 +290,7 @@ export default function ProductsScreen() {
                     setMinPrice('');
                     setMaxPrice('');
                     setSort('popular');
+                    setFeaturedOnly(false);
                   }}
                   className="mt-4 rounded-full bg-primary-500 px-5 py-2.5 active:scale-95"
                 >

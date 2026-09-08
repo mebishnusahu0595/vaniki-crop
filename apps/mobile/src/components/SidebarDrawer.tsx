@@ -177,7 +177,11 @@ export function SidebarDrawer() {
             >
               {/* Top User Profile Header */}
               {user ? (
-                <View style={{ paddingTop: topHeaderPadding }} className="bg-[#0B281E] px-6 pb-6 items-center">
+                <Pressable
+                  onPress={() => handleNavigate('/(tabs)/account', true, t('mobile.sidebar.editProfile'))}
+                  style={{ paddingTop: topHeaderPadding }}
+                  className="bg-[#0B281E] px-6 pb-6 items-center active:opacity-90"
+                >
                   <View className="h-16 w-16 items-center justify-center rounded-full bg-white border-2 border-emerald-400 shadow-md mb-2.5">
                     <Feather name="user" size={32} color="#0B281E" />
                   </View>
@@ -187,7 +191,13 @@ export function SidebarDrawer() {
                   <Text className="text-xs font-semibold text-emerald-200 mt-0.5 text-center">
                     {user.mobile}
                   </Text>
-                </View>
+                  <View className="mt-2 flex-row items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-500/20 px-3 py-1">
+                    <Text className="text-[9px] font-black uppercase tracking-wider text-emerald-200">
+                      My Account
+                    </Text>
+                    <Feather name="chevron-right" size={11} color="#A7F3D0" />
+                  </View>
+                </Pressable>
               ) : (
                 <View style={{ paddingTop: topHeaderPadding }} className="bg-emerald-50/80 px-6 pb-6 items-center">
                   <View className="h-16 w-16 items-center justify-center rounded-full bg-white border border-emerald-200 shadow-sm mb-2.5">

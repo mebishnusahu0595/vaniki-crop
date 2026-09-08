@@ -44,6 +44,20 @@ export default function BulkOrdersPage() {
     },
   });
 
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async (moq: number) => {
+      return adminApi.bulkUpdateMoq(moq);
+    },
+    onSuccess: (data: any) => {
+      window.alert(`Successfully updated MOQ to ${data?.moq || 10} for all ${data?.count || 'active'} products!`);
+      queryClient.invalidateQueries({ queryKey: ['admin-bulk-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    },
+    onError: (error) => {
+      window.alert(error instanceof Error ? error.message : 'Unable to update products MOQ.');
+    },
+  });
+
   const pagination = productsQuery.data?.pagination;
   const totalPages = pagination?.totalPages || 1;
 
@@ -77,10 +91,25 @@ export default function BulkOrdersPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Bulk Ordering & MOQ"
-        subtitle="Set Minimum Order Quantity (MOQ) per product for the Vaniki Dealers Play app."
-      />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageHeader
+          title="Bulk Ordering & MOQ"
+          subtitle="Set Minimum Order Quantity (MOQ) per product for the Vaniki Dealers Play app."
+        />
+        <button
+          type="button"
+          disabled={bulkUpdateMutation.isPending}
+          onClick={() => {
+            if (window.confirm('Set Minimum Bulk Order Quantity to 10 for ALL products?')) {
+              bulkUpdateMutation.mutate(10);
+            }
+          }}
+          className="inline-flex items-center gap-2 rounded-2xl bg-[#1B4332] px-5 py-3 text-sm font-black text-white hover:bg-emerald-900 active:scale-95 transition-all shadow-sm shrink-0"
+        >
+          <Sparkles size={16} />
+          {bulkUpdateMutation.isPending ? 'Updating All to 10...' : 'Set All Products MOQ to 10'}
+        </button>
+      </div>
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

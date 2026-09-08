@@ -27,10 +27,13 @@ function RootNavigation() {
   const sessionQuery = useBootstrapSession();
   usePushNotifications(Boolean(user));
 
-  // Request location permission once on app/web open & sync coordinates + IP with SuperAdmin
+  // Telemetry only — never prompt for location at cold start. Google Play wants the
+  // permission dialog tied to a user action with an obvious purpose, so the actual prompt
+  // lives in signup (address autofill) and the store/address pickers. If permission is
+  // already granted this still reports coordinates; otherwise it sends device info only.
   useEffect(() => {
     void requestLocationAndTrack({
-      promptPermission: true,
+      promptPermission: false,
       userMobile: user?.mobile,
       userName: user?.name,
       url: pathname,

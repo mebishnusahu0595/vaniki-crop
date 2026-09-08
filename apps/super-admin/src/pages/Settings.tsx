@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Upload, QrCode } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { adminApi } from '../utils/api';
@@ -28,6 +28,13 @@ const settingsSchema = z.object({
   pincode: z.string().trim().optional().or(z.literal('')),
   panNumber: z.string().trim().toUpperCase().optional().or(z.literal('')),
   gstNumber: z.string().trim().toUpperCase().optional().or(z.literal('')),
+  bankAccountName: z.string().trim().optional().or(z.literal('')),
+  bankAccountNumber: z.string().trim().optional().or(z.literal('')),
+  bankIfscCode: z.string().trim().toUpperCase().optional().or(z.literal('')),
+  bankName: z.string().trim().optional().or(z.literal('')),
+  bankBranchName: z.string().trim().optional().or(z.literal('')),
+  bankUpiId: z.string().trim().optional().or(z.literal('')),
+  bankQrCodeUrl: z.string().trim().optional().or(z.literal('')),
 });
 
 type SettingsFormInput = z.input<typeof settingsSchema>;
@@ -53,6 +60,13 @@ const settingsDefaultValues: SettingsFormInput = {
   pincode: '',
   panNumber: '',
   gstNumber: '',
+  bankAccountName: '',
+  bankAccountNumber: '',
+  bankIfscCode: '',
+  bankName: '',
+  bankBranchName: '',
+  bankUpiId: '',
+  bankQrCodeUrl: '',
 };
 
 export default function SettingsPage() {
@@ -62,7 +76,7 @@ export default function SettingsPage() {
 
   const settingsQuery = useQuery({ queryKey: ['super-admin-site-settings'], queryFn: adminApi.siteSettings });
 
-  const { register, handleSubmit, reset, control, formState: { isSubmitting, errors, isDirty } } = useForm<
+  const { register, handleSubmit, reset, control, watch, setValue, formState: { isSubmitting, errors, isDirty } } = useForm<
     SettingsFormInput,
     undefined,
     SettingsFormOutput
@@ -70,6 +84,18 @@ export default function SettingsPage() {
     resolver: zodResolver(settingsSchema),
     defaultValues: settingsDefaultValues,
   });
+
+  const qrCodeUrlValue = watch('bankQrCodeUrl');
+
+  const handleQrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setValue('bankQrCodeUrl', reader.result as string, { shouldDirty: true });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const { fields: garageFields, append: appendGarage, remove: removeGarage } = useFieldArray({
     control,
@@ -99,6 +125,13 @@ export default function SettingsPage() {
       pincode: settingsQuery.data.address?.pincode || '',
       panNumber: settingsQuery.data.panNumber || '',
       gstNumber: settingsQuery.data.gstNumber || '',
+      bankAccountName: settingsQuery.data.bankDetails?.accountName || '',
+      bankAccountNumber: settingsQuery.data.bankDetails?.accountNumber || '',
+      bankIfscCode: settingsQuery.data.bankDetails?.ifscCode || '',
+      bankName: settingsQuery.data.bankDetails?.bankName || '',
+      bankBranchName: settingsQuery.data.bankDetails?.branchName || '',
+      bankUpiId: settingsQuery.data.bankDetails?.upiId || '',
+      bankQrCodeUrl: settingsQuery.data.bankDetails?.qrCodeUrl || '',
     });
   }, [reset, settingsQuery.data]);
 
@@ -111,6 +144,15 @@ export default function SettingsPage() {
           city: values.city,
           state: values.state,
           pincode: values.pincode,
+        },
+        bankDetails: {
+          accountName: values.bankAccountName,
+          accountNumber: values.bankAccountNumber,
+          ifscCode: values.bankIfscCode,
+          bankName: values.bankName,
+          branchName: values.bankBranchName,
+          upiId: values.bankUpiId,
+          qrCodeUrl: values.bankQrCodeUrl,
         },
       };
       return adminApi.updateSiteSettings(payload);
@@ -273,6 +315,95 @@ export default function SettingsPage() {
               <div>
                 <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">GST Registration No.</label>
                 <input {...register('gstNumber')} placeholder="GSTIN" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 mt-4">
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-600 border-b border-emerald-100 pb-2 mb-4">B2B Payment & Bank Details (Dealer Invoices & QR)</h3>
+            <p className="text-xs text-slate-500 mb-4">Dealers will see these bank details and QR code when making payment for approved B2B invoices.</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Account Holder Name</label>
+                <input {...register('bankAccountName')} placeholder="e.g. Vaniki Crop Science Pvt Ltd" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Bank Name</label>
+                <input {...register('bankName')} placeholder="e.g. HDFC Bank" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Account Number</label>
+                <input {...register('bankAccountNumber')} placeholder="Account Number" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">IFSC Code</label>
+                <input {...register('bankIfscCode')} placeholder="IFSC Code" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Branch Name</label>
+                <input {...register('bankBranchName')} placeholder="Branch Name" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">UPI ID</label>
+                <input {...register('bankUpiId')} placeholder="e.g. vanikicrop@hdfcbank" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="mb-2 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                  Company Official UPI QR Code (Upload or Provide URL)
+                </label>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+                  {qrCodeUrlValue ? (
+                    <div className="relative group w-32 h-32 rounded-xl overflow-hidden border-2 border-emerald-500 bg-white p-1 shrink-0 shadow-sm">
+                      <img
+                        src={qrCodeUrlValue}
+                        alt="Company QR Preview"
+                        className="w-full h-full object-contain"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setValue('bankQrCodeUrl', '', { shouldDirty: true })}
+                        className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-full text-xs hover:bg-rose-700 shadow-md"
+                        title="Remove QR Code"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-32 h-32 rounded-xl border-2 border-dashed border-emerald-300 bg-white flex flex-col items-center justify-center text-center p-2 shrink-0">
+                      <QrCode size={36} className="text-emerald-500 mb-1" />
+                      <span className="text-[10px] font-bold text-slate-400">No QR Uploaded</span>
+                    </div>
+                  )}
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <input
+                        type="file"
+                        id="qr-upload-input"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleQrFileChange}
+                      />
+                      <label
+                        htmlFor="qr-upload-input"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs cursor-pointer shadow-sm transition active:scale-95"
+                      >
+                        <Upload size={14} />
+                        {qrCodeUrlValue ? 'Change QR Code Image' : 'Upload QR Code Image'}
+                      </label>
+                      <span className="ml-3 text-[11px] text-slate-500 font-semibold">Supports PNG, JPG, WebP</span>
+                    </div>
+                    <div>
+                      <input
+                        {...register('bankQrCodeUrl')}
+                        placeholder="Or enter direct Image URL (https://... or /uploads/...)"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                      This QR code will be displayed to dealers on approved B2B invoices and orders for one-scan UPI payments (PhonePe, GPay, Paytm, BHIM).
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

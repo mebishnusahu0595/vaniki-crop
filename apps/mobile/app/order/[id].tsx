@@ -2,7 +2,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'rea
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Screen } from '../../src/components/Screen';
@@ -43,6 +43,28 @@ export default function OrderDetailScreen() {
   });
 
   const order = orderQuery.data;
+  const queryClient = useQueryClient();
+
+  // Backend only allows cancelling while the order is still 'placed' or 'confirmed'.
+  const canCancel = Boolean(order && ['placed', 'confirmed'].includes(order.status));
+
+  const cancelMutation = useMutation({
+    mutationFn: () => storefrontApi.cancelOrder(order!.id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['mobile-order-detail', id] });
+      void queryClient.invalidateQueries({ queryKey: ['mobile-orders'] });
+      Alert.alert('Order cancelled', 'Your order has been cancelled.');
+    },
+    onError: (error) =>
+      Alert.alert('Cancel failed', error instanceof Error ? error.message : 'Please try again.'),
+  });
+
+  const confirmCancel = () => {
+    Alert.alert('Cancel this order?', 'This cannot be undone.', [
+      { text: 'Keep order', style: 'cancel' },
+      { text: 'Cancel order', style: 'destructive', onPress: () => cancelMutation.mutate() },
+    ]);
+  };
 
   const handleDownloadInvoice = async () => {
     if (!order) return;
@@ -264,6 +286,25 @@ export default function OrderDetailScreen() {
               </View>
             </View>
           </View>
+
+          {canCancel ? (
+            <Pressable
+              onPress={confirmCancel}
+              disabled={cancelMutation.isPending}
+              className="mb-4 flex-row items-center justify-center gap-2 rounded-[28px] border border-rose-200 bg-rose-50 py-4 active:bg-rose-100"
+            >
+              {cancelMutation.isPending ? (
+                <ActivityIndicator size="small" color="#E11D48" />
+              ) : (
+                <>
+                  <Feather name="x-circle" size={16} color="#E11D48" />
+                  <Text className="text-xs font-black uppercase tracking-wider text-rose-600">
+                    Cancel Order
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          ) : null}
 
           {/* Delivery Address */}
           <View className="rounded-[28px] bg-white border border-primary-100 p-5 mb-4 shadow-sm">

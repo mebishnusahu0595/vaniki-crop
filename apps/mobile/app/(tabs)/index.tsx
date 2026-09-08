@@ -414,7 +414,7 @@ export default function HomeScreen() {
           products={saleProducts}
           fallbackProducts={allProducts}
           isLoading={homepageQuery.isLoading || fallbackProductsQuery.isLoading}
-          onViewAll={() => router.push({ pathname: '/products', params: { onSale: 'true' } })}
+          onViewAll={() => router.push({ pathname: '/products', params: { isFeatured: 'true' } })}
         />
 
         {/* Section 3: Insecticides & Pest Control */}

@@ -198,35 +198,37 @@ export default function CheckoutScreen() {
         </Pressable>
       </View>
 
-      <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
-        <Text className="text-lg font-black text-primary-900">Fulfillment Store</Text>
-        <View className="mt-4 gap-3">
-          <Pressable 
-            onPress={() => setIsStorePickerVisible(true)}
-            className="flex-row items-center justify-between rounded-[22px] border border-primary-100 bg-primary-50 px-5 py-4 active:bg-primary-100"
-          >
-            <View className="flex-row items-center gap-3">
-              <Feather name="home" size={18} color="#2D6A4F" />
-              <Text className="text-sm font-black text-primary-900">
-                {selectedStore ? selectedStore.name : 'Choose a store'}
-              </Text>
-            </View>
-            <Feather name="chevron-down" size={18} color="#2D6A4F" />
-          </Pressable>
+      {mode === 'pickup' && (
+        <View className="mt-5 rounded-[28px] bg-white p-5 shadow-sm">
+          <Text className="text-lg font-black text-primary-900">Fulfillment Store</Text>
+          <View className="mt-4 gap-3">
+            <Pressable 
+              onPress={() => setIsStorePickerVisible(true)}
+              className="flex-row items-center justify-between rounded-[22px] border border-primary-100 bg-primary-50 px-5 py-4 active:bg-primary-100"
+            >
+              <View className="flex-row items-center gap-3">
+                <Feather name="home" size={18} color="#2D6A4F" />
+                <Text className="text-sm font-black text-primary-900">
+                  {selectedStore ? selectedStore.name : 'Choose a store'}
+                </Text>
+              </View>
+              <Feather name="chevron-down" size={18} color="#2D6A4F" />
+            </Pressable>
 
-          {selectedStore && (
-            <View className="mt-1 rounded-[20px] bg-primary-50/30 p-4 border border-primary-100/30">
-              <View className="flex-row items-start gap-3">
-                <Feather name="map-pin" size={16} color="#2D6A4F" style={{ marginTop: 2 }} />
-                <View className="flex-1">
-                  <Text className="text-sm font-black text-primary-900">{selectedStore.name}</Text>
-                  <Text className="mt-1 text-xs text-primary-900/60 leading-5">{formatStoreAddress(selectedStore.address)}</Text>
+            {selectedStore && (
+              <View className="mt-1 rounded-[20px] bg-primary-50/30 p-4 border border-primary-100/30">
+                <View className="flex-row items-start gap-3">
+                  <Feather name="map-pin" size={16} color="#2D6A4F" style={{ marginTop: 2 }} />
+                  <View className="flex-1">
+                    <Text className="text-sm font-black text-primary-900">{selectedStore.name}</Text>
+                    <Text className="mt-1 text-xs text-primary-900/60 leading-5">{formatStoreAddress(selectedStore.address)}</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            )}
+          </View>
         </View>
-      </View>
+      )}
 
       <Modal
         visible={isStorePickerVisible}
@@ -485,22 +487,24 @@ export default function CheckoutScreen() {
             />
             <Pressable
               onPress={async () => {
-                if (!couponInput || !selectedStore) {
-                  Alert.alert('Store required', 'Please choose a store first.');
+                const cleanCode = couponInput.trim().toUpperCase();
+                if (!cleanCode) {
+                  Alert.alert('Coupon code required', 'Please enter a coupon code.');
                   return;
                 }
+                const storeIdToUse = selectedStore?.id || storeAvailability[0]?.id;
                 setIsApplyingCoupon(true);
                 try {
                   const result = await storefrontApi.validateCoupon({
-                    code: couponInput,
-                    storeId: selectedStore.id,
+                    code: cleanCode,
+                    storeId: storeIdToUse,
                     cartTotal: subtotal,
                   });
                   if (result.valid) {
-                    setCouponCode(couponInput, result.discount || 0);
-                    Alert.alert('Success', 'Coupon applied!');
+                    setCouponCode(cleanCode, result.discount || 0);
+                    Alert.alert('Success', `Coupon ${cleanCode} applied! Saved ₹${result.discount || 0}`);
                   } else {
-                    Alert.alert('Invalid Coupon', result.message);
+                    Alert.alert('Invalid Coupon', result.message || 'Invalid coupon code');
                   }
                 } catch (e) {
                   Alert.alert('Error', 'Failed to apply coupon.');
@@ -508,7 +512,7 @@ export default function CheckoutScreen() {
                   setIsApplyingCoupon(false);
                 }
               }}
-              disabled={isApplyingCoupon || !couponInput}
+              disabled={isApplyingCoupon || !couponInput.trim()}
               className="rounded-xl bg-primary-900 px-5 py-2 justify-center"
             >
               <Text className="text-xs font-black text-white uppercase tracking-wider">
@@ -658,7 +662,7 @@ export default function CheckoutScreen() {
       </View>
 
       <Pressable
-        disabled={paying || !selectedStore}
+        disabled={paying || (mode === 'pickup' && !selectedStore)}
         onPress={async () => {
           if (!token) {
             Alert.alert('Login required', 'Please login again to continue.');
@@ -666,17 +670,21 @@ export default function CheckoutScreen() {
             return;
           }
 
-          if (!selectedStore) {
-            Alert.alert('Select a store', 'Please choose a fulfillment store before checkout.');
+          if (mode === 'pickup' && !selectedStore) {
+            Alert.alert('Select a store', 'Please choose a fulfillment store for pickup.');
             setIsStorePickerVisible(true);
             return;
           }
 
-          const currentStoreAvailability = storeAvailability.find(s => s.id === selectedStore.id);
-          if (!currentStoreAvailability || !currentStoreAvailability.isFullyAvailable) {
-            Alert.alert('Stock unavailable', 'Some items are not available in the selected store. Please choose another store or update your cart.');
-            setIsStorePickerVisible(true);
-            return;
+          const effectiveStore = selectedStore || storeAvailability[0];
+
+          if (mode === 'pickup' && effectiveStore) {
+            const currentStoreAvailability = storeAvailability.find(s => s.id === effectiveStore.id);
+            if (!currentStoreAvailability || !currentStoreAvailability.isFullyAvailable) {
+              Alert.alert('Stock unavailable', 'Some items are not available in the selected store. Please choose another store or update your cart.');
+              setIsStorePickerVisible(true);
+              return;
+            }
           }
 
           if (mode === 'delivery' && (!name || !mobile || !street || !city || !district || !state || !pincode)) {
@@ -695,7 +703,7 @@ export default function CheckoutScreen() {
                 variantId: item.variantId,
                 qty: item.qty,
               })),
-              storeId: selectedStore.id,
+              storeId: effectiveStore?.id,
               shippingAddress,
             };
 
@@ -733,7 +741,7 @@ export default function CheckoutScreen() {
             setPaying(false);
           }
         }}
-        className={`mb-10 mt-8 rounded-full px-5 py-5 shadow-lg ${!selectedStore || paying ? 'bg-primary-200' : 'bg-primary-500'}`}
+        className={`mb-10 mt-8 rounded-full px-5 py-5 shadow-lg ${(mode === 'pickup' && !selectedStore) || paying ? 'bg-primary-200' : 'bg-primary-500'}`}
       >
         {paying ? (
           <ActivityIndicator color="#ffffff" size="small" />

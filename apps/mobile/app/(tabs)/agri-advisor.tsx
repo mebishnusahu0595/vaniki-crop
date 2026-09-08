@@ -15,9 +15,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
 import { Screen } from '../../src/components/Screen';
-import { storefrontApi } from '../../src/lib/api';
 import { askGeminiAgriAdvisor, type ChatMessage } from '../../src/lib/gemini';
 import { asyncStorage } from '../../src/lib/storage';
 import type { Product } from '../../src/types/storefront';
@@ -117,14 +115,6 @@ export default function AgriAdvisorScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
   const chatScrollViewRef = useRef<ScrollView>(null);
-
-  // Fetch full store catalog for Gemini context & recommendation matching
-  const productsQuery = useQuery({
-    queryKey: ['mobile-agri-advisor-catalog'],
-    queryFn: () => storefrontApi.products({ limit: 60 }),
-  });
-
-  const catalogProducts = productsQuery.data?.data || [];
 
   // Load chat history from AsyncStorage on mount
   useEffect(() => {
@@ -264,7 +254,7 @@ export default function AgriAdvisorScreen() {
     setIsLoading(true);
 
     try {
-      const response = await askGeminiAgriAdvisor(prompt, messages, currentImgBase64 || undefined, catalogProducts, currentLang);
+      const response = await askGeminiAgriAdvisor(prompt, messages, currentImgBase64 || undefined, currentLang);
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
@@ -276,7 +266,20 @@ export default function AgriAdvisorScreen() {
 
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error) {
-      console.error('Chat error:', error);
+      const reason = error instanceof Error ? error.message : '';
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-error-${Date.now()}`,
+          sender: 'ai',
+          text:
+            reason ||
+            (isHindi
+              ? 'अभी सलाहकार से संपर्क नहीं हो पा रहा। कृपया दोबारा कोशिश करें या हमें कॉल करें।'
+              : 'Could not reach the advisor right now. Please try again or call our helpline.'),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }

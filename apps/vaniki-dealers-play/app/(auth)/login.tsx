@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -30,20 +30,53 @@ export default function DealerLoginScreen() {
   const [otp, setOtp] = useState('');
   const [verificationId, setVerificationId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { setSession } = useAuthStore();
 
-  const handleSendOtp = async () => {
+  const RESEND_COOLDOWN_SECONDS = 30;
+
+  const startResendCooldown = () => {
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  const handleSendOtp = async (isResend = false) => {
     if (!/^\d{10}$/.test(phone)) {
       Alert.alert('Invalid Number', 'Please enter a valid 10-digit mobile number.');
       return;
     }
+    if (isResend && resendCooldown > 0) return;
     setLoading(true);
     try {
       const res = await dealerApi.sendOtp(phone);
       const vid = res?.verificationId || (res as any)?.data?.verificationId || '';
       setVerificationId(vid);
       setMode('otp');
+      startResendCooldown();
+      if (isResend) {
+        setOtp('');
+        Alert.alert(
+          'OTP Sent',
+          (res as any)?.message || `A new OTP has been sent to +91 ${phone}.`,
+        );
+      }
     } catch (err: any) {
       // If user doesn't exist, invite them to register KYC
       if (err?.message?.includes('not found') || err?.message?.includes('register')) {
@@ -195,9 +228,12 @@ export default function DealerLoginScreen() {
 
                 {/* Phone Input */}
                 <View className="flex-row items-center rounded-2xl border-2 border-primary-200 bg-white px-3.5 py-0 mb-4 shadow-xs">
-                  <View className="flex-row items-center border-r border-primary-100 pr-2.5 py-3.5 mr-2.5 shrink-0" style={{ minWidth: 62 }}>
-                    <Text className="text-base mr-1">🇮🇳</Text>
-                    <Text className="text-sm font-black text-primary-900" numberOfLines={1}>+91</Text>
+                  <View
+                    className="flex-row items-center justify-center border-r border-primary-100 py-3.5"
+                    style={{ width: 68, marginRight: 10, flexShrink: 0, flexGrow: 0 }}
+                  >
+                    <Text style={{ fontSize: 16, marginRight: 4 }}>🇮🇳</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '900', color: '#0F2E22' }}>+91</Text>
                   </View>
                   <TextInput
                     value={phone}
@@ -211,7 +247,7 @@ export default function DealerLoginScreen() {
                 </View>
 
                 <Pressable
-                  onPress={handleSendOtp}
+                  onPress={() => handleSendOtp(false)}
                   disabled={loading || phone.length < 10}
                   className="rounded-2xl py-4 items-center mb-3 shadow-md active:scale-95"
                   style={{
@@ -273,9 +309,12 @@ export default function DealerLoginScreen() {
 
                 {/* Phone Input */}
                 <View className="flex-row items-center rounded-2xl border-2 border-primary-200 bg-white px-3.5 py-0 mb-3 shadow-xs">
-                  <View className="flex-row items-center border-r border-primary-100 pr-2.5 py-3.5 mr-2.5 shrink-0" style={{ minWidth: 62 }}>
-                    <Text className="text-base mr-1">🇮🇳</Text>
-                    <Text className="text-sm font-black text-primary-900" numberOfLines={1}>+91</Text>
+                  <View
+                    className="flex-row items-center justify-center border-r border-primary-100 py-3.5"
+                    style={{ width: 68, marginRight: 10, flexShrink: 0, flexGrow: 0 }}
+                  >
+                    <Text style={{ fontSize: 16, marginRight: 4 }}>🇮🇳</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '900', color: '#0F2E22' }}>+91</Text>
                   </View>
                   <TextInput
                     value={phone}
@@ -375,13 +414,29 @@ export default function DealerLoginScreen() {
                 </Pressable>
 
                 <View className="flex-row justify-between items-center mt-2">
-                  <Pressable onPress={() => setMode('phone')}>
+                  <Pressable
+                    onPress={() => {
+                      if (cooldownRef.current) clearInterval(cooldownRef.current);
+                      setResendCooldown(0);
+                      setOtp('');
+                      setMode('phone');
+                    }}
+                  >
                     <Text className="text-xs font-bold text-primary-700 underline">
                       Change Mobile
                     </Text>
                   </Pressable>
-                  <Pressable onPress={handleSendOtp} disabled={loading}>
-                    <Text className="text-xs font-bold text-slate-500">Resend OTP</Text>
+                  <Pressable
+                    onPress={() => handleSendOtp(true)}
+                    disabled={loading || resendCooldown > 0}
+                  >
+                    <Text
+                      className={`text-xs font-bold ${
+                        resendCooldown > 0 ? 'text-slate-400' : 'text-primary-700'
+                      }`}
+                    >
+                      {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : 'Resend OTP'}
+                    </Text>
                   </Pressable>
                 </View>
               </View>

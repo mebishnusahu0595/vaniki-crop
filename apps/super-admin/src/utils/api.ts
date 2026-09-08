@@ -307,6 +307,13 @@ export const adminApi = {
     const response = await api.patch<ApiResponse<Product>>(`/admin/products/${id}/moq`, { moq });
     return response.data.data;
   },
+  bulkUpdateMoq: async (moq: number, productIds?: string[]) => {
+    const response = await api.patch<ApiResponse<{ count: number; moq: number }>>('/admin/products/bulk-moq', {
+      moq,
+      productIds,
+    });
+    return response.data.data;
+  },
   deactivateProduct: async (id: string) => {
     const response = await api.patch<ApiResponse<Product>>(`/admin/products/${id}/deactivate`);
     return response.data.data;
@@ -621,6 +628,10 @@ export const adminApi = {
       responseType: 'blob',
     });
     return response.data;
+  },
+  verifyB2BInvoicePayment: async (id: string, payload: { paymentStatus: 'paid' | 'unpaid'; notes?: string }) => {
+    const response = await api.patch<ApiResponse<any>>(`/b2b-invoices/super-admin/${id}/verify-payment`, payload);
+    return response.data.data;
   },
   getStaffList: async (params?: { role?: string }) => {
     const response = await api.get<ApiResponse<StaffMember[]>>('/staff', { params });

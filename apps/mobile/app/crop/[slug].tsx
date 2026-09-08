@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, router as staticRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { storefrontApi } from '../../src/lib/api';
@@ -31,6 +32,7 @@ function getDiscount(v: Product['variants'][number]) {
 export default function CropDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [crop, setCrop] = useState<Crop | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,7 +118,7 @@ export default function CropDetailScreen() {
             onPress={() => router.back()}
             style={{
               position: 'absolute',
-              top: 48,
+              top: Math.max(insets.top, 12) + 8,
               left: 16,
               backgroundColor: 'rgba(255,255,255,0.92)',
               borderRadius: 12,

@@ -9,7 +9,29 @@ import { currencyFormatter } from '../../src/utils/format';
 export default function LoyaltyRewardsScreen() {
   const { user, setShowCheckInModal } = useAuthStore();
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <Screen>
+        <View className="items-center rounded-[28px] border border-primary-100 bg-white p-8 shadow-sm">
+          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full border border-amber-200 bg-amber-50">
+            <Feather name="award" size={28} color="#D97706" />
+          </View>
+          <Text className="text-2xl font-black text-primary-900 text-center">Login Required</Text>
+          <Text className="mt-2 text-center text-xs leading-5 text-primary-900/60">
+            Login to collect daily points, share your referral code and redeem rewards at checkout.
+          </Text>
+          <Pressable
+            onPress={() => router.push('/(auth)/login')}
+            className="mt-6 w-full rounded-full bg-primary-500 px-8 py-4 shadow-md active:scale-95"
+          >
+            <Text className="text-center text-xs font-black uppercase tracking-[1.5px] text-white">
+              Login / Register Now
+            </Text>
+          </Pressable>
+        </View>
+      </Screen>
+    );
+  }
 
   const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
   const hasClaimedToday = user.lastCheckIn && new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date(user.lastCheckIn)) === todayStr;
