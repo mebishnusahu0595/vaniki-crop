@@ -143,7 +143,8 @@ function parseTallyResponse(tallyXmlResponse) {
   const vchNumMatch = text.match(/<VOUCHERNUMBER>([\s\S]*?)<\/VOUCHERNUMBER>/i) || text.match(/<LASTVCHID>([\s\S]*?)<\/LASTVCHID>/i);
   const guidMatch = text.match(/<GUID>([\s\S]*?)<\/GUID>/i);
 
-  const voucherNumber = vchNumMatch ? vchNumMatch[1].trim() : undefined;
+  const rawVch = vchNumMatch ? vchNumMatch[1].trim() : undefined;
+  const voucherNumber = (rawVch && rawVch !== '0') ? rawVch : undefined;
   const voucherGuid = guidMatch ? guidMatch[1].trim() : undefined;
 
   if (createdCount > 0 || alteredCount > 0 || (text.includes('<STATUS>1</STATUS>') && !text.includes('<ERRORS>'))) {

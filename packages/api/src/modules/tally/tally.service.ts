@@ -865,7 +865,7 @@ export async function recordTallySyncResult(
   if (invoice) {
     invoice.tallySyncStatus = result.status;
     if (result.status === 'synced') {
-      invoice.tallyVoucherNumber = result.tallyVoucherNumber || invoice.invoiceNumber;
+      invoice.tallyVoucherNumber = (result.tallyVoucherNumber && result.tallyVoucherNumber !== '0') ? result.tallyVoucherNumber : invoice.invoiceNumber;
       invoice.tallyVoucherGuid = result.tallyVoucherGuid;
       invoice.tallySyncAt = new Date();
       invoice.tallySyncError = undefined;
@@ -886,7 +886,7 @@ export async function recordTallySyncResult(
   if (order) {
     order.tallySyncStatus = result.status;
     if (result.status === 'synced') {
-      order.tallyVoucherNumber = result.tallyVoucherNumber || order.orderNumber;
+      order.tallyVoucherNumber = (result.tallyVoucherNumber && result.tallyVoucherNumber !== '0') ? result.tallyVoucherNumber : order.orderNumber;
       order.tallyVoucherGuid = result.tallyVoucherGuid;
       order.tallySyncAt = new Date();
       order.tallySyncError = undefined;
@@ -928,7 +928,8 @@ export function parseTallyXmlResponse(tallyXmlResponse: string) {
   const vchNumMatch = text.match(/<VOUCHERNUMBER>([\s\S]*?)<\/VOUCHERNUMBER>/i) || text.match(/<LASTVCHID>([\s\S]*?)<\/LASTVCHID>/i);
   const guidMatch = text.match(/<GUID>([\s\S]*?)<\/GUID>/i);
 
-  const voucherNumber = vchNumMatch ? vchNumMatch[1].trim() : undefined;
+  const rawVch = vchNumMatch ? vchNumMatch[1].trim() : undefined;
+  const voucherNumber = (rawVch && rawVch !== '0') ? rawVch : undefined;
   const voucherGuid = guidMatch ? guidMatch[1].trim() : undefined;
 
   if (createdCount > 0 || alteredCount > 0 || (text.includes('<STATUS>1</STATUS>') && !text.includes('<ERRORS>')) || (text.includes('<RESPONSE>') && !text.includes('<ERRORS>'))) {
