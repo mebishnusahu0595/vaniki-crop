@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vaniki Crop",
     "slug": "vaniki-crop",
-    "version": "1.1.3",
+    "version": "1.1.5",
     "description": "Vaniki Crop — India's trusted crop protection marketplace. Buy genuine pesticides, insecticides, fungicides & herbicides from local agri stores with delivery or pickup. Secure Razorpay payments, real-time order tracking, and farmer-first support.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -35,9 +35,9 @@
         "expo-build-properties",
         {
           "android": {
-            "compileSdkVersion": 35,
-            "targetSdkVersion": 35,
-            "buildToolsVersion": "35.0.0",
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0",
             "ndkVersion": "28.2.13676358",
             "useLegacyPackaging": false,
             "extraGradleProperties": [
@@ -60,8 +60,8 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.vanikicrop.app",
-      "versionCode": 22,
-      "targetSdkVersion": 35,
+      "versionCode": 24,
+      "targetSdkVersion": 36,
       "softwareKeyboardLayoutMode": "pan",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",

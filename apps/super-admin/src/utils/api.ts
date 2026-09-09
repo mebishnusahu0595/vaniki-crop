@@ -395,6 +395,20 @@ export const adminApi = {
     const response = await api.post<ApiResponse<NotificationCampaign>>('/superadmin/notifications', payload);
     return response.data.data;
   },
+  sendWhatsAppBroadcast: async (payload: {
+    title?: string;
+    message: string;
+    imageUrl?: string;
+    link?: string;
+    targetAudience?: 'all' | 'customers' | 'dealers' | 'custom';
+    numbers?: string[];
+  }) => {
+    const response = await api.post<{ success: boolean; total: number; sent: number; failed: number }>(
+      '/whatsapp/broadcast',
+      payload,
+    );
+    return response.data;
+  },
   coupons: async () => {
     const response = await api.get<ApiResponse<Coupon[]>>('/coupons/admin');
     return response.data.data;
