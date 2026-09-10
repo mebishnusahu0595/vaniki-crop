@@ -3,6 +3,13 @@ import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Category } from '../../models/Category.model.js';
 import { generateInvoicePdf } from '../orders/invoice.service.js';
+import {
+  getOrCreateChatSession,
+  recordUserMessage,
+  recordBotMessage,
+  setBroadcastContext,
+  buildGeminiMultiTurnContents,
+} from './whatsapp-session.service.js';
 
 // Ensure Category schema is registered in Mongoose
 void Category;
@@ -270,6 +277,23 @@ function cleanDescription(val: string): string {
   return (val || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220);
 }
 
+/**
+ * Sanitizes Gemini response to ensure internal checklists/instructions don't leak into WhatsApp
+ */
+function sanitizeAiResponse(text: string): string {
+  if (!text) return '';
+  return text
+    .split('\n')
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (/^\*\s*(no dealer|wholesale price|address as|do not|never mention|strictly)/i.test(trimmed)) return false;
+      if (/^[,\s]*(🐛|💊|💧|🛒|🌾)\s*[,)]/i.test(trimmed)) return false;
+      return true;
+    })
+    .join('\n')
+    .trim();
+}
+
 function buildFarmerCatalogContext(products: any[]): string {
   const categories: Record<string, any[]> = {};
   products.forEach((p: any) => {
@@ -369,6 +393,10 @@ async function handleGeminiAiChat(
     );
     const displayName = user?.name || contactName || (isDealer ? 'डीलर पार्टनर' : 'किसान भाई');
 
+    // Retrieve active conversation session
+    const session = await getOrCreateChatSession(to, user, isDealer, displayName);
+    const activeCtx = session.activeContext || {};
+
     // Fetch live active database products
     const rawProducts = await Product.find({ isActive: true })
       .select('name slug shortDescription description images variants category petiSize petiUnit moq')
@@ -379,6 +407,19 @@ async function handleGeminiAiChat(
 
     let systemInstruction = '';
     let catalogContext = '';
+
+    // Active conversation memory context block
+    let memoryBlock = '';
+    if (activeCtx.lastProductName || activeCtx.lastCropIssue || activeCtx.lastImageDiagnosis) {
+      memoryBlock = `\n\nACTIVE CONVERSATION MEMORY (CRITICAL):
+- Currently / Recently Discussed Product: "${activeCtx.lastProductName || 'Vaniki Product'}" ${activeCtx.lastProductSlug ? `(Slug: ${activeCtx.lastProductSlug})` : ''}
+${activeCtx.lastVariantsSummary ? `- Available Sizes & Rates: ${activeCtx.lastVariantsSummary}` : ''}
+${activeCtx.lastCropIssue ? `- Discussed Crop Problem / Need: ${activeCtx.lastCropIssue}` : ''}
+${activeCtx.lastImageDiagnosis ? `- Previous Photo Analysis: ${activeCtx.lastImageDiagnosis}` : ''}
+- CONVERSATION CONTINUITY RULES:
+  * When the user asks "iska", "iski", "ye", "wo", "dawa", "medicine", "dose", "rate", "kitna spray karein", "kitne ka h", or asks "aur dusre product batao", they are referencing ${activeCtx.lastProductName || 'the above product'}!
+  * Never ask "which product are you talking about?". Answer directly with continuous awareness of this discussion.`;
+    }
 
     if (isDealer) {
       // ================= DEALER PERSONA =================
@@ -395,6 +436,7 @@ CRITICAL DEALER RULES:
 5. ORDERING LINK: Always direct the dealer to the DEALER PORTAL: ${DEALER_PORTAL_URL}
 6. TONE: Professional B2B wholesale partner support. Respond in ${lang === 'hi' ? 'HINDI' : 'ENGLISH'}.
 7. WHATSAPP FORMAT: Use single asterisks *like this* for bold, emoji bullets (🏪, 💰, 📦, 📈, 🛒).
+8. STRICT OUTPUT FORMAT: Output ONLY the final message. NEVER output checklists, rules, constraints, internal thoughts, or explanation bullets.
 
 ACTIONS FOR REGISTERED DEALERS:
 If the dealer asks to check order status:
@@ -423,6 +465,7 @@ CRITICAL STRICT RULES FOR FARMERS:
 7. TONE: Respectful, helpful, farmer-friendly. Respond in ${lang === 'hi' ? 'HINDI' : 'ENGLISH'}.
 8. WHATSAPP FORMAT: Use single asterisks *like this* for bold, emoji bullets (🌾, 🐛, 💊, 💧, 🛒).
 9. FULL COMPLETION: Always complete your full response and sentences cleanly. Never cut off or stop mid-sentence. Keep it well-structured and concise.
+10. STRICT OUTPUT FORMAT: Output ONLY the final message. NEVER output checklists, rules, constraints, internal thoughts, or explanation bullets.
 
 ACTIONS FOR FARMERS:
 - [ORDER_HISTORY] : When user asks for recent orders, track orders, or "My Orders"
@@ -439,36 +482,21 @@ USER INFO:
 ${user ? `Name: ${user.name}, Mobile: ${user.mobile}, Mode: ${user.serviceMode || 'delivery'}` : `Guest: ${displayName}`}`;
     }
 
-    const parts: any[] = [];
-    if (imagePart) {
-      parts.push({
-        inlineData: {
-          mimeType: imagePart.mimeType,
-          data: imagePart.data,
-        },
-      });
-    }
-
     const queryText = userPrompt
       ? userPrompt
       : imagePart
         ? isDealer
           ? 'कृपया इस प्रोडक्ट या फसल की फोटो देखकर इसका डीलर थोक रेट और डिटेल्स बताएं।'
-          : 'कृपया इस फसल की फोटो देखकर बताएं कि इसमें कौन सी बीमारी या कीड़ा है, और वानिकी स्टोर से कौन सी सही दवा व कितनी मात्रा का छिड़काव करना चाहिए?'
+          : 'कृपया इस फसल या कीड़े की फोटो देखकर बताएं कि इसमें कौन सी बीमारी या कीड़ा है, और वानिकी स्टोर से कौन सी सही दवा व कितनी मात्रा का छिड़काव करना चाहिए?'
         : 'नमस्ते, कृपया जानकारी दें।';
 
-    parts.push({ text: queryText });
+    const contents = buildGeminiMultiTurnContents(session, queryText, imagePart);
 
     const requestBody = {
       systemInstruction: {
-        parts: [{ text: systemInstruction }],
+        parts: [{ text: systemInstruction + memoryBlock }],
       },
-      contents: [
-        {
-          role: 'user',
-          parts,
-        },
-      ],
+      contents,
       generationConfig: {
         temperature: 0.25,
         maxOutputTokens: 2500,
@@ -476,6 +504,7 @@ ${user ? `Name: ${user.name}, Mobile: ${user.mobile}, Mode: ${user.serviceMode |
     };
 
     let aiContent = await callGemini(requestBody);
+    aiContent = sanitizeAiResponse(aiContent);
 
     // Parse Actions
     if (isDealer && aiContent.includes('[DEALER_ORDERS]')) {
@@ -581,6 +610,14 @@ ${APP_URL}/product/${prod.slug}`;
         }
       }
     }
+
+    // 3. Save to conversation memory
+    let imageDiagnosis: string | undefined;
+    if (imagePart) {
+      imageDiagnosis = aiContent.slice(0, 250).replace(/\n/g, ' ');
+    }
+    await recordUserMessage(to, userPrompt || (imagePart ? '📸 [फसल/कीट की फोटो]' : ''), Boolean(imagePart), userPrompt);
+    await recordBotMessage(to, aiContent, matchedProducts, imageDiagnosis);
   } catch (error) {
     console.error('Gemini WhatsApp AI Error:', error);
     const fallbackMsg =
@@ -689,6 +726,8 @@ export async function processIncomingMessage(message: any, contact: any) {
     const greetingMsg = isDealer
       ? `Hello ${displayName}! 🏪👋\n\n*Vaniki B2B Dealer Desk* में आपका स्वागत है।\n\nमैं आपकी क्या सहायता कर सकता हूँ?\n1️⃣ 📋 *My Orders* - अपने हालिया B2B ऑर्डर्स व स्टेटस देखें\n2️⃣ 🧾 *Invoice* - टैक्स इनवॉइस प्राप्त करें\n3️⃣ 💰 *थोक रेट व मार्जिन* - किसी भी दवा का नाम लिखें (जैसे: *505-RUDRA* या *Nexon*)\n4️⃣ 🛒 *डीलर पोर्टल:* ${DEALER_PORTAL_URL}\n\n👉 अपनी जरूरत यहाँ टाइप करें!`
       : `Hello ${displayName}! 🌾👋\n\n*Vaniki Crop* (वानिकी फसल डॉक्टर) में आपका स्वागत है।\n\nमैं आपकी क्या मदद कर सकता हूँ?\n1️⃣ 📋 *My Orders* - अपने ऑर्डर्स व डिलीवरी स्टेटस देखें\n2️⃣ 🧾 *Invoice* - आर्डर का टैक्स इनवॉइस (PDF) मंगाएं\n3️⃣ 💊 *दवाओं के रेट व इलाज* - फसल की बीमारी या दवा का नाम लिखें (जैसे: *rudra 505*, *माहू की दवा*)\n4️⃣ 📸 *फोटो परामर्श* - फसल/कीड़े की फोटो भेजें, तुरंत AI इलाज पाएं\n5️⃣ 🌾 *INTERESTED* - बेस्ट ऑफर और कैटलॉग देखें\n\n👉 आप अपना कोई भी सवाल यहाँ सीधे लिख सकते हैं! 😊`;
+    await recordUserMessage(from, userText);
+    await recordBotMessage(from, greetingMsg);
     await sendTextMessage(from, greetingMsg);
     return;
   }
@@ -700,6 +739,7 @@ export async function processIncomingMessage(message: any, contact: any) {
     !lowerText.includes('book order') &&
     !lowerText.includes('order karna');
   if (isOrderQuery) {
+    await recordUserMessage(from, userText);
     if (isDealer) {
       await handleDealerOrderQuery(from, user, lang);
     } else {
@@ -711,6 +751,7 @@ export async function processIncomingMessage(message: any, contact: any) {
   // 3. Invoice Query Handler (Flexible matching: "invoice", "bill", "invois", "बिल", "रसीद")
   const isInvoiceQuery = /\b(invoice|bill|invois|बिल|इनवॉइस|रसीद)\b/i.test(lowerText);
   if (isInvoiceQuery) {
+    await recordUserMessage(from, userText);
     await handleInvoiceQuery(from, user, lang, mobile);
     return;
   }
@@ -1138,6 +1179,7 @@ export async function sendBroadcastCampaign(params: BroadcastCampaignParams) {
         await sendTextMessage(to, fullText);
       }
       results.sent++;
+      void setBroadcastContext(to, title || 'Vaniki Special Offer', link || '').catch(() => {});
       await new Promise((r) => setTimeout(r, 60));
     } catch (err: any) {
       results.failed++;
