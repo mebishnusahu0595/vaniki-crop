@@ -1,6 +1,7 @@
 import './config/env.js';
 import app from './app.js';
 import { connectDB } from './config/database.js';
+import { initAiMarketingScheduler } from './modules/marketing/ai-marketing.service.js';
 
 const PORT = process.env.PORT || 5000;
 
@@ -11,6 +12,7 @@ const PORT = process.env.PORT || 5000;
 async function startServer(): Promise<void> {
   try {
     await connectDB();
+    initAiMarketingScheduler();
     app.listen(PORT, () => {
       console.log(`🚀 Vaniki Crop API running on port ${PORT}`);
       console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);

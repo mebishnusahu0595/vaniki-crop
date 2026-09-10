@@ -35,6 +35,7 @@ import promotionsRoutes from './modules/promotions/promotions.routes.js';
 import tallyRoutes from './modules/tally/tally.routes.js';
 import { cropPublicRouter, cropSuperadminRouter } from './modules/crops/crop.routes.js';
 import aiRoutes from './modules/ai/ai.routes.js';
+import aiMarketingRoutes from './modules/marketing/ai-marketing.routes.js';
 import { Product } from './models/Product.model.js';
 import { Category } from './models/Category.model.js';
 
@@ -247,6 +248,7 @@ app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/promotions', promotionsRoutes);
+app.use('/api/marketing/ai', aiMarketingRoutes);
 app.use('/api/tally', tallyRoutes);
 app.use('/api/crops', cropPublicRouter);
 app.use('/api/ai', aiRoutes);

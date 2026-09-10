@@ -411,6 +411,89 @@ export const adminApi = {
     );
     return response.data;
   },
+
+  // Gemini AI Marketing & Crop Advisory Engine
+  getAiMarketingSettings: async () => {
+    const response = await api.get<{
+      success: boolean;
+      settings: {
+        enabled: boolean;
+        dailyTime: string;
+        channels: { whatsapp: boolean; push: boolean };
+        lastRunDate: string;
+      };
+      season: {
+        month: string;
+        season: string;
+        primaryCrops: string;
+        majorRisks: string;
+        formattedDate: string;
+      };
+    }>('/marketing/ai/settings');
+    return response.data;
+  },
+  updateAiMarketingSettings: async (payload: {
+    enabled?: boolean;
+    dailyTime?: string;
+    channels?: { whatsapp?: boolean; push?: boolean };
+  }) => {
+    const response = await api.put<{
+      success: boolean;
+      settings: {
+        enabled: boolean;
+        dailyTime: string;
+        channels: { whatsapp: boolean; push: boolean };
+        lastRunDate: string;
+      };
+    }>('/marketing/ai/settings', payload);
+    return response.data;
+  },
+  previewAiAdvisory: async (payload?: {
+    productId?: string;
+    targetAudience?: 'customers' | 'dealers' | 'all';
+  }) => {
+    const response = await api.post<{
+      success: boolean;
+      advisory: {
+        targetCrop: string;
+        targetIssue: string;
+        productId: string;
+        productTitle: string;
+        productImage: string;
+        productLink: string;
+        pushTitle: string;
+        pushBody: string;
+        whatsappMessage: string;
+        seasonContext: string;
+      };
+    }>('/marketing/ai/preview', payload || {});
+    return response.data;
+  },
+  triggerAiCampaign: async (payload: {
+    advisory?: any;
+    targetAudience?: 'customers' | 'dealers' | 'all';
+    testNumbers?: string[];
+    sendPush?: boolean;
+    sendWhatsApp?: boolean;
+  }) => {
+    const response = await api.post<{
+      success: boolean;
+      stats: { pushSent: number; whatsappSent: number; status: string };
+      log: any;
+      advisory: any;
+    }>('/marketing/ai/broadcast', payload);
+    return response.data;
+  },
+  getAiCampaignHistory: async (params?: { page?: number; limit?: number }) => {
+    const response = await api.get<{
+      success: boolean;
+      logs: any[];
+      total: number;
+      page: number;
+      totalPages: number;
+    }>('/marketing/ai/history', { params });
+    return response.data;
+  },
   coupons: async () => {
     const response = await api.get<ApiResponse<Coupon[]>>('/coupons/admin');
     return response.data.data;
