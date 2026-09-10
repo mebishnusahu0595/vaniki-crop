@@ -329,7 +329,7 @@ export default function HomeScreen() {
                       <Feather name="phone" size={13} color="#52B788" />
                     </View>
                     <Text className="text-xs font-black uppercase tracking-wide text-white">
-                      {t('mobile.topNotice.call')}: +91 9406160185
+                      {t('mobile.topNotice.call')}: +91 9407963966
                     </Text>
                   </View>
                 </View>

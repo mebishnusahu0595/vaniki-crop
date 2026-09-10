@@ -92,11 +92,11 @@ export default function ContactScreen() {
         </Text>
 
         <Pressable
-          onPress={() => Linking.openURL('tel:+919406160185')}
+          onPress={() => Linking.openURL('tel:+919407963966')}
           className="mt-4 flex-row items-center gap-2 rounded-xl bg-emerald-500/20 border border-emerald-400/30 px-3.5 py-2.5 self-start active:scale-95"
         >
           <Feather name="phone" size={14} color="#52B788" />
-          <Text className="text-xs font-black text-emerald-200">+91 9406160185</Text>
+          <Text className="text-xs font-black text-emerald-200">+91 9407963966</Text>
         </Pressable>
       </View>
 

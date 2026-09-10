@@ -2,7 +2,7 @@ export const siteContent = {
   brand: {
     name: 'Vaniki Crop',
     tagline: 'Smart crop protection for modern farms',
-    supportPhone: '+91 9406160185',
+    supportPhone: '+91 9407963966',
     supportEmail: 'teams@vanikicrop.com',
   },
   notices: [

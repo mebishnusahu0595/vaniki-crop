@@ -79,7 +79,7 @@ export async function generateInvoicePdf(order: any, _options: { size?: string }
       const sellerGst = store.gstNumber || siteSettings?.gstNumber || '22AAACV9876Q1Z2';
       const sellerName = store.name || 'Vaniki Crop Science Pvt. Ltd.';
       const sellerAddress = store.address ? formatAddress(store.address) : 'Village - Ambagarh Chauki, Dist - Mohla Manpur Ambagarh Chauki, Chhattisgarh - 491665';
-      const sellerPhone = store.phone || '9406160185';
+      const sellerPhone = store.phone || '9407963966';
       const sellerEmail = store.email || 'teams@vanikicrop.com';
 
       // Left: Seller Details
@@ -423,7 +423,7 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
         .text(`GSTIN/UIN: ${sellerGst}`, startX + 8, box1Y + 48, { stroke: false })
         .text('State Name : Chhattisgarh, Code : 22', startX + 8, box1Y + 60)
         .text('CIN : U01111CT2020PTC010101', startX + 8, box1Y + 72)
-        .text('E-Mail : teams@vanikicrop.com, Contact: 9406160185', startX + 8, box1Y + 84, { width: 255 });
+        .text('E-Mail : teams@vanikicrop.com, Contact: 9407963966', startX + 8, box1Y + 84, { width: 255 });
 
       // Right: Dispatch / Invoice Metadata Grid
       const gridRowH = box1H / 5; // 27

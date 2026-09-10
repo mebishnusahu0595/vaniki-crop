@@ -286,11 +286,11 @@ export default function AgriAdvisorScreen() {
   };
 
   const callExpert = () => {
-    Linking.openURL('tel:+919406160185').catch(() => undefined);
+    Linking.openURL('tel:+919407963966').catch(() => undefined);
   };
 
   const openWhatsApp = () => {
-    Linking.openURL('https://wa.me/919406160185?text=Hello%20Vaniki%20Agri%20Advisor,%20I%20need%20help%20with%20my%20crop').catch(() => undefined);
+    Linking.openURL('https://wa.me/919407963966?text=Hello%20Vaniki%20Agri%20Advisor,%20I%20need%20help%20with%20my%20crop').catch(() => undefined);
   };
 
   return (

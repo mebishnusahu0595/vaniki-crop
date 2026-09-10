@@ -1,5 +1,5 @@
 export const siteConfig = {
-  supportPhone: '+91 9406160185',
+  supportPhone: '+91 9407963966',
   whatsappLink: process.env.EXPO_PUBLIC_WHATSAPP_LINK || 'https://wa.link/vanikicrop',
   supportEmail: 'teams@vanikicrop.com',
   aboutBlurb:
