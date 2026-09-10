@@ -313,33 +313,32 @@ export default function NotificationsPage() {
         <div className="space-y-6">
           {/* Top Banner: Regional Season & Pest Detection */}
           {seasonInfo ? (
-            <div className="rounded-[1.5rem] border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-emerald-50/50 p-6 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start gap-3.5">
-                  <div className="rounded-2xl bg-indigo-600 p-3 text-white shadow-md">
+            <div className="rounded-[1.5rem] border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-emerald-50/40 p-6 shadow-sm space-y-4">
+              {/* Header & Controls Row */}
+              <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-4 border-b border-indigo-100/80">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-indigo-600 p-3 text-white shadow-md shrink-0">
                     <Cpu size={24} />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-black text-indigo-700">
-                        {seasonInfo.season}
+                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                      🤖 Gemini AI Auto-Pilot Engine
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                        aiEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {aiEnabled ? '● Active' : '○ Paused'}
                       </span>
-                      <span className="text-xs font-bold text-slate-500">
-                        Month: <strong className="text-slate-800">{seasonInfo.month}</strong> (Central & North India / Chhattisgarh)
-                      </span>
-                    </div>
-                    <p className="mt-1.5 text-sm font-bold text-slate-900">
-                      🌾 <span className="text-indigo-900">प्रमुख फसलें:</span> {seasonInfo.primaryCrops}
-                    </p>
-                    <p className="mt-1 text-xs text-rose-700 font-semibold">
-                      ⚠️ <span className="text-slate-700">सक्रिय कीट/रोग जोखिम:</span> {seasonInfo.majorRisks}
+                    </h3>
+                    <p className="text-xs font-semibold text-slate-500">
+                      Season-aware crop advisory & automatic farmer/dealer broadcasts
                     </p>
                   </div>
                 </div>
 
-                {/* Auto-Pilot Controls */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white/80 backdrop-blur rounded-2xl p-4 border border-indigo-100 shadow-sm shrink-0">
-                  <div className="flex items-center gap-2">
+                {/* Auto-Pilot Controls Box */}
+                <div className="flex flex-wrap items-center gap-3 bg-white/95 backdrop-blur rounded-2xl p-3 border border-indigo-100 shadow-sm">
+                  {/* Toggle */}
+                  <div className="flex items-center gap-2 pr-2 border-r border-slate-200">
                     <label className="relative inline-flex cursor-pointer items-center">
                       <input
                         type="checkbox"
@@ -350,28 +349,31 @@ export default function NotificationsPage() {
                       <div className="peer h-6 w-11 rounded-full bg-slate-300 after:absolute after:top-0.5 after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-emerald-600 peer-checked:after:translate-x-full peer-focus:outline-none"></div>
                     </label>
                     <span className="text-xs font-black text-slate-800">
-                      {aiEnabled ? 'Auto-Pilot Active' : 'Auto-Pilot Paused'}
+                      {aiEnabled ? 'Auto-Pilot On' : 'Paused'}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-slate-600 border-l border-slate-200 pl-3">
+                  {/* Daily Time */}
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600 pr-2 border-r border-slate-200">
                     <Clock size={14} className="text-indigo-600 shrink-0" />
+                    <span className="font-bold text-slate-700">Time:</span>
                     <input
                       type="time"
                       value={aiDailyTime}
                       onChange={(e) => setAiDailyTime(e.target.value)}
-                      className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500"
+                      className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 bg-slate-50"
                     />
-                    <span className="text-[10px] text-slate-400 font-bold">IST Daily</span>
+                    <span className="text-[10px] text-slate-400 font-bold">IST</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-slate-600 border-l border-slate-200 pl-3">
+                  {/* WhatsApp Interval Selector */}
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600">
                     <MessageSquare size={14} className="text-emerald-600 shrink-0" />
                     <span className="font-bold text-slate-700">WhatsApp Interval:</span>
                     <select
                       value={aiWhatsappInterval}
                       onChange={(e) => setAiWhatsappInterval(Number(e.target.value))}
-                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500"
+                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 shadow-sm"
                     >
                       <option value={1}>Every 1 Day (Daily / रोज़)</option>
                       <option value={2}>Every 2 Days (हर 2 दिन में 1 बार - Recommended)</option>
@@ -382,29 +384,77 @@ export default function NotificationsPage() {
                     </select>
                   </div>
 
+                  {/* Save Button */}
                   <button
                     type="button"
                     onClick={handleSaveAiSettings}
                     disabled={updateAiSettingsMutation.isPending}
-                    className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-black text-white hover:bg-indigo-700 transition disabled:opacity-50 shrink-0 shadow-sm"
+                    className="rounded-xl bg-indigo-600 px-4 py-1.5 text-xs font-black text-white hover:bg-indigo-700 transition disabled:opacity-50 shrink-0 shadow-sm ml-auto"
                   >
                     {updateAiSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
                   </button>
                 </div>
+              </div>
 
-                <div className="w-full flex flex-wrap items-center gap-2 pt-1 text-[11px]">
-                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                    📱 App Push: Daily at {aiDailyTime} IST
-                  </span>
-                  <span className="inline-flex items-center gap-1 font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
-                    💬 WhatsApp Broadcast: {aiWhatsappInterval === 1 ? 'Daily (रोज़ाना)' : `हर ${aiWhatsappInterval} दिन में 1 बार (Meta Cost Saving)`}
-                  </span>
-                  {(aiSettingsQuery.data?.settings as any)?.lastWhatsAppRunDate && (
-                    <span className="text-slate-500 font-semibold ml-auto">
-                      Last WhatsApp Sent: <strong className="text-slate-800">{(aiSettingsQuery.data?.settings as any)?.lastWhatsAppRunDate}</strong>
-                    </span>
-                  )}
+              {/* Regional Season & Pest Detection Card */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/70 backdrop-blur rounded-2xl p-4 border border-indigo-50 shadow-sm">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-xl">🌦️</span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-black text-indigo-700">
+                        {seasonInfo.season}
+                      </span>
+                      <span className="text-xs font-bold text-slate-700">{seasonInfo.month}</span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500 font-medium">
+                      Region: Central & North India / Chhattisgarh
+                    </p>
+                  </div>
                 </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="text-xl">🌾</span>
+                  <div>
+                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-wide">
+                      प्रमुख फसलें:
+                    </span>
+                    <p className="text-xs font-bold text-slate-800 leading-snug mt-0.5">
+                      {seasonInfo.primaryCrops}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="text-xl">⚠️</span>
+                  <div>
+                    <span className="text-[11px] font-black text-rose-600 uppercase tracking-wide">
+                      सक्रिय कीट/रोग जोखिम:
+                    </span>
+                    <p className="text-xs font-bold text-rose-700 leading-snug mt-0.5">
+                      {seasonInfo.majorRisks}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Badges Footer */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 font-bold text-emerald-800 bg-emerald-100/80 px-3 py-1 rounded-xl border border-emerald-200">
+                    <Smartphone size={13} className="text-emerald-700" />
+                    App Push: Daily at {aiDailyTime} IST (100% Free)
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 font-bold text-indigo-800 bg-indigo-100/80 px-3 py-1 rounded-xl border border-indigo-200">
+                    <MessageSquare size={13} className="text-indigo-700" />
+                    WhatsApp Broadcast: {aiWhatsappInterval === 1 ? 'Daily (रोज़ाना)' : `हर ${aiWhatsappInterval} दिन में 1 बार (Meta Cost Saving)`}
+                  </span>
+                </div>
+                {(aiSettingsQuery.data?.settings as any)?.lastWhatsAppRunDate && (
+                  <span className="text-slate-500 font-semibold bg-white/80 px-3 py-1 rounded-xl border border-slate-200">
+                    Last WhatsApp Sent: <strong className="text-slate-800">{(aiSettingsQuery.data?.settings as any)?.lastWhatsAppRunDate}</strong>
+                  </span>
+                )}
               </div>
             </div>
           ) : null}
