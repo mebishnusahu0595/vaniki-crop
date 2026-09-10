@@ -879,7 +879,25 @@ export async function sendBroadcastCampaign(params: BroadcastCampaignParams) {
 
     try {
       if (templateName) {
-        await sendTemplateMessage(to, templateName, languageCode, components);
+        let comp = components;
+        if (templateName === 'vaniki' && (!comp || comp.length === 0)) {
+          const headerImg =
+            imageUrl && imageUrl.startsWith('http')
+              ? imageUrl
+              : 'https://vanikicrop.com/uploads/vaniki/products/1776492631768-c5024e5b-f13a-44fb-b1fd-af9985b93241.png';
+          comp = [
+            {
+              type: 'header',
+              parameters: [
+                {
+                  type: 'image',
+                  image: { link: headerImg },
+                },
+              ],
+            },
+          ];
+        }
+        await sendTemplateMessage(to, templateName, languageCode || 'en', comp);
       } else if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
         await sendImageMessage(to, imageUrl, fullText);
       } else {

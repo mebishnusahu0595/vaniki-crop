@@ -397,11 +397,13 @@ export const adminApi = {
   },
   sendWhatsAppBroadcast: async (payload: {
     title?: string;
-    message: string;
+    message?: string;
     imageUrl?: string;
     link?: string;
     targetAudience?: 'all' | 'customers' | 'dealers' | 'custom';
     numbers?: string[];
+    templateName?: string;
+    languageCode?: string;
   }) => {
     const response = await api.post<{ success: boolean; total: number; sent: number; failed: number }>(
       '/whatsapp/broadcast',

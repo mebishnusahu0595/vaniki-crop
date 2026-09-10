@@ -27,10 +27,11 @@ const defaultForm = {
   title: '',
   body: '',
   link: '',
-  imageUrl: '',
+  imageUrl: 'https://vanikicrop.com/uploads/vaniki/products/1776492631768-c5024e5b-f13a-44fb-b1fd-af9985b93241.png',
   customNumbers: '',
   targetAudience: 'customers' as Audience,
   waAudience: 'customers' as WhatsAppAudience,
+  templateMode: 'vaniki' as 'vaniki' | 'custom',
 };
 
 function getDeliveryRate(sent: number, total: number) {
@@ -81,10 +82,10 @@ export default function NotificationsPage() {
 
   const canSendWa = useMemo(
     () =>
-      form.body.trim().length >= 3 &&
+      (form.templateMode === 'vaniki' || form.body.trim().length >= 3) &&
       !sendWaMutation.isPending &&
       (form.waAudience !== 'custom' || form.customNumbers.trim().length >= 10),
-    [form.body, form.waAudience, form.customNumbers, sendWaMutation.isPending],
+    [form.body, form.templateMode, form.waAudience, form.customNumbers, sendWaMutation.isPending],
   );
 
   if (notificationsQuery.isLoading && !notificationsQuery.data) {
@@ -123,6 +124,8 @@ export default function NotificationsPage() {
       link: form.link.trim() || undefined,
       targetAudience: form.waAudience,
       numbers: parsedNumbers,
+      templateName: form.templateMode === 'vaniki' ? 'vaniki' : undefined,
+      languageCode: 'en',
     });
   };
 
@@ -183,6 +186,47 @@ export default function NotificationsPage() {
             </div>
 
             <div className="mt-6 space-y-4">
+              <div>
+                <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Delivery Mode</span>
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm((cur) => ({ ...cur, templateMode: 'vaniki' }))}
+                    className={`rounded-2xl border p-3 text-left transition flex items-start gap-2.5 ${
+                      form.templateMode === 'vaniki'
+                        ? 'border-emerald-600 bg-emerald-50/80 shadow-sm text-emerald-950'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-300'
+                    }`}
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-bold mt-0.5">✓</span>
+                    <div>
+                      <span className="block text-xs font-black text-slate-900">Approved Template (vaniki)</span>
+                      <span className="block text-[11px] font-semibold text-emerald-700 mt-0.5">
+                        🌟 100% Delivery to everyone outside 24h window (Photo Header)
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setForm((cur) => ({ ...cur, templateMode: 'custom' }))}
+                    className={`rounded-2xl border p-3 text-left transition flex items-start gap-2.5 ${
+                      form.templateMode === 'custom'
+                        ? 'border-emerald-600 bg-emerald-50/80 shadow-sm text-emerald-950'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-300'
+                    }`}
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-400 text-white text-xs font-bold mt-0.5">💬</span>
+                    <div>
+                      <span className="block text-xs font-black text-slate-900">Custom Direct Message</span>
+                      <span className="block text-[11px] font-semibold text-slate-500 mt-0.5">
+                        Free-form custom text/image (Within active 24h chats)
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Send to Audience</span>
                 <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
