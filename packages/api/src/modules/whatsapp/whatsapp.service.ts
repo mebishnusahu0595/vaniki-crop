@@ -1,6 +1,7 @@
 import { User } from '../../models/User.model.js';
 import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
+import { Category } from '../../models/Category.model.js';
 import { generateInvoicePdf } from '../orders/invoice.service.js';
 
 const APP_URL = 'https://vanikicrop.com';
@@ -10,16 +11,14 @@ const getPhoneNumberId = () => process.env.WHATSAPP_PHONE_NUMBER_ID || '80765978
 const getWhatsAppToken = () => process.env.WHATSAPP_ACCESS_TOKEN || '';
 const getGeminiApiKey = () => process.env.GEMINI_API_KEY || '';
 
-// Gemini candidate models in order of preference
+// Gemini candidate models in order of preference (Stable Gemini 3.x Flash series)
 const CANDIDATE_MODELS = [
-  'gemini-3.5-flash-lite',
-  'gemini-3.5-flash',
-  'gemini-3.6-flash',
-  'gemini-3.7-flash',
   'gemini-3.8-flash',
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
   'gemini-3.1-flash-lite',
-  'gemini-flash-lite-latest',
-  'gemini-flash-latest',
 ];
 
 /**
@@ -268,23 +267,28 @@ function cleanDescription(val: string): string {
   return (val || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220);
 }
 
-/**
- * Builds STRICT Product Catalog Context for FARMERS (Customers / Guests)
- * STRICT SECURITY: NEVER includes dealer/admin wholesale prices!
- */
 function buildFarmerCatalogContext(products: any[]): string {
-  return products
-    .map((p: any) => {
+  const categories: Record<string, any[]> = {};
+  products.forEach((p: any) => {
+    const cat = p.category?.name || 'Crop Protection';
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(p);
+  });
+
+  let out = '';
+  for (const [catName, prods] of Object.entries(categories)) {
+    out += `\n=== ${catName.toUpperCase()} ===\n`;
+    prods.forEach((p: any) => {
       const v = p.variants?.[0] || {};
       const price = v.price || 0;
       const mrp = v.mrp || price;
-      return `• उत्पाद: "${p.name}" (Slug: "${p.slug}")
-  कैटेगरी: ${p.category?.name || 'Crop Protection'}
+      out += `• उत्पाद: "${p.name}" (Slug: "${p.slug}")
   कीमत: ₹${price} (MRP: ₹${mrp})
-  उपयोग व इलाज: ${cleanDescription(p.description || p.shortDescription || p.name)}
-  लिंक: ${APP_URL}/product/${p.slug}`;
-    })
-    .join('\n\n');
+  उपयोग व बीमारी: ${cleanDescription(p.description || p.shortDescription || p.name)}
+  डायरेक्ट लिंक: ${APP_URL}/product/${p.slug}\n\n`;
+    });
+  }
+  return out.trim();
 }
 
 /**
@@ -356,12 +360,14 @@ async function handleGeminiAiChat(
   user: any | null,
   lang: string,
   imagePart?: { mimeType: string; data: string },
+  contactName?: string,
 ) {
   try {
     // 1. STRICT CATEGORIZATION: Check if user is an authorized Dealer
     const isDealer = Boolean(
       user && (user.role === 'storeAdmin' || user.role === 'superAdmin' || user.dealerProfile),
     );
+    const displayName = user?.name || contactName || (isDealer ? 'डीलर पार्टनर' : 'किसान भाई');
 
     // Fetch live active database products
     const rawProducts = await Product.find({ isActive: true })
@@ -379,42 +385,47 @@ async function handleGeminiAiChat(
       catalogContext = buildDealerCatalogContext(rawProducts);
 
       systemInstruction = `You are the "Vaniki B2B Dealer Support Specialist" (वानिकी डीलर पार्टनर डेस्क) representing Vaniki Crop (vanikicrop.com).
-The person messaging you is an AUTHORIZED AGRICULTURAL DEALER / RETAIL STORE OWNER.
+The person messaging you is an AUTHORIZED AGRICULTURAL DEALER / RETAIL STORE OWNER named "${displayName}".
 
 CRITICAL DEALER RULES:
-1. STRICT PRODUCT SOURCE: ONLY quote or recommend products from the OFFICIAL VANIKI B2B CATALOG below. NEVER mention external brands!
-2. PRICING TRANSPARENCY: Always provide the DEALER PROCUREMENT PRICE (डीलर थोक रेट / adminPrice) and highlight their PROFIT MARGIN (मुनाफा) vs MRP/Retail.
-3. PACKAGING & MOQ: Mention carton/peti size and MOQ for bulk ordering.
-4. ORDERING LINK: Always direct the dealer to the DEALER PORTAL: ${DEALER_PORTAL_URL}
-5. TONE: Professional B2B wholesale partner support. Respond in ${lang === 'hi' ? 'HINDI' : 'ENGLISH'}.
-6. WHATSAPP FORMAT: Use single asterisks *like this* for bold, emoji bullets (🏪, 💰, 📦, 📈, 🛒).
+1. GREETING: Address the dealer politely by name: "Hello ${displayName}! 🏪👋" or "नमस्ते ${displayName} जी! 🏪🤝".
+2. STRICT PRODUCT SOURCE: ONLY quote or recommend products from the OFFICIAL VANIKI B2B CATALOG below. NEVER mention external brands!
+3. PRICING TRANSPARENCY: Always provide the DEALER PROCUREMENT PRICE (डीलर थोक रेट / adminPrice) and highlight their PROFIT MARGIN (मुनाफा) vs MRP/Retail.
+4. PACKAGING & MOQ: Mention carton/peti size and MOQ for bulk ordering.
+5. ORDERING LINK: Always direct the dealer to the DEALER PORTAL: ${DEALER_PORTAL_URL}
+6. TONE: Professional B2B wholesale partner support. Respond in ${lang === 'hi' ? 'HINDI' : 'ENGLISH'}.
+7. WHATSAPP FORMAT: Use single asterisks *like this* for bold, emoji bullets (🏪, 💰, 📦, 📈, 🛒).
 
 ACTIONS FOR REGISTERED DEALERS:
 If the dealer asks to check order status:
 - [DEALER_ORDERS] : To check B2B stock & orders
+- [SEND_INVOICE] : To send recent B2B tax invoice
 
 OFFICIAL VANIKI B2B CATALOG:
 ${catalogContext}
 
 DEALER PROFILE:
-Store Name: ${user.dealerProfile?.storeName || user.name}, Mobile: ${user.mobile}`;
+Store Name: ${user?.dealerProfile?.storeName || displayName}, Mobile: ${user?.mobile || to.replace(/^91/, '')}`;
     } else {
       // ================= FARMER PERSONA =================
       catalogContext = buildFarmerCatalogContext(rawProducts);
 
-      systemInstruction = `You are "Vaniki Crop Doctor" (वानिकी फसल डॉक्टर), an expert Agricultural AI Doctor for Indian Farmers representing Vaniki Crop (vanikicrop.com).
-The person messaging you is a FARMER (किसान भाई).
+      systemInstruction = `You are "Vaniki Crop Doctor" (वानिकी फसल डॉक्टर) / Vaniki Digital Crop Assistant representing Vaniki Crop (vanikicrop.com).
+The person messaging you is a FARMER named "${displayName}".
 
 CRITICAL STRICT RULES FOR FARMERS:
-1. STRICT PRODUCT SOURCE: You are ABSOLUTELY FORBIDDEN from recommending any product outside the OFFICIAL VANIKI STORE CATALOG below! Only prescribe medicines available in this catalog.
-2. STRICT PRICING PRIVACY: ONLY quote retail price (₹price) and MRP. ABSOLUTELY NEVER mention dealer price, wholesale price, or trade margins!
-3. DOCTOR ADVICE: Explain the crop problem, symptoms, and exact spray dosage (e.g. *250ml प्रति एकड़ 150-200 लीटर पानी में*).
-4. ORDERING LINK: Always provide the direct product buy link: ${APP_URL}/product/[slug]
-5. TONE: Respectful, helpful, farmer-friendly. Respond in ${lang === 'hi' ? 'HINDI' : 'ENGLISH'}.
-6. WHATSAPP FORMAT: Use single asterisks *like this* for bold, emoji bullets (🌿, 🐛, 💊, 💧, 🛒).
+1. GREETING: Address the farmer respectfully by name: "Hello ${displayName}! 👋" or "नमस्ते ${displayName} जी! 🙏".
+2. STRICT PRODUCT SOURCE: You are ABSOLUTELY FORBIDDEN from recommending any product outside the OFFICIAL VANIKI STORE CATALOG below! Only prescribe medicines available in this catalog.
+3. STRICT PRICING PRIVACY: ONLY quote retail price (₹price) and MRP. ABSOLUTELY NEVER mention dealer price, wholesale price, or trade margins!
+4. ORDERING INTENT: If the farmer says "want to order [product]" or asks for pricing of any product (e.g. "want to order rudra 505" or "Nexon"), quote the exact product price, explain what pests/diseases it treats, state dosage, and give the direct order link: ${APP_URL}/product/[slug].
+5. DOCTOR ADVICE: Explain the crop problem, symptoms, and exact spray dosage (e.g. *250ml प्रति एकड़ 150-200 लीटर पानी में*).
+6. ORDERING LINK: Always provide the direct product buy link: ${APP_URL}/product/[slug]
+7. TONE: Respectful, helpful, farmer-friendly. Respond in ${lang === 'hi' ? 'HINDI' : 'ENGLISH'}.
+8. WHATSAPP FORMAT: Use single asterisks *like this* for bold, emoji bullets (🌾, 🐛, 💊, 💧, 🛒).
 
-ACTIONS FOR REGISTERED FARMERS:
-- [ORDER_HISTORY] : User wants to track recent orders
+ACTIONS FOR FARMERS:
+- [ORDER_HISTORY] : When user asks for recent orders, track orders, or "My Orders"
+- [SEND_INVOICE] : When user asks for invoice, bill, or receipt
 - [UPDATE_NAME:New Name] : Change profile name
 - [UPDATE_ADDRESS:New Address] : Change delivery address
 - [SET_PICKUP] : Switch to Store Pickup
@@ -424,7 +435,7 @@ OFFICIAL VANIKI STORE CATALOG:
 ${catalogContext}
 
 USER INFO:
-${user ? `Name: ${user.name}, Mobile: ${user.mobile}, Mode: ${user.serviceMode || 'delivery'}` : 'Guest Farmer (New visitor)'}`;
+${user ? `Name: ${user.name}, Mobile: ${user.mobile}, Mode: ${user.serviceMode || 'delivery'}` : `Guest: ${displayName}`}`;
     }
 
     const parts: any[] = [];
@@ -473,10 +484,21 @@ ${user ? `Name: ${user.name}, Mobile: ${user.mobile}, Mode: ${user.serviceMode |
       return;
     }
 
-    if (!isDealer && user && aiContent.includes('[ORDER_HISTORY]')) {
+    if (aiContent.includes('[SEND_INVOICE]')) {
+      aiContent = aiContent.replace('[SEND_INVOICE]', '').trim();
+      if (aiContent) await sendTextMessage(to, aiContent);
+      await handleInvoiceQuery(to, user, lang, to.replace(/^91/, ''));
+      return;
+    }
+
+    if (aiContent.includes('[ORDER_HISTORY]')) {
       aiContent = aiContent.replace('[ORDER_HISTORY]', '').trim();
       if (aiContent) await sendTextMessage(to, aiContent);
-      await handleOrderQuery(to, user, lang);
+      if (isDealer) {
+        await handleDealerOrderQuery(to, user, lang);
+      } else {
+        await handleOrderQuery(to, user, lang, to.replace(/^91/, ''));
+      }
       return;
     }
     if (!isDealer && user && aiContent.includes('[UPDATE_NAME:')) {
@@ -584,15 +606,7 @@ export async function processIncomingMessage(message: any, contact: any) {
     user && (user.role === 'storeAdmin' || user.role === 'superAdmin' || user.dealerProfile),
   );
   const lang = user?.preferredLanguage || 'hi';
-
-  // Handle Quick Command / Help
-  if (messageType === 'text') {
-    const text = (message.text?.body || '').trim().toLowerCase();
-    if (['/commands', 'help', 'menu', 'मदद', 'commands'].includes(text)) {
-      await handleHelpCommand(from, lang, isDealer);
-      return;
-    }
-  }
+  const contactName = contact?.profile?.name || '';
 
   // Case 1: Photo sent
   if (messageType === 'image') {
@@ -613,26 +627,24 @@ export async function processIncomingMessage(message: any, contact: any) {
         await handleGeminiAiChat(from, caption, user, lang, {
           mimeType: media.mimeType,
           data: base64Data,
-        });
+        }, contactName);
         return;
       }
     }
 
     // Fallback if media download failed
-    await handleGeminiAiChat(from, caption || 'कृपया समस्या का समाधान बताएं।', user, lang);
+    await handleGeminiAiChat(from, caption || 'कृपया समस्या का समाधान बताएं।', user, lang, undefined, contactName);
     return;
   }
 
-  // Case 2: Text sent
+  // Extract user message text from various WhatsApp payload formats
+  let userText = '';
   if (messageType === 'text') {
-    const userText = (message.text?.body || '').trim();
-    await handleGeminiAiChat(from, userText, user, lang);
-    return;
-  }
-
-  // Case 3: Interactive button replies
-  if (messageType === 'interactive' && message.interactive?.type === 'button_reply') {
-    const replyId = message.interactive.button_reply.id;
+    userText = (message.text?.body || '').trim();
+  } else if (messageType === 'button') {
+    userText = (message.button?.text || message.button?.payload || '').trim();
+  } else if (messageType === 'interactive') {
+    const replyId = message.interactive?.button_reply?.id;
     if (replyId === 'lang_hi' || replyId === 'lang_en') {
       if (user) {
         user.preferredLanguage = replyId === 'lang_hi' ? 'hi' : 'en';
@@ -646,7 +658,208 @@ export async function processIncomingMessage(message: any, contact: any) {
       );
       return;
     }
+    userText = (
+      message.interactive?.button_reply?.title ||
+      message.interactive?.button_reply?.id ||
+      message.interactive?.list_reply?.title ||
+      message.interactive?.list_reply?.id ||
+      ''
+    ).trim();
   }
+
+  if (!userText) {
+    console.log(`[WhatsApp Incoming] Unhandled message type or empty text: ${messageType}`);
+    return;
+  }
+
+  const lowerText = userText.toLowerCase();
+
+  // Quick Command / Help
+  if (['/commands', 'help', 'menu', 'मदद', 'commands'].includes(lowerText)) {
+    await handleHelpCommand(from, lang, isDealer);
+    return;
+  }
+
+  // 1. "INTERESTED" Response Handler
+  if (
+    lowerText === 'interested' ||
+    lowerText === 'intrested' ||
+    lowerText === 'ruchi' ||
+    lowerText === 'रुचि' ||
+    lowerText.startsWith('interested')
+  ) {
+    await handleInterestedResponse(from, user, contactName, lang, isDealer);
+    return;
+  }
+
+  // 2. Orders Query Handler
+  if (
+    lowerText === 'my orders' ||
+    lowerText === 'my order' ||
+    lowerText === 'orders' ||
+    lowerText === 'order' ||
+    lowerText === 'आर्डर' ||
+    lowerText === 'ऑर्डर' ||
+    lowerText === 'मेरा आर्डर' ||
+    lowerText === 'मेरे ऑर्डर'
+  ) {
+    if (isDealer) {
+      await handleDealerOrderQuery(from, user, lang);
+    } else {
+      await handleOrderQuery(from, user, lang, mobile);
+    }
+    return;
+  }
+
+  // 3. Invoice Query Handler
+  if (
+    lowerText === 'invoice' ||
+    lowerText === 'bill' ||
+    lowerText === 'invois' ||
+    lowerText === 'बिल' ||
+    lowerText === 'इनवॉइस' ||
+    lowerText === 'रसीद' ||
+    lowerText === 'टैक्स इनवॉइस'
+  ) {
+    await handleInvoiceQuery(from, user, lang, mobile);
+    return;
+  }
+
+  // 4. Default: Full Gemini AI Agricultural Doctor / B2B Dealer Support
+  await handleGeminiAiChat(from, userText, user, lang, undefined, contactName);
+}
+
+/**
+ * Handles "INTERESTED" replies after promotional broadcasts
+ */
+async function handleInterestedResponse(
+  to: string,
+  user: any,
+  contactName?: string,
+  lang: string = 'hi',
+  isDealer: boolean = false,
+) {
+  const displayName = user?.name || contactName || (isDealer ? 'डीलर पार्टनर' : 'किसान भाई');
+
+  if (isDealer) {
+    const rawProducts = await Product.find({ isActive: true })
+      .select('name slug category variants petiSize petiUnit moq shortDescription')
+      .populate('category', 'name slug')
+      .sort({ totalSold: -1 })
+      .limit(30)
+      .lean();
+
+    const topProducts = rawProducts.slice(0, 5).map((p: any) => {
+      const v = p.variants?.[0] || {};
+      const dealerPrice = v.adminPrice !== undefined ? v.adminPrice : v.price;
+      const retailPrice = v.price || dealerPrice;
+      const margin = (v.mrp || retailPrice) - dealerPrice;
+      return `• *${p.name}* (${p.category?.name || 'Agro'}) – *डीलर थोक रेट: ₹${dealerPrice}* (MRP: ₹${v.mrp || retailPrice}, मार्जिन: ₹${margin})\n  👉 ${DEALER_PORTAL_URL}`;
+    }).join('\n');
+
+    const msg = `Hello ${displayName}! 🏪👋
+
+Thank you for reaching out to *Vaniki Crop*. I am happy to help you find wholesale pricing and stock for your retail store.
+
+📦 *हमारे मुख्य थोक उत्पाद (Wholesale Dealer Rates):*
+${topProducts}
+
+💡 *डीलर सेवाएं:*
+• किसी भी दवा का नाम लिखकर थोक रेट व कार्टन साइज पूछें।
+• अपने स्टोर के आर्डर देखने के लिए लिखें: *"My Orders"*
+• टैक्स इनवॉइस देखने के लिए लिखें: *"Invoice"*
+• बल्क ऑर्डर प्लेस करने के लिए विजिट करें: ${DEALER_PORTAL_URL}`;
+
+    await sendTextMessage(to, msg);
+    return;
+  }
+
+  // Farmer / Customer Persona
+  const rawProducts = await Product.find({ isActive: true })
+    .select('name slug category variants shortDescription description images')
+    .populate('category', 'name slug')
+    .sort({ totalSold: -1 })
+    .lean();
+
+  const insecticides = (rawProducts as any[]).filter((p: any) => (p.category?.slug || '').includes('insect') || (p.category?.name || '').toLowerCase().includes('insect')).slice(0, 4);
+  const fungicides = (rawProducts as any[]).filter((p: any) => (p.category?.slug || '').includes('fungi') || (p.category?.name || '').toLowerCase().includes('fungi')).slice(0, 4);
+  const herbicides = (rawProducts as any[]).filter((p: any) => (p.category?.slug || '').includes('herb') || (p.category?.name || '').toLowerCase().includes('herb')).slice(0, 2);
+
+  const formatList = (items: any[]) =>
+    items.map((p: any, i: number) => {
+      const v = p.variants?.[0] || {};
+      const price = v.price ? `₹${v.price}` : '';
+      const desc = cleanDescription(p.shortDescription || p.name).slice(0, 75);
+      return `${i + 1}. *${p.name}* ${desc ? `– ${desc}` : ''} ${price ? `– *${price}*` : ''}\n   👉 [उत्पाद देखें](${APP_URL}/product/${p.slug})`;
+    }).join('\n');
+
+  let msg = `Hello ${displayName}! 👋
+
+Thank you for reaching out to *Vaniki Crop*. I am happy to help you find the right pesticide and crop protection for your crops.
+
+We have a wide range of *Insecticides, Fungicides, and Herbicides*. Please find our complete recommended solutions below, categorized for your convenience:
+
+### 🐛 Insecticides (कीटनाशक - For Pests)
+${formatList(insecticides)}
+
+### 🍄 Fungicides (फफूंदनाशक - For Blight/Rot)
+${formatList(fungicides)}
+
+### 🌿 Herbicides (खरपतवारनाशक - For Weeds)
+${formatList(herbicides)}
+
+---
+🌾 *आपकी सेवा में Vaniki डिजिटल फसल डॉक्टर:*
+• किसी भी दवा को सीधे ऑर्डर करने के लिए ऊपर दिए लिंक पर क्लिक करें।
+• दवा का नाम लिखकर तुरंत रेट व जानकारी पूछें (जैसे: *"want to order rudra 505"* या *"Nexon का रेट"*).
+• अपने हालिया ऑर्डर देखने के लिए लिखें: *"My Orders"*
+• आर्डर इनवॉइस मंगाने के लिए लिखें: *"Invoice"*
+• कीड़े या बीमारी की फोटो भेजकर तुरंत AI डॉक्टर से समाधान जानें! 📸`;
+
+  await sendTextMessage(to, msg);
+
+  // Send primary image card of top cure (e.g. Nexon or Rudra)
+  const featured = rawProducts[0];
+  if (featured) {
+    const primaryImg = featured.images?.find((img: any) => img.isPrimary)?.url || featured.images?.[0]?.url;
+    if (primaryImg && typeof primaryImg === 'string' && primaryImg.startsWith('http')) {
+      const v = featured.variants?.[0] || {};
+      const caption = `🌾 *${featured.name}* (कीमत: ₹${v.price || ''})
+${cleanDescription(featured.shortDescription || featured.name)}
+
+👉 *यहाँ से सीधे आर्डर करें:* ${APP_URL}/product/${featured.slug}`;
+      await sendImageMessage(to, primaryImg, caption);
+    }
+  }
+}
+
+/**
+ * Handles invoice document requests
+ */
+async function handleInvoiceQuery(to: string, user: any, lang: string, mobile: string) {
+  const cleanMobile = mobile || to.replace(/^91/, '');
+  const query = user?._id
+    ? { $or: [{ userId: user._id }, { 'shippingAddress.mobile': cleanMobile }, { 'billingAddress.mobile': cleanMobile }] }
+    : { $or: [{ 'shippingAddress.mobile': cleanMobile }, { 'billingAddress.mobile': cleanMobile }] };
+
+  const latestOrder = await Order.findOne(query).sort({ createdAt: -1 });
+
+  if (!latestOrder) {
+    const msg =
+      lang === 'hi'
+        ? `हमें आपका कोई आर्डर नहीं मिला जिसका इनवॉइस भेजा जा सके। Vaniki Crop स्टोर से आर्डर करने के लिए विजिट करें: ${APP_URL}`
+        : `No orders found to generate an invoice. Shop at: ${APP_URL}`;
+    return sendTextMessage(to, msg);
+  }
+
+  await sendTextMessage(
+    to,
+    lang === 'hi'
+      ? `📄 आपका हालिया आर्डर *#${latestOrder.orderNumber}* का इनवॉइस भेजा जा रहा है... 🌾`
+      : `📄 Sending invoice for order *#${latestOrder.orderNumber}*... 🌾`,
+  );
+
+  await sendOrderInvoice(latestOrder._id.toString());
 }
 
 /**
@@ -691,8 +904,13 @@ async function handleProfileUpdate(to: string, user: any, field: string, value: 
 /**
  * Handles recent order lookup for Farmers
  */
-async function handleOrderQuery(to: string, user: any, lang: string) {
-  const orders = await Order.find({ userId: user._id }).sort({ createdAt: -1 }).limit(3);
+async function handleOrderQuery(to: string, user: any, lang: string, mobile?: string) {
+  const cleanMobile = mobile || to.replace(/^91/, '');
+  const query = user?._id
+    ? { $or: [{ userId: user._id }, { 'shippingAddress.mobile': cleanMobile }, { 'billingAddress.mobile': cleanMobile }] }
+    : { $or: [{ 'shippingAddress.mobile': cleanMobile }, { 'billingAddress.mobile': cleanMobile }] };
+
+  const orders = await Order.find(query).sort({ createdAt: -1 }).limit(3);
 
   if (orders.length === 0) {
     const msg =
@@ -702,18 +920,21 @@ async function handleOrderQuery(to: string, user: any, lang: string) {
     return sendTextMessage(to, msg);
   }
 
-  let response = lang === 'hi' ? `📋 *आपके पिछले ऑर्डर्स:*\n` : `📋 *Your Recent Orders:*\n`;
+  let response = `📋 *Your Recent Orders (आपके हालिया ऑर्डर्स):*\n`;
 
   orders.forEach((order, index) => {
-    const date = new Date(order.createdAt).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN');
+    const date = new Date(order.createdAt).toLocaleDateString('en-IN');
     const items = order.items.map((i) => `${i.productName} (${i.qty})`).join(', ');
     const status = translateStatus(order.status, lang);
-    const mode = order.serviceMode === 'pickup' ? (lang === 'hi' ? 'पिकअप' : 'Pickup') : (lang === 'hi' ? 'डिलीवरी' : 'Delivery');
+    const mode = order.serviceMode === 'pickup' ? 'Store Pickup' : 'Home Delivery';
 
     response += `\n${index + 1}. *ID:* #${order.orderNumber}\n📅 *तारीख:* ${date}\n📦 *सामान:* ${items}\n💰 *कुल:* ₹${order.totalAmount}\n🚦 *स्टेटस:* ${status}\n🏠 *मोड:* ${mode}\n`;
+    if (order.serviceMode === 'pickup') {
+      response += `⚠️ *Reminder:* Please bring cash for payment at the store.\n`;
+    }
   });
 
-  response += `\nअधिक जानकारी: ${APP_URL}/account/orders`;
+  response += `\nअधिक जानकारी के लिए यहाँ देखें: ${APP_URL}/account/orders`;
   await sendTextMessage(to, response);
 }
 
