@@ -115,7 +115,6 @@ const whatsAppChatSessionSchema = new Schema<IWhatsAppChatSession>(
     lastActivity: {
       type: Date,
       default: Date.now,
-      index: true,
     },
   },
   {
