@@ -610,6 +610,7 @@ export async function processIncomingMessage(message: any, contact: any) {
   );
   const lang = user?.preferredLanguage || 'hi';
   const contactName = contact?.profile?.name || '';
+  const displayName = user?.name || contactName || (isDealer ? 'डीलर पार्टनर' : 'किसान भाई');
 
   // Case 1: Photo sent
   if (messageType === 'image') {
@@ -675,37 +676,33 @@ export async function processIncomingMessage(message: any, contact: any) {
     return;
   }
 
-  const lowerText = userText.toLowerCase();
+  const lowerText = userText.toLowerCase().trim();
 
-  // Quick Command / Help
-  if (['/commands', 'help', 'menu', 'मदद', 'commands'].includes(lowerText)) {
+  // 0. Quick Command / Help Menu
+  if (/^(\/commands|help|menu|मदद|commands)\b/i.test(lowerText)) {
     await handleHelpCommand(from, lang, isDealer);
     return;
   }
 
-  // 1. "INTERESTED" Response Handler
-  if (
-    lowerText === 'interested' ||
-    lowerText === 'intrested' ||
-    lowerText === 'ruchi' ||
-    lowerText === 'रुचि' ||
-    lowerText.startsWith('interested')
-  ) {
-    await handleInterestedResponse(from, user, contactName, lang, isDealer);
+  // 1. Instant Warm Greeting (Hi, Hello, Namaste, etc.) - Sub-second fast reply
+  const isGreeting = /^(hi|hello|hey|namaste|namaskar|pranam|start|shuru)\b/i.test(
+    lowerText.replace(/[^\w\s\u0900-\u097F]/gi, ''),
+  );
+  if (isGreeting) {
+    const greetingMsg = isDealer
+      ? `Hello ${displayName}! 🏪👋\n\n*Vaniki B2B Dealer Desk* में आपका स्वागत है।\n\nमैं आपकी क्या सहायता कर सकता हूँ?\n1️⃣ 📋 *My Orders* - अपने हालिया B2B ऑर्डर्स व स्टेटस देखें\n2️⃣ 🧾 *Invoice* - टैक्स इनवॉइस प्राप्त करें\n3️⃣ 💰 *थोक रेट व मार्जिन* - किसी भी दवा का नाम लिखें (जैसे: *505-RUDRA* या *Nexon*)\n4️⃣ 🛒 *डीलर पोर्टल:* ${DEALER_PORTAL_URL}\n\n👉 अपनी जरूरत यहाँ टाइप करें!`
+      : `Hello ${displayName}! 🌾👋\n\n*Vaniki Crop* (वानिकी फसल डॉक्टर) में आपका स्वागत है।\n\nमैं आपकी क्या मदद कर सकता हूँ?\n1️⃣ 📋 *My Orders* - अपने ऑर्डर्स व डिलीवरी स्टेटस देखें\n2️⃣ 🧾 *Invoice* - आर्डर का टैक्स इनवॉइस (PDF) मंगाएं\n3️⃣ 💊 *दवाओं के रेट व इलाज* - फसल की बीमारी या दवा का नाम लिखें (जैसे: *rudra 505*, *माहू की दवा*)\n4️⃣ 📸 *फोटो परामर्श* - फसल/कीड़े की फोटो भेजें, तुरंत AI इलाज पाएं\n5️⃣ 🌾 *INTERESTED* - बेस्ट ऑफर और कैटलॉग देखें\n\n👉 आप अपना कोई भी सवाल यहाँ सीधे लिख सकते हैं! 😊`;
+    await sendTextMessage(from, greetingMsg);
     return;
   }
 
-  // 2. Orders Query Handler
-  if (
-    lowerText === 'my orders' ||
-    lowerText === 'my order' ||
-    lowerText === 'orders' ||
-    lowerText === 'order' ||
-    lowerText === 'आर्डर' ||
-    lowerText === 'ऑर्डर' ||
-    lowerText === 'मेरा आर्डर' ||
-    lowerText === 'मेरे ऑर्डर'
-  ) {
+  // 2. Orders Query Handler (Flexible matching: "my orders", "all orders", "my orders ??", "check order")
+  const isOrderQuery =
+    /\b(order|orders|आर्डर|ऑर्डर)\b/i.test(lowerText) &&
+    !lowerText.includes('want to order') &&
+    !lowerText.includes('book order') &&
+    !lowerText.includes('order karna');
+  if (isOrderQuery) {
     if (isDealer) {
       await handleDealerOrderQuery(from, user, lang);
     } else {
@@ -714,21 +711,25 @@ export async function processIncomingMessage(message: any, contact: any) {
     return;
   }
 
-  // 3. Invoice Query Handler
-  if (
-    lowerText === 'invoice' ||
-    lowerText === 'bill' ||
-    lowerText === 'invois' ||
-    lowerText === 'बिल' ||
-    lowerText === 'इनवॉइस' ||
-    lowerText === 'रसीद' ||
-    lowerText === 'टैक्स इनवॉइस'
-  ) {
+  // 3. Invoice Query Handler (Flexible matching: "invoice", "bill", "invois", "बिल", "रसीद")
+  const isInvoiceQuery = /\b(invoice|bill|invois|बिल|इनवॉइस|रसीद)\b/i.test(lowerText);
+  if (isInvoiceQuery) {
     await handleInvoiceQuery(from, user, lang, mobile);
     return;
   }
 
-  // 4. Default: Full Gemini AI Agricultural Doctor / B2B Dealer Support
+  // 4. "INTERESTED" Response Handler
+  if (
+    lowerText.includes('interested') ||
+    lowerText.includes('intrested') ||
+    lowerText.includes('ruchi') ||
+    lowerText.includes('रुचि')
+  ) {
+    await handleInterestedResponse(from, user, contactName, lang, isDealer);
+    return;
+  }
+
+  // 5. Default: Full Gemini AI Agricultural Doctor / B2B Dealer Support
   await handleGeminiAiChat(from, userText, user, lang, undefined, contactName);
 }
 
