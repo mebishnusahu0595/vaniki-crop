@@ -20,7 +20,7 @@ export const verifyWebhook = (req: Request, res: Response) => {
 
 /**
  * Handles incoming webhook events from Meta
- */aree
+ */
 export const handleWebhook = async (req: Request, res: Response) => {
   try {
     const { body } = req;
