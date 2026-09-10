@@ -282,11 +282,11 @@ function buildFarmerCatalogContext(products: any[]): string {
   for (const [catName, prods] of Object.entries(categories)) {
     out += `\n=== ${catName.toUpperCase()} ===\n`;
     prods.forEach((p: any) => {
-      const v = p.variants?.[0] || {};
-      const price = v.price || 0;
-      const mrp = v.mrp || price;
+      const variantsList = (p.variants || [])
+        .map((v: any) => `  - ${v.label || 'Pack'}: ₹${v.price} (MRP: ₹${v.mrp})`)
+        .join('\n');
       out += `• उत्पाद: "${p.name}" (Slug: "${p.slug}")
-  कीमत: ₹${price} (MRP: ₹${mrp})
+${variantsList}
   उपयोग व बीमारी: ${cleanDescription(p.description || p.shortDescription || p.name)}
   डायरेक्ट लिंक: ${APP_URL}/product/${p.slug}\n\n`;
     });
@@ -296,24 +296,21 @@ function buildFarmerCatalogContext(products: any[]): string {
 
 /**
  * Builds STRICT Product Catalog Context for DEALERS / STORE ADMINS
- * Shows Dealer Procurement Wholesale Price (adminPrice), Retail Price, MRP, Margin, and Peti Size
+ * Shows exact variant pack sizes (ml/Liter/kg), pricing, carton packing, and MOQ
  */
 function buildDealerCatalogContext(products: any[]): string {
   return products
     .map((p: any) => {
-      const v = p.variants?.[0] || {};
-      const dealerPrice = v.adminPrice !== undefined ? v.adminPrice : v.price;
-      const retailPrice = v.price || dealerPrice;
-      const mrp = v.mrp || retailPrice;
-      const margin = mrp - dealerPrice;
+      const variantsList = (p.variants || [])
+        .map((v: any) => `  - ${v.label || 'Pack'}: ₹${v.price} (MRP: ₹${v.mrp})`)
+        .join('\n');
       const peti = `${p.petiSize || 1} ${p.petiUnit || 'पीस'}`;
       const moq = p.moq || 1;
 
       return `• उत्पाद: "${p.name}" (Slug: "${p.slug}")
   कैटेगरी: ${p.category?.name || 'Crop Protection'}
-  डीलर खरीद मूल्य (Dealer Wholesale Price): ₹${dealerPrice}
-  किसान विक्रय मूल्य (Retail Price): ₹${retailPrice} (MRP: ₹${mrp})
-  डीलर मुनाफा (Margin): ₹${margin} प्रति पीस
+  साइज व कीमतें (Pack Sizes & Rates):
+${variantsList}
   पेटी/कार्टन पैकिंग: ${peti} (MOQ: ${moq})
   विवरण: ${cleanDescription(p.shortDescription || p.description || p.name)}
   डीलर आर्डर लिंक: ${DEALER_PORTAL_URL}`;
@@ -546,39 +543,38 @@ ${user ? `Name: ${user.name}, Mobile: ${user.mobile}, Mode: ${user.serviceMode |
     // 1. Send the advice/pricing text
     await sendTextMessage(to, aiContent);
 
-    // 2. Find recommended products from DB and send their Photo Cards with persona-specific pricing!
+    // 2. Find recommended products from DB and send their Photo Cards with accurate variant pack sizes!
     const matchedProducts = matchRecommendedProducts(aiContent, rawProducts);
     for (const prod of matchedProducts) {
       const primaryImg =
         prod.images?.find((img: any) => img.isPrimary)?.url || prod.images?.[0]?.url;
 
       if (primaryImg && typeof primaryImg === 'string' && primaryImg.startsWith('http')) {
-        const v = prod.variants?.[0] || {};
+        const variantsSummary = (prod.variants || [])
+          .map((vr: any) => `• *${vr.label || 'Pack'}*: ₹${vr.price} ~(MRP: ₹${vr.mrp})~`)
+          .join('\n');
+        const peti = `${prod.petiSize || 1} ${prod.petiUnit || 'पीस'}`;
 
         if (isDealer) {
-          // DEALER PHOTO CARD: Dealer Price, MRP, Margin & Dealer Portal Link
-          const dealerPrice = v.adminPrice !== undefined ? v.adminPrice : v.price;
-          const retailPrice = v.price || dealerPrice;
-          const mrp = v.mrp || retailPrice;
-          const margin = mrp - dealerPrice;
-          const peti = `${prod.petiSize || 1} ${prod.petiUnit || 'पीस'}`;
+          // DEALER PHOTO CARD: Clear Pack Sizes (ml/Liter), Rates & Bulk Portal Link
+          const caption = `🏪 *${prod.name}*
+📦 *उपलब्ध साइज व रेट्स:*
+${variantsSummary}
+📦 *कार्टन पैकिंग:* ${peti} ${prod.moq ? `(MOQ: ${prod.moq})` : ''}
 
-          const caption = `🏪 *${prod.name}* (डीलर थोक रेट)
-💰 *थोक खरीद मूल्य (Dealer Price):* ₹${dealerPrice}
-🏷️ *MRP / किसान रेट:* ₹${retailPrice} (MRP: ₹${mrp})
-📈 *आपका मुनाफा (Margin):* ₹${margin} प्रति पीस
-📦 *पैकिंग:* ${peti} ${prod.moq ? `(MOQ: ${prod.moq})` : ''}
-
-👉 *डीलर पैनल से बल्क आर्डर करें:* ${DEALER_PORTAL_URL}`;
+👉 *डीलर पोर्टल से बल्क आर्डर करें:*
+${DEALER_PORTAL_URL}`;
 
           await sendImageMessage(to, primaryImg, caption);
         } else {
-          // FARMER PHOTO CARD: Retail Price, Dosage, and Direct Buy Link
-          const price = v.price ? `₹${v.price}` : '';
-          const caption = `🌾 *${prod.name}* ${price ? `(${price})` : ''}
-${prod.shortDescription || 'फसल सुरक्षा के लिए उत्तम दवा'}
+          // FARMER PHOTO CARD: Pack Sizes, Dosage, and Direct Buy Link
+          const caption = `🌾 *${prod.name}*
+📦 *उपलब्ध साइज व रेट:*
+${variantsSummary}
+📝 ${cleanDescription(prod.shortDescription || prod.name)}
 
-👉 *यहाँ से ऑर्डर करें:* ${APP_URL}/product/${prod.slug}`;
+👉 *सीधे ऑनलाइन ऑर्डर करें:*
+${APP_URL}/product/${prod.slug}`;
 
           await sendImageMessage(to, primaryImg, caption);
         }
