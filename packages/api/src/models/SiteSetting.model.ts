@@ -47,6 +47,14 @@ export interface ISiteSetting extends Document {
     upiId?: string;
     qrCodeUrl?: string;
   };
+  aiMarketingConfig?: {
+    enabled?: boolean;
+    dailyTime?: string;
+    channels?: { whatsapp?: boolean; push?: boolean };
+    whatsappIntervalDays?: number;
+    lastRunDate?: string;
+    lastWhatsAppRunDate?: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -156,6 +164,17 @@ const siteSettingSchema = new Schema<ISiteSetting>(
       branchName: { type: String, default: 'Ambagarh Chauki' },
       upiId: { type: String, default: 'vanikicrop@hdfcbank' },
       qrCodeUrl: { type: String, default: '' },
+    },
+    aiMarketingConfig: {
+      enabled: { type: Boolean, default: true },
+      dailyTime: { type: String, default: '09:00' },
+      channels: {
+        whatsapp: { type: Boolean, default: true },
+        push: { type: Boolean, default: true },
+      },
+      whatsappIntervalDays: { type: Number, default: 2 },
+      lastRunDate: { type: String, default: '' },
+      lastWhatsAppRunDate: { type: String, default: '' },
     },
   },
   {
