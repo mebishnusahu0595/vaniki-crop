@@ -4,6 +4,9 @@ import { Product } from '../../models/Product.model.js';
 import { Category } from '../../models/Category.model.js';
 import { generateInvoicePdf } from '../orders/invoice.service.js';
 
+// Ensure Category schema is registered in Mongoose
+void Category;
+
 const APP_URL = 'https://vanikicrop.com';
 const DEALER_PORTAL_URL = 'https://vanikicrop.com/dealers';
 
