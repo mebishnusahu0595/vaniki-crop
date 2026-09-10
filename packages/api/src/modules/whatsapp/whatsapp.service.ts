@@ -422,6 +422,7 @@ CRITICAL STRICT RULES FOR FARMERS:
 6. ORDERING LINK: Always provide the direct product buy link: ${APP_URL}/product/[slug]
 7. TONE: Respectful, helpful, farmer-friendly. Respond in ${lang === 'hi' ? 'HINDI' : 'ENGLISH'}.
 8. WHATSAPP FORMAT: Use single asterisks *like this* for bold, emoji bullets (🌾, 🐛, 💊, 💧, 🛒).
+9. FULL COMPLETION: Always complete your full response and sentences cleanly. Never cut off or stop mid-sentence. Keep it well-structured and concise.
 
 ACTIONS FOR FARMERS:
 - [ORDER_HISTORY] : When user asks for recent orders, track orders, or "My Orders"
@@ -470,7 +471,7 @@ ${user ? `Name: ${user.name}, Mobile: ${user.mobile}, Mode: ${user.serviceMode |
       ],
       generationConfig: {
         temperature: 0.25,
-        maxOutputTokens: 950,
+        maxOutputTokens: 2500,
       },
     };
 
