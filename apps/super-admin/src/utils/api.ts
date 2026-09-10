@@ -436,6 +436,7 @@ export const adminApi = {
     enabled?: boolean;
     dailyTime?: string;
     channels?: { whatsapp?: boolean; push?: boolean };
+    whatsappIntervalDays?: number;
   }) => {
     const response = await api.put<{
       success: boolean;
@@ -443,7 +444,9 @@ export const adminApi = {
         enabled: boolean;
         dailyTime: string;
         channels: { whatsapp: boolean; push: boolean };
+        whatsappIntervalDays: number;
         lastRunDate: string;
+        lastWhatsAppRunDate?: string;
       };
     }>('/marketing/ai/settings', payload);
     return response.data;

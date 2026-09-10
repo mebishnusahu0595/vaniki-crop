@@ -27,8 +27,13 @@ export const getSettings = async (_req: Request, res: Response) => {
  */
 export const updateSettings = async (req: Request, res: Response) => {
   try {
-    const { enabled, dailyTime, channels } = req.body || {};
-    const updated = await updateAiAutoPilotSettings({ enabled, dailyTime, channels });
+    const { enabled, dailyTime, channels, whatsappIntervalDays } = req.body || {};
+    const updated = await updateAiAutoPilotSettings({
+      enabled,
+      dailyTime,
+      channels,
+      whatsappIntervalDays,
+    });
     return res.status(200).json({ success: true, settings: updated });
   } catch (error: any) {
     console.error('[AI Marketing] Update settings error:', error);

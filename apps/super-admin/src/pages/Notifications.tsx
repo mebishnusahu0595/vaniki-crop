@@ -63,6 +63,7 @@ export default function NotificationsPage() {
   const [aiEnabled, setAiEnabled] = useState(true);
   const [aiDailyTime, setAiDailyTime] = useState('09:00');
   const [aiChannels, setAiChannels] = useState({ whatsapp: true, push: true });
+  const [aiWhatsappInterval, setAiWhatsappInterval] = useState<number>(2);
   const [aiAudience, setAiAudience] = useState<AiAudience>('customers');
   const [aiAdvisory, setAiAdvisory] = useState<any>(null);
   const [aiTemplateMode, setAiTemplateMode] = useState<'custom' | 'vaniki'>('custom');
@@ -91,8 +92,11 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (aiSettingsQuery.data?.settings) {
       setAiEnabled(aiSettingsQuery.data.settings.enabled);
-      setAiDailyTime(aiSettingsQuery.data.settings.dailyTime || '08:30');
+      setAiDailyTime(aiSettingsQuery.data.settings.dailyTime || '09:00');
       setAiChannels(aiSettingsQuery.data.settings.channels || { whatsapp: true, push: true });
+      if ((aiSettingsQuery.data.settings as any).whatsappIntervalDays !== undefined) {
+        setAiWhatsappInterval((aiSettingsQuery.data.settings as any).whatsappIntervalDays);
+      }
     }
   }, [aiSettingsQuery.data]);
 
@@ -220,6 +224,7 @@ export default function NotificationsPage() {
       enabled: aiEnabled,
       dailyTime: aiDailyTime,
       channels: aiChannels,
+      whatsappIntervalDays: Number(aiWhatsappInterval) || 2,
     });
   };
 
@@ -350,7 +355,7 @@ export default function NotificationsPage() {
                   </div>
 
                   <div className="flex items-center gap-1.5 text-xs text-slate-600 border-l border-slate-200 pl-3">
-                    <Clock size={14} className="text-indigo-600" />
+                    <Clock size={14} className="text-indigo-600 shrink-0" />
                     <input
                       type="time"
                       value={aiDailyTime}
@@ -360,14 +365,45 @@ export default function NotificationsPage() {
                     <span className="text-[10px] text-slate-400 font-bold">IST Daily</span>
                   </div>
 
+                  <div className="flex items-center gap-1.5 text-xs text-slate-600 border-l border-slate-200 pl-3">
+                    <MessageSquare size={14} className="text-emerald-600 shrink-0" />
+                    <span className="font-bold text-slate-700">WhatsApp Interval:</span>
+                    <select
+                      value={aiWhatsappInterval}
+                      onChange={(e) => setAiWhatsappInterval(Number(e.target.value))}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500"
+                    >
+                      <option value={1}>Every 1 Day (Daily / रोज़)</option>
+                      <option value={2}>Every 2 Days (हर 2 दिन में 1 बार - Recommended)</option>
+                      <option value={3}>Every 3 Days (हर 3 दिन में 1 बार)</option>
+                      <option value={4}>Every 4 Days (हर 4 दिन में 1 बार)</option>
+                      <option value={5}>Every 5 Days (हर 5 दिन में 1 बार)</option>
+                      <option value={7}>Every 7 Days (Weekly / साप्ताहिक)</option>
+                    </select>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleSaveAiSettings}
                     disabled={updateAiSettingsMutation.isPending}
-                    className="rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-700 transition disabled:opacity-50"
+                    className="rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-black text-white hover:bg-indigo-700 transition disabled:opacity-50 shrink-0 shadow-sm"
                   >
                     {updateAiSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
                   </button>
+                </div>
+
+                <div className="w-full flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    📱 App Push: Daily at {aiDailyTime} IST
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+                    💬 WhatsApp Broadcast: {aiWhatsappInterval === 1 ? 'Daily (रोज़ाना)' : `हर ${aiWhatsappInterval} दिन में 1 बार (Meta Cost Saving)`}
+                  </span>
+                  {(aiSettingsQuery.data?.settings as any)?.lastWhatsAppRunDate && (
+                    <span className="text-slate-500 font-semibold ml-auto">
+                      Last WhatsApp Sent: <strong className="text-slate-800">{(aiSettingsQuery.data?.settings as any)?.lastWhatsAppRunDate}</strong>
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

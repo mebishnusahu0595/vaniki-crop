@@ -375,7 +375,9 @@ export async function getAiAutoPilotSettings() {
       whatsapp: raw.channels?.whatsapp !== undefined ? raw.channels.whatsapp : true,
       push: raw.channels?.push !== undefined ? raw.channels.push : true,
     },
+    whatsappIntervalDays: raw.whatsappIntervalDays !== undefined ? raw.whatsappIntervalDays : 2,
     lastRunDate: raw.lastRunDate || '',
+    lastWhatsAppRunDate: raw.lastWhatsAppRunDate || '',
   };
 }
 
@@ -383,6 +385,7 @@ export async function updateAiAutoPilotSettings(update: {
   enabled?: boolean;
   dailyTime?: string;
   channels?: { whatsapp?: boolean; push?: boolean };
+  whatsappIntervalDays?: number;
 }) {
   const setting = await SiteSetting.findOne({ singletonKey: 'default' });
   if (!setting) throw new Error('SiteSetting not found');
@@ -391,6 +394,12 @@ export async function updateAiAutoPilotSettings(update: {
   (setting as any).aiMarketingConfig = {
     ...current,
     ...update,
+    whatsappIntervalDays:
+      update.whatsappIntervalDays !== undefined
+        ? Number(update.whatsappIntervalDays)
+        : current.whatsappIntervalDays !== undefined
+          ? current.whatsappIntervalDays
+          : 2,
     channels: {
       ...current.channels,
       ...update.channels,
@@ -431,16 +440,40 @@ export async function checkAndRunScheduledCampaign() {
     if (isPastTargetTime) {
       console.log(`[AI Marketing Engine] Triggering automated daily campaign for date: ${todayStr} at ${currentTimeStr} IST`);
 
-      // Mark run date first to prevent race condition
+      // Determine if WhatsApp broadcast should run today based on interval (e.g. 2 days)
+      let shouldSendWhatsApp = Boolean(config.channels.whatsapp);
+      const interval = config.whatsappIntervalDays !== undefined ? config.whatsappIntervalDays : 2;
+
+      if (shouldSendWhatsApp && config.lastWhatsAppRunDate) {
+        const lastMs = new Date(config.lastWhatsAppRunDate).getTime();
+        const todayMs = new Date(todayStr).getTime();
+        const daysPassed = Math.floor((todayMs - lastMs) / (1000 * 60 * 60 * 24));
+
+        if (daysPassed < interval) {
+          console.log(
+            `⏭️ [AI Marketing] Skipping WhatsApp broadcast today. WhatsApp interval is set to every ${interval} days. Last sent: ${config.lastWhatsAppRunDate} (${daysPassed} day(s) ago). Next due in ${interval - daysPassed} day(s).`,
+          );
+          shouldSendWhatsApp = false;
+        }
+      }
+
+      // Mark run dates in SiteSetting
+      const updateFields: any = {
+        'aiMarketingConfig.lastRunDate': todayStr,
+      };
+      if (shouldSendWhatsApp) {
+        updateFields['aiMarketingConfig.lastWhatsAppRunDate'] = todayStr;
+      }
+
       await SiteSetting.updateOne(
         { singletonKey: 'default' },
-        { $set: { 'aiMarketingConfig.lastRunDate': todayStr } },
+        { $set: updateFields },
       );
 
       const result = await executeAiCampaign({
         triggerType: 'scheduled',
-        sendPush: config.channels.push,
-        sendWhatsApp: config.channels.whatsapp,
+        sendPush: Boolean(config.channels.push),
+        sendWhatsApp: shouldSendWhatsApp,
       });
 
       console.log('[AI Marketing Engine] Daily campaign completed:', result.stats);
