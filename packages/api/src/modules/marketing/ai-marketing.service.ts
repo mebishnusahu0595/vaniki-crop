@@ -236,6 +236,7 @@ export async function executeAiCampaign(params: {
   advisory?: GeneratedAdvisory;
   targetAudience?: 'customers' | 'dealers' | 'all';
   testNumbers?: string[];
+  useTemplate?: boolean;
   sendPush?: boolean;
   sendWhatsApp?: boolean;
   adminUserId?: string;
@@ -245,6 +246,7 @@ export async function executeAiCampaign(params: {
     advisory: providedAdvisory,
     targetAudience = 'customers',
     testNumbers,
+    useTemplate = true,
     sendPush = true,
     sendWhatsApp = true,
     adminUserId,
@@ -279,14 +281,14 @@ export async function executeAiCampaign(params: {
     }
   }
 
-  // 2. WhatsApp Broadcast (using Approved 'vaniki' Template with Product Image Header)
+  // 2. WhatsApp Broadcast (using Approved 'vaniki' Template OR Direct Custom Message)
   if (sendWhatsApp) {
     try {
       const isCustomTest = Array.isArray(testNumbers) && testNumbers.length > 0;
       const waAudience = isCustomTest ? 'custom' : targetAudience;
 
       const waRes = await sendBroadcastCampaign({
-        templateName: 'vaniki',
+        templateName: useTemplate ? 'vaniki' : undefined,
         imageUrl: advisory.productImage,
         message: advisory.whatsappMessage,
         link: advisory.productLink,
@@ -370,7 +372,7 @@ export async function getAiAutoPilotSettings() {
 
   return {
     enabled: raw.enabled !== undefined ? raw.enabled : true,
-    dailyTime: raw.dailyTime || '08:30',
+    dailyTime: raw.dailyTime || '09:00',
     channels: {
       whatsapp: raw.channels?.whatsapp !== undefined ? raw.channels.whatsapp : true,
       push: raw.channels?.push !== undefined ? raw.channels.push : true,
@@ -424,7 +426,7 @@ export async function checkAndRunScheduledCampaign() {
     const currentMinutes = istTime.getUTCMinutes();
     const currentTimeStr = `${String(currentHours).padStart(2, '0')}:${String(currentMinutes).padStart(2, '0')}`;
 
-    const [targetHour, targetMinute] = (config.dailyTime || '08:30').split(':').map(Number);
+    const [targetHour, targetMinute] = (config.dailyTime || '09:00').split(':').map(Number);
     const isPastTargetTime =
       currentHours > targetHour || (currentHours === targetHour && currentMinutes >= targetMinute);
 
@@ -463,5 +465,5 @@ export function initAiMarketingScheduler() {
     10 * 60 * 1000,
   );
 
-  console.log('🤖 [AI Marketing Engine] Automated daily scheduler initialized (Runs daily at 08:30 AM IST)');
+  console.log('🤖 [AI Marketing Engine] Automated daily scheduler initialized (Runs daily at 09:00 AM IST)');
 }

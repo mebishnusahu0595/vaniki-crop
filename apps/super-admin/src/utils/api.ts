@@ -473,6 +473,7 @@ export const adminApi = {
     advisory?: any;
     targetAudience?: 'customers' | 'dealers' | 'all';
     testNumbers?: string[];
+    useTemplate?: boolean;
     sendPush?: boolean;
     sendWhatsApp?: boolean;
   }) => {

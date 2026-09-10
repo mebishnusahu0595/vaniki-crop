@@ -63,7 +63,7 @@ export const previewAdvisory = async (req: Request, res: Response) => {
  */
 export const triggerCampaign = async (req: Request, res: Response) => {
   try {
-    const { advisory, targetAudience, testNumbers, sendPush, sendWhatsApp } = req.body || {};
+    const { advisory, targetAudience, testNumbers, useTemplate, sendPush, sendWhatsApp } = req.body || {};
     const adminUserId = (req as any).user?._id || (req as any).user?.id;
 
     const result = await executeAiCampaign({
@@ -71,6 +71,7 @@ export const triggerCampaign = async (req: Request, res: Response) => {
       advisory,
       targetAudience,
       testNumbers,
+      useTemplate: useTemplate !== undefined ? useTemplate : true,
       sendPush: sendPush !== undefined ? sendPush : true,
       sendWhatsApp: sendWhatsApp !== undefined ? sendWhatsApp : true,
       adminUserId: adminUserId ? String(adminUserId) : undefined,

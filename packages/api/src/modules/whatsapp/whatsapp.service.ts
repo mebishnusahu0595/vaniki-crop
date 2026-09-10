@@ -71,6 +71,18 @@ export async function sendTextMessage(to: string, text: string) {
  */
 export async function sendImageMessage(to: string, imageUrl: string, caption?: string) {
   const formattedCaption = caption ? caption.replace(/\*\*(.*?)\*\*/g, '*$1*') : undefined;
+
+  if (formattedCaption && formattedCaption.length > 1020) {
+    // If caption is too long for Meta image caption limit (1024 chars), send image and text separately
+    await sendWhatsAppMessage(to, {
+      type: 'image',
+      image: {
+        link: imageUrl,
+      },
+    });
+    return sendTextMessage(to, formattedCaption);
+  }
+
   return sendWhatsAppMessage(to, {
     type: 'image',
     image: {

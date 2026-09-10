@@ -61,10 +61,11 @@ export default function NotificationsPage() {
 
   // ─── AI Auto-Pilot & Advisory States ───────────────────────────────────
   const [aiEnabled, setAiEnabled] = useState(true);
-  const [aiDailyTime, setAiDailyTime] = useState('08:30');
+  const [aiDailyTime, setAiDailyTime] = useState('09:00');
   const [aiChannels, setAiChannels] = useState({ whatsapp: true, push: true });
   const [aiAudience, setAiAudience] = useState<AiAudience>('customers');
   const [aiAdvisory, setAiAdvisory] = useState<any>(null);
+  const [aiTemplateMode, setAiTemplateMode] = useState<'custom' | 'vaniki'>('custom');
   const [isTestMode, setIsTestMode] = useState(false);
   const [testNumber, setTestNumber] = useState('9301105706');
   const [dispatchPush, setDispatchPush] = useState(true);
@@ -233,6 +234,7 @@ export default function NotificationsPage() {
       advisory: aiAdvisory,
       targetAudience: aiAudience,
       testNumbers: isTestMode && testNumber ? [testNumber.trim()] : undefined,
+      useTemplate: aiTemplateMode === 'vaniki',
       sendPush: dispatchPush,
       sendWhatsApp: dispatchWhatsApp,
     });
@@ -534,7 +536,7 @@ export default function NotificationsPage() {
                             onChange={(e) => setDispatchWhatsApp(e.target.checked)}
                             className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
                           />
-                          <span>Send WhatsApp Template</span>
+                          <span>Send WhatsApp</span>
                         </label>
                       </div>
 
@@ -549,6 +551,47 @@ export default function NotificationsPage() {
                         <span>🧪 Send Test First</span>
                       </label>
                     </div>
+
+                    {/* Delivery mode switcher for WhatsApp */}
+                    {dispatchWhatsApp && (
+                      <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-200">
+                        <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+                          WhatsApp Message Format
+                        </span>
+                        <div className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setAiTemplateMode('custom')}
+                            className={`rounded-xl border p-2 text-left transition flex items-center gap-2 ${
+                              aiTemplateMode === 'custom'
+                                ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-600'
+                            }`}
+                          >
+                            <span className="text-emerald-600 font-bold">💬</span>
+                            <div>
+                              <span className="block text-xs">Direct Message (Not Template)</span>
+                              <span className="block text-[10px] text-slate-500 font-normal">Full Hindi advice + Photo header</span>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAiTemplateMode('vaniki')}
+                            className={`rounded-xl border p-2 text-left transition flex items-center gap-2 ${
+                              aiTemplateMode === 'vaniki'
+                                ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-black shadow-xs'
+                                : 'border-slate-200 bg-white text-slate-600'
+                            }`}
+                          >
+                            <span className="text-emerald-600 font-bold">🌟</span>
+                            <div>
+                              <span className="block text-xs">Approved Template (vaniki)</span>
+                              <span className="block text-[10px] text-slate-500 font-normal">100% delivery outside 24h window</span>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     {isTestMode && (
                       <div className="flex items-center gap-2 bg-amber-50 p-2.5 rounded-xl border border-amber-200">
