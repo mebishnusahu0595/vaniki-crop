@@ -2,7 +2,7 @@
   "expo": {
     "name": "Vaniki Partner",
     "slug": "vaniki-dealers-play",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Vaniki Partner — India's B2B agri-input procurement platform. Buy genuine pesticides, insecticides, fungicides & herbicides in bulk with minimum order quantities. Manage orders, invoices, referrals and settlements in one app.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -60,7 +60,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "package": "com.vanikicrop.dealers",
-      "versionCode": 4,
+      "versionCode": 5,
       "targetSdkVersion": 36,
       "softwareKeyboardLayoutMode": "resize",
       "androidStatusBar": {
