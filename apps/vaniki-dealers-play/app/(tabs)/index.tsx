@@ -129,7 +129,13 @@ export default function DealerHomeScreen() {
     setRefreshing(false);
   }, [queryClient]);
 
-  const allProducts: any[] = catalogueQuery.data?.data || [];
+  const allProducts: any[] = useMemo(() => {
+    if (!catalogueQuery.data) return [];
+    if (Array.isArray(catalogueQuery.data)) return catalogueQuery.data;
+    if (Array.isArray(catalogueQuery.data.data)) return catalogueQuery.data.data;
+    return [];
+  }, [catalogueQuery.data]);
+
   const rawPromos = promotionsQuery.data?.data || [];
   const promoBanners = rawPromos.length > 0 ? rawPromos : DEFAULT_DEALER_PROMOTIONS;
 
@@ -137,7 +143,8 @@ export default function DealerHomeScreen() {
   const categories = useMemo(() => {
     const set = new Set<string>();
     allProducts.forEach((p) => {
-      if (p.category?.name) set.add(p.category.name);
+      const catName = p.category?.name || (typeof p.category === 'string' ? p.category : null);
+      if (catName) set.add(catName);
     });
     return ['All', ...Array.from(set)];
   }, [allProducts]);
@@ -146,12 +153,12 @@ export default function DealerHomeScreen() {
   const liveSearchResults = useMemo(() => {
     if (!debouncedSearch) return [];
     return allProducts.filter((p) => {
-      const name = p.name?.toLowerCase() || '';
-      const slug = p.slug?.toLowerCase() || '';
-      const cat = p.category?.name?.toLowerCase() || '';
-      const shortDesc = p.shortDescription?.toLowerCase() || '';
-      const desc = p.description?.toLowerCase() || '';
-      const tech = (p as any).technicalName?.toLowerCase() || '';
+      const name = (p.name || '').toLowerCase();
+      const slug = (p.slug || '').toLowerCase();
+      const cat = (p.category?.name || p.category || '').toString().toLowerCase();
+      const shortDesc = (p.shortDescription || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      const tech = ((p as any).technicalName || '').toLowerCase();
       return (
         name.includes(debouncedSearch) ||
         slug.includes(debouncedSearch) ||
@@ -163,21 +170,27 @@ export default function DealerHomeScreen() {
     });
   }, [allProducts, debouncedSearch]);
 
-  // Filtered products based on search and category (includes shortDescription)
+  // Filtered products based on search and category
   const filteredProducts = useMemo(() => {
     return allProducts.filter((p) => {
-      const matchCat = selectedCategory === 'All' || p.category?.name === selectedCategory;
-      const name = p.name?.toLowerCase() || '';
-      const slug = p.slug?.toLowerCase() || '';
-      const cat = p.category?.name?.toLowerCase() || '';
-      const shortDesc = p.shortDescription?.toLowerCase() || '';
-      const desc = p.description?.toLowerCase() || '';
-      const tech = (p as any).technicalName?.toLowerCase() || '';
+      const pCat = (p.category?.name || p.category || '').toString().toLowerCase();
+      const selCat = selectedCategory.toLowerCase();
+      const matchCat =
+        selectedCategory === 'All' ||
+        pCat === selCat ||
+        pCat.includes(selCat) ||
+        selCat.includes(pCat);
+
+      const name = (p.name || '').toLowerCase();
+      const slug = (p.slug || '').toLowerCase();
+      const shortDesc = (p.shortDescription || '').toLowerCase();
+      const desc = (p.description || '').toLowerCase();
+      const tech = ((p as any).technicalName || '').toLowerCase();
       const matchSearch =
         !debouncedSearch ||
         name.includes(debouncedSearch) ||
         slug.includes(debouncedSearch) ||
-        cat.includes(debouncedSearch) ||
+        pCat.includes(debouncedSearch) ||
         shortDesc.includes(debouncedSearch) ||
         desc.includes(debouncedSearch) ||
         tech.includes(debouncedSearch);
@@ -185,21 +198,25 @@ export default function DealerHomeScreen() {
     });
   }, [allProducts, selectedCategory, debouncedSearch]);
 
-  // Specific categorized groups for endless user-app feel
+  // Specific categorized groups
   const insecticideProducts = useMemo(
-    () => allProducts.filter((p) => p.category?.name?.toLowerCase().includes('insecticide')),
+    () => allProducts.filter((p) => (p.category?.name || p.category || '').toString().toLowerCase().includes('insecticide')),
     [allProducts],
   );
   const fungicideProducts = useMemo(
-    () => allProducts.filter((p) => p.category?.name?.toLowerCase().includes('fungicide')),
+    () => allProducts.filter((p) => (p.category?.name || p.category || '').toString().toLowerCase().includes('fungicide')),
     [allProducts],
   );
   const herbicideProducts = useMemo(
-    () => allProducts.filter((p) => p.category?.name?.toLowerCase().includes('herbicide')),
+    () => allProducts.filter((p) => (p.category?.name || p.category || '').toString().toLowerCase().includes('herbicide')),
+    [allProducts],
+  );
+  const bioPesticideProducts = useMemo(
+    () => allProducts.filter((p) => (p.category?.name || p.category || '').toString().toLowerCase().includes('bio')),
     [allProducts],
   );
   const hotDeals = useMemo(
-    () => allProducts.filter((p) => (p.moq || 1) >= 1).slice(0, 10),
+    () => (allProducts.length > 0 ? allProducts.slice(0, 10) : []),
     [allProducts],
   );
 
@@ -726,11 +743,35 @@ export default function DealerHomeScreen() {
               <ActivityIndicator size="large" color="#2D6A4F" />
               <Text className="text-xs font-bold text-slate-400 mt-2">Loading full dealer catalogue...</Text>
             </View>
+          ) : catalogueQuery.isError ? (
+            <View className="py-10 px-4 items-center bg-white rounded-3xl border border-rose-200">
+              <Icon name="alert-circle" size={32} color="#E11D48" />
+              <Text className="text-sm font-black text-slate-800 mt-2">Unable to load catalogue</Text>
+              <Text className="text-xs text-slate-500 text-center mt-1 mb-3">
+                {(catalogueQuery.error as any)?.message || 'Please check your connection and try again.'}
+              </Text>
+              <Pressable
+                onPress={() => onRefresh()}
+                className="rounded-xl bg-primary-800 px-4 py-2 active:scale-95"
+              >
+                <Text className="text-xs font-black text-white">Retry Loading</Text>
+              </Pressable>
+            </View>
           ) : filteredProducts.length === 0 ? (
-            <View className="py-12 items-center bg-white rounded-3xl border border-dashed border-slate-300">
+            <View className="py-10 px-4 items-center bg-white rounded-3xl border border-dashed border-slate-300">
               <Icon name="inbox" size={36} color="#94A3B8" />
               <Text className="text-sm font-black text-slate-700 mt-2">No products found</Text>
-              <Text className="text-xs font-medium text-slate-400 mt-0.5">Try clearing your search query</Text>
+              <Text className="text-xs font-medium text-slate-400 mt-0.5 mb-3">Try clearing search or category filter</Text>
+              <Pressable
+                onPress={() => {
+                  setSelectedCategory('All');
+                  setSearchQuery('');
+                  onRefresh();
+                }}
+                className="rounded-xl bg-slate-100 px-4 py-2 active:bg-slate-200 border border-slate-200"
+              >
+                <Text className="text-xs font-bold text-slate-700">Reset Filters</Text>
+              </Pressable>
             </View>
           ) : (
             <View className="flex-row flex-wrap justify-between">
@@ -857,51 +898,63 @@ function DealerProductCard({ product, isApproved }: { product: any; isApproved?:
   const primaryImage = getPrimaryImage(product);
   const defaultVariant = product.variants?.[0];
   const moq = product.moq || 1;
+  const petiSize = product.petiSize || 10;
 
   return (
     <Pressable
       onPress={() =>
         router.push({ pathname: '/product/[slug]', params: { slug: product.slug } })
       }
-      className="flex-1 overflow-hidden rounded-[20px] border border-primary-100 bg-white active:scale-[0.98] shadow-2xs"
+      style={{ width: '100%', minHeight: 230 }}
+      className="overflow-hidden rounded-[22px] border border-primary-100 bg-white active:scale-[0.98] shadow-2xs justify-between"
     >
-      <View className="relative bg-[#f4f7f6] pt-2">
-        <Image
-          source={{ uri: primaryImage }}
-          placeholder={{ uri: 'https://placehold.co/400x400?text=Vaniki+Crop' }}
-          style={{ width: '100%', height: 120 }}
-          contentFit="contain"
-          transition={400}
-        />
-        {/* MOQ Badge */}
-        <View className="absolute left-2 top-2 rounded-full bg-emerald-700 px-2.5 py-0.5 shadow-2xs">
-          <Text className="text-[10px] font-bold text-white uppercase">
-            Min {moq} {moq === 1 ? 'unit' : 'units'}
+      <View>
+        <View className="relative bg-[#f4f7f6] pt-2">
+          <Image
+            source={{ uri: primaryImage }}
+            placeholder={{ uri: 'https://placehold.co/400x400?text=Vaniki+Crop' }}
+            style={{ width: '100%', height: 125 }}
+            contentFit="contain"
+            transition={400}
+          />
+          {/* Peti / MOQ Badge */}
+          <View className="absolute left-2 top-2 rounded-full bg-emerald-800 px-2 py-0.5 shadow-2xs">
+            <Text className="text-[9px] font-black text-white uppercase">
+              1 Peti = {petiSize} pcs
+            </Text>
+          </View>
+        </View>
+
+        <View className="p-3 pb-1">
+          <Text className="text-[10px] font-bold uppercase tracking-wider text-emerald-700" numberOfLines={1}>
+            {product.category?.name || 'Crop Care'}
+          </Text>
+          <Text numberOfLines={2} className="mt-0.5 text-xs font-black text-slate-900 leading-snug">
+            {product.name}
           </Text>
         </View>
       </View>
-      <View className="p-3">
-        <Text className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-          {product.category?.name || 'Crop Care'}
-        </Text>
-        <Text numberOfLines={1} className="mt-0.5 text-sm font-black text-slate-900 leading-snug">
-          {product.name}
-        </Text>
 
+      <View className="p-3 pt-0">
         {/* Pricing: Locked if KYC not approved */}
         {isApproved ? (
           defaultVariant ? (
-            <Text className="mt-1 text-base font-black text-primary-800">
-              {currencyFormatter.format(defaultVariant.price)}
-              <Text className="text-xs font-semibold text-slate-400"> /unit</Text>
-            </Text>
+            <View className="mt-1">
+              <Text className="text-sm font-black text-primary-800">
+                {currencyFormatter.format(defaultVariant.price)}
+                <Text className="text-[10px] font-semibold text-slate-400"> /unit</Text>
+              </Text>
+              <Text className="text-[9px] font-bold text-emerald-700 mt-0.5">
+                {currencyFormatter.format(defaultVariant.price * petiSize)} / Peti
+              </Text>
+            </View>
           ) : null
         ) : (
           <View className="flex-row items-center gap-1.5 mt-1">
             <Icon name="lock" size={13} color="#D97706" />
             <Text className="text-sm font-black text-amber-700">₹ •••••</Text>
             <View className="rounded bg-amber-100 px-1 py-0.2">
-              <Text className="text-[10px] font-bold text-amber-800">KYC Req</Text>
+              <Text className="text-[9px] font-bold text-amber-800">KYC Req</Text>
             </View>
           </View>
         )}

@@ -274,16 +274,30 @@ export default function BulkOrdersPage() {
                         )}
                       </td>
 
-                      {/* Peti Size */}
+                      {/* Peti Size & Variant Specs */}
                       <td className="py-4 px-3">
-                        <span className="text-xs font-bold text-slate-600">
-                          {product.petiSize ? `${product.petiSize} ${product.petiUnit || 'units'}/peti` : '—'}
-                        </span>
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-800 border border-emerald-200">
+                            1 Peti = {product.petiSize || 10} {product.petiUnit || 'Units'}
+                          </span>
+                          {product.variants && product.variants.length > 0 && (
+                            <div className="flex flex-col gap-0.5 mt-1 text-[11px] text-slate-500">
+                              {product.variants.map((v: any, vIdx: number) => {
+                                const pcsInPeti = v.petiSize || (v.label?.includes('500') ? 20 : v.label?.includes('250') ? 40 : v.label?.includes('100') ? 80 : 10);
+                                return (
+                                  <span key={vIdx} className="font-semibold">
+                                    • {v.label}: <strong className="text-slate-700">{pcsInPeti} pcs/peti</strong>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </td>
 
-                      {/* MOQ Input with Quick Presets */}
+                      {/* MOQ / Peti Selection */}
                       <td className="py-4 px-3">
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <input
                               type="number"
@@ -296,30 +310,39 @@ export default function BulkOrdersPage() {
                                   : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-primary-500 focus:ring-primary-500/20'
                               }`}
                             />
-                            <span className="text-xs font-bold text-slate-500">units min</span>
+                            <div className="flex flex-col text-left">
+                              <span className="text-xs font-black text-slate-700">Units Min</span>
+                              <span className="text-[10px] font-bold text-emerald-700">
+                                ≈ {Math.max(1, Math.round(currentMoq / (product.petiSize || 10)))} Peti(s)
+                              </span>
+                            </div>
                           </div>
 
-                          {/* Quick presets */}
-                          <div className="flex items-center gap-1">
-                            {[5, 10, 20, 50].map((qty) => (
-                              <button
-                                key={qty}
-                                type="button"
-                                onClick={() =>
-                                  setMoqDrafts((prev) => ({
-                                    ...prev,
-                                    [product.id]: qty,
-                                  }))
-                                }
-                                className={`rounded-lg px-1.5 py-0.5 text-[10px] font-black transition-colors ${
-                                  currentMoq === qty
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                }`}
-                              >
-                                {qty}
-                              </button>
-                            ))}
+                          {/* Quick Peti Presets */}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {[1, 2, 5, 10].map((petiCount) => {
+                              const calculatedUnits = petiCount * (product.petiSize || 10);
+                              return (
+                                <button
+                                  key={petiCount}
+                                  type="button"
+                                  onClick={() =>
+                                    setMoqDrafts((prev) => ({
+                                      ...prev,
+                                      [product.id]: calculatedUnits,
+                                    }))
+                                  }
+                                  className={`rounded-lg px-2 py-0.5 text-[10px] font-black transition-colors ${
+                                    currentMoq === calculatedUnits
+                                      ? 'bg-emerald-700 text-white shadow-2xs'
+                                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                  }`}
+                                  title={`${petiCount} Peti = ${calculatedUnits} Units`}
+                                >
+                                  {petiCount} Peti
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       </td>

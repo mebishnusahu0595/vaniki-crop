@@ -519,13 +519,14 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
       const box3Y = box2Y + box2H; // 266
       const colX = [
         startX,                  // 0: Sl No (25)
-        startX + 28,             // 1: Description (53)
-        startX + 28 + 215,       // 2: HSN/SAC (268)
-        startX + 28 + 215 + 60,  // 3: Quantity (328)
-        startX + 28 + 215 + 60 + 55, // 4: Rate (383)
-        startX + 28 + 215 + 60 + 55 + 45, // 5: per (428)
-        startX + 28 + 215 + 60 + 55 + 45 + 35, // 6: Amount (463)
-        rightX,                  // 7: End (570.28)
+        startX + 25,             // 1: Description (50)
+        startX + 25 + 185,       // 2: HSN/SAC (235)
+        startX + 25 + 185 + 48,  // 3: Peti (283)
+        startX + 25 + 185 + 48 + 55, // 4: Quantity (338)
+        startX + 25 + 185 + 48 + 55 + 50, // 5: Rate (388)
+        startX + 25 + 185 + 48 + 55 + 50 + 38, // 6: per (426)
+        startX + 25 + 185 + 48 + 55 + 50 + 38 + 35, // 7: Amount (461)
+        rightX,                  // 8: End (570.28)
       ];
 
       const headerH = 20;
@@ -544,14 +545,16 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
       doc.text('Sl No.', colX[0], box3Y + 6, { width: colX[1] - colX[0], align: 'center' });
       doc.text('Description of Goods', colX[1] + 4, box3Y + 6, { width: colX[2] - colX[1] - 8, align: 'left' });
       doc.text('HSN/SAC', colX[2], box3Y + 6, { width: colX[3] - colX[2], align: 'center' });
-      doc.text('Quantity', colX[3], box3Y + 6, { width: colX[4] - colX[3] - 4, align: 'right' });
-      doc.text('Rate (Rs.)', colX[4], box3Y + 6, { width: colX[5] - colX[4] - 4, align: 'right' });
-      doc.text('per', colX[5], box3Y + 6, { width: colX[6] - colX[5], align: 'center' });
-      doc.text('Amount (Rs.)', colX[6], box3Y + 6, { width: colX[7] - colX[6] - 6, align: 'right' });
+      doc.text('Peti', colX[3], box3Y + 6, { width: colX[4] - colX[3] - 4, align: 'center' });
+      doc.text('Quantity', colX[4], box3Y + 6, { width: colX[5] - colX[4] - 4, align: 'right' });
+      doc.text('Rate (Rs.)', colX[5], box3Y + 6, { width: colX[6] - colX[5] - 4, align: 'right' });
+      doc.text('per', colX[6], box3Y + 6, { width: colX[7] - colX[6] - 4, align: 'center' });
+      doc.text('Amount (Rs.)', colX[7], box3Y + 6, { width: colX[8] - colX[7] - 6, align: 'right' });
 
       // Rows
       let rowY = box3Y + headerH + 6;
       let totalUnitsSum = 0;
+      let totalPetisSum = 0;
       let taxableSubtotal = 0;
       let totalCgst = 0;
       let totalSgst = 0;
@@ -560,6 +563,7 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
 
       invoice.items.forEach((item: any, idx: number) => {
         const qty = Number(item.qty || 1);
+        const itemPetiQty = Number(item.petiQty) || (item.petiSize ? Math.ceil(qty / item.petiSize) : Math.max(1, Math.ceil(qty / 10)));
         const grossPrice = Number(item.price || 0);
         const taxRate = Number(item.taxRate || 18);
         const hsn = item.hsnCode || '38089190';
@@ -572,6 +576,7 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
         const netRate = lineTaxable / qty;
 
         totalUnitsSum += qty;
+        totalPetisSum += itemPetiQty;
         taxableSubtotal += lineTaxable;
         totalCgst += lineCgst;
         totalSgst += lineSgst;
@@ -584,14 +589,17 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
         prevHsn.cgst += lineCgst;
         prevHsn.sgst += lineSgst;
 
+        const itemDisplayName = item.packSize ? `${item.productName} (${item.packSize})` : item.productName;
+
         doc.font('Helvetica').fontSize(7.5);
         doc.text(String(idx + 1), colX[0], rowY, { width: colX[1] - colX[0], align: 'center' });
-        doc.font('Helvetica-Bold').text(item.productName, colX[1] + 4, rowY, { width: colX[2] - colX[1] - 8, align: 'left' });
+        doc.font('Helvetica-Bold').text(itemDisplayName, colX[1] + 4, rowY, { width: colX[2] - colX[1] - 8, align: 'left' });
         doc.font('Helvetica').text(hsn, colX[2], rowY, { width: colX[3] - colX[2], align: 'center' });
-        doc.text(`${qty} Units`, colX[3], rowY, { width: colX[4] - colX[3] - 4, align: 'right' });
-        doc.text(netRate.toFixed(2), colX[4], rowY, { width: colX[5] - colX[4] - 4, align: 'right' });
-        doc.text('Nos', colX[5], rowY, { width: colX[6] - colX[5], align: 'center' });
-        doc.text(lineTaxable.toFixed(2), colX[6], rowY, { width: colX[7] - colX[6] - 6, align: 'right' });
+        doc.text(`${itemPetiQty} Peti`, colX[3], rowY, { width: colX[4] - colX[3] - 4, align: 'center' });
+        doc.text(`${qty} Units`, colX[4], rowY, { width: colX[5] - colX[4] - 4, align: 'right' });
+        doc.text(netRate.toFixed(2), colX[5], rowY, { width: colX[6] - colX[5] - 4, align: 'right' });
+        doc.text('Nos', colX[6], rowY, { width: colX[7] - colX[6] - 4, align: 'center' });
+        doc.text(lineTaxable.toFixed(2), colX[7], rowY, { width: colX[8] - colX[7] - 6, align: 'right' });
 
         rowY += 16;
       });
@@ -600,13 +608,13 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
       rowY += 6;
       doc.font('Helvetica-Bold').fontSize(7.5);
       doc.text('Output CGST @ 9%', colX[1] + 12, rowY, { width: colX[2] - colX[1] - 8 });
-      doc.text('9%', colX[4], rowY, { width: colX[5] - colX[4] - 4, align: 'right' });
-      doc.text(totalCgst.toFixed(2), colX[6], rowY, { width: colX[7] - colX[6] - 6, align: 'right' });
+      doc.text('9%', colX[5], rowY, { width: colX[6] - colX[5] - 4, align: 'right' });
+      doc.text(totalCgst.toFixed(2), colX[7], rowY, { width: colX[8] - colX[7] - 6, align: 'right' });
 
       rowY += 14;
       doc.text('Output SGST @ 9%', colX[1] + 12, rowY, { width: colX[2] - colX[1] - 8 });
-      doc.text('9%', colX[4], rowY, { width: colX[5] - colX[4] - 4, align: 'right' });
-      doc.text(totalSgst.toFixed(2), colX[6], rowY, { width: colX[7] - colX[6] - 6, align: 'right' });
+      doc.text('9%', colX[5], rowY, { width: colX[6] - colX[5] - 4, align: 'right' });
+      doc.text(totalSgst.toFixed(2), colX[7], rowY, { width: colX[8] - colX[7] - 6, align: 'right' });
 
       // Table Footer Total Row
       const tableBottomY = box3Y + tableTotalH - 22;
@@ -614,8 +622,9 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
 
       doc.font('Helvetica-Bold').fontSize(8.5);
       doc.text('Total', colX[1] + 4, tableBottomY + 6);
-      doc.text(`${totalUnitsSum} Units`, colX[3], tableBottomY + 6, { width: colX[4] - colX[3] - 4, align: 'right' });
-      doc.text(`₹ ${Number(invoice.totalAmount || (taxableSubtotal + totalCgst + totalSgst)).toFixed(2)}`, colX[6], tableBottomY + 6, { width: colX[7] - colX[6] - 6, align: 'right' });
+      doc.text(`${totalPetisSum} ${totalPetisSum === 1 ? 'Peti' : 'Petis'}`, colX[3], tableBottomY + 6, { width: colX[4] - colX[3] - 4, align: 'center' });
+      doc.text(`${totalUnitsSum} Units`, colX[4], tableBottomY + 6, { width: colX[5] - colX[4] - 4, align: 'right' });
+      doc.text(Number(invoice.totalAmount || (taxableSubtotal + totalCgst + totalSgst)).toFixed(2), colX[7], tableBottomY + 6, { width: colX[8] - colX[7] - 6, align: 'right' });
 
       // ─── Box 4: Amount Chargeable in Words ──────────────────────────────
       const box4Y = box3Y + tableTotalH; // 491

@@ -53,6 +53,21 @@ export default function DealerProductDetailScreen() {
   const defaultVariant = variants[0];
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
 
+  // Standard agro packaging calculator
+  const getVariantPcsPerPeti = (v: any) => {
+    if (v?.petiSize && v.petiSize > 0) return v.petiSize;
+    const label = (v?.label || v?.packSize || '').toString().toLowerCase();
+    const volume = v?.volume ? Number(v.volume) : 0;
+    const unit = (v?.unit || v?.packUnit || '').toString().toLowerCase();
+
+    if (label.includes('5 l') || label.includes('5l') || (volume === 5 && unit.includes('l'))) return 4;
+    if (label.includes('1 l') || label.includes('1l') || label.includes('1 kg') || (volume === 1 && (unit.includes('l') || unit.includes('k')))) return 10;
+    if (label.includes('500') || volume === 500) return 20;
+    if (label.includes('250') || volume === 250) return 40;
+    if (label.includes('100') || volume === 100) return 80;
+    return product?.petiSize || 10;
+  };
+
   const activeVariant = useMemo(() => {
     if (!variants.length) return null;
     if (!selectedVariantId) return defaultVariant;
@@ -74,94 +89,114 @@ export default function DealerProductDetailScreen() {
     }
   }, [garages, selectedGarage]);
 
-  // Peti configuration state
-  const [petiQtyInput, setPetiQtyInput] = useState('1');
-  const [petiSizeInput, setPetiSizeInput] = useState(String(product?.petiSize || 10));
+  // Multi-variant Peti mapping: { [variantId]: petiCount }
+  const [variantPetiMap, setVariantPetiMap] = useState<Record<string, number>>({});
 
-  // Sync default petiSize when product loads
-  useMemo(() => {
-    if (product?.petiSize && petiSizeInput === '10') {
-      setPetiSizeInput(String(product.petiSize));
-    }
-  }, [product?.petiSize]);
+  // Initialize or update variant peti count
+  const setVariantPeti = (variantId: string, count: number) => {
+    setVariantPetiMap((prev) => ({
+      ...prev,
+      [variantId]: Math.max(0, count),
+    }));
+  };
+
+  // Compute total configured items across all variants
+  const configuredItems = useMemo(() => {
+    if (!variants.length) return [];
+    return variants
+      .map((v: any) => {
+        const vId = v.id || v._id;
+        const petis = variantPetiMap[vId] || 0;
+        const pcsPerPeti = getVariantPcsPerPeti(v);
+        const totalUnits = petis * pcsPerPeti;
+        const unitPrice = v.price || 0;
+        const unitMrp = v.mrp || unitPrice;
+        const totalAmount = totalUnits * unitPrice;
+        const totalMrp = totalUnits * unitMrp;
+        return {
+          variant: v,
+          vId,
+          petis,
+          pcsPerPeti,
+          totalUnits,
+          unitPrice,
+          unitMrp,
+          totalAmount,
+          totalMrp,
+        };
+      })
+      .filter((item: any) => item.petis > 0);
+  }, [variants, variantPetiMap, product?.petiSize]);
+
+  const totalPetisInRequest = useMemo(() => {
+    return configuredItems.reduce((sum: number, item: any) => sum + item.petis, 0);
+  }, [configuredItems]);
+
+  const totalUnitsInRequest = useMemo(() => {
+    return configuredItems.reduce((sum: number, item: any) => sum + item.totalUnits, 0);
+  }, [configuredItems]);
+
+  const grandTotal = useMemo(() => {
+    return configuredItems.reduce((sum: number, item: any) => sum + item.totalAmount, 0);
+  }, [configuredItems]);
+
+  const totalMrp = useMemo(() => {
+    return configuredItems.reduce((sum: number, item: any) => sum + item.totalMrp, 0);
+  }, [configuredItems]);
+
+  const totalSavings = Math.max(0, totalMrp - grandTotal);
+
+  const unitPrice = activeVariant?.price || 0;
+  const unitMrp = activeVariant?.mrp || unitPrice;
 
   const moq = product?.moq || 1;
-  const petiSize = product?.petiSize || 10;
-  const minQty = moq;
-  const [quantity, setQuantity] = useState(moq);
-  const currentQty = Math.max(quantity, minQty);
-
-  const pQty = parseInt(petiQtyInput, 10) || 1;
-  const pSize = parseInt(petiSizeInput, 10) || (product?.petiSize || 10);
-  const totalUnitsInRequest = pQty * pSize;
+  const activeVariantPcsPerPeti = getVariantPcsPerPeti(activeVariant);
 
   // Quick buy bottom sheet modal
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const unitPrice = activeVariant?.price || 0;
-  const unitMrp = activeVariant?.mrp || unitPrice;
-  const subtotal = unitPrice * totalUnitsInRequest;
-  const totalMrp = unitMrp * totalUnitsInRequest;
-  const savings = Math.max(0, (unitMrp - unitPrice) * currentQty);
-  const grandTotal = subtotal;
-
-  const handleIncrement = (amount = 1) => {
-    setQuantity((prev: number) => prev + amount);
-  };
-
-  const handleDecrement = (amount = 1) => {
-    setQuantity((prev: number) => Math.max(minQty, prev - amount));
-  };
-
   const handleStartOrder = () => {
-    if (!activeVariant) {
-      Alert.alert('Selection Error', 'Please select a product variant.');
+    if (!variants.length) {
+      Alert.alert('Selection Error', 'Product has no variants available.');
       return;
     }
-    setPetiQtyInput('1');
-    setPetiSizeInput(String(product?.petiSize || 10));
+    // If no variant has petis configured yet, default active variant to 1 Peti
+    if (configuredItems.length === 0) {
+      const targetId = activeVariant?.id || activeVariant?._id || variants[0]?.id || variants[0]?._id;
+      if (targetId) {
+        setVariantPeti(targetId, 1);
+      }
+    }
     setIsCheckoutModalOpen(true);
   };
 
   const handleSubmitProductRequest = async () => {
-    if (!activeVariant || !product) return;
+    if (!product) return;
 
-    const parsedQty = parseInt(petiQtyInput, 10);
-    const parsedSize = parseInt(petiSizeInput, 10);
-
-    if (isNaN(parsedQty) || parsedQty <= 0) {
-      Alert.alert('Invalid Quantity', 'Peti quantity must be at least 1.');
+    if (configuredItems.length === 0) {
+      Alert.alert('No Petis Selected', 'Please configure at least 1 Peti for any variant.');
       return;
     }
-    if (isNaN(parsedSize) || parsedSize <= 0) {
-      Alert.alert('Invalid Size', 'Pcs / Peti size must be at least 1.');
-      return;
-    }
-
-    const totalUnits = parsedQty * parsedSize;
-    const reqUnitPrice = activeVariant?.price || 0;
 
     setIsSubmitting(true);
     try {
       const payload = {
         garageName: selectedGarage || garages[0] || 'Vaniki garage',
-        items: [
-          {
-            productId: product.id || product._id,
-            productName: product.name,
-            requestedQuantity: totalUnits,
-            requestedPack: activeVariant?.label || `${activeVariant?.volume} ${activeVariant?.unit || 'Liter'}`,
-            petiQuantity: parsedQty,
-            petiSize: parsedSize,
-            petiUnit: activeVariant?.unit || 'Liter',
-            dealerPrice: reqUnitPrice,
-            offerPrice: reqUnitPrice,
-            hsnCode: product.hsnCode || '38089190',
-            taxRate: product.taxRate || 18,
-          },
-        ],
-        notes: `Stock Request for ${product.name}`,
+        items: configuredItems.map((item: any) => ({
+          productId: product.id || product._id,
+          productName: product.name,
+          requestedQuantity: item.totalUnits,
+          requestedPack: item.variant.label || `${item.variant.volume || ''} ${item.variant.unit || 'Liter'}`.trim(),
+          petiQuantity: item.petis,
+          petiSize: item.pcsPerPeti,
+          petiUnit: item.variant.unit || 'Liter',
+          dealerPrice: item.unitPrice,
+          offerPrice: item.unitPrice,
+          hsnCode: product.hsnCode || '38089190',
+          taxRate: product.taxRate || 18,
+        })),
+        notes: `Stock Request for ${product.name} (${totalPetisInRequest} Petis, ${totalUnitsInRequest} Units)`,
       };
 
       await dealerApi.createProductRequest(payload);
@@ -169,7 +204,7 @@ export default function DealerProductDetailScreen() {
 
       Alert.alert(
         'Stock Request Submitted! 🎉',
-        `Your B2B procurement request for ${totalUnits} units of ${product.name} has been sent to SuperAdmin.\n\nOnce SuperAdmin approves it, the official Tally GST Tax Invoice will be generated automatically and you will receive a notification with payment QR & bank details.`,
+        `Your B2B procurement request for ${totalPetisInRequest} Petis (${totalUnitsInRequest} units) of ${product.name} has been sent to SuperAdmin.\n\nOnce SuperAdmin approves it, the official Tally GST Tax Invoice will be generated automatically and you will receive a notification with payment QR & bank details.`,
         [
           {
             text: 'View Requests',
@@ -297,10 +332,10 @@ export default function DealerProductDetailScreen() {
             </View>
             <View className="flex-1">
               <Text className="text-xs font-black text-primary-900">
-                Packaging: {petiSize} {product.petiUnit || 'units'} per Peti
+                Factory Packaging: {activeVariantPcsPerPeti} Pcs per Peti (Standard Packaging)
               </Text>
               <Text className="text-[11px] font-semibold text-primary-700 mt-0.5">
-                Minimum order requirement: {moq} units
+                Wholesale Peti Stock • 1 Peti = {activeVariantPcsPerPeti} Units ({activeVariant?.label || 'Bottles'})
               </Text>
             </View>
           </View>
@@ -314,11 +349,13 @@ export default function DealerProductDetailScreen() {
             </Text>
             <View className="flex-row flex-wrap gap-2.5">
               {variants.map((v: any) => {
-                const isSelected = (v.id || v._id) === (activeVariant?.id || activeVariant?._id);
+                const vId = v.id || v._id;
+                const isSelected = vId === (activeVariant?.id || activeVariant?._id);
+                const vPcs = getVariantPcsPerPeti(v);
                 return (
                   <Pressable
-                    key={v.id || v._id}
-                    onPress={() => setSelectedVariantId(v.id || v._id)}
+                    key={vId}
+                    onPress={() => setSelectedVariantId(vId)}
                     className={`rounded-2xl border px-4 py-3 active:scale-95 ${
                       isSelected
                         ? 'border-primary-700 bg-primary-50'
@@ -332,6 +369,9 @@ export default function DealerProductDetailScreen() {
                     >
                       {v.label}
                     </Text>
+                    <Text className="text-[10px] font-semibold text-slate-500 mt-0.5">
+                      {vPcs} pcs/peti
+                    </Text>
                     <Text className="text-xs font-bold text-primary-700 mt-0.5">
                       {isApproved ? currencyFormatter.format(v.price) : '🔒 ₹ •••••'}
                     </Text>
@@ -342,93 +382,118 @@ export default function DealerProductDetailScreen() {
           </View>
         )}
 
-        {/* MOQ Bulk Quantity Selector */}
+        {/* Peti Order Configuration for Active Variant */}
         <View className="p-5 bg-white border-b border-slate-100">
           <View className="flex-row items-center justify-between mb-3">
             <Text className="text-xs font-black uppercase tracking-wider text-slate-400">
-              Bulk Order Quantity
+              Order by Peti ({activeVariant?.label || 'Current Pack'})
             </Text>
-            <Text className="text-[11px] font-bold text-emerald-700">
-              Min: {minQty} units
-            </Text>
+            <View className="rounded-full bg-emerald-100 px-2.5 py-0.5">
+              <Text className="text-[10px] font-black text-emerald-800">
+                1 Peti = {activeVariantPcsPerPeti} Pcs
+              </Text>
+            </View>
           </View>
 
           {/* Stepper Control */}
-          <View className="flex-row items-center justify-between rounded-2xl border-2 border-primary-200 bg-slate-50 p-2">
-            <Pressable
-              onPress={() => handleDecrement(1)}
-              className="w-12 h-12 rounded-xl bg-white border border-slate-200 items-center justify-center active:scale-90 shadow-xs"
-            >
-              <Icon name="minus" size={20} color="#143D2E" />
-            </Pressable>
+          {(() => {
+            const activeId = activeVariant?.id || activeVariant?._id || '';
+            const activePetis = variantPetiMap[activeId] || (configuredItems.length === 0 ? 1 : 0);
+            const activeUnits = activePetis * activeVariantPcsPerPeti;
 
-            <View className="items-center">
-              <Text className="text-2xl font-black text-primary-900">{currentQty}</Text>
-              <Text className="text-[10px] font-bold text-slate-400">Units</Text>
-            </View>
+            return (
+              <View>
+                <View className="flex-row items-center justify-between rounded-2xl border-2 border-primary-200 bg-slate-50 p-2">
+                  <Pressable
+                    onPress={() => setVariantPeti(activeId, Math.max(0, activePetis - 1))}
+                    className="w-12 h-12 rounded-xl bg-white border border-slate-200 items-center justify-center active:scale-90 shadow-xs"
+                  >
+                    <Icon name="minus" size={20} color="#143D2E" />
+                  </Pressable>
 
-            <Pressable
-              onPress={() => handleIncrement(1)}
-              style={{ backgroundColor: '#143D2E' }}
-              className="w-12 h-12 rounded-xl items-center justify-center active:scale-90 shadow-xs"
-            >
-              <Icon name="plus" size={20} color="#FFFFFF" />
-            </Pressable>
-          </View>
+                  <View className="items-center">
+                    <Text className="text-2xl font-black text-primary-900">{activePetis}</Text>
+                    <Text className="text-[10px] font-bold text-slate-400">
+                      {activePetis === 1 ? 'Peti' : 'Petis'} ({activeUnits} Units)
+                    </Text>
+                  </View>
 
-          {/* Preset Buttons */}
-          <View className="flex-row gap-2 mt-3">
-            {[
-              { label: `MOQ (${moq})`, qty: moq },
-              { label: `+5`, amount: 5 },
-              { label: `+10`, amount: 10 },
-              { label: `+1 Peti (${petiSize})`, amount: petiSize },
-            ].map((preset, idx) => (
-              <Pressable
-                key={idx}
-                onPress={() => {
-                  if (preset.qty !== undefined) setQuantity(preset.qty);
-                  else if (preset.amount !== undefined) handleIncrement(preset.amount);
-                }}
-                className="flex-1 rounded-xl bg-slate-100 border border-slate-200 py-2 items-center active:bg-slate-200"
-              >
-                <Text className="text-[10px] font-black text-slate-700">{preset.label}</Text>
-              </Pressable>
-            ))}
-          </View>
+                  <Pressable
+                    onPress={() => setVariantPeti(activeId, activePetis + 1)}
+                    style={{ backgroundColor: '#143D2E' }}
+                    className="w-12 h-12 rounded-xl items-center justify-center active:scale-90 shadow-xs"
+                  >
+                    <Icon name="plus" size={20} color="#FFFFFF" />
+                  </Pressable>
+                </View>
+
+                {/* Peti Presets */}
+                <View className="flex-row gap-2 mt-3">
+                  {[1, 2, 5, 10].map((presetCount) => (
+                    <Pressable
+                      key={presetCount}
+                      onPress={() => setVariantPeti(activeId, presetCount)}
+                      className={`flex-1 rounded-xl py-2 items-center border ${
+                        activePetis === presetCount
+                          ? 'bg-emerald-700 border-emerald-800'
+                          : 'bg-slate-100 border-slate-200 active:bg-slate-200'
+                      }`}
+                    >
+                      <Text
+                        className={`text-[10px] font-black ${
+                          activePetis === presetCount ? 'text-white' : 'text-slate-700'
+                        }`}
+                      >
+                        {presetCount} {presetCount === 1 ? 'Peti' : 'Petis'}
+                      </Text>
+                      <Text
+                        className={`text-[9px] font-semibold ${
+                          activePetis === presetCount ? 'text-emerald-100' : 'text-slate-500'
+                        }`}
+                      >
+                        {presetCount * activeVariantPcsPerPeti} Pcs
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            );
+          })()}
         </View>
 
         {/* Live Cost Breakdown */}
         {isApproved ? (
           <View className="p-5 bg-white">
             <Text className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">
-              Price Details ({currentQty} Units)
+              Price Details ({totalPetisInRequest} Petis • {totalUnitsInRequest} Units)
             </Text>
             <View className="gap-2 border-b border-slate-100 pb-3">
-              <View className="flex-row justify-between">
-                <Text className="text-xs font-semibold text-slate-600">
-                  Base Price ({currentQty} × {currencyFormatter.format(unitPrice)})
-                </Text>
-                <Text className="text-xs font-bold text-slate-900">
-                  {currencyFormatter.format(subtotal)}
-                </Text>
-              </View>
-              {savings > 0 && (
+              {configuredItems.map((item: any) => (
+                <View key={item.vId} className="flex-row justify-between">
+                  <Text className="text-xs font-semibold text-slate-600">
+                    {item.variant.label || 'Pack'}: {item.petis} Peti ({item.totalUnits} pcs)
+                  </Text>
+                  <Text className="text-xs font-bold text-slate-900">
+                    {currencyFormatter.format(item.totalAmount)}
+                  </Text>
+                </View>
+              ))}
+              {totalSavings > 0 && (
                 <View className="flex-row justify-between">
                   <Text className="text-xs font-semibold text-slate-600">Total MRP Savings</Text>
                   <Text className="text-xs font-black text-emerald-600">
-                    - {currencyFormatter.format(savings)}
+                    - {currencyFormatter.format(totalSavings)}
                   </Text>
                 </View>
               )}
               <View className="flex-row justify-between">
-                <Text className="text-xs font-semibold text-slate-600">Delivery / Shipping</Text>
+                <Text className="text-xs font-semibold text-slate-600">Delivery / Doorstep Dispatch</Text>
                 <Text className="text-xs font-black text-emerald-600">FREE</Text>
               </View>
             </View>
 
             <View className="flex-row justify-between pt-3">
-              <Text className="text-sm font-black text-slate-900">Total Amount</Text>
+              <Text className="text-sm font-black text-slate-900">Total Procurement Amount</Text>
               <Text className="text-lg font-black text-primary-800">
                 {currencyFormatter.format(grandTotal)}
               </Text>
@@ -459,7 +524,7 @@ export default function DealerProductDetailScreen() {
             {[
               { label: 'Category', value: product.category?.name || 'Crop Care' },
               { label: 'Formulation / Active', value: product.shortDescription || product.name },
-              { label: 'Packaging Format', value: `${petiSize} ${product.petiUnit || 'Units'} per Peti` },
+              { label: 'Packaging Format', value: `${activeVariantPcsPerPeti} Pcs per Peti (Standard Packaging)` },
               { label: 'Minimum Order (MOQ)', value: `${moq} ${moq === 1 ? 'Unit' : 'Units'}` },
               { label: 'Quality Standard', value: '100% Genuine Certified Formulation' },
               { label: 'Tax & Invoicing', value: 'Instant Tally GST Tax Invoice with ITC' },
@@ -492,7 +557,7 @@ export default function DealerProductDetailScreen() {
       <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-primary-100 p-4 flex-row items-center justify-between shadow-soft">
         <View>
           <Text className="text-[10px] font-bold text-slate-400 uppercase">
-            Total ({totalUnitsInRequest} units)
+            Total ({totalPetisInRequest} Petis • {totalUnitsInRequest} units)
           </Text>
           <Text className="text-xl font-black text-primary-800">
             {isApproved ? currencyFormatter.format(grandTotal) : '₹ •••••'}
@@ -514,12 +579,12 @@ export default function DealerProductDetailScreen() {
           className="rounded-2xl px-7 py-3.5 items-center active:scale-95 shadow-md"
         >
           <Text className="text-xs font-black uppercase tracking-[1.5px] text-white">
-            {isApproved ? 'Request Stock →' : '🔒 KYC Pending'}
+            {isApproved ? 'Request Petis →' : '🔒 KYC Pending'}
           </Text>
         </Pressable>
       </View>
 
-      {/* Configure Stock Petis Modal (B2B Procurement Request) */}
+      {/* Configure Stock Petis Modal (Multi-Variant Procurement Request) */}
       <Modal
         visible={isCheckoutModalOpen}
         transparent
@@ -536,7 +601,12 @@ export default function DealerProductDetailScreen() {
           >
             {/* Modal Header */}
             <View className="flex-row items-center justify-between pb-3 border-b border-slate-100">
-              <Text className="text-lg font-black text-slate-900">Configure Stock Petis</Text>
+              <View>
+                <Text className="text-lg font-black text-slate-900">Configure Stock Petis</Text>
+                <Text className="text-xs font-semibold text-emerald-700 mt-0.5">
+                  Select Petis across multiple pack sizes
+                </Text>
+              </View>
               <Pressable onPress={() => setIsCheckoutModalOpen(false)} className="p-1.5 active:bg-slate-100 rounded-full">
                 <Icon name="x" size={22} color="#64748B" />
               </Pressable>
@@ -587,105 +657,151 @@ export default function DealerProductDetailScreen() {
                 </View>
               )}
 
-              {/* 2. Select Pack Size / Variant */}
+              {/* 2. Multi-Pack Size Peti Configuration List */}
               <View className="mt-4">
-                <Text className="text-[10px] font-black uppercase tracking-[1.5px] text-slate-400 mb-2">
-                  SELECT PACK SIZE
+                <Text className="text-[10px] font-black uppercase tracking-[1.5px] text-slate-400 mb-2.5">
+                  CONFIGURE PETIS PER PACK SIZE
                 </Text>
-                <View className="flex-row flex-wrap gap-2.5">
+
+                <View className="gap-3">
                   {variants.map((v: any) => {
-                    const isSelected = (v.id || v._id) === (activeVariant?.id || activeVariant?._id);
+                    const vId = v.id || v._id;
+                    const pcsPerPeti = getVariantPcsPerPeti(v);
+                    const currentPetis = variantPetiMap[vId] || 0;
+                    const units = currentPetis * pcsPerPeti;
+                    const cost = units * (v.price || 0);
+
                     return (
-                      <Pressable
-                        key={v.id || v._id}
-                        onPress={() => setSelectedVariantId(v.id || v._id)}
-                        className={`rounded-xl px-4 py-2.5 border active:scale-95 ${
-                          isSelected
-                            ? 'bg-emerald-50 border-2 border-emerald-700'
+                      <View
+                        key={vId}
+                        className={`rounded-2xl border p-3.5 ${
+                          currentPetis > 0
+                            ? 'bg-emerald-50/50 border-emerald-600'
                             : 'bg-slate-50 border-slate-200'
                         }`}
                       >
-                        <Text
-                          className={`text-xs font-black ${
-                            isSelected ? 'text-emerald-950' : 'text-slate-700'
-                          }`}
-                        >
-                          {v.label ? `${v.label} • ` : ''}• ₹{v.price}
-                        </Text>
-                      </Pressable>
+                        {/* Variant Info & Standard Packaging Badge */}
+                        <View className="flex-row justify-between items-start mb-2">
+                          <View className="flex-1 pr-2">
+                            <Text className="text-sm font-black text-slate-900">
+                              {v.label || `${v.volume} ${v.unit || 'Liter'}`}
+                            </Text>
+                            <Text className="text-xs font-bold text-emerald-800 mt-0.5">
+                              {currencyFormatter.format(v.price || 0)} / unit • {currencyFormatter.format((v.price || 0) * pcsPerPeti)} / Peti
+                            </Text>
+                          </View>
+
+                          {/* Fixed Standard Packaging Badge (Non-Editable) */}
+                          <View className="rounded-xl bg-slate-200/80 px-2.5 py-1 border border-slate-300">
+                            <Text className="text-[10px] font-black text-slate-700">
+                              🔒 {pcsPerPeti} Pcs / Peti
+                            </Text>
+                          </View>
+                        </View>
+
+                        {/* Peti Stepper & Direct Counter */}
+                        <View className="flex-row items-center justify-between pt-1">
+                          <View className="flex-row items-center gap-1.5">
+                            {[0, 1, 2, 5].map((preset) => (
+                              <Pressable
+                                key={preset}
+                                onPress={() => setVariantPeti(vId, preset)}
+                                className={`rounded-xl px-2.5 py-1.5 border ${
+                                  currentPetis === preset
+                                    ? 'bg-emerald-700 border-emerald-800'
+                                    : 'bg-white border-slate-200 active:bg-slate-100'
+                                }`}
+                              >
+                                <Text
+                                  className={`text-[10px] font-black ${
+                                    currentPetis === preset ? 'text-white' : 'text-slate-700'
+                                  }`}
+                                >
+                                  {preset === 0 ? '0' : `${preset}P`}
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </View>
+
+                          <View className="flex-row items-center gap-2 bg-white rounded-xl border border-slate-200 px-2 py-1">
+                            <Pressable
+                              onPress={() => setVariantPeti(vId, Math.max(0, currentPetis - 1))}
+                              className="w-7 h-7 rounded-lg bg-slate-100 items-center justify-center active:scale-90"
+                            >
+                              <Icon name="minus" size={14} color="#143D2E" />
+                            </Pressable>
+
+                            <View className="items-center px-1 min-w-[50px]">
+                              <Text className="text-sm font-black text-slate-900">{currentPetis} Peti</Text>
+                              <Text className="text-[9px] font-semibold text-slate-400">{units} pcs</Text>
+                            </View>
+
+                            <Pressable
+                              onPress={() => setVariantPeti(vId, currentPetis + 1)}
+                              className="w-7 h-7 rounded-lg bg-emerald-700 items-center justify-center active:scale-90"
+                            >
+                              <Icon name="plus" size={14} color="#FFFFFF" />
+                            </Pressable>
+                          </View>
+                        </View>
+
+                        {currentPetis > 0 && (
+                          <View className="mt-2 pt-2 border-t border-emerald-200 flex-row justify-between items-center">
+                            <Text className="text-[11px] font-bold text-emerald-850">
+                              Subtotal ({units} units):
+                            </Text>
+                            <Text className="text-xs font-black text-emerald-900">
+                              {currencyFormatter.format(cost)}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                     );
                   })}
                 </View>
               </View>
 
-              {/* 3. Peti Quantity and Pcs / Peti Size Inputs */}
-              <View className="flex-row gap-3 mt-4">
-                <View className="flex-1">
-                  <Text className="text-[10px] font-black uppercase tracking-[1.5px] text-slate-400 mb-1.5">
-                    PETI QUANTITY
+              {/* 3. Total Summary Banner */}
+              <View className="mt-4 rounded-2xl bg-[#E8F8F0] border border-emerald-200 p-4">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-xs font-bold text-emerald-950">
+                    Total Petis in Request:
                   </Text>
-                  <TextInput
-                    value={petiQtyInput}
-                    onChangeText={setPetiQtyInput}
-                    keyboardType="number-pad"
-                    placeholder="1"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-lg font-black text-slate-900"
-                  />
+                  <Text className="text-base font-black text-emerald-950">
+                    {totalPetisInRequest} {totalPetisInRequest === 1 ? 'Peti' : 'Petis'} ({totalUnitsInRequest} Units)
+                  </Text>
                 </View>
 
-                <View className="flex-1">
-                  <Text className="text-[10px] font-black uppercase tracking-[1.5px] text-slate-400 mb-1.5">
-                    PCS / PETI SIZE
+                <View className="mt-2 pt-2 border-t border-emerald-200/60 flex-row items-center justify-between">
+                  <Text className="text-xs font-bold text-emerald-950">
+                    Estimated Procurement Amount:
                   </Text>
-                  <TextInput
-                    value={petiSizeInput}
-                    onChangeText={setPetiSizeInput}
-                    keyboardType="number-pad"
-                    placeholder="10"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-lg font-black text-slate-900"
-                  />
+                  <Text className="text-base font-black text-emerald-900">
+                    {currencyFormatter.format(grandTotal)}
+                  </Text>
                 </View>
               </View>
 
-              {/* 4. Total Units in Request Banner */}
-              <View className="mt-4 rounded-2xl bg-[#E8F8F0] border border-emerald-200 p-4 flex-row items-center justify-between">
-                <Text className="text-xs font-bold text-emerald-950">
-                  Total Units in Request:
-                </Text>
-                <Text className="text-base font-black text-emerald-950">
-                  {totalUnitsInRequest} Units
+              {/* Packaging Lock Notice */}
+              <View className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 flex-row items-center gap-2">
+                <Icon name="lock" size={14} color="#64748B" />
+                <Text className="text-[10px] font-semibold text-slate-600 flex-1">
+                  Pcs / Peti packaging is standardized based on factory carton specifications and cannot be modified.
                 </Text>
               </View>
 
-              {/* Estimated Wholesale Total */}
-              <View className="mt-2 px-1 flex-row items-center justify-between">
-                <Text className="text-[11px] font-bold text-slate-500">
-                  Estimated Taxable Amount:
-                </Text>
-                <Text className="text-sm font-black text-emerald-800">
-                  {currencyFormatter.format(grandTotal)}
-                </Text>
-              </View>
-
-              {/* Info Notice */}
-              <View className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200/60">
-                <Text className="text-[11px] font-semibold text-amber-900 leading-relaxed">
-                  ℹ️ This submits a stock procurement request directly to SuperAdmin. Once approved, an official Tally GST Tax Invoice is generated with Company QR & Bank payment options.
-                </Text>
-              </View>
-
-              {/* 5. Submit Button */}
+              {/* 4. Submit Button */}
               <Pressable
-                disabled={isSubmitting}
+                disabled={isSubmitting || totalPetisInRequest === 0}
                 onPress={handleSubmitProductRequest}
-                style={{ backgroundColor: '#1B4332' }}
+                style={{ backgroundColor: totalPetisInRequest > 0 ? '#1B4332' : '#94A3B8' }}
                 className="w-full rounded-2xl py-4 items-center justify-center active:scale-[0.98] shadow-md mt-4 mb-2"
               >
                 {isSubmitting ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text className="text-xs font-black uppercase tracking-[2px] text-white">
-                    ADD TO REQUEST BATCH
+                    SUBMIT REQUEST ({totalPetisInRequest} PETIS)
                   </Text>
                 )}
               </Pressable>

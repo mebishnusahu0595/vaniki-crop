@@ -259,6 +259,12 @@ export default function DealerAccountScreen() {
           onPress: () => router.push('/(tabs)/invoices'),
         },
         {
+          icon: 'check-circle',
+          label: 'Payment Settlements',
+          subtitle: 'Settled payments, UTR & paid tax invoices',
+          onPress: () => router.push('/settlements' as any),
+        },
+        {
           icon: 'package',
           label: 'Bulk Catalogue',
           subtitle: 'View all products with MOQ pricing',

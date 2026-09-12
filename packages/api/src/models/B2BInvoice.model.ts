@@ -3,6 +3,9 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IB2BInvoiceItem {
   productName: string;
   hsnCode?: string;
+  packSize?: string;
+  petiQty?: number;
+  petiSize?: number;
   qty: number;
   price: number; // Unit price before tax
   taxRate: number; // Percentage
@@ -52,6 +55,9 @@ const B2BInvoiceSchema: Schema = new Schema(
       {
         productName: { type: String, required: true },
         hsnCode: { type: String },
+        packSize: { type: String },
+        petiQty: { type: Number, default: 0 },
+        petiSize: { type: Number, default: 0 },
         qty: { type: Number, required: true, min: 1 },
         price: { type: Number, required: true, min: 0 },
         taxRate: { type: Number, required: true, min: 0 },
