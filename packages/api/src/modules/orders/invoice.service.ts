@@ -406,6 +406,21 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
       doc.font('Helvetica').fontSize(8)
         .text('(ORIGINAL FOR RECIPIENT)', startX, 42, { width: contentW, align: 'center' });
 
+      const isPaid = invoice.paymentStatus === 'paid';
+      if (isPaid) {
+        const stampW = 90;
+        const stampH = 25;
+        const stampX = rightX - stampW;
+        const stampY = 20;
+
+        doc.roundedRect(stampX, stampY, stampW, stampH, 4).lineWidth(1.5).stroke('#16a34a');
+        doc.fillColor('#16a34a').font('Helvetica-Bold').fontSize(11)
+          .text('PAID', stampX, stampY + 3, { width: stampW, align: 'center' });
+        doc.font('Helvetica-Bold').fontSize(6.5)
+          .text(invoice.paymentUtr ? `UTR: ${invoice.paymentUtr}` : 'VERIFIED', stampX, stampY + 15, { width: stampW, align: 'center' });
+        doc.fillColor('#000000');
+      }
+
       // ─── Box 1: Seller & Dispatch Details ──────────────────────────────
       const box1Y = 56;
       const box1H = 135;
@@ -449,7 +464,12 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
       doc.font('Helvetica').fontSize(7).text('Tally Voucher No.', splitX + 5, box1Y + gridRowH + 4);
       doc.font('Helvetica-Bold').fontSize(8.5).text(invoice.tallyVoucherNumber ? `#${invoice.tallyVoucherNumber} (Synced)` : 'Pending', splitX + 5, box1Y + gridRowH + 13);
       doc.font('Helvetica').fontSize(7).text('Mode/Terms of Payment', midRightX + 5, box1Y + gridRowH + 4);
-      doc.font('Helvetica-Bold').fontSize(8).text(invoice.paymentTerms || '30 Days Credit', midRightX + 5, box1Y + gridRowH + 13);
+      if (isPaid) {
+        doc.fillColor('#15803d').font('Helvetica-Bold').fontSize(7.5).text(`PAID (${invoice.paymentUtr ? 'UTR: ' + invoice.paymentUtr : 'Verified'})`, midRightX + 5, box1Y + gridRowH + 13);
+        doc.fillColor('#000000');
+      } else {
+        doc.font('Helvetica-Bold').fontSize(8).text(invoice.paymentTerms || '30 Days Credit', midRightX + 5, box1Y + gridRowH + 13);
+      }
 
       // Row 3
       doc.font('Helvetica').fontSize(7).text("Buyer's Order No.", splitX + 5, box1Y + gridRowH * 2 + 4);
@@ -661,11 +681,20 @@ export async function generateB2BInvoicePdf(data: any): Promise<Buffer> {
       doc.moveTo(splitX + 35, box6Y).lineTo(splitX + 35, box6Y + box6H).lineWidth(0.75).stroke('#000000');
 
       // Left: Bank Details & Declaration
-      doc.font('Helvetica-Bold').fontSize(7.5).text("Company's Bank Details :", startX + 8, box6Y + 6);
-      doc.font('Helvetica').fontSize(7)
-        .text('Bank Name  : HDFC Bank', startX + 8, box6Y + 17)
-        .text('A/c No.        : 50200088991122', startX + 8, box6Y + 27)
-        .text('Branch & IFS : Ambagarh Chauki & HDFC0001234', startX + 8, box6Y + 37);
+      if (isPaid) {
+        const verifiedDateStr = invoice.paymentVerifiedAt ? new Date(invoice.paymentVerifiedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : invDateStr;
+        doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#15803d').text("Payment Status : FULLY SETTLED & VERIFIED (PAID)", startX + 8, box6Y + 6);
+        doc.fillColor('#000000').font('Helvetica').fontSize(7)
+          .text(`Transaction UTR : ${invoice.paymentUtr || 'Approved by SuperAdmin'}`, startX + 8, box6Y + 17)
+          .text(`Settlement Date  : ${verifiedDateStr}`, startX + 8, box6Y + 27)
+          .text('Payment Mode   : Online Bank Transfer / UPI', startX + 8, box6Y + 37);
+      } else {
+        doc.font('Helvetica-Bold').fontSize(7.5).text("Company's Bank Details :", startX + 8, box6Y + 6);
+        doc.font('Helvetica').fontSize(7)
+          .text('Bank Name  : HDFC Bank', startX + 8, box6Y + 17)
+          .text('A/c No.        : 50200088991122', startX + 8, box6Y + 27)
+          .text('Branch & IFS : Ambagarh Chauki & HDFC0001234', startX + 8, box6Y + 37);
+      }
 
       doc.font('Helvetica-Bold').fontSize(7).text('Declaration :', startX + 8, box6Y + 52);
       doc.font('Helvetica-Oblique').fontSize(6.5)

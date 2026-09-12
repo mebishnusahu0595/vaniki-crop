@@ -344,8 +344,25 @@ export async function getSuperAdminB2BInvoices(req: Request, res: Response, next
       filter.storeId = req.query.storeId;
     }
 
+    if (req.query.paymentStatus) {
+      filter.paymentStatus = req.query.paymentStatus;
+    }
+
+    if (req.query.search) {
+      const q = String(req.query.search).trim();
+      filter.$or = [
+        { invoiceNumber: { $regex: q, $options: 'i' } },
+        { paymentUtr: { $regex: q, $options: 'i' } },
+        { buyerOrderNo: { $regex: q, $options: 'i' } },
+      ];
+    }
+
     const [invoices, total] = await Promise.all([
-      B2BInvoice.find(filter).sort({ invoiceDate: -1 }).skip(skip).limit(limit).populate('storeId', 'name'),
+      B2BInvoice.find(filter)
+        .sort({ paymentSubmittedAt: -1, updatedAt: -1, invoiceDate: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('storeId', 'name code address mobile email'),
       B2BInvoice.countDocuments(filter),
     ]);
 
