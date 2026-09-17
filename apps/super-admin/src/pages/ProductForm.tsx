@@ -57,6 +57,10 @@ const productSchema = z.object({
   loyaltyPointEligible: z.boolean().default(true),
   maxLoyaltyPoints: requiredNumber('Max Loyalty Points').default(0),
   taxRate: requiredNumber('GST / Tax Rate (%)').default(18),
+  dosage: z.string().optional(),
+  targetCrops: z.string().optional(),
+  usageInstructions: z.string().optional(),
+  safetyPrecautions: z.string().optional(),
   hsnCode: z.string().optional(),
   petiSize: requiredNumber('Peti Size').default(12),
   petiUnit: z.enum(units).default('Liter'),
@@ -90,6 +94,10 @@ const productDefaultValues: ProductFormInput = {
   loyaltyPointEligible: true,
   maxLoyaltyPoints: 0,
   taxRate: 18,
+  dosage: '',
+  targetCrops: '',
+  usageInstructions: '',
+  safetyPrecautions: '',
   hsnCode: '',
   petiSize: 12,
   petiUnit: 'Liter',
@@ -126,6 +134,10 @@ function getProductDefaultValues(product?: Product): ProductFormInput {
     loyaltyPointEligible: product.loyaltyPointEligible ?? true,
     maxLoyaltyPoints: product.maxLoyaltyPoints ?? 0,
     taxRate,
+    dosage: product.dosage || '',
+    targetCrops: product.targetCrops || '',
+    usageInstructions: product.usageInstructions || '',
+    safetyPrecautions: product.safetyPrecautions || '',
     hsnCode: product.hsnCode || '',
     petiSize: product.petiSize || 12,
     petiUnit: product.petiUnit || 'Liter',
@@ -447,6 +459,10 @@ function ProductEditor({
         payload.append('loyaltyPointEligible', String(values.loyaltyPointEligible));
         payload.append('maxLoyaltyPoints', String(values.maxLoyaltyPoints));
         payload.append('taxRate', String(typeof values.taxRate === 'number' ? values.taxRate : (values.taxRate !== undefined ? Number(values.taxRate) : 18)));
+        if (values.dosage) payload.append('dosage', values.dosage.trim());
+        if (values.targetCrops) payload.append('targetCrops', values.targetCrops.trim());
+        if (values.usageInstructions) payload.append('usageInstructions', values.usageInstructions.trim());
+        if (values.safetyPrecautions) payload.append('safetyPrecautions', values.safetyPrecautions.trim());
         if (values.hsnCode) payload.append('hsnCode', values.hsnCode);
         payload.append('petiSize', String(values.petiSize));
         payload.append('petiUnit', values.petiUnit);
@@ -531,6 +547,54 @@ function ProductEditor({
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">HSN Code (Product)</label>
               <input {...register('hsnCode')} placeholder="e.g. 38089190" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 font-mono font-bold text-slate-900" />
               {errors.hsnCode ? <p className="mt-2 text-sm text-rose-600">{errors.hsnCode.message}</p> : null}
+            </div>
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-emerald-800">
+                Recommended Dosage / अनुशंसित मात्रा (Crop Doctor & Details)
+              </label>
+              <input
+                {...register('dosage')}
+                placeholder="e.g. 2 ml per liter of water / 250-300 ml प्रति एकड़ (150-200L पानी में)"
+                className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <p className="mt-1 text-[11px] font-semibold text-emerald-700">
+                यह ऑफिशियल डोज़ेज किसान को दिखेगा और AI Crop Doctor भी इसी मात्रा की सलाह देगा ताकि गलत न लिखाए।
+              </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-emerald-800">
+                Target Crops / उपयुक्त फसलें एवं अनुकूलता (Usage Guide)
+              </label>
+              <input
+                {...register('targetCrops')}
+                placeholder="e.g. धान, गेहूं, सोयाबीन, कपास, मिर्च, टमाटर, बैंगन व फलदार फसलें"
+                className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-emerald-800">
+                Usage & Spray Method / उपयोग विधि एवं छिड़काव का तरीका
+              </label>
+              <textarea
+                {...register('usageInstructions')}
+                rows={2}
+                placeholder="e.g. 150-200 लीटर साफ पानी में घोलकर पत्तियों पर समान रूप से छिड़काव करें। तेज धूप में छिड़काव न करें।"
+                className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-emerald-800">
+                Safety & Storage Precautions / सुरक्षा एवं भंडारण सावधानियां
+              </label>
+              <textarea
+                {...register('safetyPrecautions')}
+                rows={2}
+                placeholder="e.g. धूप से दूर ठंडी व सूखी जगह पर रखें। बच्चों व पशुओं की पहुंच से दूर रखें। छिड़काव के समय मास्क व दस्ताने पहनें।"
+                className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
             </div>
             <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Peti Size</label>

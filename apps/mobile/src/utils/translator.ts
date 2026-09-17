@@ -7,33 +7,43 @@ const STORAGE_PREFIX = 'trans_hi_';
 
 /** Category translations dictionary */
 export const CATEGORY_TRANSLATIONS: Record<string, string> = {
-  insecticides: 'कीटनाशक व कीट नियंत्रण',
+  insecticides: 'कीटनाशक',
   insecticide: 'कीटनाशक',
-  herbicides: 'खरपतवार नाशक (घास की दवा)',
+  herbicides: 'खरपतवार नाशक',
   herbicide: 'खरपतवार नाशक',
   weedicides: 'खरपतवार नाशक',
-  fungicides: 'फफूंदनाशक व रोग निवारक',
+  weedicide: 'खरपतवार नाशक',
+  fungicides: 'फफूंदनाशक',
   fungicide: 'फफूंदनाशक',
-  'bio-pesticides': 'जैविक कीटनाशक व टॉनिक',
+  'bio pesticides': 'जैविक कीटनाशक',
+  'bio pesticide': 'जैविक कीटनाशक',
+  'bio-pesticides': 'जैविक कीटनाशक',
+  'bio-pesticide': 'जैविक कीटनाशक',
   biopesticides: 'जैविक कीटनाशक',
+  biopesticide: 'जैविक कीटनाशक',
   'plant-growth-promoters': 'पौध वृद्धि टॉनिक',
+  'plant growth promoters': 'पौध वृद्धि टॉनिक',
   pgp: 'पौध वृद्धि टॉनिक',
   tonics: 'फसल टॉनिक',
+  tonic: 'फसल टॉनिक',
   seeds: 'उन्नत बीज',
+  seed: 'उन्नत बीज',
   fertilizers: 'खाद एवं पोषण',
+  fertilizer: 'खाद एवं पोषण',
   'crop care': 'फसल सुरक्षा',
   'crop-care': 'फसल सुरक्षा',
 };
 
-export function translateCategory(nameOrSlug?: string): string {
+export function translateCategory(nameOrSlug?: string, lang?: string): string {
   if (!nameOrSlug) return 'फसल सुरक्षा';
-  if (getAppLanguage() !== 'hi') return nameOrSlug;
+  const currentLang = lang || getAppLanguage();
+  if (currentLang !== 'hi') return nameOrSlug;
 
   const key = nameOrSlug.trim().toLowerCase();
   if (CATEGORY_TRANSLATIONS[key]) return CATEGORY_TRANSLATIONS[key];
 
   for (const [dictKey, dictVal] of Object.entries(CATEGORY_TRANSLATIONS)) {
-    if (key.includes(dictKey)) return dictVal;
+    if (key === dictKey || key.includes(dictKey)) return dictVal;
   }
 
   return nameOrSlug;

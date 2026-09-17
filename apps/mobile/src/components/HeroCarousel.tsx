@@ -16,15 +16,15 @@ const fallbackImage =
   'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80';
 
 export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarouselProps) {
-  const { t } = useTranslation();
-  const isHindi = getAppLanguage() === 'hi';
+  const { t, i18n } = useTranslation();
+  const isHindi = (i18n.language || getAppLanguage()) === 'hi';
   const scrollRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const { width: windowWidth } = useWindowDimensions();
 
   // Full-bleed width across entire screen width
   const screenWidth = windowWidth || Dimensions.get('window').width;
-  const bannerHeight = Math.min(Math.max(screenWidth * 0.65, 230), 270);
+  const bannerHeight = Math.min(Math.max(screenWidth * 0.62, 235), 275);
 
   const items = useMemo(() => {
     if (banners && banners.length > 0) {
@@ -90,20 +90,20 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
                 transition={300}
               />
 
-              {/* High Contrast Gradient Tint Overlay */}
+              {/* High Contrast Ambient Scrim Overlay */}
               <View
-                style={{ backgroundColor: 'rgba(0,0,0,0.52)' }}
-                className="absolute inset-0 p-6 justify-between"
+                style={{ backgroundColor: 'rgba(7, 31, 23, 0.62)' }}
+                className="absolute inset-0 px-5 py-3.5 justify-between"
               >
-                <View className="max-w-[90%] gap-2 pt-1">
+                <View className="max-w-[92%] gap-1 pt-0.5">
                   <View className="self-start bg-emerald-500/25 border border-emerald-400/40 px-2.5 py-0.5 rounded-full">
-                    <Text className="text-[10px] font-black uppercase tracking-[2px] text-emerald-300">
+                    <Text className="text-[10px] font-black uppercase tracking-[1.5px] text-emerald-300">
                       {isHindi ? 'विशेष ऑफर • VANIKI CROP' : 'SPECIAL OFFER • VANIKI CROP'}
                     </Text>
                   </View>
 
                   <Text
-                    className="text-2xl font-black leading-tight text-white shadow-md"
+                    className="text-xl font-black leading-tight text-white shadow-md"
                     numberOfLines={2}
                   >
                     {item.title}
@@ -111,7 +111,7 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
 
                   {item.subtitle ? (
                     <Text
-                      className="text-xs font-semibold leading-5 text-white/90 shadow-sm"
+                      className="text-xs font-semibold leading-relaxed text-white/90 shadow-sm"
                       numberOfLines={2}
                     >
                       {item.subtitle}
@@ -121,12 +121,12 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
 
                 <Pressable
                   onPress={() => router.push((item.ctaLink as '/products') || '/products')}
-                  className="self-start flex-row items-center gap-2 rounded-2xl bg-white px-5 py-3 shadow-lg active:scale-95"
+                  className="self-start flex-row items-center gap-1.5 rounded-xl bg-white px-4 py-2.5 shadow-md active:scale-95 mb-0.5"
                 >
-                  <Text className="text-xs font-black uppercase tracking-[1.5px] text-[#071F17]">
+                  <Text className="text-xs font-black uppercase tracking-[1.2px] text-[#071F17]">
                     {item.ctaText || (isHindi ? 'अभी खरीदें' : 'SHOP NOW')}
                   </Text>
-                  <Feather name="arrow-right" size={14} color="#071F17" />
+                  <Feather name="arrow-right" size={13} color="#071F17" />
                 </Pressable>
               </View>
             </View>

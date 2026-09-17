@@ -878,4 +878,62 @@ export const adminApi = {
     const response = await api.get<ApiResponse<any>>('/tally/status', { params });
     return response.data.data;
   },
+
+  // Agri Advisor (AI Crop Doctor) Superadmin API
+  getAdvisorQuestions: async () => {
+    const response = await api.get<{ success: boolean; data: any[] }>('/ai/admin/questions');
+    return response.data.data;
+  },
+  createAdvisorQuestion: async (payload: {
+    questionEn: string;
+    questionHi: string;
+    answerEn: string;
+    answerHi: string;
+    recommendedProductIds?: string[];
+    isActive?: boolean;
+    sortOrder?: number;
+  }) => {
+    const response = await api.post<{ success: boolean; data: any; message: string }>(
+      '/ai/admin/questions',
+      payload,
+    );
+    return response.data;
+  },
+  updateAdvisorQuestion: async (
+    id: string,
+    payload: {
+      questionEn?: string;
+      questionHi?: string;
+      answerEn?: string;
+      answerHi?: string;
+      recommendedProductIds?: string[];
+      isActive?: boolean;
+      sortOrder?: number;
+    },
+  ) => {
+    const response = await api.put<{ success: boolean; data: any; message: string }>(
+      `/ai/admin/questions/${id}`,
+      payload,
+    );
+    return response.data;
+  },
+  deleteAdvisorQuestion: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(
+      `/ai/admin/questions/${id}`,
+    );
+    return response.data;
+  },
+  getAdvisorRules: async () => {
+    const response = await api.get<{ success: boolean; data: { advisorRules: string } }>(
+      '/ai/admin/rules',
+    );
+    return response.data.data;
+  },
+  updateAdvisorRules: async (advisorRules: string) => {
+    const response = await api.put<{ success: boolean; data: { advisorRules: string }; message: string }>(
+      '/ai/admin/rules',
+      { advisorRules },
+    );
+    return response.data;
+  },
 };

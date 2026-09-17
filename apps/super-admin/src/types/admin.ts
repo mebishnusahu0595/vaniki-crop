@@ -49,6 +49,10 @@ export interface Product {
   loyaltyPointEligible?: boolean;
   maxLoyaltyPoints?: number;
   taxRate?: number;
+  dosage?: string;
+  targetCrops?: string;
+  usageInstructions?: string;
+  safetyPrecautions?: string;
   hsnCode?: string;
   petiSize?: number;
   petiUnit?: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';

@@ -51,6 +51,10 @@ const productSchema = z.object({
   isActive: z.boolean().default(true),
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
+  dosage: z.string().optional(),
+  targetCrops: z.string().optional(),
+  usageInstructions: z.string().optional(),
+  safetyPrecautions: z.string().optional(),
   loyaltyPointEligible: z.boolean().default(false),
   maxLoyaltyPoints: requiredNumber('Max Loyalty Points'),
   variants: z.array(variantSchema).min(1),
@@ -80,6 +84,10 @@ const productDefaultValues: ProductFormInput = {
   isActive: true,
   metaTitle: '',
   metaDescription: '',
+  dosage: '',
+  targetCrops: '',
+  usageInstructions: '',
+  safetyPrecautions: '',
   loyaltyPointEligible: false,
   maxLoyaltyPoints: 0,
   variants: [{ quantity: '', unit: 'Liter', price: '', adminPrice: '', mrp: '', stock: '' }],
@@ -100,6 +108,10 @@ function getProductDefaultValues(product?: Product): ProductFormInput {
     isActive: product.isActive,
     metaTitle: product.metaTitle || '',
     metaDescription: product.metaDescription || '',
+    dosage: product.dosage || '',
+    targetCrops: product.targetCrops || '',
+    usageInstructions: product.usageInstructions || '',
+    safetyPrecautions: product.safetyPrecautions || '',
     loyaltyPointEligible: product.loyaltyPointEligible || false,
     maxLoyaltyPoints: product.maxLoyaltyPoints || 0,
     variants: product.variants.map((variant) => ({
@@ -410,6 +422,10 @@ function ProductEditor({
           payload.append('isActive', String(values.isActive));
           payload.append('metaTitle', values.metaTitle || '');
           payload.append('metaDescription', values.metaDescription || '');
+          if (values.dosage) payload.append('dosage', values.dosage.trim());
+          if (values.targetCrops) payload.append('targetCrops', values.targetCrops.trim());
+          if (values.usageInstructions) payload.append('usageInstructions', values.usageInstructions.trim());
+          if (values.safetyPrecautions) payload.append('safetyPrecautions', values.safetyPrecautions.trim());
           payload.append('loyaltyPointEligible', String(values.loyaltyPointEligible));
           payload.append('maxLoyaltyPoints', String(values.maxLoyaltyPoints));
           payload.append(
@@ -487,6 +503,54 @@ function ProductEditor({
             <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Tags</label>
               <input {...register('tags')} placeholder="insecticide, premium" className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-emerald-800">
+                Recommended Dosage / अनुशंसित मात्रा (Crop Doctor & Details)
+              </label>
+              <input
+                {...register('dosage')}
+                placeholder="e.g. 2 ml per liter of water / 250-300 ml प्रति एकड़ (150-200L पानी में)"
+                className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <p className="mt-1 text-[11px] font-semibold text-emerald-700">
+                यह ऑफिशियल डोज़ेज किसान को दिखेगा और AI Crop Doctor भी इसी मात्रा की सलाह देगा ताकि गलत न लिखाए।
+              </p>
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-emerald-800">
+                Target Crops / उपयुक्त फसलें एवं अनुकूलता (Usage Guide)
+              </label>
+              <input
+                {...register('targetCrops')}
+                placeholder="e.g. धान, गेहूं, सोयाबीन, कपास, मिर्च, टमाटर, बैंगन व फलदार फसलें"
+                className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-emerald-800">
+                Usage & Spray Method / उपयोग विधि एवं छिड़काव का तरीका
+              </label>
+              <textarea
+                {...register('usageInstructions')}
+                rows={2}
+                placeholder="e.g. 150-200 लीटर साफ पानी में घोलकर पत्तियों पर समान रूप से छिड़काव करें। तेज धूप में छिड़काव न करें।"
+                className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-emerald-800">
+                Safety & Storage Precautions / सुरक्षा एवं भंडारण सावधानियां
+              </label>
+              <textarea
+                {...register('safetyPrecautions')}
+                rows={2}
+                placeholder="e.g. धूप से दूर ठंडी व सूखी जगह पर रखें। बच्चों व पशुओं की पहुंच से दूर रखें। छिड़काव के समय मास्क व दस्ताने पहनें।"
+                className="w-full rounded-2xl border border-emerald-200 bg-emerald-50/50 px-4 py-3 font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
             </div>
             <div>
               <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-slate-500">Meta Title</label>

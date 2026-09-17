@@ -30,6 +30,7 @@ import DealersPromotionsPage from './pages/DealersPromotions';
 import WebsiteAnalyticsPage from './pages/WebsiteAnalytics';
 import EnquiriesPage from './pages/Enquiries';
 import CropsPage from './pages/Crops';
+import AgriAdvisorPage from './pages/AgriAdvisor';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/analytics" element={<WebsiteAnalyticsPage />} />
+          <Route path="/agri-advisor" element={<AgriAdvisorPage />} />
           <Route path="/stores" element={<StoresPage />} />
           <Route path="/admins" element={<AdminsPage />} />
           <Route path="/product-requests" element={<ProductRequestsPage />} />

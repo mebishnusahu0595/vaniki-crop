@@ -16,10 +16,21 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Screen } from '../../src/components/Screen';
+import { storefrontApi } from '../../src/lib/api';
 import { askGeminiAgriAdvisor, type ChatMessage } from '../../src/lib/gemini';
 import { asyncStorage } from '../../src/lib/storage';
 import type { Product } from '../../src/types/storefront';
 import { currencyFormatter, getPrimaryImage } from '../../src/utils/format';
+
+interface AdvisorQuestionItem {
+  _id?: string;
+  id?: string;
+  questionEn: string;
+  questionHi: string;
+  answerEn?: string;
+  answerHi?: string;
+  recommendedProductIds?: Product[];
+}
 
 const CHAT_HISTORY_STORAGE_KEY = 'vaniki_agri_advisor_chat_history_v4';
 
@@ -109,12 +120,32 @@ export default function AgriAdvisorScreen() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
+  const [advisorQuestions, setAdvisorQuestions] = useState<AdvisorQuestionItem[]>([]);
   const [inputText, setInputText] = useState('');
   const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
   const [selectedImageBase64, setSelectedImageBase64] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
   const chatScrollViewRef = useRef<ScrollView>(null);
+
+  // Load active suggested questions from Superadmin
+  useEffect(() => {
+    let isMounted = true;
+    async function loadAdvisorQuestions() {
+      try {
+        const questions = await storefrontApi.agriAdvisorQuestions();
+        if (isMounted && Array.isArray(questions) && questions.length > 0) {
+          setAdvisorQuestions(questions);
+        }
+      } catch (err) {
+        console.warn('Failed to load advisor questions:', err);
+      }
+    }
+    void loadAdvisorQuestions();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Load chat history from AsyncStorage on mount
   useEffect(() => {
@@ -285,6 +316,52 @@ export default function AgriAdvisorScreen() {
     }
   };
 
+  const handleSelectQuestion = (qItem: AdvisorQuestionItem | string) => {
+    if (typeof qItem === 'string') {
+      void handleSendMessage(qItem);
+      return;
+    }
+
+    const questionTitle = isHindi
+      ? (qItem.questionHi || qItem.questionEn)
+      : (qItem.questionEn || qItem.questionHi);
+    const answerText = isHindi
+      ? (qItem.answerHi || qItem.answerEn)
+      : (qItem.answerEn || qItem.answerHi);
+
+    if (answerText) {
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        sender: 'user',
+        text: questionTitle,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      const formattedProducts: Product[] = (qItem.recommendedProductIds || []).map((p: any) => ({
+        id: p._id || p.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description || '',
+        images: p.images || [],
+        variants: p.variants || [],
+        category: p.category,
+        dosage: p.dosage,
+      }));
+
+      const aiMsg: ChatMessage = {
+        id: `ai-${Date.now() + 1}`,
+        sender: 'ai',
+        text: answerText,
+        recommendedProducts: formattedProducts.length > 0 ? formattedProducts : undefined,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      setMessages((prev) => [...prev, userMsg, aiMsg]);
+    } else {
+      void handleSendMessage(questionTitle);
+    }
+  };
+
   const callExpert = () => {
     Linking.openURL('tel:+919407963966').catch(() => undefined);
   };
@@ -349,16 +426,30 @@ export default function AgriAdvisorScreen() {
         {/* Quick Suggestion Chips */}
         <View className="bg-slate-50 border-b border-slate-200 py-2 px-3">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-            {quickSuggestions.map((chip, idx) => (
-              <Pressable
-                key={idx}
-                disabled={isLoading}
-                onPress={() => handleSendMessage(chip)}
-                className="rounded-full bg-white border border-emerald-200 px-3 py-1.5 active:scale-95 shadow-2xs"
-              >
-                <Text className="text-[11px] font-bold text-emerald-900">{chip}</Text>
-              </Pressable>
-            ))}
+            {advisorQuestions.length > 0
+              ? advisorQuestions.map((q, idx) => {
+                  const title = isHindi ? (q.questionHi || q.questionEn) : (q.questionEn || q.questionHi);
+                  return (
+                    <Pressable
+                      key={q._id || q.id || idx}
+                      disabled={isLoading}
+                      onPress={() => handleSelectQuestion(q)}
+                      className="rounded-full bg-white border border-emerald-200 px-3 py-1.5 active:scale-95 shadow-2xs"
+                    >
+                      <Text className="text-[11px] font-bold text-emerald-900">{title}</Text>
+                    </Pressable>
+                  );
+                })
+              : quickSuggestions.map((chip, idx) => (
+                  <Pressable
+                    key={idx}
+                    disabled={isLoading}
+                    onPress={() => handleSelectQuestion(chip)}
+                    className="rounded-full bg-white border border-emerald-200 px-3 py-1.5 active:scale-95 shadow-2xs"
+                  >
+                    <Text className="text-[11px] font-bold text-emerald-900">{chip}</Text>
+                  </Pressable>
+                ))}
           </ScrollView>
         </View>
 
@@ -442,6 +533,11 @@ export default function AgriAdvisorScreen() {
                                 <Text className="text-xs font-black text-slate-900" numberOfLines={1}>
                                   {prod.name}
                                 </Text>
+                                {prod.dosage ? (
+                                  <Text className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.5 rounded self-start mt-0.5" numberOfLines={1}>
+                                    {isHindi ? `मात्रा: ${prod.dosage}` : `Dosage: ${prod.dosage}`}
+                                  </Text>
+                                ) : null}
                                 <View className="flex-row items-center gap-2 mt-0.5">
                                   {variant ? (
                                     <Text className="text-xs font-black text-emerald-800">

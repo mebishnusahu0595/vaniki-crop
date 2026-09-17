@@ -530,6 +530,14 @@ export const storefrontApi = {
     const response = await request<Crop[]>('/crops');
     return response.data;
   },
+  agriAdvisorQuestions: async (): Promise<any[]> => {
+    try {
+      const response = await request<any[]>('/ai/agri-advisor/questions');
+      return response.data;
+    } catch {
+      return [];
+    }
+  },
   cropDetail: async (slug: string): Promise<Crop> => {
     const response = await request<Crop>(`/crops/${slug}`);
     return response.data;

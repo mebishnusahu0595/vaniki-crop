@@ -559,6 +559,10 @@ export async function createProduct(
     loyaltyPointEligible: input.loyaltyPointEligible || false,
     maxLoyaltyPoints: input.maxLoyaltyPoints || 0,
     taxRate: input.taxRate !== undefined ? input.taxRate : 18,
+    dosage: input.dosage || '',
+    targetCrops: input.targetCrops || '',
+    usageInstructions: input.usageInstructions || '',
+    safetyPrecautions: input.safetyPrecautions || '',
     hsnCode: input.hsnCode,
     petiSize: input.petiSize || 12,
     petiUnit: input.petiUnit || 'Liter',
@@ -697,6 +701,10 @@ export async function updateProduct(
   if (input.loyaltyPointEligible !== undefined) product.loyaltyPointEligible = input.loyaltyPointEligible;
   if (input.maxLoyaltyPoints !== undefined) product.maxLoyaltyPoints = input.maxLoyaltyPoints;
   if (input.taxRate !== undefined) product.taxRate = input.taxRate;
+  if (input.dosage !== undefined) product.dosage = input.dosage;
+  if (input.targetCrops !== undefined) product.targetCrops = input.targetCrops;
+  if (input.usageInstructions !== undefined) product.usageInstructions = input.usageInstructions;
+  if (input.safetyPrecautions !== undefined) product.safetyPrecautions = input.safetyPrecautions;
   if (input.hsnCode !== undefined) product.hsnCode = input.hsnCode;
   if (input.petiSize !== undefined) product.petiSize = input.petiSize;
   if (input.petiUnit !== undefined) product.petiUnit = input.petiUnit as any;

@@ -24,6 +24,7 @@ export interface ISiteSetting extends Document {
   panNumber?: string;
   gstNumber?: string;
   minLoyaltyPointsToRedeem: number;
+  advisorRules?: string;
   tallyConfig?: {
     tallyHost?: string;
     tallyPort?: number;
@@ -90,6 +91,11 @@ const siteSettingSchema = new Schema<ISiteSetting>(
       type: String,
       trim: true,
       maxlength: 220,
+    },
+    advisorRules: {
+      type: String,
+      trim: true,
+      default: '',
     },
     defaultDeliveryRadius: {
       type: Number,

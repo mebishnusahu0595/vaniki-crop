@@ -2,9 +2,11 @@ import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { Category } from '../types/storefront';
 import { resolveMediaUrl } from '../utils/media';
 import { translateCategory } from '../utils/translator';
+import { getAppLanguage } from '../i18n';
 
 interface CategoryCardProps {
   category: Category;
@@ -12,8 +14,10 @@ interface CategoryCardProps {
 }
 
 export const CategoryCard = memo(function CategoryCard({ category, onPress }: CategoryCardProps) {
+  const { i18n } = useTranslation();
+  const currentLang = i18n.language || getAppLanguage();
   const imageUrl = resolveMediaUrl(category.image?.url, category.image?.publicId);
-  const displayName = translateCategory(category.name || category.slug);
+  const displayName = translateCategory(category.name || category.slug, currentLang);
 
   return (
     <Pressable onPress={onPress} style={{ width: 76, marginRight: 16 }} className="items-center active:scale-95">

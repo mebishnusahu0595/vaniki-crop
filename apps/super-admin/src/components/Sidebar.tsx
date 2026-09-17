@@ -25,6 +25,7 @@ import {
   Award,
   LineChart,
   Sprout,
+  Bot,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink } from 'react-router-dom';
@@ -48,6 +49,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/bulk-orders', label: 'Bulk Orders (MOQ)', icon: PackageCheck },
   { to: '/products', label: 'Products', icon: Box },
   { to: '/crops', label: 'Crops', icon: Sprout },
+  { to: '/agri-advisor', label: 'Agri Advisor (AI Doctor)', icon: Bot },
   { to: '/categories', label: 'Categories', icon: Tags },
   { to: '/orders', label: 'All Orders', icon: ShoppingCart },
   { to: '/payments', label: 'All Payments', icon: Banknote },

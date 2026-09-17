@@ -70,6 +70,10 @@ export interface IProduct extends Document {
   maxLoyaltyPoints: number;
   hsnCode?: string;
   taxRate: number;
+  dosage?: string;
+  targetCrops?: string;
+  usageInstructions?: string;
+  safetyPrecautions?: string;
   petiSize: number;
   petiUnit: 'ml' | 'Liter' | 'gm' | 'KG' | 'Packet' | 'piece';
   /** Minimum Order Quantity for B2B/Dealer bulk orders */
@@ -196,6 +200,10 @@ const productSchema = new Schema<IProduct>(
     maxLoyaltyPoints: { type: Number, default: 0 },
     hsnCode: { type: String, trim: true },
     taxRate: { type: Number, default: 18, min: 0 },
+    dosage: { type: String, trim: true, default: '' },
+    targetCrops: { type: String, trim: true, default: '' },
+    usageInstructions: { type: String, trim: true, default: '' },
+    safetyPrecautions: { type: String, trim: true, default: '' },
     petiSize: { type: Number, default: 12 },
     petiUnit: { type: String, enum: ['ml', 'Liter', 'gm', 'KG', 'Packet', 'piece'], default: 'Liter' },
     moq: { type: Number, default: 1, min: [1, 'MOQ must be at least 1'] },

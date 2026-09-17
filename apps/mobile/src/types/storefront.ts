@@ -74,6 +74,10 @@ export interface Product {
   category?: Category;
   variants: ProductVariant[];
   tags?: string[];
+  dosage?: string;
+  targetCrops?: string;
+  usageInstructions?: string;
+  safetyPrecautions?: string;
   averageRating?: number;
   reviewCount?: number;
   totalSold?: number;

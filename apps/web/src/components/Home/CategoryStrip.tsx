@@ -9,8 +9,39 @@ interface CategoryStripProps {
   categories: Category[];
 }
 
+const CATEGORY_MAP_HI: Record<string, string> = {
+  insecticides: 'कीटनाशक',
+  insecticide: 'कीटनाशक',
+  herbicides: 'खरपतवार नाशक',
+  herbicide: 'खरपतवार नाशक',
+  weedicides: 'खरपतवार नाशक',
+  fungicides: 'फफूंदनाशक',
+  fungicide: 'फफूंदनाशक',
+  'bio pesticides': 'जैविक कीटनाशक',
+  'bio pesticide': 'जैविक कीटनाशक',
+  'bio-pesticides': 'जैविक कीटनाशक',
+  biopesticides: 'जैविक कीटनाशक',
+  'plant-growth-promoters': 'पौध वृद्धि टॉनिक',
+  pgp: 'पौध वृद्धि टॉनिक',
+  tonics: 'फसल टॉनिक',
+  seeds: 'उन्नत बीज',
+  fertilizers: 'खाद एवं पोषण',
+  'crop care': 'फसल सुरक्षा',
+};
+
+const getCategoryDisplayName = (name: string, isHindi: boolean): string => {
+  if (!isHindi) return name;
+  const key = name.toLowerCase().trim();
+  if (CATEGORY_MAP_HI[key]) return CATEGORY_MAP_HI[key];
+  for (const [k, v] of Object.entries(CATEGORY_MAP_HI)) {
+    if (key.includes(k)) return v;
+  }
+  return name;
+};
+
 const CategoryStrip: React.FC<CategoryStripProps> = ({ categories }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isHindi = i18n.resolvedLanguage?.startsWith('hi') ?? false;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const safeCategories = categories.length ? categories : [];
 
@@ -51,7 +82,7 @@ const CategoryStrip: React.FC<CategoryStripProps> = ({ categories }) => {
                 )}
               </div>
               <span className="mt-3 text-center text-xs font-black uppercase tracking-[0.16em] text-primary-900/70 group-hover:text-primary">
-                {category.name}
+                {getCategoryDisplayName(category.name, isHindi)}
               </span>
             </Link>
           ))}
