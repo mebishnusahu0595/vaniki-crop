@@ -242,9 +242,9 @@ function DealerProductGridCard({
 }) {
   const primaryImage = getPrimaryImage(product);
   const defaultVariant = product.variants?.[0];
-  const moq = product.moq || 1;
+  const petiSize = product.petiSize || 10;
   const unitPrice = defaultVariant?.price || 0;
-  const minOrderTotal = unitPrice * moq;
+  const petiPrice = unitPrice * petiSize;
 
   const handleAction = () => {
     if (!isApproved) {
@@ -259,7 +259,7 @@ function DealerProductGridCard({
       onPress={() => router.push({ pathname: '/product/[slug]', params: { slug: product.slug } })}
       className="flex-1 rounded-[22px] border border-primary-100 bg-white overflow-hidden active:scale-[0.98] shadow-xs"
     >
-      {/* Image with MOQ Ribbon */}
+      {/* Image with Peti Badge */}
       <View className="relative bg-[#f4f7f6] pt-2">
         <Image
           source={{ uri: primaryImage }}
@@ -268,10 +268,10 @@ function DealerProductGridCard({
           contentFit="contain"
           transition={400}
         />
-        {/* MOQ Badge */}
+        {/* Peti Badge */}
         <View className="absolute left-2 top-2 rounded-full bg-emerald-800 px-2.5 py-0.5 shadow-xs">
           <Text className="text-[9px] font-black uppercase tracking-wider text-white">
-            MOQ: {moq} {moq === 1 ? 'Unit' : 'Units'}
+            1 Peti = {petiSize} pcs
           </Text>
         </View>
       </View>
@@ -290,15 +290,13 @@ function DealerProductGridCard({
           <View className="mt-2">
             <View className="flex-row items-baseline gap-1">
               <Text className="text-base font-black text-primary-800">
-                {currencyFormatter.format(unitPrice)}
+                {currencyFormatter.format(petiPrice)}
               </Text>
-              <Text className="text-[10px] font-bold text-slate-400">/unit</Text>
+              <Text className="text-[10px] font-bold text-slate-400">/Peti</Text>
             </View>
-            {defaultVariant?.mrp && defaultVariant.mrp > unitPrice ? (
-              <Text className="text-[10px] font-semibold text-slate-400 line-through">
-                MRP {currencyFormatter.format(defaultVariant.mrp)}
-              </Text>
-            ) : null}
+            <Text className="text-[10px] font-semibold text-slate-500 mt-0.5">
+              ({currencyFormatter.format(unitPrice)}/unit • {petiSize} pcs)
+            </Text>
           </View>
         ) : (
           <View className="mt-2">
@@ -310,16 +308,6 @@ function DealerProductGridCard({
           </View>
         )}
 
-        {/* Min Order Cost Banner */}
-        <View className="mt-2 rounded-xl bg-primary-50 px-2 py-1 border border-primary-100">
-          <Text className="text-[9px] font-bold text-primary-800">
-            Min Total:{' '}
-            <Text className="font-black">
-              {isApproved ? currencyFormatter.format(minOrderTotal) : '••••'}
-            </Text>
-          </Text>
-        </View>
-
         {/* Order Button */}
         <Pressable
           onPress={handleAction}
@@ -327,7 +315,7 @@ function DealerProductGridCard({
           className="mt-2.5 rounded-xl py-2 items-center active:scale-95 shadow-xs"
         >
           <Text className="text-[11px] font-black uppercase tracking-[1px] text-white">
-            {isApproved ? 'Order Bulk →' : '🔒 KYC Pending'}
+            {isApproved ? 'Order Petis →' : '🔒 KYC Pending'}
           </Text>
         </Pressable>
       </View>
