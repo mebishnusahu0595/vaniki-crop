@@ -44,6 +44,9 @@
         "EXPO_PUBLIC_API_URL": "https://vanikicrop.com/api"
       }
     },
+    "production-aab": {
+      "extends": "production"
+    },
     "production-apk": {
       "extends": "production",
       "credentialsSource": "local",
