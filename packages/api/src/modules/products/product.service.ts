@@ -211,18 +211,25 @@ export async function getProducts(
     const inventoryMap = new Map<string, number>();
     const productTotalMap = new Map<string, number>();
     for (const inv of inventories) {
-      const key = `${inv.productId.toString()}_${inv.variantId.toString()}`;
-      inventoryMap.set(key, (inventoryMap.get(key) || 0) + inv.quantity);
-      productTotalMap.set(inv.productId.toString(), (productTotalMap.get(inv.productId.toString()) || 0) + inv.quantity);
+      if (!inv.productId) continue;
+      const pId = inv.productId.toString();
+      const vId = inv.variantId ? inv.variantId.toString() : '';
+      if (vId) {
+        const key = `${pId}_${vId}`;
+        inventoryMap.set(key, (inventoryMap.get(key) || 0) + (inv.quantity || 0));
+      }
+      productTotalMap.set(pId, (productTotalMap.get(pId) || 0) + (inv.quantity || 0));
     }
 
     for (const product of products) {
       if (product.variants && product.variants.length > 0) {
+        const pId = product._id ? product._id.toString() : '';
         for (const variant of product.variants) {
-          const key = `${product._id.toString()}_${variant._id!.toString()}`;
-          let dealerQty = inventoryMap.get(key);
+          const vId = variant._id ? variant._id.toString() : (variant as any).id?.toString() || '';
+          const key = vId ? `${pId}_${vId}` : pId;
+          let dealerQty = vId ? inventoryMap.get(key) : undefined;
           if (dealerQty === undefined) {
-            dealerQty = productTotalMap.get(product._id.toString()) || 5;
+            dealerQty = productTotalMap.get(pId) || 5;
           }
           const baseStock = variant.stock !== undefined && variant.stock > 0 ? variant.stock : 5;
           variant.stock = (storeId && query.serviceMode === 'pickup') ? Math.max(5, dealerQty) : Math.max(5, baseStock + dealerQty);
@@ -266,7 +273,7 @@ export async function searchProducts(
   };
 
   const textMatches = await Product.find(textFilter, { score: { $meta: 'textScore' } })
-    .select('name slug shortDescription images variants.label variants.price tags')
+    .select('name slug shortDescription images variants tags category storeId')
     .populate('category', 'name slug')
     .sort({ score: { $meta: 'textScore' } })
     .limit(normalizedLimit);
@@ -299,7 +306,7 @@ export async function searchProducts(
   }
 
   const regexMatches = await Product.find(regexFilter)
-    .select('name slug shortDescription images variants.label variants.price tags')
+    .select('name slug shortDescription images variants tags category storeId')
     .populate('category', 'name slug')
     .limit(normalizedLimit - textMatches.length);
 
@@ -325,16 +332,23 @@ export async function searchProducts(
     const inventoryMap = new Map<string, number>();
     const productTotalMap = new Map<string, number>();
     for (const inv of inventories) {
-      const key = `${inv.productId.toString()}_${inv.variantId.toString()}`;
-      inventoryMap.set(key, (inventoryMap.get(key) || 0) + inv.quantity);
-      productTotalMap.set(inv.productId.toString(), (productTotalMap.get(inv.productId.toString()) || 0) + inv.quantity);
+      if (!inv.productId) continue;
+      const pId = inv.productId.toString();
+      const vId = inv.variantId ? inv.variantId.toString() : '';
+      if (vId) {
+        const key = `${pId}_${vId}`;
+        inventoryMap.set(key, (inventoryMap.get(key) || 0) + (inv.quantity || 0));
+      }
+      productTotalMap.set(pId, (productTotalMap.get(pId) || 0) + (inv.quantity || 0));
     }
 
     for (const product of results) {
       if (product.variants && product.variants.length > 0) {
+        const pId = product._id ? product._id.toString() : '';
         for (const variant of product.variants) {
-          const key = `${product._id.toString()}_${variant._id!.toString()}`;
-          const dealerQty = inventoryMap.get(key) || productTotalMap.get(product._id.toString()) || 5;
+          const vId = variant._id ? variant._id.toString() : (variant as any).id?.toString() || '';
+          const key = vId ? `${pId}_${vId}` : pId;
+          const dealerQty = (vId ? inventoryMap.get(key) : undefined) ?? productTotalMap.get(pId) ?? 5;
           const baseStock = variant.stock !== undefined && variant.stock > 0 ? variant.stock : 5;
           variant.stock = Math.max(5, baseStock + dealerQty);
         }
@@ -382,14 +396,17 @@ export async function getProductBySlug(slug: string, storeId?: string, serviceMo
     const inventoryMap = new Map<string, number>();
     let totalProdQty = 0;
     for (const inv of inventories) {
-      const key = inv.variantId.toString();
-      inventoryMap.set(key, (inventoryMap.get(key) || 0) + inv.quantity);
-      totalProdQty += inv.quantity;
+      if (inv.variantId) {
+        const key = inv.variantId.toString();
+        inventoryMap.set(key, (inventoryMap.get(key) || 0) + (inv.quantity || 0));
+      }
+      totalProdQty += (inv.quantity || 0);
     }
 
     for (const variant of product.variants) {
-      const key = variant._id!.toString();
-      let dealerQty = inventoryMap.get(key);
+      const vId = variant._id ? variant._id.toString() : (variant as any).id?.toString() || '';
+      const key = vId;
+      let dealerQty = vId ? inventoryMap.get(key) : undefined;
       if (dealerQty === undefined) {
         dealerQty = totalProdQty > 0 ? totalProdQty : 5;
       }
