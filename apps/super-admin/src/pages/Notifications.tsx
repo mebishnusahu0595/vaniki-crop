@@ -68,7 +68,7 @@ export default function NotificationsPage() {
   const [aiAdvisory, setAiAdvisory] = useState<any>(null);
   const [aiTemplateMode, setAiTemplateMode] = useState<'custom' | 'vaniki'>('custom');
   const [isTestMode, setIsTestMode] = useState(false);
-  const [testNumber, setTestNumber] = useState('9301105706');
+  const [testNumber, setTestNumber] = useState('9407963966');
   const [dispatchPush, setDispatchPush] = useState(true);
   const [dispatchWhatsApp, setDispatchWhatsApp] = useState(true);
   const [aiFeedback, setAiFeedback] = useState('');
@@ -686,7 +686,7 @@ export default function NotificationsPage() {
                           type="text"
                           value={testNumber}
                           onChange={(e) => setTestNumber(e.target.value)}
-                          placeholder="e.g. 9301105706"
+                          placeholder="e.g. 9407963966"
                           className="rounded-lg border border-amber-300 px-3 py-1 text-xs font-bold text-slate-900 bg-white outline-none focus:border-amber-500 min-w-0 flex-1"
                         />
                       </div>
@@ -940,7 +940,7 @@ export default function NotificationsPage() {
                       rows={3}
                       onChange={(e) => setForm((cur) => ({ ...cur, customNumbers: e.target.value }))}
                       className="mt-2 w-full resize-none rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-400"
-                      placeholder="9301105706, 9407963966, 6266838334"
+                      placeholder="9407963966, 98XXXXXXXX"
                     />
                   </label>
                 )}

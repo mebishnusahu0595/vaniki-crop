@@ -34,21 +34,21 @@ interface AdvisorQuestionItem {
 
 const CHAT_HISTORY_STORAGE_KEY = 'vaniki_agri_advisor_chat_history_v4';
 
-const WELCOME_EN = 'Hello Farmer! 🙏 I am your Vaniki AI Crop Doctor. Ask any question about your crop, disease, pests, or upload a photo of your crop. I will recommend the right Vaniki Crop products and spray dosage!';
-const WELCOME_HI = 'नमस्ते किसान भाई! 🙏 मैं आपका वनिकी AI फसल डॉक्टर हूँ। अपनी फसल में लग रहे रोग, कीट या खरपतवार के बारे में लिखकर पूछें या फसल की फोटो खींचकर भेजें। मैं आपको तुरंत सही वनिकी उत्पाद और छिड़काव की सही मात्रा बताऊंगा!';
+const WELCOME_EN = 'Hello Farmer! I am your Vaniki AI Crop Doctor. Ask any question about your crop, disease, pests, or upload a photo of your crop. I will recommend the right Vaniki Crop products and spray dosage!';
+const WELCOME_HI = 'नमस्ते किसान भाई! मैं आपका वनिकी AI फसल डॉक्टर हूँ। अपनी फसल में लग रहे रोग, कीट या खरपतवार के बारे में लिखकर पूछें या फसल की फोटो खींचकर भेजें। मैं आपको तुरंत सही वनिकी उत्पाद और छिड़काव की सही मात्रा बताऊंगा!';
 
 const QUICK_SUGGESTIONS_EN = [
-  '🌾 Leaf folder & caterpillar in Paddy',
-  '🌿 Herbicides for Soybean & Chilli',
-  '🐛 Pest & Fungus control medicines',
-  '🧪 Crop Growth & Yield Booster',
+  'Leaf folder & caterpillar in Paddy',
+  'Herbicides for Soybean & Chilli',
+  'Pest & Fungus control medicines',
+  'Crop Growth & Yield Booster',
 ];
 
 const QUICK_SUGGESTIONS_HI = [
-  '🌾 धान में पत्ती लपेटक और इल्ली का इलाज',
-  '🌿 सोयाबीन / मिर्च में खरपतवारनाशक दवा',
-  '🐛 फसल में कीट और फफूंद नियंत्रक',
-  '🧪 फसल की पैदावार बढ़ाने के लिए टॉनिक',
+  'धान में पत्ती लपेटक और इल्ली का इलाज',
+  'सोयाबीन / मिर्च में खरपतवारनाशक दवा',
+  'फसल में कीट और फफूंद नियंत्रक',
+  'फसल की पैदावार बढ़ाने के लिए टॉनिक',
 ];
 
 /**

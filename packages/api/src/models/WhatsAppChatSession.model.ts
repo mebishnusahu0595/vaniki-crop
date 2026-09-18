@@ -22,7 +22,7 @@ export interface IActiveContext {
 }
 
 export interface IWhatsAppChatSession extends Document {
-  mobile: string; // Normalized full number e.g. '916266838334'
+  mobile: string; // Normalized full number e.g. '919407963966'
   userId?: mongoose.Types.ObjectId;
   userName?: string;
   isDealer: boolean;

@@ -1,7 +1,7 @@
 import { WhatsAppChatSession, type IWhatsAppChatSession } from '../../models/WhatsAppChatSession.model.js';
 
 /**
- * Normalizes phone numbers (ensures standard format like '916266838334')
+ * Normalizes phone numbers (ensures standard format like '919407963966')
  */
 export function normalizeWhatsAppNumber(phone: string): string {
   const cleaned = (phone || '').replace(/[^\d]/g, '');

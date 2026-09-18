@@ -237,7 +237,7 @@ export default function ProductDetailScreen() {
         >
           <Feather name="maximize-2" size={12} color="#FFFFFF" />
           <Text className="text-[10px] font-black tracking-wide text-white">
-            {isHindi ? '🔍 टैप करके ज़ूम करें' : '🔍 Tap to Zoom'}
+            {isHindi ? 'टैप करके ज़ूम करें' : 'Tap to Zoom'}
           </Text>
         </Pressable>
 
@@ -518,7 +518,7 @@ export default function ProductDetailScreen() {
               >
                 <View className="flex-row items-center justify-between">
                   <Text className="text-xs font-black text-slate-900">
-                    {isHindi ? '🧪 अनुशंसित मात्रा (Recommended Dosage)' : '🧪 Recommended Dosage'}
+                    {isHindi ? 'अनुशंसित मात्रा (Recommended Dosage)' : 'Recommended Dosage'}
                   </Text>
                   <Feather name={expandedFaq === 'dosage' ? 'chevron-up' : 'chevron-down'} size={18} color="#082018" />
                 </View>
@@ -537,7 +537,7 @@ export default function ProductDetailScreen() {
               >
                 <View className="flex-row items-center justify-between">
                   <Text className="text-xs font-black text-slate-900">
-                    {isHindi ? '📋 उपयोग विधि एवं छिड़काव का तरीका' : '📋 How to Use & Spray Instructions'}
+                    {isHindi ? 'उपयोग विधि एवं छिड़काव का तरीका' : 'How to Use & Spray Instructions'}
                   </Text>
                   <Feather name={expandedFaq === 'usage' ? 'chevron-up' : 'chevron-down'} size={18} color="#082018" />
                 </View>
@@ -556,7 +556,7 @@ export default function ProductDetailScreen() {
               >
                 <View className="flex-row items-center justify-between">
                   <Text className="text-xs font-black text-slate-900">
-                    {isHindi ? '🌿 उपयुक्त फसलें एवं अनुकूलता' : '🌿 Target Crops & Compatibility'}
+                    {isHindi ? 'उपयुक्त फसलें एवं अनुकूलता' : 'Target Crops & Compatibility'}
                   </Text>
                   <Feather name={expandedFaq === 'crops' ? 'chevron-up' : 'chevron-down'} size={18} color="#082018" />
                 </View>
@@ -575,7 +575,7 @@ export default function ProductDetailScreen() {
               >
                 <View className="flex-row items-center justify-between">
                   <Text className="text-xs font-black text-slate-900">
-                    {isHindi ? '⚠️ सुरक्षा एवं भंडारण सावधानियां' : '⚠️ Safety & Storage Precautions'}
+                    {isHindi ? 'सुरक्षा एवं भंडारण सावधानियां' : 'Safety & Storage Precautions'}
                   </Text>
                   <Feather name={expandedFaq === 'safety' ? 'chevron-up' : 'chevron-down'} size={18} color="#082018" />
                 </View>
@@ -697,7 +697,7 @@ export default function ProductDetailScreen() {
                 await storefrontApi.submitReview({ productId: product.id, rating, comment });
                 setComment('');
                 Alert.alert(
-                  isHindi ? 'समीक्षा सबमिट हो गई! ⭐' : 'Review Submitted! ⭐',
+                  isHindi ? 'समीक्षा सबमिट हो गई!' : 'Review Submitted!',
                   isHindi ? 'इस उत्पाद की समीक्षा के लिए धन्यवाद।' : 'Thank you for reviewing this product.',
                 );
               }}
@@ -727,7 +727,7 @@ export default function ProductDetailScreen() {
         </Text>
 
         <Pressable
-          onPress={() => Linking.openURL('https://wa.me/919301105706?text=Hello%20Vaniki%20Crop%20Team,%20I%20need%20help%20with%20crop%20care')}
+          onPress={() => Linking.openURL('https://wa.me/919407963966?text=Hello%20Vaniki%20Crop%20Team,%20I%20need%20help%20with%20crop%20care')}
           style={{ backgroundColor: '#25D366' }}
           className="mt-4 rounded-full px-6 py-3.5 flex-row items-center gap-2 active:scale-95 shadow-sm"
         >
