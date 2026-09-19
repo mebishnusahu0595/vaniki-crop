@@ -127,9 +127,12 @@ function parseTallyResponse(tallyXmlResponse) {
   const text = tallyXmlResponse || '';
 
   // Check errors
-  if (text.includes('<LINEERROR>') || text.includes('Errors :') || text.includes('<ERROR>')) {
+  const errorsMatch = text.match(/<ERRORS>(\d+)<\/ERRORS>/i);
+  const errorCount = errorsMatch ? parseInt(errorsMatch[1], 10) : 0;
+
+  if (text.includes('<LINEERROR>') || text.includes('Errors :') || text.includes('<ERROR>') || errorCount > 0) {
     const errorMatch = text.match(/<LINEERROR>([\s\S]*?)<\/LINEERROR>/i) || text.match(/<ERROR>([\s\S]*?)<\/ERROR>/i);
-    const errorMsg = errorMatch ? errorMatch[1].replace(/<[^>]+>/g, '').trim() : 'Tally rejected XML import';
+    const errorMsg = errorMatch ? errorMatch[1].replace(/<[^>]+>/g, '').trim() : `Tally rejected XML import (${errorCount} error(s)). Check tally.imp file.`;
     return { success: false, error: errorMsg };
   }
 

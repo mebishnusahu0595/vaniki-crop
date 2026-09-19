@@ -428,23 +428,52 @@ export function buildTallyRetailOrderVoucherXml(
   const partyPincode = escapeXml(order.shippingAddress?.pincode || user?.savedAddress?.pincode || '491665');
   const partyPhone = escapeXml(order.shippingAddress?.mobile || user?.mobile || '');
   const partyEmail = escapeXml(user?.email || '');
-  const partyGstin = escapeXml(user?.gstNumber || 'Unregistered');
+  const rawGstin = typeof user?.gstNumber === 'string' ? user.gstNumber.trim() : '';
+  const isValidGstin = rawGstin.length === 15 && rawGstin.toUpperCase() !== 'UNREGISTERED';
+  const partyGstin = isValidGstin ? escapeXml(rawGstin.toUpperCase()) : '';
+  const partyGstType = isValidGstin ? 'Regular' : 'Consumer';
 
   const isInterState = partyState.toLowerCase() !== companyState.toLowerCase();
 
+  let calculatedTaxableSubtotal = 0;
   let cgstTotal = 0;
   let sgstTotal = 0;
   let igstTotal = 0;
 
-  const items = order.items || [];
-  items.forEach((item: any) => {
-    const taxAmt = item.taxAmount || 0;
+  const rawItems = order.items || [];
+  const processedItems = rawItems.map((item: any) => {
+    const qty = Number(item.qty || 1);
+    const grossPrice = Number(item.price || 0);
+    const grossLine = grossPrice * qty;
+    const taxRate = Number(item.taxRate !== undefined ? item.taxRate : 18);
+
+    // In consumer orders, item.price is MRP / GST-inclusive
+    const lineTax = item.taxAmount !== undefined && Number(item.taxAmount) > 0
+      ? Number(item.taxAmount)
+      : (grossLine * taxRate) / (100 + taxRate);
+
+    const lineTaxable = Math.max(0, grossLine - lineTax);
+    const unitTaxableRate = qty > 0 ? (lineTaxable / qty) : lineTaxable;
+
+    calculatedTaxableSubtotal += lineTaxable;
+
     if (isInterState) {
-      igstTotal += taxAmt;
+      igstTotal += lineTax;
     } else {
-      cgstTotal += taxAmt / 2;
-      sgstTotal += taxAmt / 2;
+      cgstTotal += lineTax / 2;
+      sgstTotal += lineTax / 2;
     }
+
+    return {
+      productName: item.productName || 'Product',
+      qty,
+      taxRate,
+      grossLine,
+      lineTax,
+      lineTaxable,
+      unitTaxableRate,
+      hsnCode: item.hsnCode || '38089190',
+    };
   });
 
   const totalAmount = Number(order.totalAmount || 0);
@@ -460,12 +489,12 @@ export function buildTallyRetailOrderVoucherXml(
     : 'Online Payment (Razorpay)';
 
   // Inventory entries
-  const inventoryXml = items
+  const inventoryXml = processedItems
     .map((item: any) => {
       const pName = escapeXml(item.productName || 'Product');
       const qty = item.qty || 1;
-      const rate = Number(item.price || 0).toFixed(2);
-      const itemAmount = (Number(item.price || 0) * qty).toFixed(2);
+      const rate = item.unitTaxableRate.toFixed(2);
+      const itemAmount = item.lineTaxable.toFixed(2);
       const hsnCode = escapeXml(item.hsnCode || '38089190');
       const taxRate = item.taxRate !== undefined ? item.taxRate : 18;
 
@@ -540,6 +569,21 @@ export function buildTallyRetailOrderVoucherXml(
         </LEDGERENTRIES.LIST>`;
   }
 
+  // Round Off ledger calculation for exact balancing
+  const totalTaxes = isInterState ? igstTotal : (cgstTotal + sgstTotal);
+  const creditSum = calculatedTaxableSubtotal + totalTaxes + deliveryCharge - totalDiscount;
+  const roundOffDiff = Math.round((totalAmount - creditSum) * 100) / 100;
+
+  let roundOffXml = '';
+  if (Math.abs(roundOffDiff) >= 0.01) {
+    roundOffXml = `
+        <LEDGERENTRIES.LIST>
+          <LEDGERNAME>${escapeXml(config.roundOffLedger || 'Round Off')}</LEDGERNAME>
+          <ISDEEMEDPOSITIVE>${roundOffDiff > 0 ? 'No' : 'Yes'}</ISDEEMEDPOSITIVE>
+          <AMOUNT>${(-roundOffDiff).toFixed(2)}</AMOUNT>
+        </LEDGERENTRIES.LIST>`;
+  }
+
   // Discount ledger entry if applicable
   let discountXml = '';
   if (totalDiscount > 0) {
@@ -552,7 +596,7 @@ export function buildTallyRetailOrderVoucherXml(
   }
 
   // Stock Items auto-creation XML
-  const stockItemsCreationXml = items
+  const stockItemsCreationXml = processedItems
     .map((item: any) => {
       const pName = escapeXml(item.productName || 'Product');
       const hsnCode = escapeXml(item.hsnCode || '38089190');
@@ -690,8 +734,8 @@ export function buildTallyRetailOrderVoucherXml(
             <PINCODE>${partyPincode}</PINCODE>
             <LEDGERPHONE>${partyPhone}</LEDGERPHONE>
             <LEDGERMOBILE>${partyPhone}</LEDGERMOBILE>
-            <PARTYGSTIN>${partyGstin}</PARTYGSTIN>
-            <GSTREGISTRATIONTYPE>Unregistered</GSTREGISTRATIONTYPE>
+            ${partyGstin ? `<PARTYGSTIN>${partyGstin}</PARTYGSTIN>` : ''}
+            <GSTREGISTRATIONTYPE>${partyGstType}</GSTREGISTRATIONTYPE>
             <OPENINGBALANCE>0</OPENINGBALANCE>
             <ISBILLWISEON>Yes</ISBILLWISEON>
             <COUNTRYNAME>India</COUNTRYNAME>
@@ -711,7 +755,7 @@ export function buildTallyRetailOrderVoucherXml(
             <PARTYMAILINGNAME>${partyName}</PARTYMAILINGNAME>
             <STATENAME>${escapeXml(partyState)}</STATENAME>
             <COUNTRYNAME>India</COUNTRYNAME>
-            <PARTYGSTIN>${partyGstin}</PARTYGSTIN>
+            ${partyGstin ? `<PARTYGSTIN>${partyGstin}</PARTYGSTIN>` : ''}
             <PLACEOFSUPPLY>${escapeXml(partyState)}</PLACEOFSUPPLY>
             <ISINVOICE>Yes</ISINVOICE>
             <PERSISTEDVIEW>Invoice Voucher View</PERSISTEDVIEW>
@@ -725,7 +769,7 @@ export function buildTallyRetailOrderVoucherXml(
               ${partyPhone ? `<BASICBUYERADDRESS>Phone: ${partyPhone}</BASICBUYERADDRESS>` : ''}
               ${partyEmail ? `<BASICBUYERADDRESS>Email: ${partyEmail}</BASICBUYERADDRESS>` : ''}
             </BASICBUYERADDRESS.LIST>
-            <BASICBUYERSSALESTAXNO>${partyGstin}</BASICBUYERSSALESTAXNO>
+            ${partyGstin ? `<BASICBUYERSSALESTAXNO>${partyGstin}</BASICBUYERSSALESTAXNO>` : ''}
 
             <!-- Consignee (Ship To) Details -->
             <CONSIGNEEMAILINGNAME>${partyName}</CONSIGNEEMAILINGNAME>
@@ -737,7 +781,7 @@ export function buildTallyRetailOrderVoucherXml(
             </CONSIGNEEADDRESS.LIST>
             <CONSIGNEESTATENAME>${escapeXml(partyState)}</CONSIGNEESTATENAME>
             <CONSIGNEEPINCODE>${partyPincode}</CONSIGNEEPINCODE>
-            <CONSIGNEEGSTIN>${partyGstin}</CONSIGNEEGSTIN>
+            ${partyGstin ? `<CONSIGNEEGSTIN>${partyGstin}</CONSIGNEEGSTIN>` : ''}
 
             <ADDRESS.LIST TYPE="String">
               <ADDRESS>${partyName}</ADDRESS>
@@ -772,9 +816,10 @@ export function buildTallyRetailOrderVoucherXml(
             <!-- GST Output Ledgers -->
             ${taxLedgersXml}
 
-            <!-- Additional Allocations (Delivery Charge / Discounts) -->
+            <!-- Additional Allocations (Delivery Charge / Discounts / Round Off) -->
             ${deliveryChargeXml}
             ${discountXml}
+            ${roundOffXml}
           </VOUCHER>
         </TALLYMESSAGE>
       </REQUESTDATA>
