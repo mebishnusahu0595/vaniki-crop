@@ -320,7 +320,7 @@ export function buildTallySalesVoucherXml(
 
         <!-- 8. Create Official Sales Voucher -->
         <TALLYMESSAGE xmlns:UDF="TallyUDF">
-          <VOUCHER VCHTYPE="Sales" ACTION="Create" OBJVIEW="Invoice Voucher View">
+          <VOUCHER REMOTEID="VANIKI-INV-${invoiceNum}" VCHTYPE="Sales" ACTION="Create" OBJVIEW="Invoice Voucher View">
             <DATE>${dateStr}</DATE>
             <REFERENCEDATE>${dateStr}</REFERENCEDATE>
             <VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
@@ -757,7 +757,7 @@ export function buildTallyRetailOrderVoucherXml(
 
         <!-- 9. Create Official Sales Voucher for User Order -->
         <TALLYMESSAGE xmlns:UDF="TallyUDF">
-          <VOUCHER VCHTYPE="Sales" ACTION="Create" OBJVIEW="Invoice Voucher View">
+          <VOUCHER REMOTEID="VANIKI-ORD-${orderNum}" VCHTYPE="Sales" ACTION="Create" OBJVIEW="Invoice Voucher View">
             <DATE>${dateStr}</DATE>
             <REFERENCEDATE>${dateStr}</REFERENCEDATE>
             <VOUCHERTYPENAME>Sales</VOUCHERTYPENAME>
