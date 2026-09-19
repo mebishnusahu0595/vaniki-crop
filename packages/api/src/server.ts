@@ -3,6 +3,7 @@ import app from './app.js';
 import { connectDB } from './config/database.js';
 import { initAiMarketingScheduler } from './modules/marketing/ai-marketing.service.js';
 import { backfillDealerCodes } from './utils/dealer.helpers.js';
+import { backfillInvoiceGstAndHsn } from './utils/invoice-tax.helpers.js';
 
 const PORT = process.env.PORT || 5000;
 
@@ -14,6 +15,7 @@ async function startServer(): Promise<void> {
   try {
     await connectDB();
     await backfillDealerCodes();
+    await backfillInvoiceGstAndHsn();
     initAiMarketingScheduler();
     app.listen(PORT, () => {
       console.log(`🚀 Vaniki Crop API running on port ${PORT}`);
