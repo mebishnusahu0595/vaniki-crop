@@ -118,6 +118,7 @@ export function buildTallySalesVoucherXml(
       const rate = item.price.toFixed(2);
       const itemAmount = (item.price * item.qty).toFixed(2);
       const hsnCode = escapeXml(item.hsnCode || '38089190');
+      const taxRate = item.taxRate !== undefined ? item.taxRate : 18;
 
       return `
         <ALLINVENTORYENTRIES.LIST>
@@ -129,8 +130,11 @@ export function buildTallySalesVoucherXml(
           <BILLEDQTY>${qty} NOS</BILLEDQTY>
           <HSNCODE>${hsnCode}</HSNCODE>
           <GSTRATEDETAILS.LIST>
+            <APPLICABLEFROM>20260401</APPLICABLEFROM>
             <HSNCODE>${hsnCode}</HSNCODE>
             <HSN>${hsnCode}</HSN>
+            <TAXABILITY>Taxable</TAXABILITY>
+            <GSTRATE>${taxRate}</GSTRATE>
           </GSTRATEDETAILS.LIST>
           <BATCHALLOCATIONS.LIST>
             <GODOWNNAME>Main Location</GODOWNNAME>
@@ -181,6 +185,7 @@ export function buildTallySalesVoucherXml(
     .map((item) => {
       const pName = escapeXml(item.productName);
       const hsnCode = escapeXml(item.hsnCode || '38089190');
+      const taxRate = item.taxRate !== undefined ? item.taxRate : 18;
       return `
         <TALLYMESSAGE xmlns:UDF="TallyUDF">
           <STOCKITEM NAME="${pName}" ACTION="Create">
@@ -199,7 +204,7 @@ export function buildTallySalesVoucherXml(
               <HSNCODE>${hsnCode}</HSNCODE>
               <HSN>${hsnCode}</HSN>
               <TAXABILITY>Taxable</TAXABILITY>
-              <GSTRATE>${item.taxRate || 18}</GSTRATE>
+              <GSTRATE>${taxRate}</GSTRATE>
             </GSTRATEDETAILS.LIST>
           </STOCKITEM>
         </TALLYMESSAGE>`;
@@ -462,6 +467,7 @@ export function buildTallyRetailOrderVoucherXml(
       const rate = Number(item.price || 0).toFixed(2);
       const itemAmount = (Number(item.price || 0) * qty).toFixed(2);
       const hsnCode = escapeXml(item.hsnCode || '38089190');
+      const taxRate = item.taxRate !== undefined ? item.taxRate : 18;
 
       return `
         <ALLINVENTORYENTRIES.LIST>
@@ -473,8 +479,11 @@ export function buildTallyRetailOrderVoucherXml(
           <BILLEDQTY>${qty} NOS</BILLEDQTY>
           <HSNCODE>${hsnCode}</HSNCODE>
           <GSTRATEDETAILS.LIST>
+            <APPLICABLEFROM>20260401</APPLICABLEFROM>
             <HSNCODE>${hsnCode}</HSNCODE>
             <HSN>${hsnCode}</HSN>
+            <TAXABILITY>Taxable</TAXABILITY>
+            <GSTRATE>${taxRate}</GSTRATE>
           </GSTRATEDETAILS.LIST>
           <BATCHALLOCATIONS.LIST>
             <GODOWNNAME>Main Location</GODOWNNAME>
@@ -547,6 +556,7 @@ export function buildTallyRetailOrderVoucherXml(
     .map((item: any) => {
       const pName = escapeXml(item.productName || 'Product');
       const hsnCode = escapeXml(item.hsnCode || '38089190');
+      const taxRate = item.taxRate !== undefined ? item.taxRate : 18;
       return `
         <TALLYMESSAGE xmlns:UDF="TallyUDF">
           <STOCKITEM NAME="${pName}" ACTION="Create">
@@ -565,7 +575,7 @@ export function buildTallyRetailOrderVoucherXml(
               <HSNCODE>${hsnCode}</HSNCODE>
               <HSN>${hsnCode}</HSN>
               <TAXABILITY>Taxable</TAXABILITY>
-              <GSTRATE>${item.taxRate || 18}</GSTRATE>
+              <GSTRATE>${taxRate}</GSTRATE>
             </GSTRATEDETAILS.LIST>
           </STOCKITEM>
         </TALLYMESSAGE>`;

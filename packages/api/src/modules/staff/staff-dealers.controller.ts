@@ -1,11 +1,12 @@
 import type { NextFunction, Request, Response } from 'express';
-import mongoose from 'express';
+import mongoose from 'mongoose';
 import { AppError } from '../../utils/AppError.js';
 import { User } from '../../models/User.model.js';
 import { Store } from '../../models/Store.model.js';
 import { Staff } from '../../models/Staff.model.js';
 import { B2BInvoice } from '../../models/B2BInvoice.model.js';
 import { ProductRequest } from '../../models/ProductRequest.model.js';
+import { Product } from '../../models/Product.model.js';
 import { Order } from '../../models/Order.model.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 
@@ -145,6 +146,10 @@ export async function placeDealerProductRequest(req: Request, res: Response, nex
       petiQuantity = 1,
       petiSize = 12,
       petiUnit = 'Liter',
+      dealerPrice,
+      offerPrice,
+      hsnCode,
+      taxRate,
       notes,
     } = req.body;
 
@@ -152,19 +157,46 @@ export async function placeDealerProductRequest(req: Request, res: Response, nex
       throw new AppError('productName and garageName are required.', 400);
     }
 
+    let finalPetiSize = Number(petiSize) || 12;
+    let finalPetiUnit = petiUnit || 'Liter';
+    let finalHsn = hsnCode;
+    let finalTaxRate = taxRate !== undefined ? Number(taxRate) : 18;
+    let finalDealerPrice = dealerPrice;
+    let finalOfferPrice = offerPrice;
+
+    if (productId && mongoose.Types.ObjectId.isValid(productId)) {
+      const prod = await Product.findById(productId).select('name shortDescription petiSize petiUnit taxRate hsnCode variants');
+      if (prod) {
+        if (prod.petiSize && !req.body.petiSize) finalPetiSize = prod.petiSize;
+        if (prod.petiUnit && !req.body.petiUnit) finalPetiUnit = prod.petiUnit;
+        if (prod.hsnCode && !finalHsn) finalHsn = prod.hsnCode;
+        if (prod.taxRate !== undefined && req.body.taxRate === undefined) finalTaxRate = prod.taxRate;
+        if (prod.variants && prod.variants.length > 0) {
+          const v = prod.variants[0];
+          if (!finalDealerPrice) finalDealerPrice = v.adminPrice || v.price;
+          if (!finalOfferPrice) finalOfferPrice = v.offerPrice || v.price;
+          if (!finalHsn && v.hsnCode) finalHsn = v.hsnCode;
+        }
+      }
+    }
+
     const combinedNotes = `[Placed via StaffTrack by ${staffName} (${staffMobile})] ${notes || ''}`.trim();
 
     const request = await ProductRequest.create({
       storeId,
       adminId: dealer._id,
-      productId: productId || undefined,
+      productId: productId && mongoose.Types.ObjectId.isValid(productId) ? productId : undefined,
       productName: String(productName).trim(),
-      requestedQuantity: Number(requestedQuantity) || (Number(petiQuantity) * Number(petiSize)),
+      requestedQuantity: Number(requestedQuantity) || (Number(petiQuantity) * finalPetiSize),
       requestedPack: requestedPack ? String(requestedPack).trim() : undefined,
       garageName: String(garageName).trim(),
       petiQuantity: Number(petiQuantity) || 1,
-      petiSize: Number(petiSize) || 12,
-      petiUnit: petiUnit || 'Liter',
+      petiSize: finalPetiSize,
+      petiUnit: finalPetiUnit as any,
+      dealerPrice: finalDealerPrice,
+      offerPrice: finalOfferPrice,
+      hsnCode: finalHsn || '38089190',
+      taxRate: finalTaxRate,
       notes: combinedNotes,
       status: 'pending',
     });
