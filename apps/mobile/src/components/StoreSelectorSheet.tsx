@@ -86,8 +86,8 @@ export function StoreSelectorSheet() {
 
   const topGap = insets.top + 12;
   const MAX_HEIGHT = SCREEN_HEIGHT - topGap;
-  const DEFAULT_HEIGHT = Math.round(MAX_HEIGHT * 0.62);
-  const CLOSE_THRESHOLD = Math.round(DEFAULT_HEIGHT * 0.7);
+  const DEFAULT_HEIGHT = Math.round(MAX_HEIGHT * 0.72);
+  const CLOSE_THRESHOLD = Math.round(DEFAULT_HEIGHT * 0.65);
 
   const height = useSharedValue(0);
   const startHeight = useSharedValue(0);
@@ -112,8 +112,9 @@ export function StoreSelectorSheet() {
     setSearch('');
     setError('');
     height.value = 0;
-    height.value = withSpring(DEFAULT_HEIGHT, { damping: 22, stiffness: 220 });
-  }, [address, isOpen, mode, selectedStore?.id, user?.savedAddress]);
+    const initialHeight = mode === 'pickup' ? MAX_HEIGHT : DEFAULT_HEIGHT;
+    height.value = withSpring(initialHeight, { damping: 24, stiffness: 220 });
+  }, [address, isOpen, mode, selectedStore?.id, user?.savedAddress, MAX_HEIGHT, DEFAULT_HEIGHT]);
 
   const panGesture = useMemo(
     () =>
@@ -122,24 +123,26 @@ export function StoreSelectorSheet() {
           startHeight.value = height.value;
         })
         .onUpdate((event) => {
-          // Dragging up (negative translationY) grows the sheet toward the top.
+          // Dragging up (negative translationY) grows the sheet toward the top
           const next = startHeight.value - event.translationY;
           height.value = Math.min(Math.max(next, 0), MAX_HEIGHT);
         })
         .onEnd((event) => {
-          if (event.velocityY > 1100 || height.value < CLOSE_THRESHOLD) {
+          // Fast swipe down closes
+          if (event.velocityY > 750 || height.value < CLOSE_THRESHOLD) {
             height.value = withTiming(0, { duration: 220 }, (finished) => {
               if (finished) runOnJS(closeSelector)();
             });
             return;
           }
 
-          if (event.velocityY < -400 || height.value > (DEFAULT_HEIGHT + MAX_HEIGHT) / 2) {
-            height.value = withSpring(MAX_HEIGHT, { damping: 22, stiffness: 220 });
+          // Any swipe up or dragging upward past default expands all the way to MAX_HEIGHT
+          if (event.velocityY < -150 || height.value > DEFAULT_HEIGHT + 25) {
+            height.value = withSpring(MAX_HEIGHT, { damping: 24, stiffness: 220 });
             return;
           }
 
-          height.value = withSpring(DEFAULT_HEIGHT, { damping: 22, stiffness: 220 });
+          height.value = withSpring(DEFAULT_HEIGHT, { damping: 24, stiffness: 220 });
         }),
     [MAX_HEIGHT, DEFAULT_HEIGHT, CLOSE_THRESHOLD],
   );
@@ -250,26 +253,34 @@ export function StoreSelectorSheet() {
           style={[sheetStyle, { maxHeight: MAX_HEIGHT }]}
           className="w-full rounded-t-[32px] bg-offwhite px-5 pb-8 pt-3"
         >
-          <View className="flex-row items-center justify-between px-1 mb-2">
-            <View className="w-8" />
-            <View className="h-1.5 w-14 rounded-full bg-primary-200 self-center" />
-            <Pressable 
-              onPress={closeSelector} 
-              className="h-8 w-8 rounded-full bg-slate-100 items-center justify-center active:bg-slate-200"
-              hitSlop={8}
-            >
-              <Feather name="x" size={16} color="#334155" />
-            </Pressable>
-          </View>
-
+          {/* Draggable Header Section */}
           <GestureDetector gesture={panGesture}>
-            <View className="pb-2">
+            <View className="w-full pb-2">
+              <View className="flex-row items-center justify-between px-1 mb-1">
+                <View className="w-8" />
+                <View className="py-2.5 px-8 items-center justify-center">
+                  <View className="h-1.5 w-16 rounded-full bg-slate-300" />
+                </View>
+                <Pressable 
+                  onPress={closeSelector} 
+                  className="h-8 w-8 rounded-full bg-slate-100 items-center justify-center active:bg-slate-200"
+                  hitSlop={12}
+                >
+                  <Feather name="x" size={16} color="#334155" />
+                </Pressable>
+              </View>
+
               <View className="flex-row rounded-full bg-primary-50 p-1">
                 {(['delivery', 'pickup'] as const).map((item) => (
                   <Pressable
                     key={item}
-                    onPress={() => setDraftMode(item)}
-                    className={`flex-1 rounded-full px-3 py-3 ${draftMode === item ? 'bg-white' : ''}`}
+                    onPress={() => {
+                      setDraftMode(item);
+                      if (item === 'pickup') {
+                        height.value = withSpring(MAX_HEIGHT, { damping: 24, stiffness: 220 });
+                      }
+                    }}
+                    className={`flex-1 rounded-full px-3 py-3 ${draftMode === item ? 'bg-white shadow-xs' : ''}`}
                   >
                     <View className="flex-row items-center justify-center gap-1.5">
                       <Feather
@@ -292,13 +303,16 @@ export function StoreSelectorSheet() {
           </GestureDetector>
 
           {draftMode === 'pickup' && (
-            <View className="mb-4 mt-2">
+            <View className="mb-4 mt-1">
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                onFocus={onInputFocus}
+                onFocus={(e) => {
+                  height.value = withSpring(MAX_HEIGHT, { damping: 24, stiffness: 220 });
+                  onInputFocus(e);
+                }}
                 placeholder={t('mobile.serviceMode.searchStore')}
-                className="rounded-[20px] border border-primary-100 bg-white px-4 py-4 text-base text-primary-900"
+                className="rounded-[20px] border border-primary-100 bg-white px-4 py-3.5 text-base text-primary-900"
                 placeholderTextColor="#7a978b"
               />
             </View>

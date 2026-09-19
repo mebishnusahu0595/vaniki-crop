@@ -11,6 +11,7 @@ import { Screen } from '../../src/components/Screen';
 import { Skeleton } from '../../src/components/Skeleton';
 import { ProductCard } from '../../src/components/ProductCard';
 import { ReviewStars } from '../../src/components/ReviewStars';
+import { ZoomableImageViewer } from '../../src/components/ZoomableImageViewer';
 import { storefrontApi } from '../../src/lib/api';
 import { useCartStore } from '../../src/store/useCartStore';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -738,93 +739,14 @@ export default function ProductDetailScreen() {
         </Pressable>
       </View>
 
-      {/* Fullscreen Amazon / Flipkart Style Image Zoom Modal */}
-      <Modal
+      {/* Fullscreen Pinch & Pan Zoomable Image Viewer (Android & iOS Supported) */}
+      <ZoomableImageViewer
         visible={isZoomVisible}
-        transparent={false}
-        animationType="fade"
-        onRequestClose={() => setIsZoomVisible(false)}
-      >
-        <View className="flex-1 bg-black justify-between">
-          {/* Top Floating Control Bar */}
-          <View className="flex-row items-center justify-between px-5 pt-12 pb-4 bg-black/80 z-30">
-            <View className="flex-row items-center gap-2">
-              <View className="rounded-full bg-white/20 px-3 py-1">
-                <Text className="text-xs font-bold text-white">
-                  {zoomImageIndex + 1} / {galleryImages.length}
-                </Text>
-              </View>
-              <Text className="text-[11px] text-white/70">
-                {isHindi ? 'पिंच करके ज़ूम करें (4x)' : 'Pinch to zoom (up to 4x)'}
-              </Text>
-            </View>
-
-            <Pressable
-              onPress={() => setIsZoomVisible(false)}
-              className="h-10 w-10 items-center justify-center rounded-full bg-white/20 active:bg-white/40"
-              hitSlop={12}
-              accessibilityLabel="Close Zoom"
-            >
-              <Feather name="x" size={22} color="#FFFFFF" />
-            </Pressable>
-          </View>
-
-          {/* Pinch-to-zoom Image Container */}
-          <ScrollView
-            maximumZoomScale={4}
-            minimumZoomScale={1}
-            bouncesZoom={true}
-            centerContent={true}
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              flex: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Image
-              source={{
-                uri: resolveMediaUrl(
-                  galleryImages[zoomImageIndex]?.url,
-                  galleryImages[zoomImageIndex]?.publicId,
-                ),
-              }}
-              style={{ width: width, height: height * 0.72 }}
-              contentFit="contain"
-            />
-          </ScrollView>
-
-          {/* Bottom Thumbnail Selector Strip (if multiple images) */}
-          {galleryImages.length > 1 ? (
-            <View className="px-4 py-6 bg-black/80">
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 10, justifyContent: 'center', alignItems: 'center' }}
-              >
-                {galleryImages.map((img, idx) => {
-                  const thumbUrl = resolveMediaUrl(img.url, img.publicId);
-                  const isSel = idx === zoomImageIndex;
-                  return (
-                    <Pressable
-                      key={`zoom-thumb-${idx}`}
-                      onPress={() => setZoomImageIndex(idx)}
-                      className={`h-16 w-16 rounded-xl overflow-hidden bg-white/10 p-1 border-2 ${
-                        isSel ? 'border-emerald-500 scale-105' : 'border-white/20 opacity-60'
-                      }`}
-                    >
-                      <Image source={{ uri: thumbUrl }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          ) : (
-            <View className="py-4" />
-          )}
-        </View>
-      </Modal>
+        images={galleryImages}
+        initialIndex={zoomImageIndex}
+        isHindi={isHindi}
+        onClose={() => setIsZoomVisible(false)}
+      />
     </Screen>
   );
 }

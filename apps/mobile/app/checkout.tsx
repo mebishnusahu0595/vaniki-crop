@@ -482,9 +482,10 @@ export default function CheckoutScreen() {
               value={couponInput}
               onChangeText={(v) => setCouponInput(v.toUpperCase())}
               placeholder="Enter code"
-              className="flex-1 rounded-xl border border-primary-200 bg-white px-4 py-2 text-sm font-bold uppercase text-slate-900"
-              style={{ color: '#0f172a' }}
-              placeholderTextColor="#94A3B8"
+              className="flex-1 rounded-xl border border-primary-200 bg-white px-4 py-2 text-sm font-bold uppercase"
+              style={{ color: '#000000', backgroundColor: '#FFFFFF' }}
+              selectionColor="#000000"
+              placeholderTextColor="#64748B"
             />
             <Pressable
               onPress={async () => {
@@ -550,9 +551,10 @@ export default function CheckoutScreen() {
                 value={loyaltyPointsInput > 0 ? loyaltyPointsInput.toString() : ''}
                 onChangeText={(v) => setLoyaltyPointsInput(Math.min(user.loyaltyPoints || 0, parseInt(v) || 0))}
                 placeholder="Points to use"
-                className="flex-1 rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-bold text-slate-900"
-                style={{ color: '#0f172a' }}
-                placeholderTextColor="#94A3B8"
+                className="flex-1 rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-bold"
+                style={{ color: '#000000', backgroundColor: '#FFFFFF' }}
+                selectionColor="#000000"
+                placeholderTextColor="#64748B"
               />
               <Pressable
                 onPress={() => {
