@@ -69,6 +69,47 @@ export async function postSyncResult(req: Request, res: Response, next: NextFunc
 }
 
 /**
+ * POST or GET /api/tally/reset-sync
+ * Reset sync status to 'pending' for recent invoices/orders so the Agent re-syncs them immediately
+ */
+export async function resetSyncQueue(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const secret = req.headers['x-tally-secret'] || req.query.secret || req.body?.secret;
+    const config = await tallyService.getTallyConfig();
+
+    if (secret !== config.agentSecretKey && (req as any).userRole !== 'superAdmin') {
+      throw new AppError('Invalid Tally Agent secret key', 401);
+    }
+
+    const days = Number(req.query.days || req.body?.days) || 7;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    const [b2bResult, orderResult] = await Promise.all([
+      B2BInvoice.updateMany(
+        { createdAt: { $gte: cutoff } },
+        { $set: { tallySyncStatus: 'pending' } }
+      ),
+      Order.updateMany(
+        { createdAt: { $gte: cutoff }, status: { $nin: ['cancelled'] } },
+        { $set: { tallySyncStatus: 'pending' } }
+      ),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      message: `Reset sync status for past ${days} days. Agent will pick them up in next cycle.`,
+      data: {
+        b2bInvoicesReset: b2bResult.modifiedCount,
+        ordersReset: orderResult.modifiedCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * GET /api/tally/download-xml/:id
  * Direct download of Tally-compliant XML voucher for Order or B2B Invoice
  */

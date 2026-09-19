@@ -7,6 +7,10 @@ const router: Router = Router();
 /** GET /api/tally/pending-sync — Fetch pending invoices & orders for Windows Agent or Server Sync */
 router.get('/pending-sync', tallyController.getPendingQueue);
 
+/** POST or GET /api/tally/reset-sync — Reset sync status to pending so agent re-syncs recent bills */
+router.post('/reset-sync', tallyController.resetSyncQueue);
+router.get('/reset-sync', tallyController.resetSyncQueue);
+
 /** POST /api/tally/sync-result — Record Tally sync result */
 router.post('/sync-result', tallyController.postSyncResult);
 
