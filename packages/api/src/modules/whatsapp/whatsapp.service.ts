@@ -2,6 +2,7 @@ import { User } from '../../models/User.model.js';
 import { Order } from '../../models/Order.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Category } from '../../models/Category.model.js';
+import { Store } from '../../models/Store.model.js';
 import { generateInvoicePdf } from '../orders/invoice.service.js';
 import {
   getOrCreateChatSession,
@@ -12,8 +13,9 @@ import {
   normalizeWhatsAppNumber,
 } from './whatsapp-session.service.js';
 
-// Ensure Category schema is registered in Mongoose
+// Ensure Category & Store schemas are registered in Mongoose
 void Category;
+void Store;
 
 const APP_URL = 'https://vanikicrop.com';
 const DEALER_PORTAL_URL = 'https://vanikicrop.com/dealers';
