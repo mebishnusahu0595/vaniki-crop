@@ -90,10 +90,19 @@ export const HeroCarousel = memo(function HeroCarousel({ banners }: HeroCarousel
                 transition={300}
               />
 
-              {/* High Contrast Ambient Scrim Overlay */}
+              {/* High Contrast Ambient Scrim Overlay across entire banner */}
               <View
-                style={{ backgroundColor: 'rgba(7, 31, 23, 0.62)' }}
-                className="absolute inset-0 px-5 py-3.5 justify-between"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '100%',
+                  height: '100%',
+                  backgroundColor: 'rgba(7, 31, 23, 0.52)',
+                }}
+                className="px-5 py-4 justify-between"
               >
                 <View className="max-w-[92%] gap-1 pt-0.5">
                   <View className="self-start bg-emerald-500/25 border border-emerald-400/40 px-2.5 py-0.5 rounded-full">

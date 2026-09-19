@@ -354,9 +354,13 @@ export const adminApi = {
     const response = await api.get<ApiResponse<Order>>(`/superadmin/orders/${id}`);
     return response.data.data;
   },
-  updateOrderStatus: async (id: string, payload: { status: string; note?: string; paymentStatus?: string }) => {
+  updateOrderStatus: async (id: string, payload: { status?: string; note?: string; paymentStatus?: string }) => {
     const response = await api.patch<ApiResponse<Order>>(`/superadmin/orders/${id}/status`, payload);
     return response.data.data;
+  },
+  sendWhatsAppInvoice: async (id: string) => {
+    const response = await api.post<ApiResponse<{ success: boolean; message: string }>>(`/superadmin/orders/${id}/send-whatsapp-invoice`);
+    return response.data;
   },
   customers: async (params?: Record<string, unknown>) => {
     const response = await api.get<ApiResponse<Customer[]>>('/superadmin/customers', { params });

@@ -821,24 +821,31 @@ export async function updateOrderStatus(orderId: string, input: any, adminId: st
   }
 
   const oldStatus = order.status as string;
-  if (oldStatus === 'delivered' && status !== 'delivered') {
+  if (oldStatus === 'delivered' && status && status !== 'delivered') {
     throw new AppError('Order status has been locked as delivered and cannot be changed.', 400);
   }
 
-  if (oldStatus !== 'delivered') {
+  if (status && oldStatus !== 'delivered') {
     order.status = status;
   }
   if (paymentStatus) {
     order.paymentStatus = paymentStatus;
   }
   order.statusHistory.push({
-    status: oldStatus === 'delivered' ? 'delivered' : status,
-    note: paymentStatus ? `${note || ''}${note ? ' | ' : ''}Payment: ${paymentStatus}`.trim() : note,
+    status: oldStatus === 'delivered' ? 'delivered' : (status || order.status),
+    note: paymentStatus ? `${note || ''}${note ? ' | ' : ''}Payment: ${paymentStatus}`.trim() : (note || `Status updated to ${status || order.status}`),
     updatedBy: adminId as any,
     timestamp: new Date(),
   });
 
   await order.save();
+
+  // If status is confirmed or paymentStatus is paid, trigger WhatsApp invoice!
+  if (paymentStatus === 'paid' || status === 'confirmed') {
+    sendOrderInvoice(order._id.toString()).catch(err =>
+      console.error('[WHATSAPP] Error sending invoice on status update:', err)
+    );
+  }
 
   // If order was newly marked as delivered, reward the referrer if applicable
   if (status === 'delivered' && oldStatus !== 'delivered') {

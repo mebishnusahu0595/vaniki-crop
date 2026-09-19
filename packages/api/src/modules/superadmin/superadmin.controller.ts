@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import * as superAdminService from './superadmin.service.js';
+import { sendOrderInvoice } from '../whatsapp/whatsapp.service.js';
 
 export async function getAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -203,6 +204,16 @@ export async function updateOrderStatus(req: Request, res: Response, next: NextF
   try {
     const data = await superAdminService.updateOrderStatus(req.params.id as string, req.body, req.userId!);
     res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function sendOrderWhatsAppInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const orderId = req.params.id as string;
+    await sendOrderInvoice(orderId);
+    res.status(200).json({ success: true, message: 'WhatsApp invoice sent successfully' });
   } catch (error) {
     next(error);
   }

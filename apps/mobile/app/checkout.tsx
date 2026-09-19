@@ -482,7 +482,8 @@ export default function CheckoutScreen() {
               value={couponInput}
               onChangeText={(v) => setCouponInput(v.toUpperCase())}
               placeholder="Enter code"
-              className="flex-1 rounded-xl border border-primary-200 bg-white px-4 py-2 text-sm font-bold uppercase"
+              className="flex-1 rounded-xl border border-primary-200 bg-white px-4 py-2 text-sm font-bold uppercase text-slate-900"
+              style={{ color: '#0f172a' }}
               placeholderTextColor="#94A3B8"
             />
             <Pressable
@@ -546,10 +547,11 @@ export default function CheckoutScreen() {
             <View className="flex-row gap-2">
               <TextInput
                 keyboardType="numeric"
-                value={loyaltyPointsInput.toString()}
+                value={loyaltyPointsInput > 0 ? loyaltyPointsInput.toString() : ''}
                 onChangeText={(v) => setLoyaltyPointsInput(Math.min(user.loyaltyPoints || 0, parseInt(v) || 0))}
                 placeholder="Points to use"
-                className="flex-1 rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-bold"
+                className="flex-1 rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-bold text-slate-900"
+                style={{ color: '#0f172a' }}
                 placeholderTextColor="#94A3B8"
               />
               <Pressable

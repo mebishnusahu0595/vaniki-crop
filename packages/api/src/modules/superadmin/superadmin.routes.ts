@@ -73,6 +73,7 @@ router.post('/notifications', validate(sendNotificationSchema), superAdminContro
 router.get('/orders', validate(orderQuerySchema), superAdminController.listOrders);
 router.get('/orders/:id', superAdminController.getOrderDetail);
 router.patch('/orders/:id/status', validate(orderStatusUpdateSchema), superAdminController.updateOrderStatus);
+router.post('/orders/:id/send-whatsapp-invoice', superAdminController.sendOrderWhatsAppInvoice);
 
 router.get('/payments', validate(paymentQuerySchema), superAdminController.listPayments);
 router.get('/product-requests', validate(productRequestQuerySchema), superAdminController.listProductRequests);

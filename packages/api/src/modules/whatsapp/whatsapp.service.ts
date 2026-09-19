@@ -9,6 +9,7 @@ import {
   recordBotMessage,
   setBroadcastContext,
   buildGeminiMultiTurnContents,
+  normalizeWhatsAppNumber,
 } from './whatsapp-session.service.js';
 
 // Ensure Category schema is registered in Mongoose
@@ -206,27 +207,29 @@ export async function sendOrderInvoice(orderId: string) {
     if (!order || !order.userId) return;
 
     const user = order.userId as any;
-    const to = `91${user.mobile}`;
+    const to = normalizeWhatsAppNumber(user.mobile);
+    const invoiceUrl = `${APP_URL}/api/orders/public/${order.orderNumber}/invoice`;
+    const messageText = `नमस्कार ${user.name || 'किसान साथी'} ji,\n\nआपका Vaniki Crop आर्डर #${order.orderNumber} कन्फर्म हो गया है!\n\nकुल राशि: ₹${order.totalAmount}\nपेमेंट स्टेटस: ${order.paymentStatus === 'paid' ? 'Paid' : 'Pending'}\n\nअपना GST Tax Invoice डाउनलोड करने के लिए नीचे दिए गए लिंक पर क्लिक करें:\n${invoiceUrl}\n\nVaniki Crop चुनने के लिए धन्यवाद!`;
 
     const pdfBuffer = await generateInvoicePdf(order);
     const mediaId = await uploadMedia(pdfBuffer, `invoice-${order.orderNumber}.pdf`, 'application/pdf');
 
-    if (!mediaId) {
-      await sendTextMessage(
-        to,
-        `आपका आर्डर #${order.orderNumber} कन्फर्म हो गया है! आप यहाँ से इनवॉइस देख सकते हैं: ${APP_URL}/account/orders`,
-      );
-      return;
+    if (mediaId) {
+      const docRes = await sendWhatsAppMessage(to, {
+        type: 'document',
+        document: {
+          id: mediaId,
+          filename: `Invoice-${order.orderNumber}.pdf`,
+          caption: `Vaniki Crop Tax Invoice - Order #${order.orderNumber} (₹${order.totalAmount})`,
+        },
+      });
+      if (docRes && (docRes as any).error) {
+        console.warn('[WHATSAPP] Document send failed, sending text notification with invoice link:', (docRes as any).error);
+        await sendTextMessage(to, messageText);
+      }
+    } else {
+      await sendTextMessage(to, messageText);
     }
-
-    await sendWhatsAppMessage(to, {
-      type: 'document',
-      document: {
-        id: mediaId,
-        filename: `Invoice-${order.orderNumber}.pdf`,
-        caption: `आपका आर्डर #${order.orderNumber} के लिए इनवॉइस। Vaniki Crop चुनने के लिए धन्यवाद! 🌾`,
-      },
-    });
   } catch (error) {
     console.error('Error in sendOrderInvoice:', error);
   }

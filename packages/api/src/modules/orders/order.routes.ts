@@ -35,6 +35,9 @@ router.patch('/:id/cancel', requireAuth, orderController.cancelOrder);
 /** GET /api/orders/:id/invoice — Download invoice PDF */
 router.get('/:id/invoice', requireAuth, orderController.downloadInvoice);
 
+/** GET /api/orders/public/:orderNumber/invoice — Publicly accessible invoice for WhatsApp */
+router.get('/public/:orderNumber/invoice', orderController.downloadPublicInvoice);
+
 // ─── Store Admin Routes ──────────────────────────────────────────────────
 
 /** GET /api/admin/orders — Store-specific orders */

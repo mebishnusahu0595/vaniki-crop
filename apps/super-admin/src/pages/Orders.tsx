@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Calendar, Download, RefreshCw, FileCode } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Download, RefreshCw, FileCode, MessageSquare, Send } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -143,16 +143,37 @@ export default function OrdersPage() {
     enabled: Boolean(selectedOrderId),
   });
 
+  useEffect(() => {
+    if (orderDetailQuery.data) {
+      setNextStatus(orderDetailQuery.data.status || 'placed');
+      setNextPaymentStatus(orderDetailQuery.data.paymentStatus || 'pending');
+    }
+  }, [orderDetailQuery.data]);
+
   const updateStatusMutation = useMutation({
-    mutationFn: () => adminApi.updateOrderStatus(selectedOrderId!, { status: nextStatus, note, ...(nextPaymentStatus ? { paymentStatus: nextPaymentStatus } : {}) }),
+    mutationFn: () =>
+      adminApi.updateOrderStatus(selectedOrderId!, {
+        status: nextStatus,
+        note,
+        ...(nextPaymentStatus ? { paymentStatus: nextPaymentStatus } : {}),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['super-admin-orders'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-order-detail', selectedOrderId] });
       setNote('');
-      setNextPaymentStatus('');
     },
     onError: (error: any) => {
       alert(error?.response?.data?.message || error?.message || 'Failed to update order status');
+    },
+  });
+
+  const sendWhatsAppMutation = useMutation({
+    mutationFn: (orderId: string) => adminApi.sendWhatsAppInvoice(orderId),
+    onSuccess: (data: any) => {
+      alert(data?.message || 'Invoice sent to customer on WhatsApp successfully!');
+    },
+    onError: (error: any) => {
+      alert(error?.response?.data?.message || error?.message || 'Failed to send WhatsApp invoice');
     },
   });
 
@@ -559,27 +580,65 @@ export default function OrdersPage() {
                         <span>{isDownloadingPdf ? 'Downloading...' : 'Invoice PDF'}</span>
                       </button>
                     </div>
+
+                    {/* Direct WhatsApp Invoice Actions */}
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => sendWhatsAppMutation.mutate(detail.id)}
+                        disabled={sendWhatsAppMutation.isPending}
+                        className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-700 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-xs hover:bg-emerald-800 disabled:opacity-50"
+                        title="Send PDF invoice to customer's WhatsApp via Cloud API"
+                      >
+                        <MessageSquare size={14} />
+                        <span>{sendWhatsAppMutation.isPending ? 'Sending...' : 'WA API Send'}</span>
+                      </button>
+
+                      {(() => {
+                        const userObj = typeof detail.userId === 'object' ? (detail.userId as any) : null;
+                        const rawMobile = (userObj?.mobile || '').replace(/\D/g, '').slice(-10);
+                        const cleanCustMobile = rawMobile ? `91${rawMobile}` : '';
+                        const publicInvUrl = `https://vanikicrop.com/api/orders/public/${detail.orderNumber}/invoice`;
+                        const waText = encodeURIComponent(`नमस्ते ${userObj?.name || 'किसान साथी'} जी,\n\nआपका Vaniki Crop आर्डर #${detail.orderNumber} कन्फर्म हो गया है!\nकुल राशि: ₹${detail.totalAmount}\nपेमेंट स्टेटस: ${detail.paymentStatus === 'paid' ? 'Paid' : 'Pending'}\n\nअपना GST Tax Invoice यहाँ से डाउनलोड करें:\n${publicInvUrl}\n\nVaniki Crop चुनने के लिए धन्यवाद!`);
+                        const waWebUrl = `https://wa.me/${cleanCustMobile}?text=${waText}`;
+
+                        return (
+                          <a
+                            href={cleanCustMobile ? waWebUrl : '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`flex items-center justify-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-50 py-2.5 text-xs font-black uppercase tracking-wider text-emerald-800 hover:bg-emerald-100 ${!cleanCustMobile ? 'opacity-50 pointer-events-none' : ''}`}
+                            title="Direct WhatsApp link to send invoice to customer"
+                          >
+                            <Send size={14} />
+                            <span>WA Direct Chat</span>
+                          </a>
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
 
                 <div className="rounded-[1.5rem] border border-primary-100 bg-white p-4">
                   <h3 className="text-lg font-black text-slate-900">Status Update</h3>
                   <div className="mt-4 space-y-3">
-                    <select value={nextStatus} onChange={(event) => setNextStatus(event.target.value)} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-                      {['confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((item) => (
-                        <option key={item} value={item}>{item}</option>
-                      ))}
-                    </select>
                     <div>
-                      <label className="mb-1 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Payment Status</label>
-                      <select value={nextPaymentStatus} onChange={(event) => setNextPaymentStatus(event.target.value)} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3">
-                        <option value="">Don't change</option>
-                        {['pending', 'paid', 'failed', 'refunded'].map((item) => (
-                          <option key={item} value={item}>{item}</option>
+                      <label className="mb-1 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Order Status</label>
+                      <select value={nextStatus} onChange={(event) => setNextStatus(event.target.value)} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-bold text-slate-800">
+                        {['placed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((item) => (
+                          <option key={item} value={item}>{item.toUpperCase()}</option>
                         ))}
                       </select>
                     </div>
-                    <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional note" className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3" />
+                    <div>
+                      <label className="mb-1 block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Payment Status</label>
+                      <select value={nextPaymentStatus} onChange={(event) => setNextPaymentStatus(event.target.value)} className="w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-bold text-slate-800">
+                        {['pending', 'paid', 'failed', 'refunded'].map((item) => (
+                          <option key={item} value={item}>{item.toUpperCase()}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Optional note" className="min-h-[90px] w-full rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-semibold text-slate-800" />
                     <button onClick={() => updateStatusMutation.mutate()} disabled={updateStatusMutation.isPending} className="w-full rounded-2xl bg-primary-500 px-5 py-3 text-sm font-black uppercase tracking-[0.18em] text-white disabled:opacity-50">
                       {updateStatusMutation.isPending ? 'Updating...' : 'Update Status'}
                     </button>

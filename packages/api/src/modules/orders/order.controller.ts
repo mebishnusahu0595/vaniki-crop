@@ -132,6 +132,31 @@ export async function downloadInvoice(req: Request, res: Response, next: NextFun
   }
 }
 
+/**
+ * GET /api/orders/public/:orderNumber/invoice
+ * Publicly viewable invoice for WhatsApp message links
+ */
+export async function downloadPublicInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const orderNumber = (req.params as any).orderNumber;
+    const order = await Order.findOne({ orderNumber })
+      .populate('userId', 'name mobile email savedAddress')
+      .populate('storeId', 'name address phone email gstNumber sgstNumber cgst sgst igst panNumber adminId')
+      .populate('items.productId', 'name slug description shortDescription images variants')
+      .lean();
+    if (!order) throw new AppError('Order not found', 404);
+    if (!order.userId || !order.storeId) throw new AppError('Incomplete order data', 400);
+
+    const pdfBuffer = await generateInvoicePdf(order);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename=invoice-${order.orderNumber}.pdf`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ─── Admin Controllers ───────────────────────────────────────────────────
 
 /**
