@@ -11,7 +11,7 @@ import { useServiceModeStore } from '../../src/store/useServiceModeStore';
 import { storefrontApi } from '../../src/lib/api';
 import { currencyFormatter } from '../../src/utils/format';
 import { resolveMediaUrl } from '../../src/utils/media';
-
+import { AvailableCouponsList } from '../../src/components/AvailableCouponsList';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 
 export default function CartScreen() {
@@ -147,6 +147,22 @@ export default function CartScreen() {
         {couponMessage ? (
           <Text className="mt-2 text-xs font-bold text-emerald-700">{couponMessage}</Text>
         ) : null}
+
+        {/* 1-Click Available Coupons with Dashed Ticket Design */}
+        <AvailableCouponsList
+          cartTotal={subtotal}
+          appliedCode={couponCode}
+          onApply={(code, discount) => {
+            setCouponCode(code, discount);
+            setCouponInput(code);
+            setCouponMessage(t('mobile.cartPage.couponApplied'));
+          }}
+          onRemove={() => {
+            clearCoupon();
+            setCouponInput('');
+            setCouponMessage('');
+          }}
+        />
       </View>
 
       {/* Bill Breakdown */}

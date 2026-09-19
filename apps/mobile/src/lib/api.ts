@@ -6,6 +6,7 @@ import { resolveMediaUrl } from '../utils/media';
 import type {
   AuthUser,
   Address,
+  AvailableCoupon,
   Category,
   Crop,
   CouponValidation,
@@ -273,7 +274,7 @@ export const storefrontApi = {
       id: store.id || (store as any)._id?.toString(),
     }));
   },
-  validateCoupon: async (payload: { code: string; storeId: string; cartTotal: number }) => {
+  validateCoupon: async (payload: { code: string; storeId?: string; cartTotal: number }) => {
     const response = await request<CouponValidation>('/coupons/validate', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -418,6 +419,48 @@ export const storefrontApi = {
       body: JSON.stringify(payload),
     });
     return normalizeAuthUser(response.data as AuthUserLike);
+  },
+  uploadProfileImage: async (imageUri: string): Promise<AuthUser> => {
+    const token = useAuthStore.getState().token;
+    const baseOrigin = API_BASE_URL.startsWith('http')
+      ? undefined
+      : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8081');
+    const url = new URL(`${API_BASE_URL}/auth/me/profile-image`, baseOrigin);
+
+    const formData = new FormData();
+    const filename = imageUri.split('/').pop() || 'profile.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+    formData.append('profileImage', {
+      uri: imageUri,
+      name: filename,
+      type,
+    } as any);
+
+    const res = await fetch(url.toString(), {
+      method: 'PATCH',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errData = (await res.json().catch(() => ({}))) as any;
+      throw new Error(errData.message || 'Failed to upload profile image');
+    }
+
+    const data = (await res.json()) as any;
+    return normalizeAuthUser(data.data as AuthUserLike);
+  },
+  availableCoupons: async (params?: { storeId?: string; cartTotal?: number }): Promise<AvailableCoupon[]> => {
+    const query = new URLSearchParams();
+    if (params?.storeId) query.set('storeId', params.storeId);
+    if (params?.cartTotal) query.set('cartTotal', String(params.cartTotal));
+    const qs = query.toString();
+    const response = await request<AvailableCoupon[]>(`/coupons/available${qs ? `?${qs}` : ''}`);
+    return (response.data || []) as AvailableCoupon[];
   },
   changePassword: async (payload: { currentPassword: string; newPassword: string }) => {
     return request<{ success: boolean; message: string }>('/auth/change-password', {

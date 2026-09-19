@@ -190,6 +190,7 @@ export interface AuthUser {
   name: string;
   email?: string;
   mobile: string;
+  profileImage?: { url: string; publicId?: string };
   role: 'customer' | 'storeAdmin' | 'superAdmin';
   selectedStore?: Store | string | null;
   serviceMode: ServiceMode;
@@ -201,6 +202,17 @@ export interface AuthUser {
   loyaltyPoints?: number;
   checkInHistory?: string[];
   lastCheckIn?: string;
+}
+
+export interface AvailableCoupon {
+  _id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  minOrderAmount: number;
+  maxDiscount?: number;
+  description?: string;
+  expiryDate: string;
 }
 
 export interface CouponValidation {

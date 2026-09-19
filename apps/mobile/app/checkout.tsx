@@ -18,6 +18,7 @@ import { INDIAN_STATES, STATE_DISTRICTS } from '@vaniki/shared';
 import { lookupPincode } from '../src/utils/pincode';
 import { SelectionModal } from '../src/components/SelectionModal';
 import { Skeleton } from '../src/components/Skeleton';
+import { AvailableCouponsList } from '../src/components/AvailableCouponsList';
 
 function getCheckoutErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) return error.message;
@@ -525,11 +526,25 @@ export default function CheckoutScreen() {
           {couponCode ? (
             <View className="mt-3 flex-row items-center justify-between rounded-xl bg-emerald-50 px-3 py-2">
               <Text className="text-xs font-bold text-emerald-700">Applied: {couponCode}</Text>
-              <Pressable onPress={() => setCouponCode('', 0)}>
+              <Pressable onPress={() => { setCouponCode('', 0); setCouponInput(''); }}>
                 <Text className="text-[10px] font-black text-emerald-700 uppercase underline">Remove</Text>
               </Pressable>
             </View>
           ) : null}
+
+          {/* Available Coupons List with Dashed Ticket Design */}
+          <AvailableCouponsList
+            cartTotal={subtotal}
+            appliedCode={couponCode}
+            onApply={(code, discount) => {
+              setCouponCode(code, discount);
+              setCouponInput(code);
+            }}
+            onRemove={() => {
+              setCouponCode('', 0);
+              setCouponInput('');
+            }}
+          />
         </View>
 
         {/* Loyalty Points Section */}

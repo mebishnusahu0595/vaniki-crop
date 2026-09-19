@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
   Modal,
@@ -10,30 +12,34 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useDrawerStore } from '../store/useDrawerStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { storefrontApi } from '../lib/api';
+import { resolveMediaUrl } from '../utils/media';
 import { setAppLanguage, getAppLanguage, type AppLanguage } from '../i18n';
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
+const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 330);
 
 export function SidebarDrawer() {
   const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation();
+  const isHindi = (i18n.language || getAppLanguage()) === 'hi';
   const isOpen = useDrawerStore((state) => state.isOpen);
   const closeDrawer = useDrawerStore((state) => state.closeDrawer);
   const languageModalOpen = useDrawerStore((state) => state.languageModalOpen);
   const openLanguageModal = useDrawerStore((state) => state.openLanguageModal);
   const closeLanguageModal = useDrawerStore((state) => state.closeLanguageModal);
 
-  const { user, logout } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const [authModalItem, setAuthModalItem] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const currentLang = getAppLanguage();
 
@@ -63,76 +69,138 @@ export function SidebarDrawer() {
     router.push(route as any);
   };
 
+  const handlePickImage = async () => {
+    if (!user) {
+      setAuthModalItem(t('mobile.sidebar.editProfile'));
+      return;
+    }
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          isHindi ? 'अनुमति चाहिए' : 'Permission Required',
+          isHindi
+            ? 'गैलरी से फोटो चुनने के लिए कृपया अनुमति दें।'
+            : 'Please grant access to your photo library.',
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        setUploadingImage(true);
+        const updatedUser = await storefrontApi.uploadProfileImage(result.assets[0].uri);
+        setUser(updatedUser);
+        Alert.alert(
+          isHindi ? 'सफल' : 'Success',
+          isHindi ? 'आपकी प्रोफ़ाइल फोटो सफलतापूर्वक अपडेट हो गई!' : 'Profile photo updated successfully!',
+        );
+      }
+    } catch (err: any) {
+      Alert.alert(
+        isHindi ? 'त्रुटि' : 'Error',
+        err?.message || (isHindi ? 'फोटो अपलोड करने में समस्या आई' : 'Failed to upload photo'),
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const menuItems = [
     {
       id: 'edit-profile',
       label: t('mobile.sidebar.editProfile'),
+      subtitle: isHindi ? 'नाम, पता व किसान प्रोफाइल' : 'Name, address & details',
       icon: 'edit-3' as const,
-      color: '#2D6A4F',
+      color: '#059669',
+      bgColor: '#D1FAE5',
       requiresAuth: true,
       action: () => handleNavigate('/account/profile', true, t('mobile.sidebar.editProfile')),
     },
     {
       id: 'language',
       label: t('mobile.sidebar.language'),
+      subtitle: currentLang === 'hi' ? 'हिंदी (चुना हुआ)' : 'English (Selected)',
       icon: 'globe' as const,
-      color: '#2D6A4F',
+      color: '#0284C7',
+      bgColor: '#E0F2FE',
       requiresAuth: false,
       action: () => openLanguageModal(),
     },
     {
       id: 'wishlist',
       label: t('mobile.sidebar.wishlist'),
+      subtitle: isHindi ? 'सेव की गई दवाइयां' : 'Saved items for later',
       icon: 'heart' as const,
-      color: '#2D6A4F',
+      color: '#E11D48',
+      bgColor: '#FFE4E6',
       requiresAuth: true,
       action: () => handleNavigate('/account/wishlist', true, t('mobile.sidebar.wishlist')),
     },
     {
       id: 'my-farm',
       label: t('mobile.sidebar.myFarm'),
+      subtitle: isHindi ? 'फसल सुरक्षा व स्प्रे शेड्यूल' : 'Crops & safety guides',
       icon: 'sun' as const,
-      color: '#2D6A4F',
-      requiresAuth: true,
-      action: () => handleNavigate('/(tabs)/select-crop', true, t('mobile.sidebar.myFarm')),
+      color: '#D97706',
+      bgColor: '#FEF3C7',
+      requiresAuth: false,
+      action: () => handleNavigate('/(tabs)/select-crop', false, t('mobile.sidebar.myFarm')),
     },
     {
       id: 'my-orders',
       label: t('mobile.sidebar.myOrders'),
+      subtitle: isHindi ? 'ऑर्डर ट्रैकिंग व इनवॉइस' : 'Track orders & invoices',
       icon: 'shopping-bag' as const,
-      color: '#2D6A4F',
+      color: '#4F46E5',
+      bgColor: '#EEF2FF',
       requiresAuth: true,
       action: () => handleNavigate('/account/orders', true, t('mobile.sidebar.myOrders')),
     },
     {
       id: 'refer-earn',
       label: t('mobile.sidebar.referEarn'),
-      icon: 'user-plus' as const,
-      color: '#2D6A4F',
+      subtitle: isHindi ? 'मित्रों को जोड़ें, सिक्के कमाएं' : 'Earn coins & get discounts',
+      icon: 'award' as const,
+      color: '#B45309',
+      bgColor: '#FDE68A',
       requiresAuth: true,
       action: () => handleNavigate('/account/loyalty', true, t('mobile.sidebar.referEarn')),
     },
     {
       id: 'contact-us',
       label: t('mobile.sidebar.contactUs'),
+      subtitle: '9407963966',
       icon: 'phone' as const,
-      color: '#2D6A4F',
+      color: '#0891B2',
+      bgColor: '#CFFAFE',
       requiresAuth: false,
       action: () => handleNavigate('/contact'),
     },
     {
       id: 'about-us',
       label: t('mobile.sidebar.aboutUs'),
+      subtitle: isHindi ? 'कंपनी और मिशन' : 'About Vaniki Crop',
       icon: 'info' as const,
-      color: '#2D6A4F',
+      color: '#7C3AED',
+      bgColor: '#EDE9FE',
       requiresAuth: false,
       action: () => handleNavigate('/about'),
     },
     {
       id: 'privacy',
       label: t('mobile.sidebar.termsConditions'),
+      subtitle: isHindi ? 'गोपनीयता नीति' : 'Terms of service & privacy',
       icon: 'file-text' as const,
-      color: '#2D6A4F',
+      color: '#475569',
+      bgColor: '#F1F5F9',
       requiresAuth: false,
       action: () => handleNavigate('/privacy-policy'),
     },
@@ -143,7 +211,10 @@ export function SidebarDrawer() {
     closeLanguageModal();
   };
 
-  const topHeaderPadding = Math.max(insets.top, 24) + 20;
+  const topHeaderPadding = Math.max(insets.top, 24) + 16;
+  const userAvatarUrl = user?.profileImage?.url
+    ? resolveMediaUrl(user.profileImage.url, user.profileImage.publicId)
+    : null;
 
   return (
     <>
@@ -177,43 +248,98 @@ export function SidebarDrawer() {
             >
               {/* Top User Profile Header */}
               {user ? (
-                <Pressable
-                  onPress={() => handleNavigate('/(tabs)/account', true, t('mobile.sidebar.editProfile'))}
+                <View
                   style={{ paddingTop: topHeaderPadding }}
-                  className="bg-[#0B281E] px-6 pb-6 items-center active:opacity-90"
+                  className="bg-[#0B281E] px-5 pb-5 items-center border-b border-emerald-900/60 shadow-inner"
                 >
-                  <View className="h-16 w-16 items-center justify-center rounded-full bg-white border-2 border-emerald-400 shadow-md mb-2.5">
-                    <Feather name="user" size={32} color="#0B281E" />
-                  </View>
-                  <Text className="text-base font-black text-white text-center" numberOfLines={1}>
+                  {/* Avatar with Camera Overlay */}
+                  <Pressable
+                    onPress={handlePickImage}
+                    disabled={uploadingImage}
+                    className="relative active:opacity-85"
+                  >
+                    <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-[#153e2f] border-2 border-emerald-400 overflow-hidden shadow-lg">
+                      {uploadingImage ? (
+                        <ActivityIndicator size="small" color="#52B788" />
+                      ) : userAvatarUrl ? (
+                        <Image
+                          source={{ uri: userAvatarUrl }}
+                          style={{ width: '100%', height: '100%' }}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                      ) : (
+                        <Feather name="user" size={34} color="#A7F3D0" />
+                      )}
+                    </View>
+
+                    {/* Camera Badge to Upload/Change Photo */}
+                    <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-emerald-600 border-2 border-[#0B281E] shadow-sm">
+                      <Feather name="camera" size={11} color="#FFFFFF" />
+                    </View>
+                  </Pressable>
+
+                  {/* Name & Mobile */}
+                  <Text className="mt-2.5 text-base font-black text-white text-center" numberOfLines={1}>
                     {user.name}
                   </Text>
                   <Text className="text-xs font-semibold text-emerald-200 mt-0.5 text-center">
                     {user.mobile}
                   </Text>
-                  <View className="mt-2 flex-row items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-500/20 px-3 py-1">
-                    <Text className="text-[9px] font-black uppercase tracking-wider text-emerald-200">
-                      My Account
-                    </Text>
-                    <Feather name="chevron-right" size={11} color="#A7F3D0" />
+
+                  {/* Loyalty Points Badge & Account Nav */}
+                  <View className="mt-3 flex-row items-center gap-2">
+                    {/* Points Button */}
+                    <Pressable
+                      onPress={() => handleNavigate('/account/loyalty', true, t('mobile.sidebar.referEarn'))}
+                      className="flex-row items-center gap-1.5 rounded-full border border-amber-400/50 bg-amber-500/20 px-3 py-1 active:scale-95"
+                    >
+                      <Text className="text-xs">🪙</Text>
+                      <Text className="text-xs font-black text-amber-300">
+                        {user.loyaltyPoints || 0} {isHindi ? 'सिक्के' : 'Coins'}
+                      </Text>
+                    </Pressable>
+
+                    {/* My Account Button */}
+                    <Pressable
+                      onPress={() => handleNavigate('/(tabs)/account', true, t('mobile.sidebar.editProfile'))}
+                      className="flex-row items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-500/20 px-3 py-1 active:scale-95"
+                    >
+                      <Text className="text-[10px] font-black uppercase tracking-wider text-emerald-200">
+                        {isHindi ? 'खाता' : 'Account'}
+                      </Text>
+                      <Feather name="chevron-right" size={11} color="#A7F3D0" />
+                    </Pressable>
                   </View>
-                </Pressable>
+                </View>
               ) : (
-                <View style={{ paddingTop: topHeaderPadding }} className="bg-emerald-50/80 px-6 pb-6 items-center">
-                  <View className="h-16 w-16 items-center justify-center rounded-full bg-white border border-emerald-200 shadow-sm mb-2.5">
-                    <Feather name="user" size={32} color="#0B281E" />
+                <View style={{ paddingTop: topHeaderPadding }} className="bg-[#0B281E] px-5 pb-5 items-center">
+                  <View className="h-16 w-16 items-center justify-center rounded-full bg-[#153e2f] border border-emerald-500/40 shadow-sm mb-2.5">
+                    <Feather name="user" size={32} color="#A7F3D0" />
                   </View>
-                  <Text className="text-base font-black text-slate-900 text-center" numberOfLines={1}>
+                  <Text className="text-base font-black text-white text-center" numberOfLines={1}>
                     {t('mobile.sidebar.guestUser')}
                   </Text>
-                  <Text className="text-xs font-semibold text-slate-600 mt-0.5 text-center">
+                  <Text className="text-xs font-semibold text-emerald-300/80 mt-0.5 text-center">
                     {t('mobile.sidebar.loginToManage')}
                   </Text>
+
+                  <Pressable
+                    onPress={() => {
+                      closeDrawer();
+                      router.push('/(auth)/login');
+                    }}
+                    className="mt-3 rounded-full bg-emerald-600 px-5 py-1.5 active:scale-95 shadow-sm"
+                  >
+                    <Text className="text-xs font-black uppercase tracking-wider text-white">
+                      {isHindi ? 'लॉग इन करें' : 'Login / Register'}
+                    </Text>
+                  </Pressable>
                 </View>
               )}
 
-              {/* Menu Items List */}
-              <View className="py-2">
+              {/* Menu Items List with Rich Colorful Badges */}
+              <View className="py-2.5">
                 {menuItems.map((item) => {
                   const isLocked = !user && item.requiresAuth;
 
@@ -221,27 +347,53 @@ export function SidebarDrawer() {
                     <Pressable
                       key={item.id}
                       onPress={item.action}
-                      className="flex-row items-center gap-4 px-6 py-3.5 active:bg-emerald-50/80"
+                      className="flex-row items-center gap-3.5 px-5 py-3 active:bg-emerald-50/70"
                     >
-                      <View className="h-8 w-8 items-center justify-center rounded-xl bg-emerald-50">
-                        <Feather name={item.icon} size={17} color={isLocked ? '#94A3B8' : item.color} />
+                      {/* Vibrant Themed Icon Badge */}
+                      <View
+                        style={{ backgroundColor: isLocked ? '#F1F5F9' : item.bgColor }}
+                        className="h-9 w-9 items-center justify-center rounded-xl shadow-2xs"
+                      >
+                        <Feather
+                          name={item.icon}
+                          size={17}
+                          color={isLocked ? '#94A3B8' : item.color}
+                        />
                       </View>
-                      <Text className={`text-sm font-bold flex-1 ${isLocked ? 'text-slate-500' : 'text-[#1B4332]'}`}>
-                        {item.label}
-                      </Text>
+
+                      {/* Label and Subtitle */}
+                      <View className="flex-1">
+                        <Text
+                          className={`text-[13px] font-black ${
+                            isLocked ? 'text-slate-500' : 'text-[#0B281E]'
+                          }`}
+                          numberOfLines={1}
+                        >
+                          {item.label}
+                        </Text>
+                        {item.subtitle ? (
+                          <Text
+                            className="text-[10px] font-semibold text-slate-400 mt-0.5"
+                            numberOfLines={1}
+                          >
+                            {item.subtitle}
+                          </Text>
+                        ) : null}
+                      </View>
+
                       {isLocked ? (
                         <View className="flex-row items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                          <Feather name="lock" size={12} color="#D97706" />
+                          <Feather name="lock" size={11} color="#D97706" />
                           <Text className="text-[9px] font-black text-amber-800 uppercase">Lock</Text>
                         </View>
                       ) : (
-                        <Feather name="chevron-right" size={14} color="#A3B8B0" />
+                        <Feather name="chevron-right" size={14} color="#CBD5E1" />
                       )}
                     </Pressable>
                   );
                 })}
 
-                <View className="my-2 h-[1px] bg-primary-100 mx-6" />
+                <View className="my-2 h-[1px] bg-slate-100 mx-5" />
 
                 {/* Sign Out / Sign In option */}
                 <Pressable
@@ -254,20 +406,29 @@ export function SidebarDrawer() {
                       router.push('/(auth)/login');
                     }
                   }}
-                  className="flex-row items-center gap-4 px-6 py-3.5 active:bg-rose-50"
+                  className="flex-row items-center gap-3.5 px-5 py-3 active:bg-rose-50"
                 >
-                  <View className="h-8 w-8 items-center justify-center rounded-xl bg-rose-50">
-                    <Feather name={user ? 'log-out' : 'log-in'} size={17} color="#DC2626" />
+                  <View className="h-9 w-9 items-center justify-center rounded-xl bg-rose-100/80 shadow-2xs">
+                    <Feather name={user ? 'log-out' : 'log-in'} size={17} color="#E11D48" />
                   </View>
-                  <Text className="text-sm font-bold text-rose-600 flex-1">
-                    {user ? t('mobile.sidebar.signOut') : t('mobile.sidebar.signInRegister')}
-                  </Text>
+                  <View className="flex-1">
+                    <Text className="text-[13px] font-black text-rose-600">
+                      {user ? t('mobile.sidebar.signOut') : t('mobile.sidebar.signInRegister')}
+                    </Text>
+                    <Text className="text-[10px] font-semibold text-rose-400 mt-0.5">
+                      {user
+                        ? isHindi ? 'खाता सुरक्षित लॉग आउट करें' : 'Sign out securely'
+                        : isHindi ? 'ऑर्डर और ऑफर्स के लिए' : 'Access orders & rewards'}
+                    </Text>
+                  </View>
                 </Pressable>
               </View>
 
               {/* Footer */}
-              <View className="px-6 py-4 border-t border-primary-100 flex-row items-center justify-center gap-1 mt-auto">
-                <Text className="text-[11px] font-bold text-primary-900/60">{t('mobile.sidebar.madeWithLove')}</Text>
+              <View className="px-5 py-4 border-t border-slate-100 flex-row items-center justify-center gap-1 mt-auto">
+                <Text className="text-[11px] font-bold text-slate-400">
+                  {t('mobile.sidebar.madeWithLove')}
+                </Text>
               </View>
             </ScrollView>
           </Animated.View>

@@ -56,7 +56,7 @@ export default function SelectCropScreen() {
   }, []);
 
   return (
-    <Screen>
+    <Screen scroll={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -177,7 +177,7 @@ export default function SelectCropScreen() {
                 {isHindi ? 'गाइडेंस देखने के लिए फसल चुनें' : 'SELECT A CROP TO SEE GUIDANCE'}
               </Text>
 
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: CARD_MARGIN }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
                 {crops.map((crop) => {
                   const imageUrl = resolveMediaUrl(crop.image?.url, crop.image?.publicId);
 
@@ -186,11 +186,12 @@ export default function SelectCropScreen() {
                       key={crop.id}
                       onPress={() => router.push(`/crop/${crop.slug}` as any)}
                       style={({ pressed }) => ({
-                        width: cardWidth,
+                        width: '48%',
+                        marginBottom: 16,
                         borderRadius: 18,
                         overflow: 'hidden',
-                        backgroundColor: '#fff',
-                        borderWidth: 1,
+                        backgroundColor: '#ffffff',
+                        borderWidth: 1.5,
                         borderColor: '#D8F3DC',
                         opacity: pressed ? 0.88 : 1,
                         transform: [{ scale: pressed ? 0.97 : 1 }],
@@ -201,20 +202,25 @@ export default function SelectCropScreen() {
                         elevation: 3,
                       })}
                     >
-                      {/* Crop Image Container with proper fit */}
+                      {/* Crop Image Container: Handles any landscape/portrait ratio with contain */}
                       <View
                         style={{
                           width: '100%',
-                          height: 135,
-                          backgroundColor: '#F1F8F5',
+                          height: 125,
+                          backgroundColor: '#F3FAF6',
                           overflow: 'hidden',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 8,
+                          borderBottomWidth: 1,
+                          borderBottomColor: '#E8F5EE',
                         }}
                       >
                         {imageUrl ? (
                           <Image
                             source={{ uri: imageUrl }}
                             style={{ width: '100%', height: '100%' }}
-                            contentFit="cover"
+                            contentFit="contain"
                             transition={200}
                           />
                         ) : (
@@ -226,7 +232,7 @@ export default function SelectCropScreen() {
                               justifyContent: 'center',
                             }}
                           >
-                            <Feather name="sun" size={32} color="#52B788" />
+                            <Feather name="sun" size={36} color="#52B788" />
                           </View>
                         )}
                       </View>
@@ -244,19 +250,20 @@ export default function SelectCropScreen() {
                         >
                           {crop.name}
                         </Text>
-                        {crop.sections?.length > 0 ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+                          <Feather name="book-open" size={11} color="#52B788" />
                           <Text
                             style={{
-                              fontSize: 10,
-                              fontWeight: '600',
-                              color: '#52B788',
-                              textAlign: 'center',
-                              marginTop: 2,
+                              fontSize: 11,
+                              fontWeight: '700',
+                              color: '#2D6A4F',
                             }}
                           >
-                            {crop.sections.length} guide{crop.sections.length !== 1 ? 's' : ''}
+                            {crop.sections?.length > 0
+                              ? `${crop.sections.length} ${isHindi ? 'शेड्यूल' : 'guides'}`
+                              : isHindi ? 'गाइडेंस देखें' : 'View Guide'}
                           </Text>
-                        ) : null}
+                        </View>
                       </View>
                     </Pressable>
                   );
