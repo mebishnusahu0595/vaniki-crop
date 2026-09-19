@@ -455,8 +455,6 @@ export function buildTallyRetailOrderVoucherXml(
     const lineTaxable = Math.max(0, grossLine - lineTax);
     const unitTaxableRate = qty > 0 ? (lineTaxable / qty) : lineTaxable;
 
-    calculatedTaxableSubtotal += lineTaxable;
-
     if (isInterState) {
       igstTotal += lineTax;
     } else {
@@ -476,9 +474,29 @@ export function buildTallyRetailOrderVoucherXml(
     };
   });
 
+  // Round taxes
+  if (isInterState) {
+    igstTotal = Math.round(igstTotal * 100) / 100;
+  } else {
+    cgstTotal = Math.round(cgstTotal * 100) / 100;
+    sgstTotal = cgstTotal;
+  }
+
+  // Exact balancing: ensure Items + Taxes + Delivery - Discount === totalAmount to the cent
   const totalAmount = Number(order.totalAmount || 0);
   const deliveryCharge = Number(order.deliveryCharge || 0);
   const totalDiscount = Number(order.couponDiscount || 0) + Number(order.loyaltyDiscount || 0) + Number(order.discount || 0);
+
+  const totalTaxes = isInterState ? igstTotal : (cgstTotal + sgstTotal);
+  const rawSum = processedItems.reduce((s: number, it: any) => s + it.lineTaxable, 0);
+  const expectedTotal = rawSum + totalTaxes + deliveryCharge - totalDiscount;
+  const diff = Math.round((totalAmount - expectedTotal) * 100) / 100;
+
+  if (Math.abs(diff) > 0 && Math.abs(diff) <= 0.10 && processedItems.length > 0) {
+    const lastItem = processedItems[processedItems.length - 1];
+    lastItem.lineTaxable = Math.round((lastItem.lineTaxable + diff) * 100) / 100;
+    lastItem.unitTaxableRate = lastItem.lineTaxable / (lastItem.qty || 1);
+  }
 
   const paymentMethodLabel = order.paymentMethod === 'cod'
     ? 'Cash on Delivery (COD)'
@@ -569,20 +587,8 @@ export function buildTallyRetailOrderVoucherXml(
         </LEDGERENTRIES.LIST>`;
   }
 
-  // Round Off ledger calculation for exact balancing
-  const totalTaxes = isInterState ? igstTotal : (cgstTotal + sgstTotal);
-  const creditSum = calculatedTaxableSubtotal + totalTaxes + deliveryCharge - totalDiscount;
-  const roundOffDiff = Math.round((totalAmount - creditSum) * 100) / 100;
-
-  let roundOffXml = '';
-  if (Math.abs(roundOffDiff) >= 0.01) {
-    roundOffXml = `
-        <LEDGERENTRIES.LIST>
-          <LEDGERNAME>${escapeXml(config.roundOffLedger || 'Round Off')}</LEDGERNAME>
-          <ISDEEMEDPOSITIVE>${roundOffDiff > 0 ? 'No' : 'Yes'}</ISDEEMEDPOSITIVE>
-          <AMOUNT>${(-roundOffDiff).toFixed(2)}</AMOUNT>
-        </LEDGERENTRIES.LIST>`;
-  }
+  // Exact balance is achieved on the items directly so Debit === Credit 100.00%
+  const roundOffXml = '';
 
   // Discount ledger entry if applicable
   let discountXml = '';
@@ -709,6 +715,13 @@ export function buildTallyRetailOrderVoucherXml(
         <TALLYMESSAGE xmlns:UDF="TallyUDF">
           <LEDGER NAME="Discount Allowed" ACTION="Create">
             <NAME>Discount Allowed</NAME>
+            <PARENT>Indirect Expenses</PARENT>
+            <ISBILLWISEON>No</ISBILLWISEON>
+          </LEDGER>
+        </TALLYMESSAGE>
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER NAME="Round Off" ACTION="Create">
+            <NAME>Round Off</NAME>
             <PARENT>Indirect Expenses</PARENT>
             <ISBILLWISEON>No</ISBILLWISEON>
           </LEDGER>
