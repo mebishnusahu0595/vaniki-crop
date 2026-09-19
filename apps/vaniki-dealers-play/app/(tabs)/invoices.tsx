@@ -229,8 +229,19 @@ function InvoiceCard({
   const [submitting, setSubmitting] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
 
+  const totalAmount = invoice.totalAmount || 0;
+  const paidAmount = invoice.paidAmount || 0;
+  const outstandingAmount = invoice.outstandingAmount !== undefined
+    ? invoice.outstandingAmount
+    : Math.max(0, totalAmount - paidAmount);
+
+  const [paidAmountInput, setPaidAmountInput] = useState(
+    String(outstandingAmount > 0 ? outstandingAmount : totalAmount)
+  );
+
   const paymentStatus = invoice.paymentStatus || 'unpaid';
   const isPaid = paymentStatus === 'paid';
+  const isPartiallyPaid = paymentStatus === 'partially_paid';
   const isPendingVerification = paymentStatus === 'verification_pending';
   const isUnpaid = paymentStatus === 'unpaid';
 
@@ -285,6 +296,7 @@ function InvoiceCard({
     try {
       const formData = new FormData();
       formData.append('utr', utr.trim());
+      formData.append('paidAmount', paidAmountInput.trim() || String(outstandingAmount || totalAmount));
 
       validImages.forEach((imgUri, idx) => {
         const filename = imgUri.split('/').pop() || `proof_${idx}.jpg`;
@@ -318,7 +330,6 @@ function InvoiceCard({
   };
 
   // Dynamic QR Code generation for UPI
-  const totalAmount = invoice.totalAmount || 0;
   const qrCodeUrl =
     bankDetails.qrCodeUrl?.trim() ||
     `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
@@ -351,10 +362,16 @@ function InvoiceCard({
                 ✓ Paid (Done)
               </Text>
             </View>
-          ) : isPendingVerification ? (
-            <View className="rounded-full bg-amber-100 px-3 py-1 border border-amber-200">
+          ) : isPartiallyPaid ? (
+            <View className="rounded-full bg-amber-100 px-3 py-1 border border-amber-300">
               <Text className="text-[10px] font-black uppercase tracking-wider text-amber-800">
-                ⏳ Verification Pending
+                ⏳ Partially Paid
+              </Text>
+            </View>
+          ) : isPendingVerification ? (
+            <View className="rounded-full bg-blue-100 px-3 py-1 border border-blue-200">
+              <Text className="text-[10px] font-black uppercase tracking-wider text-blue-800">
+                ⏳ Under Verification
               </Text>
             </View>
           ) : (
@@ -399,28 +416,50 @@ function InvoiceCard({
       )}
 
       {/* Amount & Download Action */}
-      <View className="flex-row items-center justify-between pt-3.5">
+      <View className="flex-row items-center justify-between pt-3.5 gap-2">
         <View>
           <Text className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-            Total Invoice Amount
+            Total Bill
           </Text>
-          <Text className="text-xl font-black text-primary-900">
+          <Text className="text-base font-black text-primary-900">
             {currencyFormatter.format(totalAmount)}
           </Text>
         </View>
 
+        {paidAmount > 0 && (
+          <View className="items-center">
+            <Text className="text-[10px] font-black uppercase tracking-wider text-emerald-600">
+              Paid
+            </Text>
+            <Text className="text-xs font-black text-emerald-700">
+              {currencyFormatter.format(paidAmount)}
+            </Text>
+          </View>
+        )}
+
+        {outstandingAmount > 0 && (
+          <View className="items-center">
+            <Text className="text-[10px] font-black uppercase tracking-wider text-rose-500">
+              Outstanding
+            </Text>
+            <Text className="text-xs font-black text-rose-600">
+              {currencyFormatter.format(outstandingAmount)}
+            </Text>
+          </View>
+        )}
+
         <Pressable
           onPress={onDownload}
           disabled={downloading}
-          className="flex-row items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 shadow-sm active:scale-95"
+          className="flex-row items-center gap-1.5 rounded-2xl bg-slate-900 px-3 py-2 shadow-sm active:scale-95"
         >
           {downloading ? (
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <>
-              <Icon name="download" size={15} color="#FFFFFF" />
-              <Text className="text-xs font-black text-white uppercase tracking-wider">
-                Invoice PDF
+              <Icon name="download" size={13} color="#FFFFFF" />
+              <Text className="text-[11px] font-black text-white uppercase tracking-wider">
+                PDF
               </Text>
             </>
           )}
@@ -577,8 +616,23 @@ function InvoiceCard({
           {/* Payment Proof Submission Form */}
           <View className="bg-primary-50/50 rounded-2xl p-4 border border-primary-100 space-y-3">
             <Text className="text-xs font-black uppercase tracking-wider text-primary-900">
-              Submit Payment Proof (Mark as Paid)
+              Submit Payment Proof (Bank Transfer / QR)
             </Text>
+
+            {/* Payment Amount */}
+            <View>
+              <Text className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">
+                Payment Amount (₹) <Text className="text-rose-500">*</Text>
+              </Text>
+              <TextInput
+                value={paidAmountInput}
+                onChangeText={setPaidAmountInput}
+                keyboardType="numeric"
+                placeholder={`e.g. ${outstandingAmount || totalAmount}`}
+                placeholderTextColor="#94A3B8"
+                className="rounded-xl border border-primary-200 bg-white p-3 text-xs font-bold text-slate-900"
+              />
+            </View>
 
             {/* UTR Input */}
             <View>

@@ -44,6 +44,7 @@ export interface IStore extends Document {
   sgst?: number;
   igst?: number;
   panNumber?: string;
+  dealerCode?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -127,6 +128,12 @@ const storeSchema = new Schema<IStore>(
       type: String,
       trim: true,
       uppercase: true,
+    },
+    dealerCode: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      index: true,
     },
     sgstNumber: {
       type: String,

@@ -20,6 +20,7 @@ import { Enquiry } from '../../models/Enquiry.model.js';
 import * as orderService from '../orders/order.service.js';
 import { sendExpoPushNotification } from '../../utils/expoPush.js';
 import { sendFcmNotification } from '../../utils/pushNotifications.js';
+import { sendTextMessage } from '../whatsapp/whatsapp.service.js';
 
 const STORE_COLORS = ['#2D6A4F', '#52B788', '#40916C', '#74C69D', '#95D5B2', '#1B4332', '#0B6E4F', '#6A994E'];
 
@@ -1690,8 +1691,35 @@ export async function updateProductRequestStatus(productRequestId: string, input
           },
         });
       }
+
+      // Send WhatsApp Notification to Dealer's Mobile
+      if (dealerUser && dealerUser.mobile) {
+        const inv: any = request.invoiceId;
+        const invNumber = inv?.invoiceNumber || 'B2B-INVOICE';
+        const invAmount = inv?.totalAmount ? `₹${inv.totalAmount}` : 'as per invoice';
+
+        const waMsg =
+          `*Vaniki Crop - Wholesale Order Approved!* ✅\n\n` +
+          `Namaste ${dealerUser.name || 'Dealer'} Ji,\n` +
+          `Aapki bulk product request approved ho gayi hai!\n\n` +
+          `📦 *Product:* ${request.productName} (${request.petiQuantity || 1} Peti / ${request.requestedQuantity} Units)\n` +
+          `📄 *Invoice No:* ${invNumber}\n` +
+          `💰 *Total Amount:* ${invAmount}\n\n` +
+          `*Payment Options:*\n` +
+          `Aap Bank Transfer (NEFT/RTGS/IMPS) ya UPI QR se payment karke Dealer App mein slip upload kar sakte hain.\n\n` +
+          `Bank: HDFC Bank\n` +
+          `A/C Name: Vaniki Crop Science Pvt Ltd\n` +
+          `A/C No: 50200088991122\n` +
+          `IFSC: HDFC0001234\n\n` +
+          `Kisi bhi sahayata ke liye sampark karein: 9407963966\n` +
+          `Team Vaniki Crop`;
+
+        await sendTextMessage(dealerUser.mobile, waMsg).catch((waSendErr) =>
+          console.error('[WHATSAPP-DEALER] Failed to send order approval message:', waSendErr),
+        );
+      }
     } catch (pushErr) {
-      console.error('Failed to send push notification', pushErr);
+      console.error('Failed to send push/WhatsApp notification', pushErr);
     }
   }
 

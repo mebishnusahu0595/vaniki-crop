@@ -35,7 +35,10 @@ export interface IB2BInvoice extends Document {
   destination?: string;
   termsOfDelivery?: string;
   paymentTerms?: string;
-  paymentStatus: 'unpaid' | 'verification_pending' | 'paid';
+  paymentStatus: 'unpaid' | 'verification_pending' | 'partially_paid' | 'paid';
+  paidAmount?: number;
+  outstandingAmount?: number;
+  collectedByStaff?: mongoose.Types.ObjectId;
   paymentUtr?: string;
   paymentScreenshots?: string[];
   paymentSubmittedAt?: Date;
@@ -89,10 +92,13 @@ const B2BInvoiceSchema: Schema = new Schema(
     paymentTerms: { type: String },
     paymentStatus: {
       type: String,
-      enum: ['unpaid', 'verification_pending', 'paid'],
+      enum: ['unpaid', 'verification_pending', 'partially_paid', 'paid'],
       default: 'unpaid',
       index: true,
     },
+    paidAmount: { type: Number, default: 0, min: 0 },
+    outstandingAmount: { type: Number, default: 0, min: 0 },
+    collectedByStaff: { type: Schema.Types.ObjectId, ref: 'Staff', default: null },
     paymentUtr: { type: String, trim: true },
     paymentScreenshots: [{ type: String }],
     paymentSubmittedAt: { type: Date },

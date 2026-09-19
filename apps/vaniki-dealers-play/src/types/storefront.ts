@@ -186,6 +186,7 @@ export interface AuthUser {
   name: string;
   email?: string;
   mobile: string;
+  dealerCode?: string;
   role: 'customer' | 'storeAdmin' | 'superAdmin';
   selectedStore?: Store | string | null;
   serviceMode: ServiceMode;

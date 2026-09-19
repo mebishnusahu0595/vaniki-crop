@@ -40,3 +40,24 @@ export async function generateUniqueReferralCode(name: string, mobile?: string):
 
   return candidate;
 }
+
+export async function generateUniqueDealerCode(prefix = 'VKD'): Promise<string> {
+  const User = mongoose.models.User;
+  const count = User ? await User.countDocuments({ role: 'storeAdmin' }) : 0;
+  let candidateNumber = 1000 + count + 1;
+  let candidate = `${prefix}${candidateNumber}`;
+  let attempts = 0;
+
+  while (User && (await User.exists({ dealerCode: candidate }))) {
+    candidateNumber += 1;
+    candidate = `${prefix}${candidateNumber}`;
+    attempts++;
+    if (attempts > 500) {
+      const rand = Math.floor(1000 + Math.random() * 9000);
+      candidate = `${prefix}${rand}`;
+      if (!(await User.exists({ dealerCode: candidate }))) break;
+    }
+  }
+
+  return candidate;
+}

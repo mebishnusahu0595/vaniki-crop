@@ -49,6 +49,7 @@ export interface IUser extends Document {
   profileImage?: IUserProfileImage;
   role: UserRole;
   approvalStatus: DealerApprovalStatus;
+  dealerCode?: string;
   dealerProfile?: IDealerProfile;
   selectedStore?: mongoose.Types.ObjectId;
   serviceMode: ServiceMode;
@@ -169,6 +170,12 @@ const userSchema = new Schema<IUser>(
       default: 'approved',
     },
     dealerProfile: dealerProfileSchema,
+    dealerCode: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      sparse: true,
+    },
     selectedStore: {
       type: Schema.Types.ObjectId,
       ref: 'Store',
@@ -251,8 +258,9 @@ const userSchema = new Schema<IUser>(
 userSchema.index({ mobile: 1 }, { unique: true });
 userSchema.index({ email: 1 });
 userSchema.index({ referralCode: 1 }, { unique: true, sparse: true });
+userSchema.index({ dealerCode: 1 }, { unique: true, sparse: true });
 
-import { generateUniqueReferralCode } from '../utils/referral.helpers.js';
+import { generateUniqueReferralCode, generateUniqueDealerCode } from '../utils/referral.helpers.js';
 
 // ─── Hooks ───────────────────────────────────────────────────────────────
 
@@ -262,6 +270,14 @@ userSchema.pre('validate', async function (this: any) {
       this.referralCode = await generateUniqueReferralCode(this.name, this.mobile);
     } catch (error) {
       console.error('Error generating referral code for user:', error);
+    }
+  }
+
+  if (this.role === 'storeAdmin' && !this.dealerCode) {
+    try {
+      this.dealerCode = await generateUniqueDealerCode();
+    } catch (error) {
+      console.error('Error generating dealer code for user:', error);
     }
   }
 });

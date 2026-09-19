@@ -4,6 +4,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -119,12 +120,32 @@ export default function DealerHomeScreen() {
     queryFn: dealerApi.getPromotions,
   });
 
+  // Fetch B2B Invoices to calculate total outstanding balance
+  const invoicesQuery = useQuery({
+    queryKey: ['dealer-invoices'],
+    queryFn: () => dealerApi.getInvoices({ limit: 50 }),
+  });
+
+  const [dismissedOutstandingPopup, setDismissedOutstandingPopup] = useState(false);
+
+  const invoices = invoicesQuery.data?.data || [];
+  const totalOutstanding = useMemo(() => {
+    return invoices.reduce((sum: number, inv: any) => {
+      if (inv.paymentStatus === 'paid') return sum;
+      const invTotal = inv.totalAmount || 0;
+      const paid = inv.paidAmount || 0;
+      const out = inv.outstandingAmount !== undefined ? inv.outstandingAmount : Math.max(0, invTotal - paid);
+      return sum + out;
+    }, 0);
+  }, [invoices]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['dealer-profile'] }),
       queryClient.invalidateQueries({ queryKey: ['bulk-catalogue'] }),
       queryClient.invalidateQueries({ queryKey: ['dealer-promotions'] }),
+      queryClient.invalidateQueries({ queryKey: ['dealer-invoices'] }),
     ]);
     setRefreshing(false);
   }, [queryClient]);
@@ -255,9 +276,19 @@ export default function DealerHomeScreen() {
                 contentFit="contain"
               />
               <View className="flex-1 pr-1">
-                <Text className="text-[15px] font-black text-emerald-950 leading-snug">
-                  Namaste, {currentUser?.name || 'Dealer'} 👋
-                </Text>
+                <View className="flex-row items-center gap-1.5 flex-wrap">
+                  <Text className="text-[15px] font-black text-emerald-950 leading-snug">
+                    Namaste, {currentUser?.name || 'Dealer'}
+                  </Text>
+                  {currentUser?.dealerCode ? (
+                    <View className="rounded-md bg-emerald-800 px-2 py-0.5 shadow-2xs">
+                      <Text className="text-[10px] font-black tracking-wider text-emerald-100 uppercase">
+                        {currentUser.dealerCode}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <Text className="text-[15px]">👋</Text>
+                </View>
                 {currentUser?.storeName || currentUser?.dealerProfile?.storeName ? (
                   <Text className="text-xs font-bold text-emerald-800 mt-0.5" numberOfLines={1}>
                     🏪 {currentUser.storeName || currentUser.dealerProfile?.storeName}
@@ -376,6 +407,30 @@ export default function DealerHomeScreen() {
             </View>
           )}
         </View>
+
+        {/* ─── Outstanding Balance Warning Banner ─── */}
+        {totalOutstanding > 0 && (
+          <View className="mx-4 mt-3 rounded-2xl bg-amber-50 border-2 border-amber-300 p-3.5 shadow-sm">
+            <View className="flex-row items-center gap-2 mb-1.5">
+              <Icon name="alert-triangle" size={18} color="#D97706" />
+              <Text className="text-xs font-black uppercase tracking-wider text-amber-900">
+                बकाया राशि (Outstanding Balance)
+              </Text>
+            </View>
+            <Text className="text-xs font-semibold text-amber-950 leading-5">
+              आपके पास <Text className="font-black text-rose-700">{currencyFormatter.format(totalOutstanding)}</Text> का भुगतान बकाया है। कृपया बैंक ट्रांसफर या UPI QR द्वारा भुगतान कर स्लिप अपलोड करें।
+            </Text>
+            <Pressable
+              onPress={() => router.push('/(tabs)/invoices')}
+              className="mt-2.5 flex-row items-center justify-center gap-1.5 rounded-xl bg-amber-600 py-2.5 px-3 active:bg-amber-700 shadow-2xs"
+            >
+              <Icon name="file-text" size={14} color="#FFFFFF" />
+              <Text className="text-xs font-black text-white uppercase tracking-wider">
+                बिल देखें और भुगतान स्लिप अपलोड करें →
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* ─── Dismissible KYC Pending Popup Card (With Cut 'X' button) ─── */}
         {!isApproved && showKycPopup && (
@@ -888,6 +943,54 @@ export default function DealerHomeScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* ─── Outstanding Balance Alert Modal (Shown on open if balance > 0) ─── */}
+      <Modal
+        visible={totalOutstanding > 0 && !dismissedOutstandingPopup}
+        transparent
+        animationType="fade"
+      >
+        <View className="flex-1 bg-black/60 items-center justify-center p-5">
+          <View className="w-full max-w-sm rounded-3xl bg-white p-5 border-2 border-amber-400 shadow-2xl items-center">
+            <View className="h-14 w-14 rounded-full bg-amber-100 items-center justify-center mb-3 border border-amber-300">
+              <Icon name="alert-circle" size={28} color="#D97706" />
+            </View>
+            <Text className="text-base font-black text-slate-900 text-center">
+              बकाया भुगतान सूचना (Payment Notice)
+            </Text>
+            <Text className="text-xs text-slate-600 text-center mt-1.5 leading-5">
+              आपके थोक इनवॉइस का कुल बकाया:
+            </Text>
+            <Text className="text-2xl font-black text-rose-600 mt-1">
+              {currencyFormatter.format(totalOutstanding)}
+            </Text>
+            <Text className="text-[11px] text-slate-500 text-center mt-2 leading-4">
+              कृपया बैंक ट्रांसफर (NEFT/IMPS/QR) द्वारा भुगतान करें और इनवॉइस सेक्शन में स्लिप अपलोड करें।
+            </Text>
+
+            <Pressable
+              onPress={() => {
+                setDismissedOutstandingPopup(true);
+                router.push('/(tabs)/invoices');
+              }}
+              className="w-full mt-4 rounded-xl bg-emerald-800 py-3 items-center justify-center active:scale-95 shadow-xs"
+            >
+              <Text className="text-xs font-black text-white uppercase tracking-wider">
+                इनवॉइस देखें व भुगतान करें
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setDismissedOutstandingPopup(true)}
+              className="mt-2.5 py-1.5 px-4"
+            >
+              <Text className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                बाद में देखें (Close)
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

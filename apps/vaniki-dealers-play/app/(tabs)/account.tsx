@@ -371,6 +371,22 @@ export default function DealerAccountScreen() {
                 📞 +91 {currentUser?.mobile || '—'}
               </Text>
 
+              {/* Dealer Code Badge with Copy */}
+              {currentUser?.dealerCode ? (
+                <Pressable
+                  onPress={() => {
+                    Alert.alert('Dealer Code Copied', `Dealer Code ${currentUser.dealerCode} copied. Share with visiting field staff.`);
+                  }}
+                  className="self-start mt-1.5 flex-row items-center gap-1.5 rounded-lg bg-emerald-800 px-2.5 py-1 shadow-xs active:scale-95"
+                >
+                  <Icon name="tag" size={11} color="#A7F3D0" />
+                  <Text className="text-[11px] font-black tracking-wider text-white uppercase">
+                    Code: {currentUser.dealerCode}
+                  </Text>
+                  <Icon name="copy" size={10} color="#A7F3D0" />
+                </Pressable>
+              ) : null}
+
               {gstNumber ? (
                 <View className="self-start mt-1.5 rounded-lg bg-emerald-100/70 px-2 py-0.5 border border-emerald-200">
                   <Text className="text-[10px] font-black tracking-wide text-emerald-900">

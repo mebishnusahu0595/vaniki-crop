@@ -503,10 +503,20 @@ export async function submitB2BInvoicePayment(req: Request, res: Response, next:
       throw new AppError('Maximum 4 screenshots allowed', 400);
     }
 
+    const submittedAmount = req.body.paidAmount !== undefined && Number(req.body.paidAmount) > 0
+      ? Number(req.body.paidAmount)
+      : (invoice.outstandingAmount || invoice.totalAmount);
+
+    invoice.paidAmount = Math.min(invoice.totalAmount, (invoice.paidAmount || 0) + submittedAmount);
+    invoice.outstandingAmount = Math.max(0, invoice.totalAmount - invoice.paidAmount);
+
     invoice.paymentStatus = 'verification_pending';
     invoice.paymentUtr = String(utr).trim();
     invoice.paymentScreenshots = screenshotUrls;
     invoice.paymentSubmittedAt = new Date();
+    if (req.body.notes) {
+      invoice.paymentNotes = String(req.body.notes).trim();
+    }
     await invoice.save();
 
     res.status(200).json({
@@ -521,15 +531,15 @@ export async function submitB2BInvoicePayment(req: Request, res: Response, next:
 
 /**
  * PATCH /api/b2b-invoices/super-admin/:id/verify-payment
- * Superadmin marks invoice payment as paid or unpaid
+ * Superadmin marks invoice payment as paid, partially_paid, or unpaid
  */
 export async function verifyB2BInvoicePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { id } = req.params;
-    const { paymentStatus, notes } = req.body;
+    const { paymentStatus, notes, verifiedPaidAmount } = req.body;
 
-    if (!['paid', 'unpaid'].includes(paymentStatus)) {
-      throw new AppError('Invalid payment status. Must be "paid" or "unpaid"', 400);
+    if (!['paid', 'partially_paid', 'unpaid'].includes(paymentStatus)) {
+      throw new AppError('Invalid payment status. Must be "paid", "partially_paid", or "unpaid"', 400);
     }
 
     const invoice = await B2BInvoice.findById(id);
@@ -539,6 +549,8 @@ export async function verifyB2BInvoicePayment(req: Request, res: Response, next:
     if (notes) invoice.paymentNotes = String(notes).trim();
 
     if (paymentStatus === 'paid') {
+      invoice.paidAmount = invoice.totalAmount;
+      invoice.outstandingAmount = 0;
       invoice.paymentVerifiedAt = new Date();
       invoice.paymentVerifiedBy = req.userId as any;
 
@@ -547,7 +559,16 @@ export async function verifyB2BInvoicePayment(req: Request, res: Response, next:
         { invoiceId: invoice._id },
         { $set: { status: 'fulfilled', superAdminNote: `Payment verified for invoice ${invoice.invoiceNumber}` } },
       );
+    } else if (paymentStatus === 'partially_paid') {
+      if (verifiedPaidAmount !== undefined && Number(verifiedPaidAmount) >= 0) {
+        invoice.paidAmount = Number(verifiedPaidAmount);
+        invoice.outstandingAmount = Math.max(0, invoice.totalAmount - invoice.paidAmount);
+      }
+      invoice.paymentVerifiedAt = new Date();
+      invoice.paymentVerifiedBy = req.userId as any;
     } else {
+      invoice.paidAmount = 0;
+      invoice.outstandingAmount = invoice.totalAmount;
       invoice.paymentVerifiedAt = undefined;
       invoice.paymentVerifiedBy = undefined;
     }
