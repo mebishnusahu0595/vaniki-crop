@@ -247,6 +247,21 @@ export const dealerApi = {
       body: JSON.stringify(payload),
     }),
 
+  // Cart Sync
+  syncCart: (payload: {
+    items: any[];
+    couponCode?: string;
+    couponDiscount?: number;
+    source?: string;
+    userType?: string;
+    dealerBusinessName?: string;
+    storeId?: string;
+  }) =>
+    request<{ success: boolean; data: any }>('/cart/sync', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   // Notifications
   registerPushToken: (token: string) =>
     request<{ success: boolean }>('/auth/push-token', {

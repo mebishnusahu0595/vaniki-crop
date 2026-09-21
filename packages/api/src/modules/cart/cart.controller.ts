@@ -20,13 +20,14 @@ export async function syncCart(req: Request, res: Response, next: NextFunction):
       source = 'user_web',
       customerName: bodyName,
       customerPhone: bodyPhone,
+      customerEmail: bodyEmail,
     } = req.body;
 
     const userId = req.userId;
     let resolvedUserType: CartUserType = 'guest';
-    let customerName = bodyName || '';
-    let customerPhone = bodyPhone || '';
-    let customerEmail = '';
+    let customerName = (bodyName || '').trim();
+    let customerPhone = (bodyPhone || '').trim();
+    let customerEmail = (bodyEmail || '').trim();
     let storeId: mongoose.Types.ObjectId | undefined;
     let dealerBusinessName = '';
 
@@ -54,8 +55,14 @@ export async function syncCart(req: Request, res: Response, next: NextFunction):
           }
         }
       }
-    } else if (req.body.userType === 'dealer') {
+    } else if (req.body.userType === 'dealer' || source === 'dealer_app') {
       resolvedUserType = 'dealer';
+      if (req.body.dealerBusinessName) {
+        dealerBusinessName = req.body.dealerBusinessName;
+      }
+      if (req.body.storeId && mongoose.Types.ObjectId.isValid(req.body.storeId)) {
+        storeId = new mongoose.Types.ObjectId(req.body.storeId);
+      }
     } else if (req.body.userType === 'user') {
       resolvedUserType = 'user';
     }
@@ -65,19 +72,24 @@ export async function syncCart(req: Request, res: Response, next: NextFunction):
       : 'user_web';
 
     // Format & validate items
-    const formattedItems = (items || []).map((it: any) => ({
-      productId: it.productId,
-      variantId: String(it.variantId || 'default'),
-      productSlug: it.productSlug || '',
-      productName: it.productName || 'Unknown Product',
-      variantLabel: it.variantLabel || '',
-      price: Number(it.price || 0),
-      mrp: Number(it.mrp || it.price || 0),
-      qty: Math.max(1, Number(it.qty || 1)),
-      image: it.image || '',
-      stock: Number(it.stock || 0),
-      hsnCode: it.hsnCode || '',
-    }));
+    const formattedItems = (items || [])
+      .filter((it: any) => it && (it.productId || it.productName || it.variantId))
+      .map((it: any) => ({
+        productId:
+          it.productId && mongoose.Types.ObjectId.isValid(it.productId)
+            ? new mongoose.Types.ObjectId(it.productId)
+            : it.productId || undefined,
+        variantId: String(it.variantId || 'default'),
+        productSlug: it.productSlug || '',
+        productName: it.productName || 'Product',
+        variantLabel: it.variantLabel || '',
+        price: Math.max(0, Number(it.price || 0)),
+        mrp: Math.max(0, Number(it.mrp || it.price || 0)),
+        qty: Math.max(1, Number(it.qty || 1)),
+        image: it.image || '',
+        stock: Number(it.stock || 0),
+        hsnCode: it.hsnCode || '',
+      }));
 
     const totalItems = formattedItems.reduce((sum: number, it: any) => sum + it.qty, 0);
     const subtotal = formattedItems.reduce((sum: number, it: any) => sum + it.price * it.qty, 0);
@@ -88,7 +100,20 @@ export async function syncCart(req: Request, res: Response, next: NextFunction):
     // Query filter for upserting
     let filter: any = null;
     if (userId) {
-      filter = { userId };
+      // Look for existing active cart of this user or claim recent guest session
+      const existingUserCart = await Cart.findOne({ userId });
+      if (existingUserCart) {
+        filter = { _id: existingUserCart._id };
+      } else if (sessionId) {
+        const existingGuestCart = await Cart.findOne({ sessionId, status: 'active' });
+        if (existingGuestCart) {
+          filter = { _id: existingGuestCart._id };
+        } else {
+          filter = { userId };
+        }
+      } else {
+        filter = { userId };
+      }
     } else if (sessionId) {
       filter = { sessionId };
     }
@@ -105,7 +130,7 @@ export async function syncCart(req: Request, res: Response, next: NextFunction):
         items: formattedItems,
         subtotal: Math.round(subtotal * 100) / 100,
         totalItems,
-        couponCode,
+        couponCode: couponCode || '',
         couponDiscount: Number(couponDiscount || 0),
         status,
         lastActiveAt: new Date(),
@@ -209,7 +234,7 @@ export async function getAdminActiveCarts(req: Request, res: Response, next: Nex
     }
 
     // Time filter
-    if (timeRange) {
+    if (timeRange && timeRange !== 'all') {
       const now = new Date();
       if (timeRange === '1h') {
         filter.lastActiveAt = { $gte: new Date(now.getTime() - 60 * 60 * 1000) };
@@ -276,19 +301,23 @@ export async function getAdminActiveCarts(req: Request, res: Response, next: Nex
     let guestRevenue = 0;
 
     statsAggregation.forEach((stat) => {
-      totalActiveCarts += stat.count;
-      totalPotentialRevenue += stat.totalValue;
-      totalActiveItems += stat.totalItems;
+      const count = Number(stat.count || 0);
+      const val = Number(stat.totalValue || 0);
+      const itemsCount = Number(stat.totalItems || 0);
+
+      totalActiveCarts += count;
+      totalPotentialRevenue += val;
+      totalActiveItems += itemsCount;
 
       if (stat._id === 'dealer') {
-        dealerCarts = stat.count;
-        dealerRevenue = stat.totalValue;
+        dealerCarts += count;
+        dealerRevenue += val;
       } else if (stat._id === 'user') {
-        userCarts = stat.count;
-        userRevenue = stat.totalValue;
-      } else if (stat._id === 'guest') {
-        guestCarts = stat.count;
-        guestRevenue = stat.totalValue;
+        userCarts += count;
+        userRevenue += val;
+      } else {
+        guestCarts += count;
+        guestRevenue += val;
       }
     });
 

@@ -121,6 +121,15 @@ const Checkout: React.FC = () => {
     }
   }, [selectedStore?.id]);
 
+  useEffect(() => {
+    if (formData.name || formData.mobile) {
+      useCartStore.getState().setCustomerInfo({
+        name: formData.name,
+        phone: formData.mobile,
+      });
+    }
+  }, [formData.name, formData.mobile]);
+
   const loadRazorpay = async () => {
     if (window.Razorpay) return true;
 

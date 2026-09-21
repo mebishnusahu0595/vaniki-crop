@@ -420,6 +420,20 @@ export const storefrontApi = {
     const response = await api.post<ApiResponse<any>>('/enquiries', data);
     return response.data;
   },
+  syncCart: async (payload: {
+    sessionId?: string;
+    items: any[];
+    couponCode?: string;
+    couponDiscount?: number;
+    source?: string;
+    userType?: string;
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+  }) => {
+    const response = await api.post('/cart/sync', payload);
+    return response.data;
+  },
   recordPageView: async (payload: { url: string; visitorId: string }) => {
     try {
       const response = await api.post('/analytics/pageview', payload);
@@ -430,4 +444,5 @@ export const storefrontApi = {
   },
 };
 
+export { api };
 export default api;

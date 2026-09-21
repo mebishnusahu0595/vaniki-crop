@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { asyncStorage } from '../lib/storage';
+import { dealerApi } from '../lib/api';
+import { useAuthStore } from './useAuthStore';
 import type { Product, ProductVariant } from '../types/storefront';
 
 export interface CartItem {
@@ -15,6 +17,38 @@ export interface CartItem {
   qty: number;
   stock?: number;
 }
+
+let syncTimeout: any = null;
+
+export const triggerDealerCartSync = (immediate = false) => {
+  if (syncTimeout) clearTimeout(syncTimeout);
+
+  const performSync = async () => {
+    try {
+      const state = useCartStore.getState();
+      const auth = useAuthStore.getState();
+      const user = auth.user;
+
+      await dealerApi.syncCart({
+        items: state.items,
+        couponCode: state.couponCode,
+        couponDiscount: state.couponDiscount,
+        source: 'dealer_app',
+        userType: 'dealer',
+        dealerBusinessName: user?.storeName || '',
+        storeId: user?.storeId || undefined,
+      });
+    } catch (err) {
+      console.debug('Dealer background cart sync:', err);
+    }
+  };
+
+  if (immediate) {
+    performSync();
+  } else {
+    syncTimeout = setTimeout(performSync, 400);
+  }
+};
 
 interface CartState {
   items: CartItem[];
@@ -35,7 +69,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       couponCode: '',
       couponDiscount: 0,
-      addItem: (product, variant) =>
+      addItem: (product, variant) => {
         set((state) => {
           const existing = state.items.find((item) => item.variantId === variant.id);
           if (existing) {
@@ -53,7 +87,7 @@ export const useCartStore = create<CartState>()(
                 productId: product.id,
                 productSlug: product.slug,
                 productName: product.name,
-                image: product.images[0]?.url,
+                image: product.images?.[0]?.url,
                 variantId: variant.id,
                 variantLabel: variant.label,
                 price: variant.price,
@@ -63,32 +97,54 @@ export const useCartStore = create<CartState>()(
               },
             ],
           };
-        }),
-      increaseQty: (variantId) =>
+        });
+        triggerDealerCartSync();
+      },
+      increaseQty: (variantId) => {
         set((state) => ({
           items: state.items.map((item) =>
             item.variantId === variantId ? { ...item, qty: item.qty + 1 } : item,
           ),
-        })),
-      decreaseQty: (variantId) =>
+        }));
+        triggerDealerCartSync();
+      },
+      decreaseQty: (variantId) => {
         set((state) => ({
           items: state.items
             .map((item) =>
               item.variantId === variantId ? { ...item, qty: Math.max(0, item.qty - 1) } : item,
             )
             .filter((item) => item.qty > 0),
-        })),
-      removeItem: (variantId) =>
+        }));
+        triggerDealerCartSync();
+      },
+      removeItem: (variantId) => {
         set((state) => ({
           items: state.items.filter((item) => item.variantId !== variantId),
-        })),
-      clearCart: () => set({ items: [], couponCode: '', couponDiscount: 0 }),
-      setCouponCode: (couponCode, couponDiscount) => set({ couponCode, couponDiscount }),
-      clearCoupon: () => set({ couponCode: '', couponDiscount: 0 }),
+        }));
+        triggerDealerCartSync();
+      },
+      clearCart: () => {
+        set({ items: [], couponCode: '', couponDiscount: 0 });
+        triggerDealerCartSync(true);
+      },
+      setCouponCode: (couponCode, couponDiscount) => {
+        set({ couponCode, couponDiscount });
+        triggerDealerCartSync();
+      },
+      clearCoupon: () => {
+        set({ couponCode: '', couponDiscount: 0 });
+        triggerDealerCartSync();
+      },
     }),
     {
       name: 'vaniki-cart',
       storage: createJSONStorage(() => asyncStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state && state.items && state.items.length > 0) {
+          triggerDealerCartSync(false);
+        }
+      },
     },
   ),
 );

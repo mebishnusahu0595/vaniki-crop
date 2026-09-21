@@ -462,6 +462,20 @@ export const storefrontApi = {
     const response = await request<AvailableCoupon[]>(`/coupons/available${qs ? `?${qs}` : ''}`);
     return (response.data || []) as AvailableCoupon[];
   },
+  syncCart: async (payload: {
+    items: any[];
+    couponCode?: string;
+    couponDiscount?: number;
+    source?: string;
+    userType?: string;
+    customerName?: string;
+    customerPhone?: string;
+  }) => {
+    return request<{ success: boolean; data: any }>('/cart/sync', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
   changePassword: async (payload: { currentPassword: string; newPassword: string }) => {
     return request<{ success: boolean; message: string }>('/auth/change-password', {
       method: 'PATCH',
