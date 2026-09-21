@@ -18,6 +18,21 @@ export type CartUserType = 'user' | 'dealer' | 'guest';
 export type CartSource = 'user_app' | 'dealer_app' | 'user_web';
 export type CartStatus = 'active' | 'converted' | 'cleared';
 
+export interface ICartCoordinates {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+}
+
+export interface ICartLocation {
+  city?: string;
+  district?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+  formattedAddress?: string;
+}
+
 export interface ICart extends Document {
   userId?: mongoose.Types.ObjectId;
   sessionId?: string; // For guest visitors
@@ -38,6 +53,8 @@ export interface ICart extends Document {
   lastActiveAt: Date;
   ip?: string;
   userAgent?: string;
+  coordinates?: ICartCoordinates;
+  location?: ICartLocation;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -95,6 +112,19 @@ const CartSchema = new Schema<ICart>(
     lastActiveAt: { type: Date, default: Date.now, index: true },
     ip: { type: String, default: '' },
     userAgent: { type: String, default: '' },
+    coordinates: {
+      latitude: { type: Number },
+      longitude: { type: Number },
+      accuracy: { type: Number },
+    },
+    location: {
+      city: { type: String, default: '' },
+      district: { type: String, default: '' },
+      state: { type: String, default: '' },
+      pincode: { type: String, default: '' },
+      country: { type: String, default: '' },
+      formattedAddress: { type: String, default: '' },
+    },
   },
   {
     timestamps: true,

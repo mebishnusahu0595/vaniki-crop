@@ -256,6 +256,8 @@ export const dealerApi = {
     userType?: string;
     dealerBusinessName?: string;
     storeId?: string;
+    coordinates?: { latitude: number; longitude: number; accuracy?: number };
+    location?: { city?: string; district?: string; state?: string; pincode?: string; country?: string; formattedAddress?: string };
   }) =>
     request<{ success: boolean; data: any }>('/cart/sync', {
       method: 'POST',

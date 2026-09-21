@@ -18,7 +18,38 @@ export interface CartItem {
   stock?: number;
 }
 
+import * as Location from 'expo-location';
+
 let syncTimeout: any = null;
+let cachedMobileCoords: { latitude: number; longitude: number; accuracy?: number } | null = null;
+
+const getMobileCoordinatesIfPermitted = async (): Promise<{ latitude: number; longitude: number; accuracy?: number } | null> => {
+  try {
+    if (cachedMobileCoords) return cachedMobileCoords;
+    const perm = await Location.getForegroundPermissionsAsync();
+    if (perm.granted) {
+      const last = await Location.getLastKnownPositionAsync();
+      if (last?.coords) {
+        cachedMobileCoords = {
+          latitude: last.coords.latitude,
+          longitude: last.coords.longitude,
+          accuracy: last.coords.accuracy || undefined,
+        };
+        return cachedMobileCoords;
+      }
+      const cur = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      if (cur?.coords) {
+        cachedMobileCoords = {
+          latitude: cur.coords.latitude,
+          longitude: cur.coords.longitude,
+          accuracy: cur.coords.accuracy || undefined,
+        };
+        return cachedMobileCoords;
+      }
+    }
+  } catch (_) {}
+  return null;
+};
 
 export const triggerMobileCartSync = (immediate = false) => {
   if (syncTimeout) clearTimeout(syncTimeout);
@@ -28,6 +59,7 @@ export const triggerMobileCartSync = (immediate = false) => {
       const state = useCartStore.getState();
       const auth = useAuthStore.getState();
       const user = auth.user;
+      const coords = await getMobileCoordinatesIfPermitted();
 
       await storefrontApi.syncCart({
         items: state.items,
@@ -37,6 +69,7 @@ export const triggerMobileCartSync = (immediate = false) => {
         userType: user ? 'user' : 'guest',
         customerName: user?.name || '',
         customerPhone: user?.mobile || '',
+        coordinates: coords || undefined,
       });
     } catch (err) {
       console.debug('Mobile background cart sync:', err);

@@ -16,6 +16,8 @@ import {
   TrendingUp,
   X,
   Package,
+  MapPin,
+  ExternalLink,
 } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
@@ -422,8 +424,38 @@ export function ActiveCartsPage() {
                         </span>
                       )}
 
-                      {cart.storeId?.city && (
+                      {/* Live GPS Coordinates with Google Maps link */}
+                      {cart.coordinates?.latitude && cart.coordinates?.longitude ? (
+                        <a
+                          href={cart.mapsUrl || `https://www.google.com/maps?q=${cart.coordinates.latitude},${cart.coordinates.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 transition"
+                          title="View live GPS coordinates on Google Maps"
+                        >
+                          <MapPin size={11} className="text-emerald-600" />
+                          <span>
+                            {cart.coordinates.latitude.toFixed(4)}, {cart.coordinates.longitude.toFixed(4)}
+                          </span>
+                          <ExternalLink size={9} className="opacity-60" />
+                        </a>
+                      ) : null}
+
+                      {/* City / State Location */}
+                      {cart.location?.city || cart.location?.district || cart.location?.state ? (
+                        <span className="text-slate-600 font-medium">
+                          📍 {[cart.location.city || cart.location.district, cart.location.state].filter(Boolean).join(', ')}
+                        </span>
+                      ) : cart.storeId?.city ? (
                         <span>📍 {cart.storeId.city}, {cart.storeId.state}</span>
+                      ) : null}
+
+                      {/* IP Address */}
+                      {cart.ip && (
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-500">
+                          IP: {cart.ip}
+                        </span>
                       )}
                     </div>
 
@@ -623,7 +655,46 @@ export function ActiveCartsPage() {
                   {selectedCart.dealerBusinessName && (
                     <p className="text-slate-800 font-semibold">Store: {selectedCart.dealerBusinessName}</p>
                   )}
-                  {selectedCart.ip && <p className="text-slate-500">IP: {selectedCart.ip}</p>}
+                  {selectedCart.ip && (
+                    <p className="text-slate-500">
+                      IP: <span className="font-mono font-semibold text-slate-700">{selectedCart.ip}</span>
+                    </p>
+                  )}
+
+                  {/* Live GPS Coordinates */}
+                  {selectedCart.coordinates?.latitude && selectedCart.coordinates?.longitude && (
+                    <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1 font-bold text-emerald-800">
+                          <MapPin size={13} className="text-emerald-600" />
+                          Live Coordinates:
+                        </span>
+                        <a
+                          href={selectedCart.mapsUrl || `https://www.google.com/maps?q=${selectedCart.coordinates.latitude},${selectedCart.coordinates.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-bold text-emerald-700 hover:text-emerald-900 hover:underline"
+                        >
+                          Google Maps <ExternalLink size={10} />
+                        </a>
+                      </div>
+                      <p className="mt-1 font-mono text-[11px] text-emerald-900">
+                        {selectedCart.coordinates.latitude}, {selectedCart.coordinates.longitude}
+                        {selectedCart.coordinates.accuracy ? ` (accuracy: ±${Math.round(selectedCart.coordinates.accuracy)}m)` : ''}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Resolved Location */}
+                  {selectedCart.location && (selectedCart.location.city || selectedCart.location.district || selectedCart.location.state || selectedCart.location.formattedAddress) && (
+                    <p className="mt-1.5 text-slate-600">
+                      <span className="font-semibold text-slate-700">Location: </span>
+                      {selectedCart.location.formattedAddress ||
+                        [selectedCart.location.city || selectedCart.location.district, selectedCart.location.state, selectedCart.location.pincode, selectedCart.location.country]
+                          .filter(Boolean)
+                          .join(', ')}
+                    </p>
+                  )}
                 </div>
               </div>
 

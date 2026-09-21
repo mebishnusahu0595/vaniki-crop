@@ -685,6 +685,20 @@ export interface ActiveCart {
   lastActiveAt: string;
   ip?: string;
   userAgent?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+  };
+  location?: {
+    city?: string;
+    district?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
+    formattedAddress?: string;
+  };
+  mapsUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

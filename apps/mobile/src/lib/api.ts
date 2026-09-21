@@ -470,6 +470,8 @@ export const storefrontApi = {
     userType?: string;
     customerName?: string;
     customerPhone?: string;
+    coordinates?: { latitude: number; longitude: number; accuracy?: number };
+    location?: { city?: string; district?: string; state?: string; pincode?: string; country?: string; formattedAddress?: string };
   }) => {
     return request<{ success: boolean; data: any }>('/cart/sync', {
       method: 'POST',

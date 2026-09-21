@@ -3,7 +3,13 @@ import mongoose from 'mongoose';
 import { Cart, type ICart, type CartSource, type CartUserType } from '../../models/Cart.model.js';
 import { User } from '../../models/User.model.js';
 import { Store } from '../../models/Store.model.js';
+import { Visitor } from '../../models/Visitor.model.js';
 import { AppError } from '../../utils/AppError.js';
+
+function isPrivateIp(ip: string): boolean {
+  if (!ip || ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') return true;
+  return /^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.)/.test(ip);
+}
 
 /**
  * POST /api/cart/sync
@@ -21,6 +27,8 @@ export async function syncCart(req: Request, res: Response, next: NextFunction):
       customerName: bodyName,
       customerPhone: bodyPhone,
       customerEmail: bodyEmail,
+      coordinates: bodyCoordinates,
+      location: bodyLocation,
     } = req.body;
 
     const userId = req.userId;
@@ -97,10 +105,110 @@ export async function syncCart(req: Request, res: Response, next: NextFunction):
     const isCleared = formattedItems.length === 0;
     const status = isCleared ? 'cleared' : 'active';
 
+    // Extract clean client IP
+    const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || '';
+    const cleanIp = rawIp.replace(/^::ffff:/, '').trim();
+
+    // Resolve GPS Coordinates & Location
+    let resolvedCoordinates: { latitude: number; longitude: number; accuracy?: number } | undefined;
+    let resolvedLocation:
+      | { city?: string; district?: string; state?: string; pincode?: string; country?: string; formattedAddress?: string }
+      | undefined;
+
+    // Priority 1: Direct coordinates passed from client (User app, Dealer app, or Web browser with location permission)
+    if (
+      bodyCoordinates &&
+      typeof bodyCoordinates.latitude === 'number' &&
+      typeof bodyCoordinates.longitude === 'number' &&
+      !isNaN(bodyCoordinates.latitude) &&
+      !isNaN(bodyCoordinates.longitude)
+    ) {
+      resolvedCoordinates = {
+        latitude: bodyCoordinates.latitude,
+        longitude: bodyCoordinates.longitude,
+        accuracy: typeof bodyCoordinates.accuracy === 'number' ? bodyCoordinates.accuracy : undefined,
+      };
+    }
+
+    if (bodyLocation && typeof bodyLocation === 'object') {
+      resolvedLocation = {
+        city: bodyLocation.city || '',
+        district: bodyLocation.district || '',
+        state: bodyLocation.state || '',
+        pincode: bodyLocation.pincode || '',
+        country: bodyLocation.country || '',
+        formattedAddress: bodyLocation.formattedAddress || '',
+      };
+    }
+
+    // Priority 2: User saved coordinates in DB if user is logged in
+    if (!resolvedCoordinates && userId) {
+      try {
+        const userDoc = await User.findById(userId).select('coordinates').lean();
+        if (userDoc?.coordinates) {
+          const uCoords = userDoc.coordinates as any;
+          if (typeof uCoords.latitude === 'number' && typeof uCoords.longitude === 'number') {
+            resolvedCoordinates = {
+              latitude: uCoords.latitude,
+              longitude: uCoords.longitude,
+            };
+          } else if (Array.isArray(uCoords) && uCoords.length === 2) {
+            resolvedCoordinates = {
+              longitude: uCoords[0],
+              latitude: uCoords[1],
+            };
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Priority 3: Visitor telemetry session coordinates if visitor previously recorded GPS
+    if (!resolvedCoordinates && sessionId) {
+      try {
+        const visitor = await Visitor.findOne({ visitorId: sessionId }).lean();
+        if (visitor?.coordinates?.latitude && visitor?.coordinates?.longitude) {
+          resolvedCoordinates = {
+            latitude: visitor.coordinates.latitude,
+            longitude: visitor.coordinates.longitude,
+            accuracy: visitor.coordinates.accuracy,
+          };
+          if (!resolvedLocation && visitor.location) {
+            resolvedLocation = { ...visitor.location };
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Priority 4: Fast fallback GeoIP lookup for public IP
+    if (!resolvedCoordinates && cleanIp && !isPrivateIp(cleanIp)) {
+      try {
+        const geoRes = await fetch(`http://ip-api.com/json/${cleanIp}?fields=status,country,regionName,city,zip,lat,lon`, {
+          signal: AbortSignal.timeout(1500),
+        });
+        if (geoRes.ok) {
+          const geoData: any = await geoRes.json();
+          if (geoData?.status === 'success' && typeof geoData.lat === 'number' && typeof geoData.lon === 'number') {
+            resolvedCoordinates = {
+              latitude: geoData.lat,
+              longitude: geoData.lon,
+            };
+            if (!resolvedLocation) {
+              resolvedLocation = {
+                city: geoData.city || '',
+                district: geoData.regionName || '',
+                state: geoData.regionName || '',
+                pincode: geoData.zip || '',
+                country: geoData.country || 'India',
+              };
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
     // Query filter for upserting
     let filter: any = null;
     if (userId) {
-      // Look for existing active cart of this user or claim recent guest session
       const existingUserCart = await Cart.findOne({ userId });
       if (existingUserCart) {
         filter = { _id: existingUserCart._id };
@@ -134,11 +242,13 @@ export async function syncCart(req: Request, res: Response, next: NextFunction):
         couponDiscount: Number(couponDiscount || 0),
         status,
         lastActiveAt: new Date(),
-        ip: (req.headers['x-forwarded-for'] as string) || req.ip || '',
+        ip: cleanIp,
         userAgent: req.headers['user-agent'] || '',
       },
     };
 
+    if (resolvedCoordinates) updateDoc.$set.coordinates = resolvedCoordinates;
+    if (resolvedLocation) updateDoc.$set.location = resolvedLocation;
     if (userId) updateDoc.$set.userId = userId;
     if (sessionId) updateDoc.$set.sessionId = sessionId;
     if (customerName) updateDoc.$set.customerName = customerName;
@@ -161,6 +271,8 @@ export async function syncCart(req: Request, res: Response, next: NextFunction):
         totalItems: cart.totalItems,
         subtotal: cart.subtotal,
         lastActiveAt: cart.lastActiveAt,
+        coordinates: cart.coordinates,
+        location: cart.location,
       },
     });
   } catch (error) {
@@ -321,9 +433,17 @@ export async function getAdminActiveCarts(req: Request, res: Response, next: Nex
       }
     });
 
+    const enrichedCarts = carts.map((c: any) => ({
+      ...c,
+      mapsUrl:
+        c.coordinates?.latitude && c.coordinates?.longitude
+          ? `https://www.google.com/maps?q=${c.coordinates.latitude},${c.coordinates.longitude}`
+          : undefined,
+    }));
+
     res.status(200).json({
       success: true,
-      data: carts,
+      data: enrichedCarts,
       pagination: {
         page,
         limit,

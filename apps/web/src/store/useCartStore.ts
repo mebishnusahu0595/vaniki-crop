@@ -26,6 +26,66 @@ export const getCartSessionId = (): string => {
   return id;
 };
 
+let cachedCoordinates: { latitude: number; longitude: number; accuracy?: number } | null = null;
+
+if (typeof window !== 'undefined') {
+  try {
+    const saved = sessionStorage.getItem('vaniki_user_coords');
+    if (saved) cachedCoordinates = JSON.parse(saved);
+  } catch (_) {}
+
+  // Non-intrusively check if geolocation permission is already granted
+  if ('permissions' in navigator) {
+    navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((status) => {
+        if (status.state === 'granted') {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              cachedCoordinates = {
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+              };
+              try {
+                sessionStorage.setItem('vaniki_user_coords', JSON.stringify(cachedCoordinates));
+              } catch (_) {}
+            },
+            () => {},
+            { timeout: 5000, maximumAge: 120000 },
+          );
+        }
+      })
+      .catch(() => {});
+  }
+}
+
+export const requestOrGetWebCoordinates = (): Promise<{ latitude: number; longitude: number; accuracy?: number } | null> => {
+  if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+    return Promise.resolve(null);
+  }
+  if (cachedCoordinates) {
+    return Promise.resolve(cachedCoordinates);
+  }
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        cachedCoordinates = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        };
+        try {
+          sessionStorage.setItem('vaniki_user_coords', JSON.stringify(cachedCoordinates));
+        } catch (_) {}
+        resolve(cachedCoordinates);
+      },
+      () => resolve(null),
+      { timeout: 5000, maximumAge: 120000 },
+    );
+  });
+};
+
 let syncTimeout: any = null;
 
 export const triggerCartSync = (immediate = false) => {
@@ -43,6 +103,17 @@ export const triggerCartSync = (immediate = false) => {
       const customerPhone = state.customerPhone || user?.mobile || '';
       const customerEmail = state.customerEmail || user?.email || '';
 
+      // Direct coordinates if permission is granted
+      let coords = cachedCoordinates;
+      if (!coords && 'permissions' in navigator) {
+        try {
+          const perm = await navigator.permissions.query({ name: 'geolocation' });
+          if (perm.state === 'granted') {
+            coords = await requestOrGetWebCoordinates();
+          }
+        } catch (_) {}
+      }
+
       await storefrontApi.syncCart({
         sessionId,
         items: state.items,
@@ -57,6 +128,7 @@ export const triggerCartSync = (immediate = false) => {
         customerName,
         customerPhone,
         customerEmail,
+        coordinates: coords || undefined,
       });
     } catch (err) {
       console.debug('Background cart sync:', err);
