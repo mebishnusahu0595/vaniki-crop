@@ -31,6 +31,7 @@ import WebsiteAnalyticsPage from './pages/WebsiteAnalytics';
 import EnquiriesPage from './pages/Enquiries';
 import CropsPage from './pages/Crops';
 import AgriAdvisorPage from './pages/AgriAdvisor';
+import ActiveCartsPage from './pages/ActiveCartsPage';
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
           <Route path="/products/:id/edit" element={<ProductFormPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/active-carts" element={<ActiveCartsPage />} />
           <Route path="/customers" element={<CustomersPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/coupons" element={<CouponsPage />} />

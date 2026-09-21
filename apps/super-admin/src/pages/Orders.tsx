@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Calendar, Download, RefreshCw, FileCode, MessageSquare, Send } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Download, RefreshCw, FileCode, MessageSquare, Send, Trash2 } from 'lucide-react';
 import { PageHeader } from '../components/PageHeader';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
@@ -174,6 +174,18 @@ export default function OrdersPage() {
     },
     onError: (error: any) => {
       alert(error?.response?.data?.message || error?.message || 'Failed to send WhatsApp invoice');
+    },
+  });
+
+  const deleteOrderMutation = useMutation({
+    mutationFn: (orderId: string) => adminApi.deleteOrder(orderId),
+    onSuccess: (data: any) => {
+      alert(data?.message || 'Order deleted successfully from database and Tally!');
+      setSelectedOrderId(null);
+      queryClient.invalidateQueries({ queryKey: ['super-admin-orders'] });
+    },
+    onError: (error: any) => {
+      alert(error?.response?.data?.message || error?.message || 'Failed to delete order');
     },
   });
 
@@ -452,9 +464,26 @@ export default function OrdersPage() {
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-primary-500">Order Detail</p>
                 <h2 className="mt-2 text-2xl font-black text-slate-900">{detail?.orderNumber || 'Loading order...'}</h2>
               </div>
-              <button onClick={() => setSelectedOrderId(null)} className="rounded-2xl border border-primary-100 px-4 py-2 text-sm font-semibold text-slate-600">
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                {detail && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete Order #${detail.orderNumber}? If it was synced to Tally, it will also be deleted from Tally.`)) {
+                        deleteOrderMutation.mutate(detail.id);
+                      }
+                    }}
+                    disabled={deleteOrderMutation.isPending}
+                    className="flex items-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50 transition"
+                    title="Delete order from DB and Tally"
+                  >
+                    <Trash2 size={14} />
+                    <span>{deleteOrderMutation.isPending ? 'Deleting...' : 'Delete Order'}</span>
+                  </button>
+                )}
+                <button onClick={() => setSelectedOrderId(null)} className="rounded-2xl border border-primary-100 px-4 py-2 text-sm font-semibold text-slate-600">
+                  Close
+                </button>
+              </div>
             </div>
 
             {orderDetailQuery.isLoading || !detail ? (

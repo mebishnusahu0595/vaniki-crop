@@ -54,4 +54,8 @@ router.patch('/admin/:id/status', requireAuth, requireStoreAdmin, validate(updat
 /** GET /api/super-admin/orders — Global order list */
 router.get('/super-admin/list', requireAuth, requireSuperAdmin, orderController.getSuperAdminOrders);
 
+/** DELETE /api/orders/super-admin/:id — Super Admin permanently delete order and Tally voucher */
+router.delete('/super-admin/:id', requireAuth, requireSuperAdmin, orderController.deleteOrder);
+
 export default router;
+

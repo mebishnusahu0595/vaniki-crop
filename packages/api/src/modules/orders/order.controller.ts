@@ -9,6 +9,7 @@ import { ProductRequest } from '../../models/ProductRequest.model.js';
 import { AppError } from '../../utils/AppError.js';
 import { createPaginationResponse, parsePagination } from '../../utils/pagination.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
+import { markCartAsConverted } from '../cart/cart.controller.js';
 
 // ─── Customer Controllers ────────────────────────────────────────────────
 
@@ -38,6 +39,7 @@ export async function placeCodOrder(req: Request, res: Response, next: NextFunct
       storeId: req.body.storeId || req.storeId,
     };
     const result = await orderService.placeCodOrder(req.userId!, payload);
+    markCartAsConverted(req.userId!, (result as any)?.id || (result as any)?._id).catch(() => {});
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -54,6 +56,7 @@ export async function confirmOrder(req: Request, res: Response, next: NextFuncti
       storeId: req.body.storeId || req.storeId,
     };
     const result = await orderService.confirmOrder(req.userId!, payload);
+    markCartAsConverted(req.userId!, (result as any)?.id || (result as any)?._id).catch(() => {});
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -579,6 +582,43 @@ export async function verifyB2BInvoicePayment(req: Request, res: Response, next:
       success: true,
       message: `Payment status updated to ${paymentStatus}`,
       data: invoice,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * DELETE /api/orders/super-admin/:id
+ * Permanently delete order from Database and attempt to auto-delete associated voucher in Tally
+ */
+export async function deleteOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const orderId = req.params.id as string;
+    const order = await Order.findById(orderId);
+    if (!order) {
+      throw new AppError('Order not found', 404);
+    }
+
+    // If synced to Tally, attempt deletion from Tally Prime as well
+    if (order.tallyVoucherGuid || order.tallyVoucherNumber) {
+      try {
+        const tallyService = await import('../tally/tally.service.js');
+        await tallyService.deleteVoucherFromTally(
+          order.tallyVoucherGuid,
+          order.tallyVoucherNumber,
+          order.createdAt
+        );
+      } catch (tallyErr: any) {
+        console.warn(`[TALLY] Could not delete voucher from Tally for order ${order.orderNumber}:`, tallyErr?.message);
+      }
+    }
+
+    await Order.findByIdAndDelete(orderId);
+
+    res.status(200).json({
+      success: true,
+      message: `Order #${order.orderNumber} deleted successfully from database and Tally`,
     });
   } catch (error) {
     next(error);

@@ -633,3 +633,71 @@ export interface Crop {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ActiveCartItem {
+  productId: string | { _id: string; name: string; slug: string; images?: Array<{ url: string }> };
+  variantId: string;
+  productSlug?: string;
+  productName: string;
+  variantLabel: string;
+  price: number;
+  mrp: number;
+  qty: number;
+  image?: string;
+  stock?: number;
+  hsnCode?: string;
+}
+
+export interface ActiveCart {
+  _id: string;
+  id?: string;
+  userId?: {
+    _id: string;
+    name?: string;
+    mobile?: string;
+    email?: string;
+    role?: string;
+    profileImage?: string;
+    savedAddress?: Address[];
+  };
+  sessionId?: string;
+  userType: 'user' | 'dealer' | 'guest';
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  storeId?: {
+    _id: string;
+    name?: string;
+    storeCode?: string;
+    city?: string;
+    state?: string;
+    phone?: string;
+  };
+  dealerBusinessName?: string;
+  source: 'user_app' | 'dealer_app' | 'user_web';
+  items: ActiveCartItem[];
+  subtotal: number;
+  totalItems: number;
+  couponCode?: string;
+  couponDiscount?: number;
+  status: 'active' | 'converted' | 'cleared';
+  convertedOrderId?: string;
+  lastActiveAt: string;
+  ip?: string;
+  userAgent?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ActiveCartSummary {
+  totalActiveCarts: number;
+  totalPotentialRevenue: number;
+  totalActiveItems: number;
+  dealerCarts: number;
+  dealerRevenue: number;
+  userCarts: number;
+  userRevenue: number;
+  guestCarts: number;
+  guestRevenue: number;
+}
+

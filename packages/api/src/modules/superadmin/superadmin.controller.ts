@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 import * as superAdminService from './superadmin.service.js';
 import { sendOrderInvoice } from '../whatsapp/whatsapp.service.js';
+import { Order } from '../../models/Order.model.js';
+import { AppError } from '../../utils/AppError.js';
 
 export async function getAnalytics(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -214,6 +216,39 @@ export async function sendOrderWhatsAppInvoice(req: Request, res: Response, next
     const orderId = req.params.id as string;
     await sendOrderInvoice(orderId);
     res.status(200).json({ success: true, message: 'WhatsApp invoice sent successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const orderId = req.params.id as string;
+    const order = await Order.findById(orderId);
+    if (!order) {
+      throw new AppError('Order not found', 404);
+    }
+
+    // Delete from Tally if synced
+    if (order.tallyVoucherGuid || order.tallyVoucherNumber) {
+      try {
+        const tallyService = await import('../tally/tally.service.js');
+        await tallyService.deleteVoucherFromTally(
+          order.tallyVoucherGuid,
+          order.tallyVoucherNumber,
+          order.createdAt
+        );
+      } catch (tallyErr: any) {
+        console.warn(`[TALLY] Could not delete voucher from Tally for order ${order.orderNumber}:`, tallyErr?.message);
+      }
+    }
+
+    await Order.findByIdAndDelete(orderId);
+
+    res.status(200).json({
+      success: true,
+      message: `Order #${order.orderNumber} deleted successfully from database and Tally`,
+    });
   } catch (error) {
     next(error);
   }

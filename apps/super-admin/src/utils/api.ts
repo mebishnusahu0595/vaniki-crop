@@ -28,6 +28,8 @@ import type {
   DealerPromotion,
   WebsiteReporting,
   VisitorRecord,
+  ActiveCart,
+  ActiveCartSummary,
 } from '../types/admin';
 
 export interface ApiResponse<T, TSummary = PaymentSummary> {
@@ -360,6 +362,10 @@ export const adminApi = {
   },
   sendWhatsAppInvoice: async (id: string) => {
     const response = await api.post<ApiResponse<{ success: boolean; message: string }>>(`/superadmin/orders/${id}/send-whatsapp-invoice`);
+    return response.data;
+  },
+  deleteOrder: async (id: string) => {
+    const response = await api.delete<ApiResponse<null>>(`/superadmin/orders/${id}`);
     return response.data;
   },
   customers: async (params?: Record<string, unknown>) => {
@@ -938,6 +944,24 @@ export const adminApi = {
       '/ai/admin/rules',
       { advisorRules },
     );
+    return response.data;
+  },
+  activeCarts: async (params?: {
+    page?: number;
+    limit?: number;
+    userType?: string;
+    source?: string;
+    status?: string;
+    search?: string;
+    timeRange?: string;
+  }) => {
+    const response = await api.get<ApiResponse<ActiveCart[], ActiveCartSummary>>('/cart/admin/active', {
+      params,
+    });
+    return response.data;
+  },
+  deleteActiveCart: async (id: string) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/cart/admin/${id}`);
     return response.data;
   },
 };

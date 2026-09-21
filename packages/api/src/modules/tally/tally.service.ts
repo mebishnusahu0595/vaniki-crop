@@ -835,6 +835,35 @@ export function buildTallyRetailOrderVoucherXml(
             ${roundOffXml}
           </VOUCHER>
         </TALLYMESSAGE>
+
+        <!-- 10. Auto-create Official Receipt Voucher in Tally (Reflects in Total Receipts / Day Book) -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER REMOTEID="VANIKI-REC-${orderNum}" VCHTYPE="Receipt" ACTION="Create" OBJVIEW="Accounting Voucher View">
+            <DATE>${dateStr}</DATE>
+            <REFERENCEDATE>${dateStr}</REFERENCEDATE>
+            <VOUCHERTYPENAME>Receipt</VOUCHERTYPENAME>
+            <VOUCHERNUMBER>REC-${orderNum}</VOUCHERNUMBER>
+            <REFERENCE>${orderNum}</REFERENCE>
+            <PARTYLEDGERNAME>${partyLedgerName}</PARTYLEDGERNAME>
+            <PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW>
+            <NARRATION>Payment received for Order #${orderNum} via ${paymentMethodLabel}</NARRATION>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>${order.paymentMethod === 'cash' || order.paymentMethod === 'cod' ? 'Cash' : 'Bank Accounts'}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-${totalAmount.toFixed(2)}</AMOUNT>
+            </LEDGERENTRIES.LIST>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>${partyLedgerName}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>${totalAmount.toFixed(2)}</AMOUNT>
+              <BILLALLOCATIONS.LIST>
+                <NAME>${orderNum}</NAME>
+                <BILLTYPE>Agst Ref</BILLTYPE>
+                <AMOUNT>${totalAmount.toFixed(2)}</AMOUNT>
+              </BILLALLOCATIONS.LIST>
+            </LEDGERENTRIES.LIST>
+          </VOUCHER>
+        </TALLYMESSAGE>
       </REQUESTDATA>
     </IMPORTDATA>
   </BODY>
@@ -1185,4 +1214,44 @@ export async function updateTallyConfig(input: Partial<TallyConfig>): Promise<Ta
   );
 
   return getTallyConfig();
+}
+
+/**
+ * Delete a voucher from Tally Prime by GUID or Voucher Number
+ */
+export async function deleteVoucherFromTally(voucherGuid?: string, voucherNumber?: string, date?: Date) {
+  const config = await getTallyConfig();
+  const dateStr = formatTallyDate(date || new Date());
+
+  let deleteInner = '';
+  if (voucherGuid) {
+    deleteInner = `<VOUCHER REMOTEID="${escapeXml(voucherGuid)}" VCHTYPE="Sales" ACTION="Delete"></VOUCHER>`;
+  } else if (voucherNumber) {
+    deleteInner = `<VOUCHER VCHTYPE="Sales" ACTION="Delete"><DATE>${dateStr}</DATE><VOUCHERNUMBER>${escapeXml(voucherNumber)}</VOUCHERNUMBER><VOUCHERTYPENAME>Sales</VOUCHERTYPENAME></VOUCHER>`;
+  } else {
+    return { success: false, error: 'No GUID or voucher number provided for deletion' };
+  }
+
+  const xml = `<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Import Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>Vouchers</REPORTNAME>
+        <STATICVARIABLES>
+          <SVCURRENTCOMPANY>${escapeXml(config.companyName || 'Vaniki Crop Science Pvt Ltd')}</SVCURRENTCOMPANY>
+        </STATICVARIABLES>
+      </REQUESTDESC>
+      <REQUESTDATA>
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          ${deleteInner}
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>`;
+
+  return pushXmlToTallyServer(xml, config);
 }

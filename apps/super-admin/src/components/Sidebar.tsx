@@ -13,6 +13,7 @@ import {
   PackageCheck,
   Settings,
   ShoppingCart,
+  ShoppingBag,
   Tags,
   UserCircle2,
   Users,
@@ -52,6 +53,7 @@ const navItems: SidebarNavItem[] = [
   { to: '/agri-advisor', label: 'Agri Advisor (AI Doctor)', icon: Bot },
   { to: '/categories', label: 'Categories', icon: Tags },
   { to: '/orders', label: 'All Orders', icon: ShoppingCart },
+  { to: '/active-carts', label: 'Active Carts (Live)', icon: ShoppingBag },
   { to: '/payments', label: 'All Payments', icon: Banknote },
   { to: '/customers', label: 'All Customers', icon: Users },
   { to: '/notifications', label: 'Push Notifications', icon: Bell },
@@ -106,15 +108,23 @@ export function Sidebar({
     ...liveBadgeQueryOptions,
   });
 
+  const activeCartsQuery = useQuery({
+    queryKey: ['super-admin-active-cart-count'],
+    queryFn: () => adminApi.activeCarts({ page: 1, limit: 1 }),
+    ...liveBadgeQueryOptions,
+  });
+
   const pendingDealersCount = pendingDealersQuery.data?.pagination?.total ?? 0;
   const pendingProductRequestsCount = pendingProductRequestsQuery.data?.pagination?.total ?? 0;
   const newOrdersCount = newOrdersQuery.data?.pagination?.total ?? 0;
   const pendingReviewsCount = pendingReviewsQuery.data?.pagination?.total ?? 0;
+  const activeCartsCount = activeCartsQuery.data?.pagination?.total ?? 0;
 
   const routeBadgeCount: Partial<Record<SidebarNavItem['to'], number>> = {
     '/admins': pendingDealersCount,
     '/product-requests': pendingProductRequestsCount,
     '/orders': newOrdersCount,
+    '/active-carts': activeCartsCount,
     '/reviews': pendingReviewsCount,
   };
 

@@ -70,6 +70,36 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
 }
 
 /**
+ * Optional authentication middleware.
+ * Attaches userId, userRole if valid token is provided, otherwise continues as guest.
+ */
+export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
+  try {
+    let token: string | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (typeof req.query.token === 'string') {
+      token = req.query.token;
+    }
+
+    if (!token) {
+      return next();
+    }
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return next();
+
+    const decoded = jwt.verify(token, secret) as JwtAccessPayload;
+    req.userId = decoded.userId;
+    req.userRole = decoded.role;
+    req.userStoreId = decoded.storeId;
+    next();
+  } catch {
+    next();
+  }
+}
+
+/**
  * Restricts access to users with the `storeAdmin` or `superAdmin` role.
  * Must be used AFTER `requireAuth` middleware.
  *
