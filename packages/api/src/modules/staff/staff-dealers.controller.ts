@@ -47,11 +47,12 @@ async function findDealerByCodeOrMobile(codeOrMobile: string) {
     throw new AppError(`Dealer with ID / Code / Mobile "${codeOrMobile}" not found.`, 404);
   }
 
-  let store: any = null;
-  if (dealer.selectedStore) {
+  let store: any = await Store.findOne({ adminId: dealer._id }).select('name address phone gstNumber deliveryRadius');
+  if (!store) {
+    store = await Store.findOne({ ownerId: dealer._id }).select('name address phone gstNumber deliveryRadius');
+  }
+  if (!store && dealer.selectedStore) {
     store = await Store.findById(dealer.selectedStore).select('name address phone gstNumber deliveryRadius');
-  } else {
-    store = await Store.findOne({ adminId: dealer._id }).select('name address phone gstNumber deliveryRadius');
   }
 
   return { dealer, store };
