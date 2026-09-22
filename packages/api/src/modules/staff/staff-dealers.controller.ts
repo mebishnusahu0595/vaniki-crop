@@ -9,6 +9,7 @@ import { ProductRequest } from '../../models/ProductRequest.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Order } from '../../models/Order.model.js';
 import { Cart } from '../../models/Cart.model.js';
+import { SiteSetting } from '../../models/SiteSetting.model.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 
 /**
@@ -127,6 +128,18 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
     const creditLimit = 100000;
     const availableCredit = Math.max(0, creditLimit - totalOutstanding);
 
+    // Fetch platform bank details & QR configured by SuperAdmin
+    const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' }).lean();
+    const bankDetails = siteSettings?.bankDetails || {
+      accountName: 'Vaniki Crop Science Pvt Ltd',
+      accountNumber: '50200088991122',
+      ifscCode: 'HDFC0001234',
+      bankName: 'HDFC Bank',
+      branchName: 'Ambagarh Chauki',
+      upiId: 'vanikicrop@hdfcbank',
+      qrCodeUrl: '',
+    };
+
     res.status(200).json({
       success: true,
       data: {
@@ -157,6 +170,7 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
           totalOutstanding,
           unpaidInvoiceCount: unpaidCount,
         },
+        bankDetails,
         invoices,
         productRequests,
         recentRetailOrders,
@@ -691,3 +705,28 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
     next(error);
   }
 }
+
+/**
+ * GET /api/staff/dealers/bank-details
+ * Returns dynamic platform Bank Details & QR code set by SuperAdmin
+ */
+export async function getBankDetails(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const settings = await SiteSetting.findOne({ singletonKey: 'default' }).lean();
+    res.status(200).json({
+      success: true,
+      data: settings?.bankDetails || {
+        accountName: 'Vaniki Crop Science Pvt Ltd',
+        accountNumber: '50200088991122',
+        ifscCode: 'HDFC0001234',
+        bankName: 'HDFC Bank',
+        branchName: 'Ambagarh Chauki',
+        upiId: 'vanikicrop@hdfcbank',
+        qrCodeUrl: '',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

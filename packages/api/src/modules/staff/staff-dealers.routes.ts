@@ -58,6 +58,10 @@ router.use(requireStaffAuth);
 // Get wholesale / B2B products catalog for ordering
 router.get('/products', staffDealersController.getWholesaleProducts);
 
+// Get platform dynamic bank details & QR code (set by SuperAdmin)
+router.get('/bank-details', staffDealersController.getBankDetails);
+router.get('/payment-details', staffDealersController.getBankDetails);
+
 // Lookup dealer by 4-digit ID (e.g. 1018), full dealerCode (e.g. VKD1018), or mobile
 router.get('/lookup/:dealerCode', staffDealersController.lookupDealer);
 
