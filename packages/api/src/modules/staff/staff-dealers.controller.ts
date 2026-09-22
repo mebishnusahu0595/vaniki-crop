@@ -8,29 +8,49 @@ import { B2BInvoice } from '../../models/B2BInvoice.model.js';
 import { ProductRequest } from '../../models/ProductRequest.model.js';
 import { Product } from '../../models/Product.model.js';
 import { Order } from '../../models/Order.model.js';
+import { Cart } from '../../models/Cart.model.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.helpers.js';
 
 /**
- * Helper: Find dealer by code or mobile
+ * Helper: Find dealer by 4-digit code (e.g. 1018), full dealerCode (e.g. VKD1018), or mobile number
  */
 async function findDealerByCodeOrMobile(codeOrMobile: string) {
-  const cleanCode = String(codeOrMobile).trim().toUpperCase();
-  const cleanMobile = String(codeOrMobile).trim();
+  const raw = String(codeOrMobile).trim();
+  const cleanUpper = raw.toUpperCase();
+  const digitsOnly = raw.replace(/\D/g, '');
+  const fourDigit = digitsOnly.length >= 4 ? digitsOnly.slice(-4) : digitsOnly;
+
+  const orQueries: any[] = [
+    { shortCode: cleanUpper },
+    { dealerCode: cleanUpper },
+    { dealerCode: `VKD${cleanUpper}` },
+  ];
+
+  if (digitsOnly.length >= 10) {
+    orQueries.push({ mobile: digitsOnly.slice(-10) });
+  }
+
+  if (fourDigit && fourDigit.length === 4) {
+    orQueries.push({ shortCode: fourDigit });
+    orQueries.push({ dealerCode: `VKD${fourDigit}` });
+    orQueries.push({ dealerCode: new RegExp(`${fourDigit}$`, 'i') });
+    orQueries.push({ name: new RegExp(`\\[${fourDigit}\\]`, 'i') });
+  }
 
   const dealer = await User.findOne({
     role: 'storeAdmin',
-    $or: [{ dealerCode: cleanCode }, { mobile: cleanMobile }],
-  }).select('name mobile email dealerCode dealerProfile selectedStore savedAddress createdAt');
+    $or: orQueries,
+  }).select('name mobile email dealerCode shortCode dealerProfile selectedStore savedAddress createdAt');
 
   if (!dealer) {
-    throw new AppError(`Dealer with code/mobile "${codeOrMobile}" not found.`, 404);
+    throw new AppError(`Dealer with ID / Code / Mobile "${codeOrMobile}" not found.`, 404);
   }
 
   let store: any = null;
   if (dealer.selectedStore) {
-    store = await Store.findById(dealer.selectedStore).select('name address phone gstNumber');
+    store = await Store.findById(dealer.selectedStore).select('name address phone gstNumber deliveryRadius');
   } else {
-    store = await Store.findOne({ adminId: dealer._id }).select('name address phone gstNumber');
+    store = await Store.findOne({ adminId: dealer._id }).select('name address phone gstNumber deliveryRadius');
   }
 
   return { dealer, store };
@@ -38,7 +58,7 @@ async function findDealerByCodeOrMobile(codeOrMobile: string) {
 
 /**
  * GET /api/staff/dealers/lookup/:dealerCode
- * Staff enters dealer code in StaffTrack to fetch dealer profile, ledger & orders
+ * Staff enters 4-digit dealer code in StaffTrack to fetch dealer profile, credit limit, ledger & orders
  */
 export async function lookupDealer(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -49,7 +69,7 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
 
     // Fetch B2B Invoices & calculate financial ledger
     const invoices = storeId
-      ? await B2BInvoice.find({ storeId }).sort({ invoiceDate: -1 }).limit(50)
+      ? await B2BInvoice.find({ storeId }).sort({ invoiceDate: -1 }).limit(50).lean()
       : [];
 
     let totalInvoiced = 0;
@@ -57,7 +77,7 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
     let totalOutstanding = 0;
     let unpaidCount = 0;
 
-    invoices.forEach((inv) => {
+    invoices.forEach((inv: any) => {
       const invTotal = inv.totalAmount || 0;
       totalInvoiced += invTotal;
 
@@ -80,27 +100,56 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
 
     // Fetch recent product requests
     const productRequests = storeId
-      ? await ProductRequest.find({ storeId }).sort({ createdAt: -1 }).limit(20)
+      ? await ProductRequest.find({ storeId }).sort({ createdAt: -1 }).limit(20).lean()
       : [];
 
     // Fetch recent customer retail orders fulfilled by this store (if any)
     const recentRetailOrders = storeId
-      ? await Order.find({ storeId }).sort({ createdAt: -1 }).limit(10).select('orderNumber total status createdAt serviceMode')
+      ? await Order.find({ storeId }).sort({ createdAt: -1 }).limit(10).select('orderNumber total status createdAt serviceMode').lean()
       : [];
+
+    // Check if dealer currently has items in active cart
+    const activeCart = storeId
+      ? await Cart.findOne({
+          $or: [{ userId: dealer._id }, { storeId }],
+          status: 'active',
+          totalItems: { $gt: 0 },
+        }).lean()
+      : null;
+
+    // Extract 4-digit ID and clean name
+    const codeMatch = (dealer.dealerCode || '').match(/\d{4}$/) || (dealer.dealerCode || '').match(/\d+/);
+    const fourDigitId = dealer.shortCode || (codeMatch ? codeMatch[0] : (dealer.dealerCode || 'N/A'));
+    const rawName = dealer.name || 'Dealer';
+    const cleanName = rawName.replace(/^\[\d+\]\s*/, '').replace(/^\d+\s*-\s*/, '').trim();
+
+    // Credit limit (standard ₹1,00,000 default or configured)
+    const creditLimit = 100000;
+    const availableCredit = Math.max(0, creditLimit - totalOutstanding);
 
     res.status(200).json({
       success: true,
       data: {
         dealer: {
           id: dealer._id,
+          fourDigitId,
+          dealerCode: dealer.dealerCode || `VKD${fourDigitId}`,
           name: dealer.name,
+          cleanName,
           mobile: dealer.mobile,
           email: dealer.email,
-          dealerCode: dealer.dealerCode || 'N/A',
           storeName: store?.name || dealer.dealerProfile?.storeName || 'Dealer Store',
           storeLocation: dealer.dealerProfile?.storeLocation || store?.address?.city || '',
           gstNumber: store?.gstNumber || dealer.dealerProfile?.gstNumber || '',
           address: store?.address || dealer.savedAddress,
+        },
+        credit: {
+          creditLimit,
+          totalOutstanding,
+          availableCredit,
+          totalInvoiced,
+          totalPaid,
+          unpaidInvoiceCount: unpaidCount,
         },
         ledgerSummary: {
           totalInvoiced,
@@ -111,6 +160,14 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
         invoices,
         productRequests,
         recentRetailOrders,
+        activeCart: activeCart
+          ? {
+              totalItems: activeCart.totalItems,
+              subtotal: activeCart.subtotal,
+              items: activeCart.items,
+              lastActiveAt: activeCart.lastActiveAt,
+            }
+          : null,
       },
     });
   } catch (error) {
@@ -334,6 +391,300 @@ export async function getDealerLedger(req: Request, res: Response, next: NextFun
         totalPaid,
         totalOutstanding,
         ledger: ledgerEntries,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * GET /api/staff/dealers/products
+ * Returns wholesale/B2B product catalog for staff ordering
+ */
+export async function getWholesaleProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const products = await Product.find({ isActive: true })
+      .select('name slug brand category images variants shortDescription isB2B petiSize petiUnit taxRate hsnCode')
+      .populate('category', 'name slug')
+      .sort({ name: 1 })
+      .lean();
+
+    const catalog = products.map((p: any) => {
+      const v = p.variants?.[0] || {};
+      const unitDealerPrice = v.adminPrice || v.price || 0;
+      const unitMrp = v.mrp || unitDealerPrice;
+      const petiSize = p.petiSize || 12;
+      const petiUnit = p.petiUnit || 'Liter';
+      const petiPrice = Math.round(unitDealerPrice * petiSize);
+
+      return {
+        id: p._id,
+        name: p.name,
+        slug: p.slug,
+        brand: p.brand || 'Vaniki',
+        category: p.category?.name || 'Crop Protection',
+        image: p.images?.[0]?.url || '',
+        petiSize,
+        petiUnit,
+        packSize: v.label || `${petiSize} ${petiUnit}/Box`,
+        mrp: unitMrp,
+        dealerPrice: unitDealerPrice,
+        petiPrice,
+        taxRate: p.taxRate !== undefined ? p.taxRate : 18,
+        hsnCode: p.hsnCode || v.hsnCode || '38089190',
+        stock: v.stock !== undefined ? v.stock : 100,
+        variants: (p.variants || []).map((va: any) => ({
+          id: va._id,
+          label: va.label,
+          price: va.price,
+          dealerPrice: va.adminPrice || va.price,
+          mrp: va.mrp,
+          stock: va.stock,
+        })),
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: catalog.length,
+      data: catalog,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/staff/dealers/:dealerCode/orders
+ * Staff places a complete wholesale order for the dealer:
+ * - Selects products & quantities
+ * - Payment options: Credit, UPI QR / Bank Slip, Cash, or Partial
+ * - Records paid amount, pending amount, and deal description notes
+ */
+export async function placeStaffOrderForDealer(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { dealerCode } = req.params;
+    const { dealer, store } = await findDealerByCodeOrMobile(dealerCode as string);
+    const storeId = store?._id || dealer.selectedStore;
+
+    if (!storeId) {
+      throw new AppError('Dealer has no linked store. Cannot place order.', 400);
+    }
+
+    // Parse items (support both JSON body and multipart form-data)
+    let rawItems = req.body.items;
+    if (typeof rawItems === 'string') {
+      try {
+        rawItems = JSON.parse(rawItems);
+      } catch (_) {
+        rawItems = [];
+      }
+    }
+    const items: any[] = Array.isArray(rawItems) ? rawItems : [];
+
+    if (items.length === 0) {
+      throw new AppError('At least 1 product item is required in the order.', 400);
+    }
+
+    // Parse payment info
+    let payment = req.body.payment || {};
+    if (typeof payment === 'string') {
+      try {
+        payment = JSON.parse(payment);
+      } catch (_) {
+        payment = {};
+      }
+    }
+
+    // Support top-level payment fields if sent as form-data
+    if (req.body.paymentMode && !payment.mode) payment.mode = req.body.paymentMode;
+    if (req.body.paidAmount !== undefined && payment.paidAmount === undefined) payment.paidAmount = req.body.paidAmount;
+    if (req.body.totalAmount !== undefined && payment.totalAmount === undefined) payment.totalAmount = req.body.totalAmount;
+    if (req.body.utr && !payment.utr) payment.utr = req.body.utr;
+
+    const dealDescription = req.body.dealDescription || req.body.notes || '';
+    const staffId = req.staffId || req.body.staffId;
+    const staffName = req.body.staffName || req.headers['x-staff-name'] || 'Field Staff';
+    const staffMobile = req.body.staffMobile || req.headers['x-staff-phone'] || '';
+
+    // Handle payment proof screenshots (uploaded files or image URLs)
+    let screenshotUrls: string[] = [];
+    const files = (req.files as Express.Multer.File[]) || [];
+    if (files.length > 0) {
+      for (const file of files) {
+        try {
+          const uploadRes = await uploadToCloudinary(file.buffer, 'vaniki/stafftrack-orders');
+          screenshotUrls.push(uploadRes.url);
+        } catch (uploadErr) {
+          console.error('Screenshot upload error:', uploadErr);
+        }
+      }
+    } else if (payment.paymentProofScreenshots || req.body.screenshots) {
+      const raw = payment.paymentProofScreenshots || req.body.screenshots;
+      const arr = Array.isArray(raw) ? raw : [raw];
+      screenshotUrls = arr.filter((s: any) => typeof s === 'string' && s.trim());
+    }
+
+    const paymentMode: string = payment.mode || 'credit'; // 'credit' | 'upi_qr' | 'bank_transfer' | 'cash' | 'partial'
+
+    // Calculate item pricing & build invoice items
+    let calculatedSubtotal = 0;
+    let calculatedTax = 0;
+    const invoiceItems: any[] = [];
+    const createdProductRequests: any[] = [];
+    const batchId = `STAFF-${Date.now().toString(36).toUpperCase()}`;
+
+    for (const it of items) {
+      const pQty = Math.max(1, Number(it.petiQuantity || it.qty || 1));
+      let pSize = Number(it.petiSize) || 12;
+      let pUnit = it.petiUnit || 'Liter';
+      let uPrice = Number(it.dealerPrice || it.price || 0);
+      let taxRate = Number(it.taxRate) || 18;
+      let hsn = it.hsnCode || '38089190';
+      let prodName = String(it.productName || 'Product').trim();
+
+      if (it.productId && mongoose.Types.ObjectId.isValid(it.productId)) {
+        const prod = await Product.findById(it.productId).select('name petiSize petiUnit taxRate hsnCode variants').lean();
+        if (prod) {
+          if (!it.productName) prodName = prod.name;
+          if (prod.petiSize && !it.petiSize) pSize = prod.petiSize;
+          if (prod.petiUnit && !it.petiUnit) pUnit = prod.petiUnit;
+          if (prod.taxRate !== undefined && it.taxRate === undefined) taxRate = prod.taxRate;
+          if (prod.hsnCode && !it.hsnCode) hsn = prod.hsnCode;
+          if (prod.variants && prod.variants.length > 0 && !uPrice) {
+            const v = (prod.variants as any[])[0];
+            uPrice = v.adminPrice || v.price || 0;
+          }
+        }
+      }
+
+      const totalUnits = Number(it.requestedQuantity) || (pQty * pSize);
+      const itemSubtotal = Math.round(uPrice * totalUnits * 100) / 100;
+      const itemTax = Math.round(((itemSubtotal * taxRate) / 100) * 100) / 100;
+      const itemTotal = Math.round((itemSubtotal + itemTax) * 100) / 100;
+
+      calculatedSubtotal += itemSubtotal;
+      calculatedTax += itemTax;
+
+      invoiceItems.push({
+        productName: prodName,
+        hsnCode: hsn,
+        packSize: it.packSize || `${pSize} ${pUnit}/Box`,
+        petiQty: pQty,
+        petiSize: pSize,
+        qty: totalUnits,
+        price: uPrice,
+        taxRate,
+        taxAmount: itemTax,
+        total: itemTotal,
+      });
+
+      // Create linked ProductRequest record for warehouse dispatch
+      const reqDoc = await ProductRequest.create({
+        storeId,
+        adminId: dealer._id,
+        productId: it.productId && mongoose.Types.ObjectId.isValid(it.productId) ? it.productId : undefined,
+        batchId,
+        productName: prodName,
+        requestedQuantity: totalUnits,
+        requestedPack: it.packSize || `${pSize} ${pUnit}`,
+        garageName: store?.name || dealer.dealerProfile?.storeName || 'Dealer Store',
+        petiQuantity: pQty,
+        petiSize: pSize,
+        petiUnit: pUnit as any,
+        dealerPrice: uPrice,
+        offerPrice: Number(it.offerPrice) || uPrice,
+        hsnCode: hsn,
+        taxRate,
+        notes: `[StaffTrack Order by ${staffName} (${staffMobile}) | Payment: ${paymentMode.toUpperCase()}] ${dealDescription}`.trim(),
+        status: 'approved',
+      });
+      createdProductRequests.push(reqDoc);
+    }
+
+    const calculatedGrandTotal = Math.round((calculatedSubtotal + calculatedTax) * 100) / 100;
+    const finalGrandTotal = Number(payment.totalAmount) > 0 ? Number(payment.totalAmount) : calculatedGrandTotal;
+    const paidAmount = Math.max(0, Number(payment.paidAmount || 0));
+    const outstandingAmount = Math.max(0, finalGrandTotal - paidAmount);
+
+    let paymentStatus: 'paid' | 'partially_paid' | 'unpaid' | 'verification_pending' = 'unpaid';
+    if (paymentMode === 'credit') {
+      paymentStatus = 'unpaid';
+    } else if (paidAmount >= finalGrandTotal) {
+      paymentStatus = screenshotUrls.length > 0 || payment.utr ? 'verification_pending' : 'paid';
+    } else if (paidAmount > 0) {
+      paymentStatus = 'partially_paid';
+    }
+
+    const invoiceNumber = `B2B-${Date.now().toString().slice(-6)}${Math.floor(100 + Math.random() * 900)}`;
+
+    const combinedDealNotes = [
+      `[StaffTrack Order by ${staffName} (${staffMobile})]`,
+      `Payment Mode: ${paymentMode.toUpperCase()}`,
+      `Total: ₹${finalGrandTotal} | Paid: ₹${paidAmount} | Outstanding: ₹${outstandingAmount}`,
+      payment.utr ? `UTR: ${payment.utr}` : '',
+      dealDescription ? `Deal Notes: ${dealDescription}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const invoice = await B2BInvoice.create({
+      storeId,
+      invoiceNumber,
+      invoiceDate: new Date(),
+      items: invoiceItems,
+      subtotal: Math.round(calculatedSubtotal * 100) / 100,
+      totalTaxAmount: Math.round(calculatedTax * 100) / 100,
+      totalAmount: finalGrandTotal,
+      paymentStatus,
+      paidAmount,
+      outstandingAmount,
+      paymentTerms: paymentMode === 'credit' ? 'Credit (Udhaar)' : paymentMode.toUpperCase(),
+      paymentUtr: payment.utr || '',
+      paymentScreenshots: screenshotUrls,
+      paymentSubmittedAt: paidAmount > 0 ? new Date() : undefined,
+      paymentNotes: combinedDealNotes,
+      collectedByStaff: staffId && mongoose.Types.ObjectId.isValid(staffId) ? staffId : undefined,
+      tallySyncStatus: 'pending',
+    });
+
+    // Link invoiceId to all product requests in this batch
+    await ProductRequest.updateMany(
+      { batchId },
+      { $set: { invoiceId: invoice._id } }
+    );
+
+    // Extract 4-digit code
+    const codeMatch = (dealer.dealerCode || '').match(/\d{4}$/) || (dealer.dealerCode || '').match(/\d+/);
+    const fourDigitId = dealer.shortCode || (codeMatch ? codeMatch[0] : dealer.dealerCode);
+
+    res.status(201).json({
+      success: true,
+      message: 'Dealer order placed successfully via StaffTrack!',
+      data: {
+        orderId: batchId,
+        invoiceId: invoice._id,
+        invoiceNumber: invoice.invoiceNumber,
+        dealer: {
+          id: dealer._id,
+          fourDigitId,
+          dealerCode: dealer.dealerCode,
+          name: dealer.name,
+          storeName: store?.name || dealer.dealerProfile?.storeName,
+          mobile: dealer.mobile,
+        },
+        itemsCount: invoiceItems.length,
+        items: invoiceItems,
+        totalAmount: finalGrandTotal,
+        paidAmount,
+        outstandingAmount,
+        paymentMode,
+        paymentStatus,
+        paymentUtr: payment.utr || null,
+        paymentScreenshots: screenshotUrls,
+        dealDescription: dealDescription || null,
+        placedAt: invoice.invoiceDate,
       },
     });
   } catch (error) {

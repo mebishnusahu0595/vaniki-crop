@@ -50,6 +50,7 @@ export interface IUser extends Document {
   role: UserRole;
   approvalStatus: DealerApprovalStatus;
   dealerCode?: string;
+  shortCode?: string;
   dealerProfile?: IDealerProfile;
   selectedStore?: mongoose.Types.ObjectId;
   serviceMode: ServiceMode;
@@ -176,6 +177,13 @@ const userSchema = new Schema<IUser>(
       uppercase: true,
       sparse: true,
     },
+    shortCode: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      sparse: true,
+      index: true,
+    },
     selectedStore: {
       type: Schema.Types.ObjectId,
       ref: 'Store',
@@ -273,11 +281,23 @@ userSchema.pre('validate', async function (this: any) {
     }
   }
 
-  if (this.role === 'storeAdmin' && !this.dealerCode) {
-    try {
-      this.dealerCode = await generateUniqueDealerCode();
-    } catch (error) {
-      console.error('Error generating dealer code for user:', error);
+  if (this.role === 'storeAdmin') {
+    if (!this.dealerCode) {
+      try {
+        this.dealerCode = await generateUniqueDealerCode();
+      } catch (error) {
+        console.error('Error generating dealer code for user:', error);
+      }
+    }
+    if (this.dealerCode) {
+      const match = this.dealerCode.match(/\d{4}$/) || this.dealerCode.match(/\d+/);
+      const code = match ? match[0] : this.dealerCode;
+      this.shortCode = code;
+
+      if (this.name && !this.name.startsWith(`[${code}]`) && !this.name.startsWith(`${code} -`)) {
+        const cleanName = this.name.replace(/^\[\d+\]\s*/, '').replace(/^\d+\s*-\s*/, '').trim();
+        this.name = `[${code}] ${cleanName}`;
+      }
     }
   }
 });
