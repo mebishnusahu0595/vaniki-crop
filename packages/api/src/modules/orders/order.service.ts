@@ -116,8 +116,9 @@ async function resolveStoreIdForOrder(items: any[], serviceMode: 'delivery' | 'p
 export function applyVisibleOrderFilter(filter: Record<string, any>) {
   const visibilityFilter = {
     $or: [
-      { paymentMethod: 'cod' },
+      { paymentMethod: { $in: ['cod', 'cash', 'upi'] } },
       { paymentStatus: 'paid' },
+      { adminNote: { $regex: /StaffTrack/i } },
     ],
   };
 

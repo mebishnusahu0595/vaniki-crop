@@ -319,11 +319,19 @@ export async function createDealerProductRequest(
   return results;
 }
 
-export async function listDealerProductRequests(storeId: string, query: Record<string, any>) {
+export async function listDealerProductRequests(storeId: string, query: Record<string, any>, adminId?: string) {
   const { page, limit, skip } = parsePagination(query);
-  const filter: Record<string, any> = { storeId };
+  const filter: Record<string, any> = {};
 
-  if (query.status && ['pending', 'contacted', 'fulfilled', 'rejected'].includes(String(query.status))) {
+  if (storeId && adminId) {
+    filter.$or = [{ storeId }, { adminId }];
+  } else if (storeId) {
+    filter.storeId = storeId;
+  } else if (adminId) {
+    filter.adminId = adminId;
+  }
+
+  if (query.status && ['pending', 'approved', 'contacted', 'fulfilled', 'rejected'].includes(String(query.status))) {
     filter.status = String(query.status);
   }
 

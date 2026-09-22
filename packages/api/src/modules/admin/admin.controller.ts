@@ -59,7 +59,7 @@ export async function createProductRequest(req: Request, res: Response, next: Ne
 
 export async function listProductRequests(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await adminService.listDealerProductRequests(req.userStoreId!, req.query);
+    const result = await adminService.listDealerProductRequests(req.userStoreId!, req.query, req.userId);
     res.status(200).json({ success: true, data: result.data, pagination: result.pagination });
   } catch (error) {
     next(error);

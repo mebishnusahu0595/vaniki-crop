@@ -104,9 +104,13 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
       ? await ProductRequest.find({ storeId }).sort({ createdAt: -1 }).limit(20).lean()
       : [];
 
-    // Fetch recent customer retail orders fulfilled by this store (if any)
+    // Fetch recent customer retail orders fulfilled by this store or placed for this dealer
     const recentRetailOrders = storeId
-      ? await Order.find({ storeId }).sort({ createdAt: -1 }).limit(10).select('orderNumber total status createdAt serviceMode').lean()
+      ? await Order.find({ $or: [{ storeId }, { userId: dealer._id }] })
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .select('orderNumber totalAmount total status createdAt serviceMode paymentStatus paymentMethod items')
+          .lean()
       : [];
 
     // Check if dealer currently has items in active cart
@@ -542,10 +546,11 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
 
     const paymentMode: string = payment.mode || 'credit'; // 'credit' | 'upi_qr' | 'bank_transfer' | 'cash' | 'partial'
 
-    // Calculate item pricing & build invoice items
+    // Calculate item pricing & build invoice items and Order items
     let calculatedSubtotal = 0;
     let calculatedTax = 0;
     const invoiceItems: any[] = [];
+    const orderItems: any[] = [];
     const createdProductRequests: any[] = [];
     const batchId = `STAFF-${Date.now().toString(36).toUpperCase()}`;
 
@@ -557,18 +562,28 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
       let taxRate = Number(it.taxRate) || 18;
       let hsn = it.hsnCode || '38089190';
       let prodName = String(it.productName || 'Product').trim();
+      let variantId = it.variantId;
+      let variantLabel = it.packSize || it.variantLabel || `${pSize} ${pUnit}`;
+      let mrp = Number(it.mrp) || (uPrice * 1.25);
+      let img = it.image || '';
 
       if (it.productId && mongoose.Types.ObjectId.isValid(it.productId)) {
-        const prod = await Product.findById(it.productId).select('name petiSize petiUnit taxRate hsnCode variants').lean();
+        const prod = await Product.findById(it.productId).select('name petiSize petiUnit taxRate hsnCode variants images').lean();
         if (prod) {
           if (!it.productName) prodName = prod.name;
           if (prod.petiSize && !it.petiSize) pSize = prod.petiSize;
           if (prod.petiUnit && !it.petiUnit) pUnit = prod.petiUnit;
           if (prod.taxRate !== undefined && it.taxRate === undefined) taxRate = prod.taxRate;
           if (prod.hsnCode && !it.hsnCode) hsn = prod.hsnCode;
-          if (prod.variants && prod.variants.length > 0 && !uPrice) {
+          if (prod.variants && prod.variants.length > 0) {
             const v = (prod.variants as any[])[0];
-            uPrice = v.adminPrice || v.price || 0;
+            if (!uPrice) uPrice = v.adminPrice || v.price || 0;
+            if (!variantId) variantId = v._id;
+            if (!it.packSize && !it.variantLabel) variantLabel = v.label || variantLabel;
+            if (!it.mrp) mrp = v.mrp || (uPrice * 1.25);
+          }
+          if (!img && (prod as any).images?.length > 0) {
+            img = (prod as any).images[0]?.url || '';
           }
         }
       }
@@ -592,6 +607,26 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
         taxRate,
         taxAmount: itemTax,
         total: itemTotal,
+      });
+
+      if (!variantId || !mongoose.Types.ObjectId.isValid(variantId)) {
+        variantId = new mongoose.Types.ObjectId();
+      }
+
+      orderItems.push({
+        productId: it.productId && mongoose.Types.ObjectId.isValid(it.productId) ? new mongoose.Types.ObjectId(it.productId) : new mongoose.Types.ObjectId(),
+        variantId: new mongoose.Types.ObjectId(variantId),
+        productName: prodName,
+        variantLabel,
+        price: uPrice,
+        mrp: Math.round(mrp),
+        qty: totalUnits,
+        image: img,
+        hsnCode: hsn,
+        taxRate,
+        taxAmount: itemTax,
+        taxType: 'CGST/SGST',
+        netAmount: itemSubtotal,
       });
 
       // Create linked ProductRequest record for warehouse dispatch
@@ -643,6 +678,50 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
       .filter(Boolean)
       .join('\n');
 
+    // Create official Order record in orders collection
+    const orderNumber = await (Order as any).generateOrderNumber();
+    const resolvedPaymentMethod = paymentMode === 'cash' ? 'cash' : (paymentMode === 'upi_qr' ? 'upi' : 'cod');
+    const orderPaymentStatus = paymentStatus === 'paid' || paidAmount >= finalGrandTotal ? 'paid' : (paidAmount > 0 ? 'paid' : 'pending');
+
+    const createdOrder = await Order.create({
+      orderNumber,
+      userId: dealer._id,
+      storeId,
+      serviceMode: 'pickup',
+      items: orderItems,
+      subtotal: Math.round(calculatedSubtotal * 100) / 100,
+      discount: 0,
+      couponDiscount: 0,
+      loyaltyPointsApplied: 0,
+      loyaltyDiscount: 0,
+      deliveryCharge: 0,
+      totalAmount: finalGrandTotal,
+      totalTaxAmount: Math.round(calculatedTax * 100) / 100,
+      shippingAddress: {
+        name: dealer.name || 'Dealer Admin',
+        mobile: dealer.mobile || '',
+        street: store?.address?.street || dealer.savedAddress?.street || 'Store Address',
+        city: store?.address?.city || dealer.savedAddress?.city || 'Bhilai',
+        district: store?.address?.district || dealer.savedAddress?.district || 'Durg',
+        state: store?.address?.state || dealer.savedAddress?.state || 'Chhattisgarh',
+        pincode: store?.address?.pincode || dealer.savedAddress?.pincode || '490001',
+      },
+      paymentStatus: orderPaymentStatus,
+      paymentMethod: resolvedPaymentMethod,
+      paymentCollectedBy: staffId && mongoose.Types.ObjectId.isValid(staffId) ? new mongoose.Types.ObjectId(staffId) : null,
+      paymentCollectedAt: paidAmount > 0 ? new Date() : undefined,
+      status: 'confirmed',
+      adminNote: `[StaffTrack Order by ${staffName} (${staffMobile}) | Paid: ₹${paidAmount} | Pending: ₹${outstandingAmount}] ${dealDescription}`.trim(),
+      statusHistory: [
+        {
+          status: 'confirmed',
+          note: `Order booked via StaffTrack by ${staffName} (${staffMobile})`,
+          timestamp: new Date(),
+        },
+      ],
+      tallySyncStatus: 'pending',
+    });
+
     const invoice = await B2BInvoice.create({
       storeId,
       invoiceNumber,
@@ -659,6 +738,8 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
       paymentScreenshots: screenshotUrls,
       paymentSubmittedAt: paidAmount > 0 ? new Date() : undefined,
       paymentNotes: combinedDealNotes,
+      buyerOrderNo: createdOrder.orderNumber,
+      buyerOrderDate: createdOrder.createdAt,
       collectedByStaff: staffId && mongoose.Types.ObjectId.isValid(staffId) ? staffId : undefined,
       tallySyncStatus: 'pending',
     });
@@ -677,7 +758,9 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
       success: true,
       message: 'Dealer order placed successfully via StaffTrack!',
       data: {
-        orderId: batchId,
+        orderId: createdOrder._id,
+        orderNumber: createdOrder.orderNumber,
+        batchId,
         invoiceId: invoice._id,
         invoiceNumber: invoice.invoiceNumber,
         dealer: {
