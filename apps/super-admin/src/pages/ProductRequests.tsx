@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { User, Warehouse, Box, ChevronLeft, ChevronRight, FileText, Clock, Download } from 'lucide-react';
+import { User, Warehouse, Box, ChevronLeft, ChevronRight, FileText, Clock, Download, CreditCard, UserCheck, Hash } from 'lucide-react';
 import { LoadingBlock } from '../components/LoadingBlock';
 import { PageHeader } from '../components/PageHeader';
 import { adminApi } from '../utils/api';
@@ -28,6 +28,38 @@ function getProductDisplayName(item: any): string {
     }
   }
   return rawName || brand || tech || 'Product';
+}
+
+/** Parse StaffTrack metadata from notes field */
+function parseStaffTrackInfo(notes?: string): {
+  isStaffTrack: boolean;
+  staffName?: string;
+  staffContact?: string;
+  paymentMode?: string;
+  dealNotes?: string;
+} {
+  if (!notes) return { isStaffTrack: false };
+
+  // Match: [StaffTrack Order by Name (contact) | Payment: MODE]
+  const staffMatch = notes.match(/\[StaffTrack Order by\s+([^(]+?)\s*\(([^)]+)\)/);
+  // Also match simpler: [Placed via StaffTrack by Name (contact)]
+  const staffMatch2 = notes.match(/\[Placed via StaffTrack by\s+([^(]+?)\s*\(([^)]+)\)/);
+
+  const match = staffMatch || staffMatch2;
+  if (!match) return { isStaffTrack: false };
+
+  const paymentMatch = notes.match(/Payment:\s*(\S+)/);
+  // Everything after the closing bracket is the deal notes
+  const bracketEnd = notes.lastIndexOf(']');
+  const dealNotes = bracketEnd >= 0 ? notes.slice(bracketEnd + 1).trim() : '';
+
+  return {
+    isStaffTrack: true,
+    staffName: match[1]?.trim(),
+    staffContact: match[2]?.trim(),
+    paymentMode: paymentMatch ? paymentMatch[1]?.trim() : undefined,
+    dealNotes: dealNotes || undefined,
+  };
 }
 
 export default function ProductRequestsPage() {
@@ -98,6 +130,7 @@ export default function ProductRequestsPage() {
       status: string;
       notes?: string;
       superAdminNote?: string;
+      staffTrack: ReturnType<typeof parseStaffTrackInfo>;
       items: ProductRequest[];
     }>();
 
@@ -108,6 +141,7 @@ export default function ProductRequestsPage() {
       const key = req.batchId ? req.batchId : `${storeIdStr}_${timeMinute}_${req.garageName || ''}`;
 
       if (!map.has(key)) {
+        const staffInfo = parseStaffTrackInfo(req.notes);
         map.set(key, {
           groupKey: key,
           batchId: req.batchId,
@@ -119,6 +153,7 @@ export default function ProductRequestsPage() {
           status: req.status,
           notes: req.notes,
           superAdminNote: req.superAdminNote,
+          staffTrack: staffInfo,
           items: [],
         });
       }
@@ -321,31 +356,96 @@ export default function ProductRequestsPage() {
             >
               {/* Header */}
               <div className="flex flex-wrap items-start justify-between gap-4 pb-5 border-b border-slate-100">
-                <div>
-                  <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-xl bg-slate-900 px-3 py-1 text-xs font-black text-white">
                       Order #{groupIndex + 1}
                     </span>
                     <span className="rounded-xl bg-primary-50 px-3 py-1 text-xs font-black text-primary-700">
                       {group.items.length} Product{group.items.length > 1 ? 's' : ''} in Request
                     </span>
+                    {group.staffTrack.isStaffTrack && (
+                      <span className="rounded-xl bg-violet-100 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-violet-700">
+                        ⚡ StaffTrack Order
+                      </span>
+                    )}
+                    {group.batchId && (
+                      <span className="flex items-center gap-1 rounded-xl bg-slate-100 px-3 py-1 text-[10px] font-mono font-bold text-slate-500">
+                        <Hash size={10} />
+                        {group.batchId}
+                      </span>
+                    )}
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm font-bold text-slate-700">
-                    <span className="flex items-center gap-1.5">
-                      <Warehouse size={16} className="text-primary-500" />
-                      {group.store?.name || 'Unassigned Store'}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <User size={16} className="text-primary-500" />
-                      {group.requestedBy?.name || 'Store Admin'} ({group.requestedBy?.mobile || '-'})
-                    </span>
-                    <span className="flex items-center gap-1.5 text-slate-500">
-                      Garage: <strong className="text-slate-700">{group.garageName}</strong>
-                    </span>
-                    <span className="flex items-center gap-1.5 text-slate-400 text-xs font-semibold">
-                      <Clock size={14} className="text-slate-400" />
-                      {formatDateTime(group.createdAt)}
-                    </span>
+
+                  {/* Info Grid — Dealer, Store, Staff, Payment */}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    {/* Dealer (Person) */}
+                    <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <div className="rounded-lg bg-primary-100 p-1.5 mt-0.5">
+                        <User size={14} className="text-primary-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Dealer</p>
+                        <p className="font-black text-slate-900 text-sm truncate">{group.requestedBy?.name || 'Store Admin'}</p>
+                        <p className="text-[11px] text-slate-500 font-semibold">{group.requestedBy?.mobile || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Store (Shop) */}
+                    <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <div className="rounded-lg bg-emerald-100 p-1.5 mt-0.5">
+                        <Warehouse size={14} className="text-emerald-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Store</p>
+                        <p className="font-black text-slate-900 text-sm truncate">{group.store?.name || group.garageName || 'Unassigned'}</p>
+                        <p className="text-[11px] text-slate-500 font-semibold">{group.garageName !== group.store?.name ? group.garageName : ''}</p>
+                      </div>
+                    </div>
+
+                    {/* Staff (Who placed) */}
+                    <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <div className={`rounded-lg p-1.5 mt-0.5 ${group.staffTrack.isStaffTrack ? 'bg-violet-100' : 'bg-slate-200'}`}>
+                        <UserCheck size={14} className={group.staffTrack.isStaffTrack ? 'text-violet-600' : 'text-slate-400'} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Placed By</p>
+                        {group.staffTrack.isStaffTrack ? (
+                          <>
+                            <p className="font-black text-violet-700 text-sm truncate">{group.staffTrack.staffName}</p>
+                            <p className="text-[11px] text-slate-500 font-semibold">{group.staffTrack.staffContact}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-bold text-slate-600 text-sm">Self (Dealer App)</p>
+                            <p className="text-[11px] text-slate-400 font-semibold">Direct order</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Payment Info */}
+                    <div className="flex items-start gap-2.5 rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <div className={`rounded-lg p-1.5 mt-0.5 ${group.staffTrack.paymentMode ? 'bg-amber-100' : 'bg-slate-200'}`}>
+                        <CreditCard size={14} className={group.staffTrack.paymentMode ? 'text-amber-600' : 'text-slate-400'} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Payment</p>
+                        {group.staffTrack.paymentMode ? (
+                          <p className="font-black text-amber-700 text-sm uppercase">{group.staffTrack.paymentMode}</p>
+                        ) : (
+                          <p className="font-bold text-slate-600 text-sm">—</p>
+                        )}
+                        {group.staffTrack.dealNotes && (
+                          <p className="text-[11px] text-slate-500 font-semibold truncate" title={group.staffTrack.dealNotes}>{group.staffTrack.dealNotes}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2 text-slate-400 text-xs font-semibold">
+                    <Clock size={13} className="text-slate-400" />
+                    {formatDateTime(group.createdAt)}
                   </div>
                 </div>
 
@@ -478,9 +578,15 @@ export default function ProductRequestsPage() {
                 </table>
               </div>
 
-              {group.notes && (
+              {group.notes && !group.staffTrack.isStaffTrack && (
                 <div className="mt-4 rounded-xl bg-slate-50 p-3 border border-slate-100 text-xs italic text-slate-600">
                   <strong>Dealer Note:</strong> "{group.notes}"
+                </div>
+              )}
+
+              {group.superAdminNote && (
+                <div className="mt-3 rounded-xl bg-blue-50 p-3 border border-blue-100 text-xs text-blue-700">
+                  <strong>Admin Note:</strong> {group.superAdminNote}
                 </div>
               )}
 
