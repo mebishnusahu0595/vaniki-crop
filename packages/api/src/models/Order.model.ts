@@ -101,6 +101,7 @@ export interface IOrder extends Document {
   deliveryCancelNote?: string;
   deliveryCancelledAt?: Date;
   adminNote?: string;
+  garageName?: string;
   isSettlementRequested?: boolean;
   settlementBatchId?: string;
   tallySyncStatus?: 'pending' | 'synced' | 'failed' | 'manual';
@@ -261,6 +262,7 @@ const orderSchema = new Schema<IOrder, IOrderModel>(
     deliveryCancelNote: { type: String, trim: true, maxlength: 1000 },
     deliveryCancelledAt: { type: Date },
     adminNote: { type: String, trim: true },
+    garageName: { type: String, trim: true },
     isSettlementRequested: { type: Boolean, default: false },
     settlementBatchId: { type: String },
     tallySyncStatus: {

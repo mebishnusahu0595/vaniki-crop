@@ -62,6 +62,9 @@ router.get('/products', staffDealersController.getWholesaleProducts);
 router.get('/bank-details', staffDealersController.getBankDetails);
 router.get('/payment-details', staffDealersController.getBankDetails);
 
+// Get real-time available garages/warehouses created by SuperAdmin in Site Settings
+router.get('/garages', staffDealersController.getGarages);
+
 // Lookup dealer by 4-digit ID (e.g. 1018), full dealerCode (e.g. VKD1018), or mobile
 router.get('/lookup/:dealerCode', staffDealersController.lookupDealer);
 

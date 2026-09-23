@@ -176,6 +176,9 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
           unpaidInvoiceCount: unpaidCount,
         },
         bankDetails,
+        garages: siteSettings?.garageNames && siteSettings.garageNames.length > 0
+          ? siteSettings.garageNames
+          : ['Vaniki garage'],
         invoices,
         productRequests,
         recentRetailOrders,
@@ -527,6 +530,11 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
     const staffName = req.body.staffName || req.headers['x-staff-name'] || 'Field Staff';
     const staffMobile = req.body.staffMobile || req.headers['x-staff-phone'] || '';
 
+    // Fetch siteSettings for default garage fallback
+    const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' }).select('garageNames').lean();
+    const defaultGarage = (siteSettings?.garageNames && siteSettings.garageNames[0]) || 'Vaniki garage';
+    const garageName = String(req.body.garageName || req.body.garage || defaultGarage).trim();
+
     // Handle payment proof screenshots (uploaded files or image URLs)
     let screenshotUrls: string[] = [];
     const files = (req.files as Express.Multer.File[]) || [];
@@ -639,7 +647,7 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
         productName: prodName,
         requestedQuantity: totalUnits,
         requestedPack: it.packSize || `${pSize} ${pUnit}`,
-        garageName: store?.name || dealer.dealerProfile?.storeName || 'Dealer Store',
+        garageName: garageName,
         petiQuantity: pQty,
         petiSize: pSize,
         petiUnit: pUnit as any,
@@ -712,7 +720,8 @@ export async function placeStaffOrderForDealer(req: Request, res: Response, next
       paymentCollectedBy: staffId && mongoose.Types.ObjectId.isValid(staffId) ? new mongoose.Types.ObjectId(staffId) : null,
       paymentCollectedAt: paidAmount > 0 ? new Date() : undefined,
       status: 'confirmed',
-      adminNote: `[StaffTrack Order by ${staffName} (${staffMobile}) | Paid: ₹${paidAmount} | Pending: ₹${outstandingAmount}] ${dealDescription}`.trim(),
+      garageName: garageName,
+      adminNote: `[StaffTrack Order by ${staffName} (${staffMobile}) | Garage: ${garageName} | Paid: ₹${paidAmount} | Pending: ₹${outstandingAmount}] ${dealDescription}`.trim(),
       statusHistory: [
         {
           status: 'confirmed',
@@ -813,4 +822,25 @@ export async function getBankDetails(_req: Request, res: Response, next: NextFun
     next(error);
   }
 }
+
+/**
+ * GET /api/staff/dealers/garages
+ * Returns list of available warehouses/garages configured in platform settings
+ */
+export async function getGarages(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const settings = await SiteSetting.findOne({ singletonKey: 'default' }).select('garageNames').lean();
+    const garages = settings?.garageNames && settings.garageNames.length > 0
+      ? settings.garageNames
+      : ['Vaniki garage'];
+
+    res.status(200).json({
+      success: true,
+      data: garages,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 
