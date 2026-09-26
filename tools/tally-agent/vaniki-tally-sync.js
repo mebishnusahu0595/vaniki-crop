@@ -293,11 +293,24 @@ async function fetchQueueFromAnyEndpoint() {
   throw new Error(`Could not connect to Vaniki Server (${activeApiUrl}). Check internet/LAN connection.`);
 }
 
+let lastBalanceSyncTime = 0;
+async function maybeSyncDebtorBalances(force = false) {
+  const now = Date.now();
+  // Sync every 60 seconds or when forced
+  if (force || now - lastBalanceSyncTime > 60000) {
+    lastBalanceSyncTime = now;
+    await syncDebtorBalancesFromTally();
+  }
+}
+
 async function syncPendingInvoices() {
   if (isSyncing) return;
   isSyncing = true;
 
   try {
+    // Check and sync debtor ledger closing balances from Tally
+    await maybeSyncDebtorBalances();
+
     // 1. Fetch pending queue from Vaniki Server with automatic failover
     const json = await fetchQueueFromAnyEndpoint();
     const queue = json.data || [];
