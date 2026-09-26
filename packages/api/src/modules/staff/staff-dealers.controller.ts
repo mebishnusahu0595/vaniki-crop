@@ -41,18 +41,27 @@ async function findDealerByCodeOrMobile(codeOrMobile: string) {
   const dealer = await User.findOne({
     role: 'storeAdmin',
     $or: orQueries,
-  }).select('name mobile email dealerCode shortCode dealerProfile selectedStore savedAddress createdAt');
+  }).select('name mobile email dealerCode shortCode dealerProfile selectedStore savedAddress createdAt tallyClosingBalance tallySyncedAt tallyLedgerName');
 
   if (!dealer) {
     throw new AppError(`Dealer with ID / Code / Mobile "${codeOrMobile}" not found.`, 404);
   }
 
-  let store: any = await Store.findOne({ adminId: dealer._id }).select('name address phone gstNumber deliveryRadius');
+  let store: any = await Store.findOne({ adminId: dealer._id }).select('name address phone gstNumber deliveryRadius tallyClosingBalance tallySyncedAt tallyLedgerName');
   if (!store) {
-    store = await Store.findOne({ ownerId: dealer._id }).select('name address phone gstNumber deliveryRadius');
+    store = await Store.findOne({ ownerId: dealer._id }).select('name address phone gstNumber deliveryRadius tallyClosingBalance tallySyncedAt tallyLedgerName');
   }
   if (!store && dealer.selectedStore) {
-    store = await Store.findById(dealer.selectedStore).select('name address phone gstNumber deliveryRadius');
+    store = await Store.findById(dealer.selectedStore).select('name address phone gstNumber deliveryRadius tallyClosingBalance tallySyncedAt tallyLedgerName');
+  }
+  if (!store) {
+    store = await Store.findOne({
+      $or: [
+        { dealerCode: dealer.dealerCode },
+        { dealerCode: `VKD${fourDigit}` },
+        { shortCode: fourDigit },
+      ],
+    }).select('name address phone gstNumber deliveryRadius tallyClosingBalance tallySyncedAt tallyLedgerName');
   }
 
   return { dealer, store };
@@ -417,6 +426,14 @@ export async function getDealerLedger(req: Request, res: Response, next: NextFun
       };
     });
 
+    const storeTallyBal = (store as any)?.tallyClosingBalance;
+    const dealerTallyBal = (dealer as any)?.tallyClosingBalance;
+    const tallyClosingBalance = (storeTallyBal !== undefined && storeTallyBal !== null)
+      ? storeTallyBal
+      : ((dealerTallyBal !== undefined && dealerTallyBal !== null) ? dealerTallyBal : undefined);
+    const isTallySynced = tallyClosingBalance !== undefined;
+    const finalOutstanding = isTallySynced ? tallyClosingBalance : totalOutstanding;
+
     res.status(200).json({
       success: true,
       data: {
@@ -425,7 +442,11 @@ export async function getDealerLedger(req: Request, res: Response, next: NextFun
         storeName: store?.name || dealer.dealerProfile?.storeName || 'Dealer Store',
         totalInvoiced,
         totalPaid,
-        totalOutstanding,
+        totalOutstanding: finalOutstanding,
+        isTallySynced,
+        tallySyncedAt: (store as any)?.tallySyncedAt || (dealer as any)?.tallySyncedAt,
+        tallyLedgerName: (store as any)?.tallyLedgerName || (dealer as any)?.tallyLedgerName,
+        source: isTallySynced ? 'TALLY_PRIME' : 'PORTAL_INVOICES',
         ledger: ledgerEntries,
       },
     });
