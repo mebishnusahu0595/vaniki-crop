@@ -159,6 +159,7 @@ async function syncDebtorBalancesFromTally() {
             <TDLMESSAGE>
               <COLLECTION NAME="VanikiDebtors" TYPE="Ledger">
                 <CHILDOF>$$GroupSundryDebtors</CHILDOF>
+                <BELONGSTO>Yes</BELONGSTO>
                 <FETCH>NAME, CLOSINGBALANCE, LEDGERPHONE, LEDGERMOBILE</FETCH>
               </COLLECTION>
             </TDLMESSAGE>
@@ -171,11 +172,15 @@ async function syncDebtorBalancesFromTally() {
   try {
     const resXml = await postToTally(tdlQuery);
     const balances = [];
-    const ledgerRegex = /<LEDGER\s+NAME="([^"]+)"[^>]*>([\s\S]*?)<\/LEDGER>/gi;
+    const ledgerRegex = /<LEDGER(?:\s+NAME="([^"]+)")?[^>]*>([\s\S]*?)<\/LEDGER>/gi;
     let m;
     while ((m = ledgerRegex.exec(resXml)) !== null) {
-      const name = m[1];
+      const attrName = m[1];
       const body = m[2];
+      const tagMatch = body.match(/<NAME>([\s\S]*?)<\/NAME>/i);
+      const name = (attrName || (tagMatch ? tagMatch[1] : '')).trim();
+      if (!name) continue;
+
       const balMatch = body.match(/<CLOSINGBALANCE>([\s\S]*?)<\/CLOSINGBALANCE>/i);
       const phoneMatch = body.match(/<LEDGERPHONE>([\s\S]*?)<\/LEDGERPHONE>/i) || body.match(/<LEDGERMOBILE>([\s\S]*?)<\/LEDGERMOBILE>/i);
       if (balMatch) {

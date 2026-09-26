@@ -1272,43 +1272,110 @@ export async function syncTallyLedgerBalances(
   }>
 ) {
   const updatedStores: any[] = [];
+  const allStores = await Store.find({}).lean();
+  const allDealers = await User.find({ role: 'storeAdmin' }).lean();
+
+  const stopWords = new Set([
+    'kendra', 'khedut', 'krishi', 'sewa', 'seva', 'pvt', 'ltd', 'and', 'the',
+    'agro', 'agrotech', 'store', 'shop', 'bhandar', 'tedres', 'traders',
+  ]);
+
+  function getTokens(str: string): string[] {
+    return str
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 3 && !stopWords.has(w));
+  }
+
+  function normalize(str: string): string {
+    return str.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+  }
 
   for (const item of balances) {
     if (!item.ledgerName) continue;
     const cleanName = item.ledgerName.replace(/^\[\d+\]\s*/, '').replace(/^\d+\s*-\s*/, '').trim();
     const fourDigitMatch = item.ledgerName.match(/\d{4}/);
     const code = fourDigitMatch ? fourDigitMatch[0] : null;
+    const cleanPhone = item.phone ? item.phone.replace(/\D/g, '').slice(-10) : '';
+    const absBal = Math.abs(Number(item.closingBalance) || 0);
 
-    // Search query for matching store or dealer
-    const orQueries: any[] = [
-      { name: new RegExp(`^${escapeRegex(cleanName)}$`, 'i') },
-      { name: new RegExp(escapeRegex(cleanName), 'i') },
-    ];
+    const ledgerNorm = normalize(cleanName);
+    const ledgerTokens = getTokens(cleanName);
 
+    let matchedStore: any = null;
+    let matchedDealer: any = null;
+
+    // 1. Match by 4-digit code
     if (code) {
-      orQueries.push({ shortCode: code });
-      orQueries.push({ dealerCode: `VKD${code}` });
-      orQueries.push({ dealerCode: new RegExp(`${code}$`, 'i') });
-    }
-
-    if (item.phone) {
-      const cleanPhone = item.phone.replace(/\D/g, '').slice(-10);
-      if (cleanPhone.length === 10) {
-        orQueries.push({ phone: cleanPhone });
+      matchedStore = allStores.find(
+        (s) => s.shortCode === code || s.dealerCode === `VKD${code}` || s.dealerCode?.endsWith(code)
+      );
+      if (!matchedStore) {
+        matchedDealer = allDealers.find(
+          (d) =>
+            d.shortCode === code ||
+            d.dealerCode === `VKD${code}` ||
+            d.dealerCode?.endsWith(code) ||
+            d.name?.includes(`[${code}]`)
+        );
       }
     }
 
-    const store = await Store.findOne({ $or: orQueries });
-    const absBal = Math.abs(Number(item.closingBalance) || 0);
+    // 2. Match by phone number
+    if (!matchedStore && !matchedDealer && cleanPhone.length === 10) {
+      matchedStore = allStores.find((s) => s.phone?.replace(/\D/g, '').slice(-10) === cleanPhone);
+      if (!matchedStore) {
+        matchedDealer = allDealers.find((d) => d.mobile?.replace(/\D/g, '').slice(-10) === cleanPhone);
+      }
+    }
 
-    if (store) {
-      store.tallyClosingBalance = absBal;
-      store.tallySyncedAt = new Date();
-      store.tallyLedgerName = item.ledgerName;
-      await store.save();
+    // 3. Match by normalized name containment (either store contains ledger or ledger contains store)
+    if (!matchedStore && !matchedDealer && ledgerNorm.length >= 4) {
+      matchedStore = allStores.find((s) => {
+        const sNorm = normalize(s.name || '');
+        return sNorm.length >= 4 && (sNorm === ledgerNorm || sNorm.includes(ledgerNorm) || ledgerNorm.includes(sNorm));
+      });
+      if (!matchedStore) {
+        matchedDealer = allDealers.find((d) => {
+          const dNorm = normalize(d.name || '');
+          const dpNorm = normalize(d.dealerProfile?.storeName || '');
+          return (
+            (dNorm.length >= 4 && (dNorm === ledgerNorm || dNorm.includes(ledgerNorm) || ledgerNorm.includes(dNorm))) ||
+            (dpNorm.length >= 4 && (dpNorm === ledgerNorm || dpNorm.includes(ledgerNorm) || ledgerNorm.includes(dpNorm)))
+          );
+        });
+      }
+    }
 
-      if (store.adminId) {
-        await User.findByIdAndUpdate(store.adminId, {
+    // 4. Match by distinctive word tokens
+    if (!matchedStore && !matchedDealer && ledgerTokens.length > 0) {
+      matchedStore = allStores.find((s) => {
+        const sTokens = getTokens(s.name || '');
+        const common = ledgerTokens.filter((t) => sTokens.includes(t));
+        return common.length >= 1 && (common.length >= Math.min(ledgerTokens.length, sTokens.length) || common.length >= 2);
+      });
+      if (!matchedStore) {
+        matchedDealer = allDealers.find((d) => {
+          const dTokens = getTokens(`${d.name || ''} ${d.dealerProfile?.storeName || ''}`);
+          const common = ledgerTokens.filter((t) => dTokens.includes(t));
+          return common.length >= 1 && (common.length >= Math.min(ledgerTokens.length, dTokens.length) || common.length >= 2);
+        });
+      }
+    }
+
+    // Update in database
+    if (matchedStore) {
+      await Store.findByIdAndUpdate(matchedStore._id, {
+        $set: {
+          tallyClosingBalance: absBal,
+          tallySyncedAt: new Date(),
+          tallyLedgerName: item.ledgerName,
+        },
+      });
+
+      if (matchedStore.adminId) {
+        await User.findByIdAndUpdate(matchedStore.adminId, {
           $set: {
             tallyClosingBalance: absBal,
             tallySyncedAt: new Date(),
@@ -1318,53 +1385,36 @@ export async function syncTallyLedgerBalances(
       }
 
       updatedStores.push({
-        storeId: store._id,
-        storeName: store.name,
+        storeId: matchedStore._id,
+        storeName: matchedStore.name,
         ledgerName: item.ledgerName,
         closingBalance: absBal,
       });
-    } else {
-      // Try matching dealer User directly
-      const userQueries: any[] = [
-        { name: new RegExp(escapeRegex(cleanName), 'i') },
-        { 'dealerProfile.storeName': new RegExp(escapeRegex(cleanName), 'i') },
-      ];
-      if (code) {
-        userQueries.push({ shortCode: code });
-        userQueries.push({ dealerCode: new RegExp(`${code}$`, 'i') });
-        userQueries.push({ name: new RegExp(`\\[${code}\\]`, 'i') });
-      }
-      if (item.phone) {
-        const cleanPhone = item.phone.replace(/\D/g, '').slice(-10);
-        if (cleanPhone.length === 10) {
-          userQueries.push({ mobile: cleanPhone });
-        }
-      }
+    } else if (matchedDealer) {
+      await User.findByIdAndUpdate(matchedDealer._id, {
+        $set: {
+          tallyClosingBalance: absBal,
+          tallySyncedAt: new Date(),
+          tallyLedgerName: item.ledgerName,
+        },
+      });
 
-      const dealer = await User.findOne({ role: 'storeAdmin', $or: userQueries });
-      if (dealer) {
-        dealer.tallyClosingBalance = absBal;
-        dealer.tallySyncedAt = new Date();
-        dealer.tallyLedgerName = item.ledgerName;
-        await dealer.save();
-
-        if (dealer.selectedStore) {
-          await Store.findByIdAndUpdate(dealer.selectedStore, {
-            $set: {
-              tallyClosingBalance: absBal,
-              tallySyncedAt: new Date(),
-              tallyLedgerName: item.ledgerName,
-            },
-          });
-        }
-
-        updatedStores.push({
-          userId: dealer._id,
-          dealerName: dealer.name,
-          ledgerName: item.ledgerName,
-          closingBalance: absBal,
+      if (matchedDealer.selectedStore) {
+        await Store.findByIdAndUpdate(matchedDealer.selectedStore, {
+          $set: {
+            tallyClosingBalance: absBal,
+            tallySyncedAt: new Date(),
+            tallyLedgerName: item.ledgerName,
+          },
         });
       }
+
+      updatedStores.push({
+        userId: matchedDealer._id,
+        dealerName: matchedDealer.name,
+        ledgerName: item.ledgerName,
+        closingBalance: absBal,
+      });
     }
   }
 
