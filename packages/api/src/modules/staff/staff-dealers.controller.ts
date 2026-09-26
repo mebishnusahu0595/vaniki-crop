@@ -129,9 +129,18 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
     const rawName = dealer.name || 'Dealer';
     const cleanName = rawName.replace(/^\[\d+\]\s*/, '').replace(/^\d+\s*-\s*/, '').trim();
 
+    // Check if store or dealer has official closing balance synced from Tally Prime
+    const storeTallyBal = (store as any)?.tallyClosingBalance;
+    const dealerTallyBal = (dealer as any)?.tallyClosingBalance;
+    const tallyClosingBalance = (storeTallyBal !== undefined && storeTallyBal !== null)
+      ? storeTallyBal
+      : ((dealerTallyBal !== undefined && dealerTallyBal !== null) ? dealerTallyBal : undefined);
+    const isTallySynced = tallyClosingBalance !== undefined;
+
     // Credit limit (standard ₹1,00,000 default or configured)
     const creditLimit = 100000;
-    const availableCredit = Math.max(0, creditLimit - totalOutstanding);
+    const finalOutstanding = isTallySynced ? tallyClosingBalance : totalOutstanding;
+    const availableCredit = Math.max(0, creditLimit - finalOutstanding);
 
     // Fetch platform bank details & QR configured by SuperAdmin
     const siteSettings = await SiteSetting.findOne({ singletonKey: 'default' }).lean();
@@ -163,17 +172,22 @@ export async function lookupDealer(req: Request, res: Response, next: NextFuncti
         },
         credit: {
           creditLimit,
-          totalOutstanding,
+          totalOutstanding: finalOutstanding,
           availableCredit,
           totalInvoiced,
           totalPaid,
           unpaidInvoiceCount: unpaidCount,
+          isTallySynced,
+          tallySyncedAt: (store as any)?.tallySyncedAt || (dealer as any)?.tallySyncedAt,
+          tallyLedgerName: (store as any)?.tallyLedgerName || (dealer as any)?.tallyLedgerName,
         },
         ledgerSummary: {
           totalInvoiced,
           totalPaid,
-          totalOutstanding,
+          totalOutstanding: finalOutstanding,
           unpaidInvoiceCount: unpaidCount,
+          isTallySynced,
+          source: isTallySynced ? 'TALLY_PRIME' : 'PORTAL_INVOICES',
         },
         bankDetails,
         garages: siteSettings?.garageNames && siteSettings.garageNames.length > 0

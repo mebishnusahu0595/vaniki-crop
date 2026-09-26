@@ -310,3 +310,33 @@ export async function getTallyServerStatus(req: Request, res: Response, next: Ne
     next(error);
   }
 }
+
+/**
+ * POST /api/tally/balances
+ * Sent by Windows Tally Agent with Sundry Debtors closing balances
+ */
+export async function updateBalances(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const secret = req.headers['x-tally-secret'] || req.body.secret;
+    const config = await tallyService.getTallyConfig();
+
+    if (secret !== config.agentSecretKey) {
+      throw new AppError('Invalid Tally Agent secret key', 401);
+    }
+
+    const { balances } = req.body;
+    if (!Array.isArray(balances)) {
+      throw new AppError('balances array is required', 400);
+    }
+
+    const result = await tallyService.syncTallyLedgerBalances(balances);
+    res.status(200).json({
+      success: true,
+      message: `Updated Tally closing balances for ${result.totalUpdated} dealer(s)`,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

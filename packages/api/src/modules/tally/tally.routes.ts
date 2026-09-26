@@ -14,6 +14,9 @@ router.get('/reset-sync', tallyController.resetSyncQueue);
 /** POST /api/tally/sync-result — Record Tally sync result */
 router.post('/sync-result', tallyController.postSyncResult);
 
+/** POST /api/tally/balances — Update dealer/store ledger closing balances from Tally */
+router.post('/balances', tallyController.updateBalances);
+
 /** GET /api/tally/download-xml/:id — Download Tally XML file for invoice or order */
 router.get('/download-xml/:id', requireAuth, requireSuperAdmin, tallyController.downloadXml);
 

@@ -219,9 +219,9 @@ export function buildTallySalesVoucherXml(
     <IMPORTDATA>
       <REQUESTDESC>
         <REPORTNAME>Vouchers</REPORTNAME>
-        <STATICVARIABLES>
-          <SVCURRENTCOMPANY>${escapeXml(config.companyName || 'Vaniki Crop Science Pvt Ltd')}</SVCURRENTCOMPANY>
-        </STATICVARIABLES>
+        ${config.companyName && config.companyName !== 'AUTO' && config.companyName !== 'CURRENT_COMPANY' && config.companyName !== 'Vaniki Crop Science Pvt Ltd' ? `<STATICVARIABLES>
+          <SVCURRENTCOMPANY>${escapeXml(config.companyName)}</SVCURRENTCOMPANY>
+        </STATICVARIABLES>` : ''}
       </REQUESTDESC>
       <REQUESTDATA>
         <!-- 0. Auto-create Godown / Location -->
@@ -640,9 +640,9 @@ export function buildTallyRetailOrderVoucherXml(
     <IMPORTDATA>
       <REQUESTDESC>
         <REPORTNAME>Vouchers</REPORTNAME>
-        <STATICVARIABLES>
-          <SVCURRENTCOMPANY>${escapeXml(config.companyName || 'Vaniki Crop Science Pvt Ltd')}</SVCURRENTCOMPANY>
-        </STATICVARIABLES>
+        ${config.companyName && config.companyName !== 'AUTO' && config.companyName !== 'CURRENT_COMPANY' && config.companyName !== 'Vaniki Crop Science Pvt Ltd' ? `<STATICVARIABLES>
+          <SVCURRENTCOMPANY>${escapeXml(config.companyName)}</SVCURRENTCOMPANY>
+        </STATICVARIABLES>` : ''}
       </REQUESTDESC>
       <REQUESTDATA>
         <!-- 0. Auto-create Godown / Location -->
@@ -1240,9 +1240,9 @@ export async function deleteVoucherFromTally(voucherGuid?: string, voucherNumber
     <IMPORTDATA>
       <REQUESTDESC>
         <REPORTNAME>Vouchers</REPORTNAME>
-        <STATICVARIABLES>
-          <SVCURRENTCOMPANY>${escapeXml(config.companyName || 'Vaniki Crop Science Pvt Ltd')}</SVCURRENTCOMPANY>
-        </STATICVARIABLES>
+        ${config.companyName && config.companyName !== 'AUTO' && config.companyName !== 'CURRENT_COMPANY' && config.companyName !== 'Vaniki Crop Science Pvt Ltd' ? `<STATICVARIABLES>
+          <SVCURRENTCOMPANY>${escapeXml(config.companyName)}</SVCURRENTCOMPANY>
+        </STATICVARIABLES>` : ''}
       </REQUESTDESC>
       <REQUESTDATA>
         <TALLYMESSAGE xmlns:UDF="TallyUDF">
@@ -1255,3 +1255,123 @@ export async function deleteVoucherFromTally(voucherGuid?: string, voucherNumber
 
   return pushXmlToTallyServer(xml, config);
 }
+
+function escapeRegex(text: string): string {
+  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
+/**
+ * Sync Sundry Debtors ledger closing balances from Tally into Stores and Dealers
+ */
+export async function syncTallyLedgerBalances(
+  balances: Array<{
+    ledgerName: string;
+    closingBalance: number;
+    phone?: string;
+    parent?: string;
+  }>
+) {
+  const updatedStores: any[] = [];
+
+  for (const item of balances) {
+    if (!item.ledgerName) continue;
+    const cleanName = item.ledgerName.replace(/^\[\d+\]\s*/, '').replace(/^\d+\s*-\s*/, '').trim();
+    const fourDigitMatch = item.ledgerName.match(/\d{4}/);
+    const code = fourDigitMatch ? fourDigitMatch[0] : null;
+
+    // Search query for matching store or dealer
+    const orQueries: any[] = [
+      { name: new RegExp(`^${escapeRegex(cleanName)}$`, 'i') },
+      { name: new RegExp(escapeRegex(cleanName), 'i') },
+    ];
+
+    if (code) {
+      orQueries.push({ shortCode: code });
+      orQueries.push({ dealerCode: `VKD${code}` });
+      orQueries.push({ dealerCode: new RegExp(`${code}$`, 'i') });
+    }
+
+    if (item.phone) {
+      const cleanPhone = item.phone.replace(/\D/g, '').slice(-10);
+      if (cleanPhone.length === 10) {
+        orQueries.push({ phone: cleanPhone });
+      }
+    }
+
+    const store = await Store.findOne({ $or: orQueries });
+    const absBal = Math.abs(Number(item.closingBalance) || 0);
+
+    if (store) {
+      store.tallyClosingBalance = absBal;
+      store.tallySyncedAt = new Date();
+      store.tallyLedgerName = item.ledgerName;
+      await store.save();
+
+      if (store.adminId) {
+        await User.findByIdAndUpdate(store.adminId, {
+          $set: {
+            tallyClosingBalance: absBal,
+            tallySyncedAt: new Date(),
+            tallyLedgerName: item.ledgerName,
+          },
+        });
+      }
+
+      updatedStores.push({
+        storeId: store._id,
+        storeName: store.name,
+        ledgerName: item.ledgerName,
+        closingBalance: absBal,
+      });
+    } else {
+      // Try matching dealer User directly
+      const userQueries: any[] = [
+        { name: new RegExp(escapeRegex(cleanName), 'i') },
+        { 'dealerProfile.storeName': new RegExp(escapeRegex(cleanName), 'i') },
+      ];
+      if (code) {
+        userQueries.push({ shortCode: code });
+        userQueries.push({ dealerCode: new RegExp(`${code}$`, 'i') });
+        userQueries.push({ name: new RegExp(`\\[${code}\\]`, 'i') });
+      }
+      if (item.phone) {
+        const cleanPhone = item.phone.replace(/\D/g, '').slice(-10);
+        if (cleanPhone.length === 10) {
+          userQueries.push({ mobile: cleanPhone });
+        }
+      }
+
+      const dealer = await User.findOne({ role: 'storeAdmin', $or: userQueries });
+      if (dealer) {
+        dealer.tallyClosingBalance = absBal;
+        dealer.tallySyncedAt = new Date();
+        dealer.tallyLedgerName = item.ledgerName;
+        await dealer.save();
+
+        if (dealer.selectedStore) {
+          await Store.findByIdAndUpdate(dealer.selectedStore, {
+            $set: {
+              tallyClosingBalance: absBal,
+              tallySyncedAt: new Date(),
+              tallyLedgerName: item.ledgerName,
+            },
+          });
+        }
+
+        updatedStores.push({
+          userId: dealer._id,
+          dealerName: dealer.name,
+          ledgerName: item.ledgerName,
+          closingBalance: absBal,
+        });
+      }
+    }
+  }
+
+  return {
+    totalReceived: balances.length,
+    totalUpdated: updatedStores.length,
+    updated: updatedStores,
+  };
+}
+

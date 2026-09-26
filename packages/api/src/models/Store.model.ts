@@ -46,6 +46,9 @@ export interface IStore extends Document {
   panNumber?: string;
   dealerCode?: string;
   shortCode?: string;
+  tallyClosingBalance?: number;
+  tallySyncedAt?: Date;
+  tallyLedgerName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -169,6 +172,16 @@ const storeSchema = new Schema<IStore>(
       type: String,
       trim: true,
       uppercase: true,
+    },
+    tallyClosingBalance: {
+      type: Number,
+    },
+    tallySyncedAt: {
+      type: Date,
+    },
+    tallyLedgerName: {
+      type: String,
+      trim: true,
     },
   },
   {

@@ -121,6 +121,93 @@ async function postToTally(xmlPayload) {
 }
 
 /**
+ * Detect the open company currently loaded in Tally Prime
+ */
+async function getActiveTallyCompany() {
+  try {
+    const listXml = `<ENVELOPE>
+      <HEADER><TALLYREQUEST>Export Data</TALLYREQUEST></HEADER>
+      <BODY>
+        <EXPORTDATA>
+          <REQUESTDESC>
+            <REPORTNAME>List of Companies</REPORTNAME>
+          </REQUESTDESC>
+        </EXPORTDATA>
+      </BODY>
+    </ENVELOPE>`;
+    const res = await postToTally(listXml);
+    const match = res.match(/<COMPANYNAME[^>]*>([^<]+)<\/COMPANYNAME>/i) || res.match(/<NAME[^>]*>([^<]+)<\/NAME>/i);
+    return match ? match[1].trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Query all Sundry Debtors ledger closing balances from Tally and sync to Vaniki Cloud
+ */
+async function syncDebtorBalancesFromTally() {
+  const tdlQuery = `<ENVELOPE>
+    <HEADER><TALLYREQUEST>Export Data</TALLYREQUEST></HEADER>
+    <BODY>
+      <EXPORTDATA>
+        <REQUESTDESC>
+          <STATICVARIABLES>
+            <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+          </STATICVARIABLES>
+          <TDL>
+            <TDLMESSAGE>
+              <COLLECTION NAME="VanikiDebtors" TYPE="Ledger">
+                <CHILDOF>$$GroupSundryDebtors</CHILDOF>
+                <FETCH>NAME, CLOSINGBALANCE, LEDGERPHONE, LEDGERMOBILE</FETCH>
+              </COLLECTION>
+            </TDLMESSAGE>
+          </TDL>
+        </REQUESTDESC>
+      </EXPORTDATA>
+    </BODY>
+  </ENVELOPE>`;
+
+  try {
+    const resXml = await postToTally(tdlQuery);
+    const balances = [];
+    const ledgerRegex = /<LEDGER\s+NAME="([^"]+)"[^>]*>([\s\S]*?)<\/LEDGER>/gi;
+    let m;
+    while ((m = ledgerRegex.exec(resXml)) !== null) {
+      const name = m[1];
+      const body = m[2];
+      const balMatch = body.match(/<CLOSINGBALANCE>([\s\S]*?)<\/CLOSINGBALANCE>/i);
+      const phoneMatch = body.match(/<LEDGERPHONE>([\s\S]*?)<\/LEDGERPHONE>/i) || body.match(/<LEDGERMOBILE>([\s\S]*?)<\/LEDGERMOBILE>/i);
+      if (balMatch) {
+        const raw = parseFloat(balMatch[1].replace(/,/g, '').trim()) || 0;
+        balances.push({
+          ledgerName: name,
+          closingBalance: Math.abs(raw),
+          phone: phoneMatch ? phoneMatch[1].trim() : undefined,
+        });
+      }
+    }
+
+    if (balances.length > 0) {
+      await makeRequest(
+        `${activeApiUrl}/balances`,
+        {
+          method: 'POST',
+          headers: {
+            'x-tally-secret': config.agentSecretKey,
+            'Content-Type': 'application/json',
+          },
+        },
+        JSON.stringify({ balances })
+      );
+      console.log(`\n${COLORS.green}📊 [Tally Balances] Synced ${balances.length} dealer ledger closing balances to Vaniki Cloud!${COLORS.reset}`);
+    }
+  } catch (err) {
+    // non-fatal
+  }
+}
+
+/**
  * Parse Tally XML Response to check if voucher created successfully
  */
 function parseTallyResponse(tallyXmlResponse) {
@@ -232,9 +319,31 @@ async function syncPendingInvoices() {
       console.log(`\n⏳ Processing ${typeLabel} ${COLORS.bright}${item.invoiceNumber}${COLORS.reset} for ${COLORS.cyan}${item.customerName || item.storeName}${COLORS.reset} (₹${item.totalAmount})...`);
 
       try {
+        let xmlToPost = item.xmlPayload;
+
+        // Auto-match active company in Tally if present
+        const activeCompany = await getActiveTallyCompany();
+        if (activeCompany) {
+          xmlToPost = xmlToPost.replace(
+            /<SVCURRENTCOMPANY>[\s\S]*?<\/SVCURRENTCOMPANY>/gi,
+            `<SVCURRENTCOMPANY>${activeCompany}</SVCURRENTCOMPANY>`
+          );
+        }
+
         // Send XML to Tally on Port 9000
-        const tallyResXml = await postToTally(item.xmlPayload);
-        const parsed = parseTallyResponse(tallyResXml);
+        let tallyResXml = await postToTally(xmlToPost);
+        let parsed = parseTallyResponse(tallyResXml);
+
+        // If company name mismatch error, strip SVCURRENTCOMPANY and retry immediately into active company
+        if (!parsed.success && parsed.error && (parsed.error.includes('SVCurrentCompany') || parsed.error.includes('CurrentCompany'))) {
+          console.log(`⚠️ Company name mismatch, retrying directly into active open company in Tally...`);
+          const fallbackXml = xmlToPost.replace(/<STATICVARIABLES>[\s\S]*?<\/STATICVARIABLES>/gi, '');
+          const retryRes = await postToTally(fallbackXml);
+          const retryParsed = parseTallyResponse(retryRes);
+          if (retryParsed.success) {
+            parsed = retryParsed;
+          }
+        }
 
         if (parsed.success) {
           console.log(`✅ ${COLORS.green}SUCCESS! Auto-created in Tally! Voucher No: ${parsed.voucherNumber || item.invoiceNumber}${COLORS.reset}`);
@@ -302,6 +411,9 @@ async function syncPendingInvoices() {
         ).catch(() => null);
       }
     }
+
+    // 3. Sync Sundry Debtors ledger closing balances from Tally into Vaniki Cloud
+    await syncDebtorBalancesFromTally();
   } catch (err) {
     console.error(`\n${COLORS.red}[Sync Error] ${err.message}${COLORS.reset}`);
   } finally {

@@ -75,6 +75,9 @@ export interface IUser extends Document {
   refreshToken?: string;
   expoPushToken?: string;
   fcmToken?: string;
+  tallyClosingBalance?: number;
+  tallySyncedAt?: Date;
+  tallyLedgerName?: string;
   loyaltyPoints: number;
   lastCheckIn?: Date;
   preferredLanguage?: 'en' | 'hi';
@@ -238,6 +241,9 @@ const userSchema = new Schema<IUser>(
     refreshToken: { type: String, select: false },
     expoPushToken: { type: String, trim: true },
     fcmToken: { type: String, trim: true },
+    tallyClosingBalance: { type: Number },
+    tallySyncedAt: { type: Date },
+    tallyLedgerName: { type: String, trim: true },
     loyaltyPoints: { type: Number, default: 0 },
     lastCheckIn: { type: Date },
     preferredLanguage: { type: String, enum: ['en', 'hi'], default: 'hi' },
